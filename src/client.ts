@@ -5,6 +5,7 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 
 import { TESTNET_PACKAGE_ID } from "./utils/constants";
+import { PaginatedBottleSummary } from "./types";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -153,7 +154,12 @@ export class BucketClient {
     return tx;
   }
 
-  async claimFromTank(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock> {
+  async claimFromTank(
+    assetBuck: string,
+    assetType: string,
+    tankId: string,
+    contributorToken: string,
+  ): Promise<TransactionBlock> {
     /**
      * @description Claim collateral gain and BKT reward from the Tank
      * @param assetBuck Buck asset , e.g "0xc50de8bf1f8f9b7450646ef2d72e80ef243b6e06b22645fceed567219f3a33c4::buck::BUCK"
@@ -163,18 +169,22 @@ export class BucketClient {
      * @returns Promise<TransactionBlock>
      */
 
-      const tx = new TransactionBlock();
-      tx.moveCall({
-        target: `${TESTNET_PACKAGE_ID}::tank::claim`,
-        typeArguments: [assetBuck, assetType],
-        arguments: [tx.object(tankId), tx.pure(contributorToken)],
-      });
-  
-    return tx;
+    const tx = new TransactionBlock();
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::tank::claim`,
+      typeArguments: [assetBuck, assetType],
+      arguments: [tx.object(tankId), tx.pure(contributorToken)],
+    });
 
+    return tx;
   }
 
-  async claimBkt(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock> {
+  async claimBkt(
+    assetBuck: string,
+    assetType: string,
+    tankId: string,
+    contributorToken: string,
+  ): Promise<TransactionBlock> {
     /**
      * @description Claim BKT reward earned by a deposit since its last snapshots were taken
      * @param assetBuck Buck asset , e.g "0xc50de8bf1f8f9b7450646ef2d72e80ef243b6e06b22645fceed567219f3a33c4::buck::BUCK"
@@ -190,9 +200,59 @@ export class BucketClient {
       typeArguments: [assetBuck, assetType],
       arguments: [tx.object(tankId), tx.pure(contributorToken)],
     });
-  
-    return tx
+
+    return tx;
   }
 
+  async getAllBottles(): Promise<PaginatedBottleSummary> {
+    /**
+     * @description Get all bottles by querying `BottleCreated` event.
+     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
+     */
 
+    const resp = await this.client.queryEvents({
+      query: {
+        MoveEventType: `${TESTNET_PACKAGE_ID}::bucket_events::BottleCreated`,
+      },
+    });
+    const bottles = resp.data.map((event) => {
+      const rawEvent = event.parsedJson as any;
+      return {
+        bottleId: rawEvent.bottle_id as string,
+      };
+    });
+
+    return {
+      data: bottles,
+      nextCursor: resp.nextCursor,
+      hasNextPage: resp.hasNextPage,
+    };
+
+  }
+
+  async getDestroyedBottles(): Promise<PaginatedBottleSummary> {
+    /**
+     * @description Get all destroyed bottles by querying `BottleDestroyed` event.
+     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
+     */
+
+    const resp = await this.client.queryEvents({
+      query: {
+        MoveEventType: `${TESTNET_PACKAGE_ID}::bucket_events::BottleDestroyed`,
+      },
+    });
+    const destroyedBottles = resp.data.map((event) => {
+      const rawEvent = event.parsedJson as any;
+      return {
+        bottleId: rawEvent.bottle_id as string,
+      };
+    });
+
+    return {
+      data: destroyedBottles,
+      nextCursor: resp.nextCursor,
+      hasNextPage: resp.hasNextPage,
+    };
+
+  }
 }
