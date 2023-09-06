@@ -152,4 +152,47 @@ export class BucketClient {
 
     return tx;
   }
+
+  async claimFromTank(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock> {
+    /**
+     * @description Claim collateral gain and BKT reward from the Tank
+     * @param assetBuck Buck asset , e.g "0xc50de8bf1f8f9b7450646ef2d72e80ef243b6e06b22645fceed567219f3a33c4::buck::BUCK"
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param tankId The tank object id , e.g "0xcae41b2e728eace479bc0c167c3dfa03875c48c94b3b4e5dc7f33cf5cc0c43f6"
+     * @param contributorToken The contributor token
+     * @returns Promise<TransactionBlock>
+     */
+
+      const tx = new TransactionBlock();
+      tx.moveCall({
+        target: `${TESTNET_PACKAGE_ID}::tank::claim`,
+        typeArguments: [assetBuck, assetType],
+        arguments: [tx.object(tankId), tx.pure(contributorToken)],
+      });
+  
+    return tx;
+
+  }
+
+  async claimBkt(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock> {
+    /**
+     * @description Claim BKT reward earned by a deposit since its last snapshots were taken
+     * @param assetBuck Buck asset , e.g "0xc50de8bf1f8f9b7450646ef2d72e80ef243b6e06b22645fceed567219f3a33c4::buck::BUCK"
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param tankId The tank object id , e.g "0xcae41b2e728eace479bc0c167c3dfa03875c48c94b3b4e5dc7f33cf5cc0c43f6"
+     * @param contributorToken The contributor token
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::tank::claim_bkt`,
+      typeArguments: [assetBuck, assetType],
+      arguments: [tx.object(tankId), tx.pure(contributorToken)],
+    });
+  
+    return tx
+  }
+
+
 }
