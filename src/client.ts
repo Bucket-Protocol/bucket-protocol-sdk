@@ -227,7 +227,6 @@ export class BucketClient {
       nextCursor: resp.nextCursor,
       hasNextPage: resp.hasNextPage,
     };
-
   }
 
   async getDestroyedBottles(): Promise<PaginatedBottleSummary> {
@@ -253,11 +252,17 @@ export class BucketClient {
       nextCursor: resp.nextCursor,
       hasNextPage: resp.hasNextPage,
     };
-
   }
 
-  async borrow(assetType: string, protocol: string, oracle: string, collateralInput: string, bucketOutputAmount: number, insertionPlace: string): Promise<TransactionBlock>{
-      /**
+  async borrow(
+    assetType: string,
+    protocol: string,
+    oracle: string,
+    collateralInput: string,
+    bucketOutputAmount: number,
+    insertionPlace: string,
+  ): Promise<TransactionBlock> {
+    /**
      * @description Borrow from bucket
      * @param assetType Asset , e.g "0x2::sui::SUI"
      * @param protocol Protocol id
@@ -266,22 +271,33 @@ export class BucketClient {
      * @param bucketOutputAmount
      * @param insertionPlace
      * @returns Promise<TransactionBlock>
-      */
+     */
 
     const tx = new TransactionBlock();
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::buck::borrow`,
       typeArguments: [assetType],
-      arguments: [tx.object(protocol), tx.object(oracle), tx.object(SUI_CLOCK_OBJECT_ID), tx.pure(collateralInput), tx.pure(bucketOutputAmount), tx.pure([insertionPlace])],
+      arguments: [
+        tx.object(protocol),
+        tx.object(oracle),
+        tx.object(SUI_CLOCK_OBJECT_ID),
+        tx.pure(collateralInput),
+        tx.pure(bucketOutputAmount),
+        tx.pure([insertionPlace]),
+      ],
     });
 
-    return tx
-
+    return tx;
   }
 
-  async topUp(assetType: string, protocol: string, collateralInput: string, forAddress: string, insertionPlace: string): Promise<TransactionBlock> {
-
-      /**
+  async topUp(
+    assetType: string,
+    protocol: string,
+    collateralInput: string,
+    forAddress: string,
+    insertionPlace: string,
+  ): Promise<TransactionBlock> {
+    /**
      * @description Top up function
      * @param assetType Asset , e.g "0x2::sui::SUI"
      * @param protocol Protocol id
@@ -289,29 +305,36 @@ export class BucketClient {
      * @param forAddress
      * @param insertionPlace
      * @returns Promise<TransactionBlock>
-      */
+     */
 
     const tx = new TransactionBlock();
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::buck::top_up`,
       typeArguments: [assetType],
-      arguments: [tx.object(protocol), tx.pure(collateralInput), tx.pure(forAddress), tx.pure([insertionPlace])],
+      arguments: [
+        tx.object(protocol),
+        tx.pure(collateralInput),
+        tx.pure(forAddress),
+        tx.pure([insertionPlace]),
+      ],
     });
 
-    return tx
-
+    return tx;
   }
 
-  async repay(assetType: string, protocol: string, buckInput: string): Promise<TransactionBlock>{
-      /**
+  async repay(
+    assetType: string,
+    protocol: string,
+    buckInput: string,
+  ): Promise<TransactionBlock> {
+    /**
      * @description Repay borrowed amount
      * @param assetType Asset , e.g "0x2::sui::SUI"
      * @param protocol Protocol id
      * @param buckInput Amount to be repaid
      * @returns Promise<TransactionBlock>
-      */
-
+     */
 
     const tx = new TransactionBlock();
 
@@ -321,8 +344,6 @@ export class BucketClient {
       arguments: [tx.object(protocol), tx.pure(buckInput)],
     });
 
-    return tx
-
+    return tx;
   }
-
 }
