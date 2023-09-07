@@ -2,7 +2,7 @@
 
 import { SuiClient, getFullnodeUrl } from "@mysten/sui.js/client";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
-import { normalizeSuiAddress } from "@mysten/sui.js/utils";
+import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 
 import { TESTNET_PACKAGE_ID } from "./utils/constants";
 import { PaginatedBottleSummary } from "./types";
@@ -255,4 +255,74 @@ export class BucketClient {
     };
 
   }
+
+  async borrow(assetType: string, protocol: string, oracle: string, collateralInput: string, bucketOutputAmount: number, insertionPlace: string): Promise<TransactionBlock>{
+      /**
+     * @description Borrow from bucket
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param oracle Oracle id
+     * @param collateralInput collateral input
+     * @param bucketOutputAmount
+     * @param insertionPlace
+     * @returns Promise<TransactionBlock>
+      */
+
+    const tx = new TransactionBlock();
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::borrow`,
+      typeArguments: [assetType],
+      arguments: [tx.object(protocol), tx.object(oracle), tx.object(SUI_CLOCK_OBJECT_ID), tx.pure(collateralInput), tx.pure(bucketOutputAmount), tx.pure([insertionPlace])],
+    });
+
+    return tx
+
+  }
+
+  async topUp(assetType: string, protocol: string, collateralInput: string, forAddress: string, insertionPlace: string): Promise<TransactionBlock> {
+
+      /**
+     * @description Top up function
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param collateralInput collateral input
+     * @param forAddress
+     * @param insertionPlace
+     * @returns Promise<TransactionBlock>
+      */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::top_up`,
+      typeArguments: [assetType],
+      arguments: [tx.object(protocol), tx.pure(collateralInput), tx.pure(forAddress), tx.pure([insertionPlace])],
+    });
+
+    return tx
+
+  }
+
+  async repay(assetType: string, protocol: string, buckInput: string): Promise<TransactionBlock>{
+      /**
+     * @description Repay borrowed amount
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param buckInput Amount to be repaid
+     * @returns Promise<TransactionBlock>
+      */
+
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::repay`,
+      typeArguments: [assetType],
+      arguments: [tx.object(protocol), tx.pure(buckInput)],
+    });
+
+    return tx
+
+  }
+
 }
