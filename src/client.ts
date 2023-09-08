@@ -346,4 +346,57 @@ export class BucketClient {
 
     return tx;
   }
+
+  public bucketConstants(){
+    /**
+     * @description Encoded BCS Bucket constants
+     * @returns devInspectTransactionBlock
+     */
+    const tx = new TransactionBlock();
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::buck_decimal`,
+
+    });
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::fee_precision`,
+
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::flash_loan_fee`,
+
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::min_lock_time`,
+
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::max_lock_time`,
+
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::min_fee`,
+
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::max_fee`,
+
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::liquidation_rebate`,
+
+    });
+
+    return this.client.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: this.currentAddress
+  })
+
+  }
+   
 }
