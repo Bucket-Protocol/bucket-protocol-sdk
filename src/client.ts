@@ -204,56 +204,6 @@ export class BucketClient {
     return tx;
   }
 
-  async getAllBottles(): Promise<PaginatedBottleSummary> {
-    /**
-     * @description Get all bottles by querying `BottleCreated` event.
-     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
-     */
-
-    const resp = await this.client.queryEvents({
-      query: {
-        MoveEventType: `${TESTNET_PACKAGE_ID}::bucket_events::BottleCreated`,
-      },
-    });
-    const bottles = resp.data.map((event) => {
-      const rawEvent = event.parsedJson as any;
-      return {
-        bottleId: rawEvent.bottle_id as string,
-      };
-    });
-
-    return {
-      data: bottles,
-      nextCursor: resp.nextCursor,
-      hasNextPage: resp.hasNextPage,
-    };
-  }
-
-  async getDestroyedBottles(): Promise<PaginatedBottleSummary> {
-    /**
-     * @description Get all destroyed bottles by querying `BottleDestroyed` event.
-     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
-     */
-
-    const resp = await this.client.queryEvents({
-      query: {
-        MoveEventType: `${TESTNET_PACKAGE_ID}::bucket_events::BottleDestroyed`,
-      },
-    });
-    const destroyedBottles = resp.data.map((event) => {
-      const rawEvent = event.parsedJson as any;
-      return {
-        bottleId: rawEvent.bottle_id as string,
-      };
-    });
-
-    return {
-      data: destroyedBottles,
-      nextCursor: resp.nextCursor,
-      hasNextPage: resp.hasNextPage,
-    };
-  }
-
   async borrow(
     assetType: string,
     protocol: string,
@@ -263,7 +213,7 @@ export class BucketClient {
     insertionPlace: string,
   ): Promise<TransactionBlock> {
     /**
-     * @description Borrow from bucket
+     * @description Borrow
      * @param assetType Asset , e.g "0x2::sui::SUI"
      * @param protocol Protocol id
      * @param oracle Oracle id
@@ -323,6 +273,40 @@ export class BucketClient {
     return tx;
   }
 
+  async withdraw(
+    assetType: string,
+    protocol: string,
+    oracle: string,
+    collateralAmount: string,
+    insertionPlace: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description withdraw
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param oracle
+     * @param collateralAmount
+     * @param insertionPlace
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::withdraw`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(protocol),
+        tx.object(oracle),
+        tx.pure(SUI_CLOCK_OBJECT_ID),
+        tx.pure(collateralAmount),
+        tx.pure([insertionPlace]),
+      ],
+    });
+
+    return tx;
+  }
+
   async repay(
     assetType: string,
     protocol: string,
@@ -347,7 +331,91 @@ export class BucketClient {
     return tx;
   }
 
-  public bucketConstants(){
+  async reedem(
+    assetType: string,
+    protocol: string,
+    oracle: string,
+    buckInput: string,
+    insertionPlace: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description reedem
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param oracle
+     * @param buckInput
+     * @param insertionPlace
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::redeem`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(protocol),
+        tx.object(oracle),
+        tx.pure(SUI_CLOCK_OBJECT_ID),
+        tx.pure(buckInput),
+        tx.pure([insertionPlace]),
+      ],
+    });
+
+    return tx;
+  }
+
+  async getAllBottles(): Promise<PaginatedBottleSummary> {
+    /**
+     * @description Get all bottles by querying `BottleCreated` event.
+     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
+     */
+
+    const resp = await this.client.queryEvents({
+      query: {
+        MoveEventType: `${TESTNET_PACKAGE_ID}::bucket_events::BottleCreated`,
+      },
+    });
+    const bottles = resp.data.map((event) => {
+      const rawEvent = event.parsedJson as any;
+      return {
+        bottleId: rawEvent.bottle_id as string,
+      };
+    });
+
+    return {
+      data: bottles,
+      nextCursor: resp.nextCursor,
+      hasNextPage: resp.hasNextPage,
+    };
+  }
+
+  async getDestroyedBottles(): Promise<PaginatedBottleSummary> {
+    /**
+     * @description Get all destroyed bottles by querying `BottleDestroyed` event.
+     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
+     */
+
+    const resp = await this.client.queryEvents({
+      query: {
+        MoveEventType: `${TESTNET_PACKAGE_ID}::bucket_events::BottleDestroyed`,
+      },
+    });
+    const destroyedBottles = resp.data.map((event) => {
+      const rawEvent = event.parsedJson as any;
+      return {
+        bottleId: rawEvent.bottle_id as string,
+      };
+    });
+
+    return {
+      data: destroyedBottles,
+      nextCursor: resp.nextCursor,
+      hasNextPage: resp.hasNextPage,
+    };
+  }
+
+  public bucketConstants() {
     /**
      * @description Encoded BCS Bucket constants
      * @returns devInspectTransactionBlock
@@ -355,48 +423,38 @@ export class BucketClient {
     const tx = new TransactionBlock();
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::buck_decimal`,
-
     });
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::fee_precision`,
-
     });
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::flash_loan_fee`,
-
     });
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::min_lock_time`,
-
     });
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::max_lock_time`,
-
     });
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::min_fee`,
-
     });
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::max_fee`,
-
     });
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::liquidation_rebate`,
-
     });
 
     return this.client.devInspectTransactionBlock({
       transactionBlock: tx,
-      sender: this.currentAddress
-  })
-
+      sender: this.currentAddress,
+    });
   }
-   
 }
