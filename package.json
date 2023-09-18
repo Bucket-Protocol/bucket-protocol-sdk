@@ -22,6 +22,7 @@
     "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
   },
   "dependencies": {
+    "@mysten/bcs": "^0.7.4",
     "@mysten/sui.js": "^0.41.0"
   },
   "devDependencies": {
