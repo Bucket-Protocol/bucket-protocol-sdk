@@ -1,26 +1,27 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { SuiClient, getFullnodeUrl } from "@mysten/sui.js/client";
+import { DevInspectResults, SuiClient, getFullnodeUrl } from "@mysten/sui.js/client";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
+import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 
 import { TESTNET_PACKAGE_ID } from "./utils/constants";
-import { PaginatedBottleSummary } from "./types";
+import { BucketConstants, PaginatedBottleSummary } from "./types";
 
-const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
+const FAKE_ADDRESS = normalizeSuiAddress("0x0");
 
 export class BucketClient {
   /**
    * @description a TS wrapper over Bucket Protocol Move packages.
    * @param client connection to fullnode
-   * @param currentAddress (optional) address of the current user (default: DUMMY_ADDRESS)
+   * @param currentAddress (optional) address of the current user (default: FAKE_ADDRESS)
    */
 
   constructor(
     public client: SuiClient = new SuiClient({
       url: getFullnodeUrl("testnet"),
     }),
-    public currentAddress: string = DUMMY_ADDRESS,
+    public currentAddress: string = FAKE_ADDRESS,
   ) {}
 
   public createTank(assetBuck: string, assetType: string): TransactionBlock {
@@ -415,29 +416,33 @@ export class BucketClient {
     };
   }
 
-  public bucketConstants() {
+  private async encodedBucketConstants() : Promise<DevInspectResults> {
     /**
-     * @description Encoded BCS Bucket constants
+     * @description Get encoded BCS Bucket values
      * @returns devInspectTransactionBlock
      */
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::buck_decimal`,
+      target: `${TESTNET_PACKAGE_ID}::constants::fee_precision`,
     });
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::fee_precision`,
+      target: `${TESTNET_PACKAGE_ID}::constants::liquidation_rebate`,
     });
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::flash_loan_fee`,
     });
 
-    tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::min_lock_time`,
+   tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::buck_decimal`,
     });
 
     tx.moveCall({
       target: `${TESTNET_PACKAGE_ID}::constants::max_lock_time`,
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::min_lock_time`,
     });
 
     tx.moveCall({
@@ -448,13 +453,42 @@ export class BucketClient {
       target: `${TESTNET_PACKAGE_ID}::constants::max_fee`,
     });
 
-    tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::liquidation_rebate`,
-    });
 
-    return this.client.devInspectTransactionBlock({
+    return await this.client.devInspectTransactionBlock({
       transactionBlock: tx,
       sender: this.currentAddress,
     });
   }
+
+  async getBucketConstants(): Promise<BucketConstants | undefined>{
+      /**
+     * @description Get bucket constants (decoded BCS values)
+     * @returns Promise<DecodedBucketConstants | undefined>
+     */
+
+    const results: any = await this.encodedBucketConstants();
+
+    if (!results) {
+			return undefined;
+		}
+
+    const bcs = new BCS(getSuiMoveConfig());
+
+    let bucketObject: any = {};
+    bucketObject = {
+      ...bucketObject,
+      feePrecision: bcs.de("u64", Uint8Array.from(results.results![0].returnValues[0][0])),
+      liquidationRebate: bcs.de("u64", Uint8Array.from(results.results![1].returnValues[0][0])),
+      flashLoanFee: bcs.de("u64", Uint8Array.from(results.results![2].returnValues[0][0])),
+      buckDecimal: bcs.de("u8", Uint8Array.from(results.results![3].returnValues[0][0])),
+      maxLockTime: bcs.de("u64", Uint8Array.from(results.results![4].returnValues[0][0])),
+      minLockTime: bcs.de("u64", Uint8Array.from(results.results![5].returnValues[0][0])),
+      minFee: bcs.de("u64", Uint8Array.from(results.results![6].returnValues[0][0])),
+      maxFee: bcs.de("u64", Uint8Array.from(results.results![7].returnValues[0][0])),
+    }
+    
+    return bucketObject
+    
+  }
+
 }
