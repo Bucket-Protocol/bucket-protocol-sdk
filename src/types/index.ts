@@ -9,3 +9,14 @@ export interface PaginatedBottleSummary {
   hasNextPage: boolean;
   nextCursor?: EventId | null;
 }
+
+export interface BucketConstants {
+  feePrecision: string,
+  liquidationRebate: string,
+  flashLoanFee: string,
+  buckDecimal: number,
+  maxLockTime: string,
+  minLockTime: string,
+  minFee: string,
+  maxFee: string
+}
