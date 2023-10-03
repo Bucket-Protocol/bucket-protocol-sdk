@@ -334,6 +334,124 @@ export class BucketClient {
     return tx;
   }
 
+  async stake(
+    assetType: string,
+    well: string,
+    bktInput: string,
+    lockTime: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description stake to well
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param well well object
+     * @param bktInput Amount to stake
+     * @param lockTime Locked time for staking
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::well::stake`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(well),
+        tx.pure(bktInput),
+        tx.pure(lockTime),
+        tx.object(SUI_CLOCK_OBJECT_ID)
+      ],
+    });
+
+    return tx;
+  }
+
+
+  async unstake(
+    assetType: string,
+    well: string,
+    stakedBkt: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description unstake from well
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param well well object
+     * @param stakedBkt Amount to stake
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::well::unstake`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(well),
+        tx.pure(stakedBkt),
+        tx.object(SUI_CLOCK_OBJECT_ID)
+      ],
+    });
+
+    return tx;
+  }
+
+  async forceUnstake(
+    assetType: string,
+    well: string,
+    bktTreasury: string,
+    stakedBkt: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description forced unstake from well
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param well well object
+     * @param stakedBkt Amount to stake
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::well::force_unstake`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(well),
+        tx.object(bktTreasury),
+        tx.pure(stakedBkt),
+        tx.object(SUI_CLOCK_OBJECT_ID)
+      ],
+    });
+
+    return tx;
+  }
+
+
+  async claimFromWell(
+    assetType: string,
+    well: string,
+    stakedBkt: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description claim from well
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param well well object
+     * @param stakedBkt Staked BKT
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::well::claim`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(well),
+        tx.pure(stakedBkt),
+      ],
+    });
+
+    return tx;
+  }
+
   async getAllBottles(): Promise<PaginatedBottleSummary> {
     /**
      * @description Get all bottles by querying `BottleCreated` event.
