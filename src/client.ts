@@ -42,38 +42,6 @@ export class BucketClient {
     return tx;
   }
 
-  public createBucket(
-    assetType: string,
-    minCollateralRatio: number,
-    recoveryModeThreshold: number,
-    collateralDecimal: number,
-    maxMintAmount: number,
-  ): TransactionBlock {
-    /**
-     * @description Create a new pool tank
-     * @param assetType base asset , e.g "0xc50de8bf1f8f9b7450646ef2d72e80ef243b6e06b22645fceed567219f3a33c4::buck::BUCK"
-     * @param minCollateralRatio
-     * @param recoveryModeThreshold
-     * @param collateralDecimal
-     * @param maxMintAmount
-     * @returns TransactionBlock
-     */
-
-    const tx = new TransactionBlock();
-    tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::bucket::new`,
-      typeArguments: [assetType],
-      arguments: [
-        tx.pure(minCollateralRatio),
-        tx.pure(recoveryModeThreshold),
-        tx.pure(collateralDecimal),
-        tx.pure([maxMintAmount]),
-      ],
-    });
-
-    return tx;
-  }
-
   async depositToTank(
     assetBuck: string,
     assetType: string,
