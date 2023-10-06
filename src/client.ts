@@ -1,26 +1,27 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { SuiClient, getFullnodeUrl } from "@mysten/sui.js/client";
+import { DevInspectResults, SuiClient, getFullnodeUrl } from "@mysten/sui.js/client";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
-import { normalizeSuiAddress } from "@mysten/sui.js/utils";
+import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
+import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 
 import { TESTNET_PACKAGE_ID } from "./utils/constants";
-import { PaginatedBottleSummary } from "./types";
+import { BucketConstants, PaginatedBottleSummary } from "./types";
 
-const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
+const FAKE_ADDRESS = normalizeSuiAddress("0x0");
 
 export class BucketClient {
   /**
    * @description a TS wrapper over Bucket Protocol Move packages.
    * @param client connection to fullnode
-   * @param currentAddress (optional) address of the current user (default: DUMMY_ADDRESS)
+   * @param currentAddress (optional) address of the current user (default: FAKE_ADDRESS)
    */
 
   constructor(
     public client: SuiClient = new SuiClient({
       url: getFullnodeUrl("testnet"),
     }),
-    public currentAddress: string = DUMMY_ADDRESS,
+    public currentAddress: string = FAKE_ADDRESS,
   ) {}
 
   public createTank(assetBuck: string, assetType: string): TransactionBlock {
@@ -36,38 +37,6 @@ export class BucketClient {
       target: `${TESTNET_PACKAGE_ID}::tank::new`,
       typeArguments: [assetBuck, assetType],
       arguments: [],
-    });
-
-    return tx;
-  }
-
-  public createBucket(
-    assetType: string,
-    minCollateralRatio: number,
-    recoveryModeThreshold: number,
-    collateralDecimal: number,
-    maxMintAmount: number,
-  ): TransactionBlock {
-    /**
-     * @description Create a new pool tank
-     * @param assetType base asset , e.g "0xc50de8bf1f8f9b7450646ef2d72e80ef243b6e06b22645fceed567219f3a33c4::buck::BUCK"
-     * @param minCollateralRatio
-     * @param recoveryModeThreshold
-     * @param collateralDecimal
-     * @param maxMintAmount
-     * @returns TransactionBlock
-     */
-
-    const tx = new TransactionBlock();
-    tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::bucket::new`,
-      typeArguments: [assetType],
-      arguments: [
-        tx.pure(minCollateralRatio),
-        tx.pure(recoveryModeThreshold),
-        tx.pure(collateralDecimal),
-        tx.pure([maxMintAmount]),
-      ],
     });
 
     return tx;
@@ -204,6 +173,285 @@ export class BucketClient {
     return tx;
   }
 
+  async borrow(
+    assetType: string,
+    protocol: string,
+    oracle: string,
+    collateralInput: string,
+    bucketOutputAmount: number,
+    insertionPlace: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description Borrow
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param oracle Oracle id
+     * @param collateralInput collateral input
+     * @param bucketOutputAmount
+     * @param insertionPlace
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::borrow`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(protocol),
+        tx.object(oracle),
+        tx.object(SUI_CLOCK_OBJECT_ID),
+        tx.pure(collateralInput),
+        tx.pure(bucketOutputAmount),
+        tx.pure([insertionPlace]),
+      ],
+    });
+
+    return tx;
+  }
+
+  async topUp(
+    assetType: string,
+    protocol: string,
+    collateralInput: string,
+    forAddress: string,
+    insertionPlace: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description Top up function
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param collateralInput collateral input
+     * @param forAddress
+     * @param insertionPlace
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::top_up`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(protocol),
+        tx.pure(collateralInput),
+        tx.pure(forAddress),
+        tx.pure([insertionPlace]),
+      ],
+    });
+
+    return tx;
+  }
+
+  async withdraw(
+    assetType: string,
+    protocol: string,
+    oracle: string,
+    collateralAmount: string,
+    insertionPlace: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description withdraw
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param oracle
+     * @param collateralAmount
+     * @param insertionPlace
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::withdraw`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(protocol),
+        tx.object(oracle),
+        tx.pure(SUI_CLOCK_OBJECT_ID),
+        tx.pure(collateralAmount),
+        tx.pure([insertionPlace]),
+      ],
+    });
+
+    return tx;
+  }
+
+  async repay(
+    assetType: string,
+    protocol: string,
+    buckInput: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description Repay borrowed amount
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param buckInput Amount to be repaid
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::repay`,
+      typeArguments: [assetType],
+      arguments: [tx.object(protocol), tx.pure(buckInput)],
+    });
+
+    return tx;
+  }
+
+  async reedem(
+    assetType: string,
+    protocol: string,
+    oracle: string,
+    buckInput: string,
+    insertionPlace: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description reedem
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param protocol Protocol id
+     * @param oracle
+     * @param buckInput
+     * @param insertionPlace
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::buck::redeem`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(protocol),
+        tx.object(oracle),
+        tx.pure(SUI_CLOCK_OBJECT_ID),
+        tx.pure(buckInput),
+        tx.pure([insertionPlace]),
+      ],
+    });
+
+    return tx;
+  }
+
+  async stake(
+    assetType: string,
+    well: string,
+    bktInput: string,
+    lockTime: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description stake to well
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param well well object
+     * @param bktInput Amount to stake
+     * @param lockTime Locked time for staking
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::well::stake`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(well),
+        tx.pure(bktInput),
+        tx.pure(lockTime),
+        tx.object(SUI_CLOCK_OBJECT_ID)
+      ],
+    });
+
+    return tx;
+  }
+
+
+  async unstake(
+    assetType: string,
+    well: string,
+    stakedBkt: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description unstake from well
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param well well object
+     * @param stakedBkt Amount to stake
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::well::unstake`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(well),
+        tx.pure(stakedBkt),
+        tx.object(SUI_CLOCK_OBJECT_ID)
+      ],
+    });
+
+    return tx;
+  }
+
+  async forceUnstake(
+    assetType: string,
+    well: string,
+    bktTreasury: string,
+    stakedBkt: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description forced unstake from well
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param well well object
+     * @param stakedBkt Amount to stake
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::well::force_unstake`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(well),
+        tx.object(bktTreasury),
+        tx.pure(stakedBkt),
+        tx.object(SUI_CLOCK_OBJECT_ID)
+      ],
+    });
+
+    return tx;
+  }
+
+
+  async claimFromWell(
+    assetType: string,
+    well: string,
+    stakedBkt: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description claim from well
+     * @param assetType Asset , e.g "0x2::sui::SUI"
+     * @param well well object
+     * @param stakedBkt Staked BKT
+     * @returns Promise<TransactionBlock>
+     */
+
+    const tx = new TransactionBlock();
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::well::claim`,
+      typeArguments: [assetType],
+      arguments: [
+        tx.object(well),
+        tx.pure(stakedBkt),
+      ],
+    });
+
+    return tx;
+  }
+
   async getAllBottles(): Promise<PaginatedBottleSummary> {
     /**
      * @description Get all bottles by querying `BottleCreated` event.
@@ -227,7 +475,6 @@ export class BucketClient {
       nextCursor: resp.nextCursor,
       hasNextPage: resp.hasNextPage,
     };
-
   }
 
   async getDestroyedBottles(): Promise<PaginatedBottleSummary> {
@@ -253,6 +500,81 @@ export class BucketClient {
       nextCursor: resp.nextCursor,
       hasNextPage: resp.hasNextPage,
     };
-
   }
+
+  private async encodedBucketConstants() : Promise<DevInspectResults> {
+    /**
+     * @description Get encoded BCS Bucket values
+     * @returns devInspectTransactionBlock
+     */
+    const tx = new TransactionBlock();
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::fee_precision`,
+    });
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::liquidation_rebate`,
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::flash_loan_fee`,
+    });
+
+   tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::buck_decimal`,
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::max_lock_time`,
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::min_lock_time`,
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::min_fee`,
+    });
+
+    tx.moveCall({
+      target: `${TESTNET_PACKAGE_ID}::constants::max_fee`,
+    });
+
+
+    return await this.client.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: this.currentAddress,
+    });
+  }
+
+  async getBucketConstants(): Promise<BucketConstants | undefined>{
+      /**
+     * @description Get bucket constants (decoded BCS values)
+     * @returns Promise<DecodedBucketConstants | undefined>
+     */
+
+    const results: any = await this.encodedBucketConstants();
+
+    if (!results) {
+			return undefined;
+		}
+
+    const bcs = new BCS(getSuiMoveConfig());
+
+    let bucketObject: any = {};
+    bucketObject = {
+      ...bucketObject,
+      feePrecision: bcs.de("u64", Uint8Array.from(results.results![0].returnValues[0][0])),
+      liquidationRebate: bcs.de("u64", Uint8Array.from(results.results![1].returnValues[0][0])),
+      flashLoanFee: bcs.de("u64", Uint8Array.from(results.results![2].returnValues[0][0])),
+      buckDecimal: bcs.de("u8", Uint8Array.from(results.results![3].returnValues[0][0])),
+      maxLockTime: bcs.de("u64", Uint8Array.from(results.results![4].returnValues[0][0])),
+      minLockTime: bcs.de("u64", Uint8Array.from(results.results![5].returnValues[0][0])),
+      minFee: bcs.de("u64", Uint8Array.from(results.results![6].returnValues[0][0])),
+      maxFee: bcs.de("u64", Uint8Array.from(results.results![7].returnValues[0][0])),
+    }
+    
+    return bucketObject
+    
+  }
+
 }
