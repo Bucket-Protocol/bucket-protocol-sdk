@@ -588,12 +588,3 @@ export class BucketClient {
   }
 
 }
-// Instantiate SuiClient connected to testnet
-const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
-
-// Instantiate BucketClient
-const buck = new BucketClient(client, {
-  packageType: "mainnet"
-});
-
-console.log(await packageAddress[buck.packageType])
