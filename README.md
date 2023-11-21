@@ -8,11 +8,13 @@ In addition to the collateral, the loans are secured by TANK containing $BUCK an
 
 ## Install Bucket Protocol
 
-Install Bucket Protocol using npm : `npm i -D bucket-protocol-sdk`
+Install Bucket Protocol using npm : `npm i bucket-protocol-sdk`
 
 Install Bucket Protocol using npm and git : `npm install https://github.com/andreidev1/bucket-protocol-sdk.git`
 
 ## Quick start
+
+Choose a package ID based `mainnet` or `testnet` by replacing `packageType` value. By default package ID is set to `mainnet`. 
 
 ```ts
 import { BucketClient } from "bucket-protocol-sdk/src/";
@@ -22,7 +24,9 @@ import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
 const client = new SuiClient({ url: getFullnodeUrl('testnet') });
 
 // Instantiate BucketClient
-const buck = new BucketClient(client);
+const buck = new BucketClient(client, {
+  packageType: "testnet"
+});
 ```
 
 ## Query Bucket Protocol
