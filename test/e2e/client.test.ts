@@ -2,13 +2,15 @@ import { describe, it, expect } from 'vitest';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
 import { BucketClient } from '../../src';
 
-describe('Interacting with Bucket Client on testnet', () => {
+describe('Interacting with Bucket Client on mainnet', () => {
 
-    // Instantiate SuiClient connected to testnet
-    const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+    // Instantiate SuiClient connected to mainnet
+    const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
 
     // Instantiate BucketClient
-    const buck = new BucketClient(client);
+    const buck = new BucketClient(client, {
+        packageType: "mainnet"
+    });
 
 	it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
