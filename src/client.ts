@@ -5,10 +5,12 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 
-import { TESTNET_PACKAGE_ID } from "./utils/constants";
-import { BucketConstants, PaginatedBottleSummary } from "./types";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID } from "./utils/constants";
+import { BucketConstants, PaginatedBottleSummary, PackageType} from "./types";
 
 const FAKE_ADDRESS = normalizeSuiAddress("0x0");
+
+const packageAddress = {"mainnet" : MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID};
 
 export class BucketClient {
   /**
@@ -16,13 +18,21 @@ export class BucketClient {
    * @param client connection to fullnode
    * @param currentAddress (optional) address of the current user (default: FAKE_ADDRESS)
    */
-
+  private client: SuiClient;
+  public packageType: PackageType;
+  
   constructor(
-    public client: SuiClient = new SuiClient({
-      url: getFullnodeUrl("testnet"),
-    }),
+    client: SuiClient,
+    options?: {
+        packageType?: PackageType;
+    },
     public currentAddress: string = FAKE_ADDRESS,
-  ) {}
+  ) {
+
+    this.client = client;
+    this.packageType = options?.packageType ?? "mainnet";
+
+  }
 
   public createTank(assetBuck: string, assetType: string): TransactionBlock {
     /**
@@ -34,7 +44,7 @@ export class BucketClient {
 
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::tank::new`,
+      target: `${packageAddress[this.packageType]}::tank::new`,
       typeArguments: [assetBuck, assetType],
       arguments: [],
     });
@@ -59,7 +69,7 @@ export class BucketClient {
 
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::tank::deposit`,
+      target: `${packageAddress[this.packageType]}::tank::deposit`,
       typeArguments: [assetBuck, assetType],
       arguments: [tx.object(tankId), tx.pure(depositAmount)],
     });
@@ -86,7 +96,7 @@ export class BucketClient {
 
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::tank::absorb`,
+      target: `${packageAddress[this.packageType]}::tank::absorb`,
       typeArguments: [assetBuck, assetType],
       arguments: [
         tx.object(tankId),
@@ -115,7 +125,7 @@ export class BucketClient {
 
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::tank::withdraw`,
+      target: `${packageAddress[this.packageType]}::tank::withdraw`,
       typeArguments: [assetBuck, assetType],
       arguments: [tx.object(tankId), tx.pure(contributorToken)],
     });
@@ -140,7 +150,7 @@ export class BucketClient {
 
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::tank::claim`,
+      target: `${packageAddress[this.packageType]}::tank::claim`,
       typeArguments: [assetBuck, assetType],
       arguments: [tx.object(tankId), tx.pure(contributorToken)],
     });
@@ -165,7 +175,7 @@ export class BucketClient {
 
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::tank::claim_bkt`,
+      target: `${packageAddress[this.packageType]}::tank::claim_bkt`,
       typeArguments: [assetBuck, assetType],
       arguments: [tx.object(tankId), tx.pure(contributorToken)],
     });
@@ -194,7 +204,7 @@ export class BucketClient {
 
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::buck::borrow`,
+      target: `${packageAddress[this.packageType]}::buck::borrow`,
       typeArguments: [assetType],
       arguments: [
         tx.object(protocol),
@@ -229,7 +239,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::buck::top_up`,
+      target: `${packageAddress[this.packageType]}::buck::top_up`,
       typeArguments: [assetType],
       arguments: [
         tx.object(protocol),
@@ -262,7 +272,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::buck::withdraw`,
+      target: `${packageAddress[this.packageType]}::buck::withdraw`,
       typeArguments: [assetType],
       arguments: [
         tx.object(protocol),
@@ -292,7 +302,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::buck::repay`,
+      target: `${packageAddress[this.packageType]}::buck::repay`,
       typeArguments: [assetType],
       arguments: [tx.object(protocol), tx.pure(buckInput)],
     });
@@ -320,7 +330,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::buck::redeem`,
+      target: `${packageAddress[this.packageType]}::buck::redeem`,
       typeArguments: [assetType],
       arguments: [
         tx.object(protocol),
@@ -352,7 +362,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::well::stake`,
+      target: `${packageAddress[this.packageType]}::well::stake`,
       typeArguments: [assetType],
       arguments: [
         tx.object(well),
@@ -382,7 +392,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::well::unstake`,
+      target: `${packageAddress[this.packageType]}::well::unstake`,
       typeArguments: [assetType],
       arguments: [
         tx.object(well),
@@ -411,7 +421,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::well::force_unstake`,
+      target: `${packageAddress[this.packageType]}::well::force_unstake`,
       typeArguments: [assetType],
       arguments: [
         tx.object(well),
@@ -441,7 +451,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::well::claim`,
+      target: `${packageAddress[this.packageType]}::well::claim`,
       typeArguments: [assetType],
       arguments: [
         tx.object(well),
@@ -460,7 +470,7 @@ export class BucketClient {
 
     const resp = await this.client.queryEvents({
       query: {
-        MoveEventType: `${TESTNET_PACKAGE_ID}::bucket_events::BottleCreated`,
+        MoveEventType: `${packageAddress[this.packageType]}::bucket_events::BottleCreated`,
       },
     });
     const bottles = resp.data.map((event) => {
@@ -485,7 +495,7 @@ export class BucketClient {
 
     const resp = await this.client.queryEvents({
       query: {
-        MoveEventType: `${TESTNET_PACKAGE_ID}::bucket_events::BottleDestroyed`,
+        MoveEventType: `${packageAddress[this.packageType]}::bucket_events::BottleDestroyed`,
       },
     });
     const destroyedBottles = resp.data.map((event) => {
@@ -509,34 +519,34 @@ export class BucketClient {
      */
     const tx = new TransactionBlock();
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::fee_precision`,
+      target: `${packageAddress[this.packageType]}::constants::fee_precision`,
     });
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::liquidation_rebate`,
+      target: `${packageAddress[this.packageType]}::constants::liquidation_rebate`,
     });
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::flash_loan_fee`,
+      target: `${packageAddress[this.packageType]}::constants::flash_loan_fee`,
     });
 
    tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::buck_decimal`,
+      target: `${packageAddress[this.packageType]}::constants::buck_decimal`,
     });
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::max_lock_time`,
+      target: `${packageAddress[this.packageType]}::constants::max_lock_time`,
     });
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::min_lock_time`,
+      target: `${packageAddress[this.packageType]}::constants::min_lock_time`,
     });
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::min_fee`,
+      target: `${packageAddress[this.packageType]}::constants::min_fee`,
     });
 
     tx.moveCall({
-      target: `${TESTNET_PACKAGE_ID}::constants::max_fee`,
+      target: `${packageAddress[this.packageType]}::constants::max_fee`,
     });
 
 
@@ -578,3 +588,12 @@ export class BucketClient {
   }
 
 }
+// Instantiate SuiClient connected to testnet
+const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
+
+// Instantiate BucketClient
+const buck = new BucketClient(client, {
+  packageType: "mainnet"
+});
+
+console.log(await packageAddress[buck.packageType])

@@ -20,3 +20,5 @@ export interface BucketConstants {
   minFee: string,
   maxFee: string
 }
+
+export type PackageType = "mainnet" | "testnet";
