@@ -1,5 +1,11 @@
 # bucket-protocol-sdk
 
+## 0.4.0
+
+### Minor Changes
+
+- ca8198e: - Change BucketClient class design for network avalability
+
 ## 0.3.0
 
 ### Minor Changes
