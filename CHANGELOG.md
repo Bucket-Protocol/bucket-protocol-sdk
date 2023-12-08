@@ -1,5 +1,11 @@
 # bucket-protocol-sdk
 
+## 0.4.2
+
+### Patch Changes
+
+- Fix tsconfig
+
 ## 0.4.1
 
 ### Patch Changes
