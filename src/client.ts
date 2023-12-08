@@ -1,12 +1,14 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { DevInspectResults, SuiClient, getFullnodeUrl } from "@mysten/sui.js/client";
+import { DevInspectResults, SuiClient, getFullnodeUrl, SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
+import { getObjectFields } from "./objects/objectTypes";
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID } from "./utils/constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType} from "./types";
+
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, PROTOCOL_ID } from "./utils/constants";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketList, BucketResponseResult, BucketTypeInfo, BottleAmountsList, BottleInfoResult} from "./types";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -31,7 +33,6 @@ export class BucketClient {
 
     this.client = client;
     this.packageType = options?.packageType ?? "mainnet";
-
   }
 
   async depositToTank(
@@ -568,5 +569,174 @@ export class BucketClient {
     return bucketObject
     
   }
+  async getAllBuckets(){
+      /**
+     * @description Get all buckets
+     */
+    try {
+      const protocolFields = await this.client.getDynamicFields({
+        parentId: PROTOCOL_ID,
+      });
+  
+      const bucketList = protocolFields.data.filter((item) =>
+        item.objectType.includes("Bucket")
+      );
+  
+      const objectTypeList = bucketList.map((item) => item.objectType);
+  
+      const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
+      const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
+      const coinTypeList = objectTypeList.map(
+        (type) => type.split("<").pop()?.replace(">", "") ?? ""
+      );
+  
+      const objectNameList: string[] = [];
+  
+      coinTypeList.forEach((type) => {
+        const typeIndex = accept_coin_type.indexOf(type);
+        const coinName = accept_coin_name[typeIndex];
+        objectNameList.push(coinName ?? "");
+      });
+      const objectIdList = bucketList.map((item) => item.objectId);
+  
+      const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
+        ids: objectIdList,
+        options: {
+          showContent: true,
+          showType: true, //Check could we get type from response later
+        },
+      });
+  
+      const bucketInfoList: BucketList = {};
+  
+      respones.map((res, index) => {
+        const fields = getObjectFields(res) as BucketTypeInfo;
+  
+        const bucketInfo: BucketResponseResult = {
+          baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
+          bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
+          collateralDecimal: fields.collateral_decimal ?? 0,
+          collateralVault: fields.collateral_vault ?? "",
+          latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
+          minCollateralRatio: fields.min_collateral_ratio ?? "",
+          mintedBuckAmount: fields.minted_buck_amount ?? "",
+          minBottleSize: fields.min_bottle_size ?? "",
+          recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
+        };
+  
+        bucketInfoList[objectNameList[index] ?? ""] = bucketInfo;
+      });
+  
+      return bucketInfoList;
+    } catch (error) {
+      return {};
+    }
+  };
 
+  async getUserBottle(address: string) {
+      /**
+     * @description Get bucket constants (decoded BCS values)
+     * @address User address that belong to bottle
+     */
+    if (!address) return null;
+  
+    try {
+      const protocolFields = await this.client.getDynamicFields({
+        parentId: PROTOCOL_ID,
+      });
+  
+      const bucketList = protocolFields.data.filter((item) =>
+        item.objectType.includes("Bucket")
+      );
+  
+      const objectTypeList = bucketList.map((item) => item.objectType);
+  
+      const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
+      const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
+  
+      const coinTypeList = objectTypeList.map(
+        (type) => type.split("<").pop()?.replace(">", "") ?? ""
+      );
+  
+      const objectNameList: string[] = [];
+  
+      coinTypeList.forEach((type) => {
+        const typeIndex = accept_coin_type.indexOf(type);
+        const coinName = accept_coin_name[typeIndex];
+        objectNameList.push(coinName ?? "");
+      });
+  
+      const objectIdList = bucketList.map((item) => item.objectId);
+  
+      const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
+        ids: objectIdList,
+        options: {
+          showContent: true,
+          showType: true, //Check could we get type from response later
+        },
+      });
+  
+      const bottleIdList: {
+        name: string;
+        id: string;
+        dec: number;
+      }[] = [];
+  
+      respones.map((res, index) => {
+        //Filter out WBTC and WETH
+        //When we launch WBTC and WETH, we need to remove this exception
+        if (objectNameList[index] === "WBTC" || objectNameList[index] === "WETH")
+          return;
+  
+        const bucketFields = getObjectFields(res) as BucketTypeInfo;
+  
+        bottleIdList.push({
+          name: objectNameList[index] ?? "",
+          id: bucketFields.bottle_table.fields.table.fields.id.id,
+          dec: bucketFields.collateral_decimal,
+        });
+      });
+  
+      const bottleAmountsList: BottleAmountsList = {};
+  
+      for (const bottle of bottleIdList) {
+        await this.client
+          .getDynamicFieldObject({
+            parentId: bottle.id ?? "",
+            name: {
+              type: "address",
+              value: address,
+            },
+          })
+          .then((bottleInfo) => {
+            const bottleInfoFields = getObjectFields(
+              bottleInfo
+            ) as BottleInfoResult;
+  
+            if (!bottleInfoFields) {
+              bottleAmountsList[bottle.name ?? ""] = {
+                collateralAmount: 0,
+                buckAmount: 0,
+                decimals: bottle.dec,
+              };
+            } else {
+              bottleAmountsList[bottle.name ?? ""] = {
+                collateralAmount:
+                  bottleInfoFields.value.fields.value.fields.collateral_amount,
+                buckAmount:
+                  bottleInfoFields.value.fields.value.fields.buck_amount,
+                decimals: bottle.dec,
+              };
+            }
+          })
+          .catch((error) => {
+            console.log("error", error);
+          });
+      }
+  
+      return bottleAmountsList;
+    } catch (error) {
+      return {};
+    }
+  };
 }
