@@ -1,5 +1,11 @@
 # bucket-protocol-sdk
 
+## 0.4.1
+
+### Patch Changes
+
+- eca5490: Bump SUI TS SDK to 0.48.0
+
 ## 0.4.0
 
 ### Minor Changes
