@@ -1,5 +1,11 @@
 # bucket-protocol-sdk
 
+## 0.5.0
+
+### Minor Changes
+
+- Remove createTank()
+
 ## 0.4.2
 
 ### Patch Changes

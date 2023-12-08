@@ -8,7 +8,7 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID } from "./utils/constants";
 import { BucketConstants, PaginatedBottleSummary, PackageType} from "./types";
 
-const FAKE_ADDRESS = normalizeSuiAddress("0x0");
+const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
 const packageAddress = {"mainnet" : MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID};
 
@@ -16,7 +16,7 @@ export class BucketClient {
   /**
    * @description a TS wrapper over Bucket Protocol Move packages.
    * @param client connection to fullnode
-   * @param currentAddress (optional) address of the current user (default: FAKE_ADDRESS)
+   * @param currentAddress (optional) address of the current user (default: DUMMY_ADDRESS)
    */
   private client: SuiClient;
   public packageType: PackageType;
@@ -26,30 +26,12 @@ export class BucketClient {
     options?: {
         packageType?: PackageType;
     },
-    public currentAddress: string = FAKE_ADDRESS,
+    public currentAddress: string = DUMMY_ADDRESS,
   ) {
 
     this.client = client;
     this.packageType = options?.packageType ?? "mainnet";
 
-  }
-
-  public createTank(assetBuck: string, assetType: string): TransactionBlock {
-    /**
-     * @description Create a new pool tank
-     * @param assetBuck base asset , e.g "0xc50de8bf1f8f9b7450646ef2d72e80ef243b6e06b22645fceed567219f3a33c4::buck::BUCK"
-     * @param assetType quote asset , e.g "0x2::sui::SUI"
-     * @returns TransactionBlock
-     */
-
-    const tx = new TransactionBlock();
-    tx.moveCall({
-      target: `${packageAddress[this.packageType]}::tank::new`,
-      typeArguments: [assetBuck, assetType],
-      arguments: [],
-    });
-
-    return tx;
   }
 
   async depositToTank(
@@ -310,7 +292,7 @@ export class BucketClient {
     return tx;
   }
 
-  async reedem(
+  async redeem(
     assetType: string,
     protocol: string,
     oracle: string,
@@ -318,7 +300,7 @@ export class BucketClient {
     insertionPlace: string,
   ): Promise<TransactionBlock> {
     /**
-     * @description reedem
+     * @description redeem
      * @param assetType Asset , e.g "0x2::sui::SUI"
      * @param protocol Protocol id
      * @param oracle
