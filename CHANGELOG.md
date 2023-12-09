@@ -1,5 +1,11 @@
 # bucket-protocol-sdk
 
+## 0.6.0
+
+### Minor Changes
+
+- 898178c: Closes [#13](https://github.com/Bucket-Protocol/bucket-protocol-sdk/issues/13)
+
 ## 0.5.0
 
 ### Minor Changes
