@@ -5,9 +5,12 @@
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
   "type": "commonjs",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
   "scripts": {
     "build": "rm -fr dist/ && tsc -P tsconfig.cjs.json && tsc -P tsconfig.esm.json",
     "clean": "rm -fr dist/",
