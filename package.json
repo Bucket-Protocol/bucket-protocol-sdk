@@ -12,8 +12,8 @@
     }
   },
   "scripts": {
-    "build": "rm -fr dist/ && tsc -P tsconfig.cjs.json && tsc -P tsconfig.esm.json",
     "clean": "rm -fr dist/",
+    "build": "rm -fr dist/ && tsc -P tsconfig.json && tsc -P tsconfig.esm.json",
     "test": "vitest",
     "prettier:check": "prettier -c --ignore-unknown .",
     "prettier:fix": "prettier -w --ignore-unknown .",

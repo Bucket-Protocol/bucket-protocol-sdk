@@ -1,6 +1,6 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { DevInspectResults, SuiClient, getFullnodeUrl, SuiObjectResponse } from "@mysten/sui.js/client";
+import { DevInspectResults, SuiClient, SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
