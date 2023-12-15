@@ -1,6 +1,6 @@
 import { type CallArg } from "@mysten/sui.js/bcs";
 import type { Infer } from "superstruct";
-export declare const ObjectOwner: import("superstruct").Struct<{
+export declare const ObjectOwner: import("superstruct").Struct<"Immutable" | {
     AddressOwner: string;
 } | {
     ObjectOwner: string;
@@ -8,7 +8,7 @@ export declare const ObjectOwner: import("superstruct").Struct<{
     Shared: {
         initial_shared_version: string | null;
     };
-} | "Immutable", null>;
+}, null>;
 export type ObjectOwner = Infer<typeof ObjectOwner>;
 export type SuiJsonValue = boolean | number | string | CallArg | Array<SuiJsonValue>;
 export declare const SuiJsonValue: import("superstruct").Struct<SuiJsonValue, null>;
@@ -38,3 +38,4 @@ export declare const ProtocolConfig: import("superstruct").Struct<{
     protocolVersion: import("superstruct").Struct<string, null>;
 }>;
 export type ProtocolConfig = Infer<typeof ProtocolConfig>;
+//# sourceMappingURL=common.d.ts.map

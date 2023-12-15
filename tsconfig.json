@@ -1,12 +1,10 @@
 {
-  "extends": "./tsconfig.shared.json",
-  "include": [
-    "src"
-  ],
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "outDir": "dist/cjs",
-    "rootDir": "src",
-    "isolatedModules": true
+    "moduleResolution": "node",
+    "module": "es2022",
+    "target": "ESNext",
+    "outDir": "dist/esm/",
+    "rootDir": "./src",
   }
 }

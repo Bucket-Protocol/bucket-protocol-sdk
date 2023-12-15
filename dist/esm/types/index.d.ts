@@ -90,3 +90,4 @@ export interface BucketConstants {
     maxFee: string;
 }
 export type PackageType = "mainnet" | "testnet";
+//# sourceMappingURL=index.d.ts.map

@@ -7,3 +7,4 @@ export declare const MAINNET_PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a3
 export declare const PROTOCOL_ID: string;
 export type ACCEPT_ASSETS = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "WETH";
 export declare const MARKET_COINS_TYPE_LIST: Record<ACCEPT_ASSETS, string>;
+//# sourceMappingURL=constants.d.ts.map

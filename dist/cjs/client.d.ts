@@ -34,3 +34,4 @@ export declare class BucketClient {
     getAllBuckets(): Promise<BucketList>;
     getUserBottle(address: string): Promise<BottleAmountsList | null>;
 }
+//# sourceMappingURL=client.d.ts.map

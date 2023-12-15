@@ -3,8 +3,8 @@ import { ObjectOwner } from "./common";
 export declare const ObjectType: import("superstruct").Struct<string, null>;
 export type ObjectType = Infer<typeof ObjectType>;
 export declare const SuiObjectRef: import("superstruct").Struct<{
-    digest: string;
     objectId: string;
+    digest: string;
     version: string | number | bigint;
 }, {
     /** Base64 string representing the object digest */
@@ -16,7 +16,7 @@ export declare const SuiObjectRef: import("superstruct").Struct<{
 }>;
 export type SuiObjectRef = Infer<typeof SuiObjectRef>;
 export declare const OwnedObjectRef: import("superstruct").Struct<{
-    owner: {
+    owner: "Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -24,14 +24,14 @@ export declare const OwnedObjectRef: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable";
+    };
     reference: {
-        digest: string;
         objectId: string;
+        digest: string;
         version: string | number | bigint;
     };
 }, {
-    owner: import("superstruct").Struct<{
+    owner: import("superstruct").Struct<"Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -39,10 +39,10 @@ export declare const OwnedObjectRef: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable", null>;
+    }, null>;
     reference: import("superstruct").Struct<{
-        digest: string;
         objectId: string;
+        digest: string;
         version: string | number | bigint;
     }, {
         /** Base64 string representing the object digest */
@@ -64,20 +64,20 @@ export declare const TransactionEffectsModifiedAtVersions: import("superstruct")
 export declare const SuiGasData: import("superstruct").Struct<{
     owner: string;
     payment: {
-        digest: string;
         objectId: string;
+        digest: string;
         version: string | number | bigint;
     }[];
     price: string;
     budget: string;
 }, {
     payment: import("superstruct").Struct<{
-        digest: string;
         objectId: string;
+        digest: string;
         version: string | number | bigint;
     }[], import("superstruct").Struct<{
-        digest: string;
         objectId: string;
+        digest: string;
         version: string | number | bigint;
     }, {
         /** Base64 string representing the object digest */
@@ -94,10 +94,11 @@ export declare const SuiGasData: import("superstruct").Struct<{
 }>;
 export type SuiGasData = Infer<typeof SuiGasData>;
 export declare const SuiObjectInfo: import("superstruct").Struct<{
-    digest: string;
+    type: string;
     objectId: string;
+    digest: string;
     version: string | number | bigint;
-    owner: {
+    owner: "Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -105,12 +106,11 @@ export declare const SuiObjectInfo: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable";
-    type: string;
+    };
     previousTransaction: string;
 }, {
     type: import("superstruct").Struct<string, null>;
-    owner: import("superstruct").Struct<{
+    owner: import("superstruct").Struct<"Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -118,10 +118,10 @@ export declare const SuiObjectInfo: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable", null>;
+    }, null>;
     previousTransaction: import("superstruct").Struct<string, null>;
-    digest: import("superstruct").Struct<string, null>;
     objectId: import("superstruct").Struct<string, null>;
+    digest: import("superstruct").Struct<string, null>;
     version: import("superstruct").Struct<string | number | bigint, null>;
 }>;
 export type SuiObjectInfo = Infer<typeof SuiObjectInfo>;
@@ -159,8 +159,8 @@ export declare const SuiParsedData: import("superstruct").Struct<{
 }, null>;
 export type SuiParsedData = Infer<typeof SuiParsedData>;
 export declare const SuiRawMoveObject: import("superstruct").Struct<{
-    version: string;
     type: string;
+    version: string;
     hasPublicTransfer: boolean;
     bcsBytes: string;
 }, {
@@ -181,8 +181,8 @@ export declare const SuiRawMovePackage: import("superstruct").Struct<{
 }>;
 export type SuiRawMovePackage = Infer<typeof SuiRawMovePackage>;
 export declare const SuiRawData: import("superstruct").Struct<{
-    version: string;
     type: string;
+    version: string;
     hasPublicTransfer: boolean;
     dataType: "moveObject";
     bcsBytes: string;
@@ -252,10 +252,11 @@ export declare const DisplayFieldsBackwardCompatibleResponse: import("superstruc
 } | undefined, null>;
 export type DisplayFieldsBackwardCompatibleResponse = Infer<typeof DisplayFieldsBackwardCompatibleResponse>;
 export declare const SuiObjectData: import("superstruct").Struct<{
-    digest: string;
     objectId: string;
+    digest: string;
     version: string;
-    owner?: {
+    type?: string | null | undefined;
+    owner?: "Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -263,8 +264,7 @@ export declare const SuiObjectData: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable" | null | undefined;
-    type?: string | null | undefined;
+    } | null | undefined;
     previousTransaction?: string | null | undefined;
     content?: {
         type: string;
@@ -276,8 +276,8 @@ export declare const SuiObjectData: import("superstruct").Struct<{
         dataType: "package";
     } | null | undefined;
     bcs?: {
-        version: string;
         type: string;
+        version: string;
         hasPublicTransfer: boolean;
         dataType: "moveObject";
         bcsBytes: string;
@@ -322,8 +322,8 @@ export declare const SuiObjectData: import("superstruct").Struct<{
      * Move object content or package content in BCS bytes, default to be undefined unless SuiObjectDataOptions.showBcs is set to true
      */
     bcs: import("superstruct").Struct<{
-        version: string;
         type: string;
+        version: string;
         hasPublicTransfer: boolean;
         dataType: "moveObject";
         bcsBytes: string;
@@ -335,7 +335,7 @@ export declare const SuiObjectData: import("superstruct").Struct<{
     /**
      * The owner of this object. Default to be undefined unless SuiObjectDataOptions.showOwner is set to true
      */
-    owner: import("superstruct").Struct<{
+    owner: import("superstruct").Struct<"Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -343,7 +343,7 @@ export declare const SuiObjectData: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable" | null | undefined, null>;
+    } | null | undefined, null>;
     /**
      * The digest of the transaction that created or last mutated this object.
      * Default to be undefined unless SuiObjectDataOptions.showPreviousTransaction is set to true
@@ -395,13 +395,14 @@ export declare const SuiObjectDataOptions: import("superstruct").Struct<{
     showDisplay: import("superstruct").Struct<boolean | null | undefined, null>;
 }>;
 export type SuiObjectDataOptions = Infer<typeof SuiObjectDataOptions>;
-export declare const ObjectStatus: import("superstruct").Struct<"Exists" | "notExists" | "Deleted", null>;
+export declare const ObjectStatus: import("superstruct").Struct<"notExists" | "Exists" | "Deleted", null>;
 export type ObjectStatus = Infer<typeof ObjectStatus>;
 export declare const GetOwnedObjectsResponse: import("superstruct").Struct<{
-    digest: string;
+    type: string;
     objectId: string;
+    digest: string;
     version: string | number | bigint;
-    owner: {
+    owner: "Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -409,14 +410,14 @@ export declare const GetOwnedObjectsResponse: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable";
-    type: string;
+    };
     previousTransaction: string;
 }[], import("superstruct").Struct<{
-    digest: string;
+    type: string;
     objectId: string;
+    digest: string;
     version: string | number | bigint;
-    owner: {
+    owner: "Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -424,12 +425,11 @@ export declare const GetOwnedObjectsResponse: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable";
-    type: string;
+    };
     previousTransaction: string;
 }, {
     type: import("superstruct").Struct<string, null>;
-    owner: import("superstruct").Struct<{
+    owner: import("superstruct").Struct<"Immutable" | {
         AddressOwner: string;
     } | {
         ObjectOwner: string;
@@ -437,10 +437,10 @@ export declare const GetOwnedObjectsResponse: import("superstruct").Struct<{
         Shared: {
             initial_shared_version: string | null;
         };
-    } | "Immutable", null>;
+    }, null>;
     previousTransaction: import("superstruct").Struct<string, null>;
-    digest: import("superstruct").Struct<string, null>;
     objectId: import("superstruct").Struct<string, null>;
+    digest: import("superstruct").Struct<string, null>;
     version: import("superstruct").Struct<string | number | bigint, null>;
 }>>;
 export type GetOwnedObjectsResponse = Infer<typeof GetOwnedObjectsResponse>;
@@ -454,10 +454,11 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
         parent_object_id?: string | undefined;
     } | null | undefined;
     data?: {
-        digest: string;
         objectId: string;
+        digest: string;
         version: string;
-        owner?: {
+        type?: string | null | undefined;
+        owner?: "Immutable" | {
             AddressOwner: string;
         } | {
             ObjectOwner: string;
@@ -465,8 +466,7 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
             Shared: {
                 initial_shared_version: string | null;
             };
-        } | "Immutable" | null | undefined;
-        type?: string | null | undefined;
+        } | null | undefined;
         previousTransaction?: string | null | undefined;
         content?: {
             type: string;
@@ -478,8 +478,8 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
             dataType: "package";
         } | null | undefined;
         bcs?: {
-            version: string;
             type: string;
+            version: string;
             hasPublicTransfer: boolean;
             dataType: "moveObject";
             bcsBytes: string;
@@ -503,10 +503,11 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
     } | null | undefined;
 }, {
     data: import("superstruct").Struct<{
-        digest: string;
         objectId: string;
+        digest: string;
         version: string;
-        owner?: {
+        type?: string | null | undefined;
+        owner?: "Immutable" | {
             AddressOwner: string;
         } | {
             ObjectOwner: string;
@@ -514,8 +515,7 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
             Shared: {
                 initial_shared_version: string | null;
             };
-        } | "Immutable" | null | undefined;
-        type?: string | null | undefined;
+        } | null | undefined;
         previousTransaction?: string | null | undefined;
         content?: {
             type: string;
@@ -527,8 +527,8 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
             dataType: "package";
         } | null | undefined;
         bcs?: {
-            version: string;
             type: string;
+            version: string;
             hasPublicTransfer: boolean;
             dataType: "moveObject";
             bcsBytes: string;
@@ -573,8 +573,8 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
          * Move object content or package content in BCS bytes, default to be undefined unless SuiObjectDataOptions.showBcs is set to true
          */
         bcs: import("superstruct").Struct<{
-            version: string;
             type: string;
+            version: string;
             hasPublicTransfer: boolean;
             dataType: "moveObject";
             bcsBytes: string;
@@ -586,7 +586,7 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
         /**
          * The owner of this object. Default to be undefined unless SuiObjectDataOptions.showOwner is set to true
          */
-        owner: import("superstruct").Struct<{
+        owner: import("superstruct").Struct<"Immutable" | {
             AddressOwner: string;
         } | {
             ObjectOwner: string;
@@ -594,7 +594,7 @@ export declare const SuiObjectResponse: import("superstruct").Struct<{
             Shared: {
                 initial_shared_version: string | null;
             };
-        } | "Immutable" | null | undefined, null>;
+        } | null | undefined, null>;
         /**
          * The digest of the transaction that created or last mutated this object.
          * Default to be undefined unless SuiObjectDataOptions.showPreviousTransaction is set to true
@@ -688,10 +688,11 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
             parent_object_id?: string | undefined;
         } | null | undefined;
         data?: {
-            digest: string;
             objectId: string;
+            digest: string;
             version: string;
-            owner?: {
+            type?: string | null | undefined;
+            owner?: "Immutable" | {
                 AddressOwner: string;
             } | {
                 ObjectOwner: string;
@@ -699,8 +700,7 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 Shared: {
                     initial_shared_version: string | null;
                 };
-            } | "Immutable" | null | undefined;
-            type?: string | null | undefined;
+            } | null | undefined;
             previousTransaction?: string | null | undefined;
             content?: {
                 type: string;
@@ -712,8 +712,8 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 dataType: "package";
             } | null | undefined;
             bcs?: {
-                version: string;
                 type: string;
+                version: string;
                 hasPublicTransfer: boolean;
                 dataType: "moveObject";
                 bcsBytes: string;
@@ -749,10 +749,11 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
             parent_object_id?: string | undefined;
         } | null | undefined;
         data?: {
-            digest: string;
             objectId: string;
+            digest: string;
             version: string;
-            owner?: {
+            type?: string | null | undefined;
+            owner?: "Immutable" | {
                 AddressOwner: string;
             } | {
                 ObjectOwner: string;
@@ -760,8 +761,7 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 Shared: {
                     initial_shared_version: string | null;
                 };
-            } | "Immutable" | null | undefined;
-            type?: string | null | undefined;
+            } | null | undefined;
             previousTransaction?: string | null | undefined;
             content?: {
                 type: string;
@@ -773,8 +773,8 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 dataType: "package";
             } | null | undefined;
             bcs?: {
-                version: string;
                 type: string;
+                version: string;
                 hasPublicTransfer: boolean;
                 dataType: "moveObject";
                 bcsBytes: string;
@@ -806,10 +806,11 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
             parent_object_id?: string | undefined;
         } | null | undefined;
         data?: {
-            digest: string;
             objectId: string;
+            digest: string;
             version: string;
-            owner?: {
+            type?: string | null | undefined;
+            owner?: "Immutable" | {
                 AddressOwner: string;
             } | {
                 ObjectOwner: string;
@@ -817,8 +818,7 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 Shared: {
                     initial_shared_version: string | null;
                 };
-            } | "Immutable" | null | undefined;
-            type?: string | null | undefined;
+            } | null | undefined;
             previousTransaction?: string | null | undefined;
             content?: {
                 type: string;
@@ -830,8 +830,8 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 dataType: "package";
             } | null | undefined;
             bcs?: {
-                version: string;
                 type: string;
+                version: string;
                 hasPublicTransfer: boolean;
                 dataType: "moveObject";
                 bcsBytes: string;
@@ -855,10 +855,11 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
         } | null | undefined;
     }, {
         data: import("superstruct").Struct<{
-            digest: string;
             objectId: string;
+            digest: string;
             version: string;
-            owner?: {
+            type?: string | null | undefined;
+            owner?: "Immutable" | {
                 AddressOwner: string;
             } | {
                 ObjectOwner: string;
@@ -866,8 +867,7 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 Shared: {
                     initial_shared_version: string | null;
                 };
-            } | "Immutable" | null | undefined;
-            type?: string | null | undefined;
+            } | null | undefined;
             previousTransaction?: string | null | undefined;
             content?: {
                 type: string;
@@ -879,8 +879,8 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 dataType: "package";
             } | null | undefined;
             bcs?: {
-                version: string;
                 type: string;
+                version: string;
                 hasPublicTransfer: boolean;
                 dataType: "moveObject";
                 bcsBytes: string;
@@ -925,8 +925,8 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
              * Move object content or package content in BCS bytes, default to be undefined unless SuiObjectDataOptions.showBcs is set to true
              */
             bcs: import("superstruct").Struct<{
-                version: string;
                 type: string;
+                version: string;
                 hasPublicTransfer: boolean;
                 dataType: "moveObject";
                 bcsBytes: string;
@@ -938,7 +938,7 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
             /**
              * The owner of this object. Default to be undefined unless SuiObjectDataOptions.showOwner is set to true
              */
-            owner: import("superstruct").Struct<{
+            owner: import("superstruct").Struct<"Immutable" | {
                 AddressOwner: string;
             } | {
                 ObjectOwner: string;
@@ -946,7 +946,7 @@ export declare const PaginatedObjectsResponse: import("superstruct").Struct<{
                 Shared: {
                     initial_shared_version: string | null;
                 };
-            } | "Immutable" | null | undefined, null>;
+            } | null | undefined, null>;
             /**
              * The digest of the transaction that created or last mutated this object.
              * Default to be undefined unless SuiObjectDataOptions.showPreviousTransaction is set to true
@@ -1028,10 +1028,11 @@ export type SuiObjectResponseQuery = {
 };
 export declare const ObjectRead: import("superstruct").Struct<{
     details: {
-        digest: string;
         objectId: string;
+        digest: string;
         version: string;
-        owner?: {
+        type?: string | null | undefined;
+        owner?: "Immutable" | {
             AddressOwner: string;
         } | {
             ObjectOwner: string;
@@ -1039,8 +1040,7 @@ export declare const ObjectRead: import("superstruct").Struct<{
             Shared: {
                 initial_shared_version: string | null;
             };
-        } | "Immutable" | null | undefined;
-        type?: string | null | undefined;
+        } | null | undefined;
         previousTransaction?: string | null | undefined;
         content?: {
             type: string;
@@ -1052,8 +1052,8 @@ export declare const ObjectRead: import("superstruct").Struct<{
             dataType: "package";
         } | null | undefined;
         bcs?: {
-            version: string;
             type: string;
+            version: string;
             hasPublicTransfer: boolean;
             dataType: "moveObject";
             bcsBytes: string;
@@ -1081,8 +1081,8 @@ export declare const ObjectRead: import("superstruct").Struct<{
     status: "ObjectNotExists";
 } | {
     details: {
-        digest: string;
         objectId: string;
+        digest: string;
         version: string | number | bigint;
     };
     status: "ObjectDeleted";
@@ -1098,3 +1098,4 @@ export declare const ObjectRead: import("superstruct").Struct<{
     status: "VersionTooHigh";
 }, null>;
 export type ObjectRead = Infer<typeof ObjectRead>;
+//# sourceMappingURL=objectTypes.d.ts.map

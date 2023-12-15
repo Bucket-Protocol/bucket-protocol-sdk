@@ -4,16 +4,15 @@
   "version": "0.6.1",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
-  "type": "commonjs",
-  "exports": {
-    ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    }
-  },
+  "files": [
+    "dist"
+  ],
+  "module": "./dist/esm/index.js",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
   "scripts": {
     "clean": "rm -fr dist/",
-    "build": "rm -fr dist/ && tsc -P tsconfig.json && tsc -P tsconfig.esm.json",
+    "build": "rm -fr dist/ && tsc && tsc -p tsconfig.cjs.json",
     "test": "vitest",
     "prettier:check": "prettier -c --ignore-unknown .",
     "prettier:fix": "prettier -w --ignore-unknown .",
