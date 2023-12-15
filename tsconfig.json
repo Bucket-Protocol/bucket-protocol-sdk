@@ -1,6 +1,9 @@
 {
+  "include": [
+    "src/"
+  ],
   "compilerOptions": {
-    "module": "esnext",
+    "module": "CommonJS",
     "outDir": "dist",
     "target": "esnext",
     "strict": true,

@@ -1,5 +1,11 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
+declare var process : {
+  env: {
+    NEXT_PUBLIC_ACTIVE_CHAIN: string
+  }
+};
+
 const IS_MAINNET = process.env.NEXT_PUBLIC_ACTIVE_CHAIN === "mainnet";
 
 export const MAINNET_PACKAGE_ID: string = 
