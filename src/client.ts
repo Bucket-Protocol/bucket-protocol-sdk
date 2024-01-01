@@ -7,12 +7,13 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, PROTOCOL_ID } from "./utils/constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketList, BucketResponseResult, BucketTypeInfo, BottleAmountsList, BottleInfoResult} from "./types";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID } from "./utils/constants";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketList, BucketResponseResult, BucketTypeInfo, BottleAmountsList, BottleInfoResult } from "./types";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
-const packageAddress = {"mainnet" : MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID};
+const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
+const protocolAddress = { "mainnet": MAINNET_PROTOCOL_ID, "testnet": TESTNET_PROTOCOL_ID };
 
 export class BucketClient {
   /**
@@ -22,11 +23,11 @@ export class BucketClient {
    */
   private client: SuiClient;
   public packageType: PackageType;
-  
+
   constructor(
     client: SuiClient,
     options?: {
-        packageType?: PackageType;
+      packageType?: PackageType;
     },
     public currentAddress: string = DUMMY_ADDRESS,
   ) {
@@ -495,7 +496,7 @@ export class BucketClient {
     };
   }
 
-  private async encodedBucketConstants() : Promise<DevInspectResults> {
+  private async encodedBucketConstants(): Promise<DevInspectResults> {
     /**
      * @description Get encoded BCS Bucket values
      * @returns devInspectTransactionBlock
@@ -512,7 +513,7 @@ export class BucketClient {
       target: `${packageAddress[this.packageType]}::constants::flash_loan_fee`,
     });
 
-   tx.moveCall({
+    tx.moveCall({
       target: `${packageAddress[this.packageType]}::constants::buck_decimal`,
     });
 
@@ -539,17 +540,17 @@ export class BucketClient {
     });
   }
 
-  async getBucketConstants(): Promise<BucketConstants | undefined>{
-      /**
-     * @description Get bucket constants (decoded BCS values)
-     * @returns Promise<DecodedBucketConstants | undefined>
-     */
+  async getBucketConstants(): Promise<BucketConstants | undefined> {
+    /**
+   * @description Get bucket constants (decoded BCS values)
+   * @returns Promise<DecodedBucketConstants | undefined>
+   */
 
     const results: any = await this.encodedBucketConstants();
 
     if (!results) {
-			return undefined;
-		}
+      return undefined;
+    }
 
     const bcs = new BCS(getSuiMoveConfig());
 
@@ -565,40 +566,41 @@ export class BucketClient {
       minFee: bcs.de("u64", Uint8Array.from(results.results![6].returnValues[0][0])),
       maxFee: bcs.de("u64", Uint8Array.from(results.results![7].returnValues[0][0])),
     }
-    
+
     return bucketObject
-    
+
   }
-  async getAllBuckets(){
-      /**
-     * @description Get all buckets
-     */
+  async getAllBuckets() {
+    /**
+   * @description Get all buckets
+   */
     try {
       const protocolFields = await this.client.getDynamicFields({
-        parentId: PROTOCOL_ID,
+        parentId: protocolAddress[this.packageType],
       });
-  
+
       const bucketList = protocolFields.data.filter((item) =>
         item.objectType.includes("Bucket")
       );
-  
+
       const objectTypeList = bucketList.map((item) => item.objectType);
-  
+
       const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
       const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
+      console.log(bucketList);
       const coinTypeList = objectTypeList.map(
         (type) => type.split("<").pop()?.replace(">", "") ?? ""
       );
-  
+
       const objectNameList: string[] = [];
-  
+
       coinTypeList.forEach((type) => {
         const typeIndex = accept_coin_type.indexOf(type);
         const coinName = accept_coin_name[typeIndex];
         objectNameList.push(coinName ?? "");
       });
       const objectIdList = bucketList.map((item) => item.objectId);
-  
+
       const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
         ids: objectIdList,
         options: {
@@ -606,12 +608,12 @@ export class BucketClient {
           showType: true, //Check could we get type from response later
         },
       });
-  
+
       const bucketInfoList: BucketList = {};
-  
+
       respones.map((res, index) => {
         const fields = getObjectFields(res) as BucketTypeInfo;
-  
+
         const bucketInfo: BucketResponseResult = {
           baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
           bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
@@ -623,10 +625,10 @@ export class BucketClient {
           minBottleSize: fields.min_bottle_size ?? "",
           recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
         };
-  
+
         bucketInfoList[objectNameList[index] ?? ""] = bucketInfo;
       });
-  
+
       return bucketInfoList;
     } catch (error) {
       return {};
@@ -634,40 +636,40 @@ export class BucketClient {
   };
 
   async getUserBottle(address: string) {
-      /**
-     * @description Get bucket constants (decoded BCS values)
-     * @address User address that belong to bottle
-     */
+    /**
+   * @description Get bucket constants (decoded BCS values)
+   * @address User address that belong to bottle
+   */
     if (!address) return null;
-  
+
     try {
       const protocolFields = await this.client.getDynamicFields({
-        parentId: PROTOCOL_ID,
+        parentId: protocolAddress[this.packageType]
       });
-  
+
       const bucketList = protocolFields.data.filter((item) =>
         item.objectType.includes("Bucket")
       );
-  
+
       const objectTypeList = bucketList.map((item) => item.objectType);
-  
+
       const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
       const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
-  
+
       const coinTypeList = objectTypeList.map(
         (type) => type.split("<").pop()?.replace(">", "") ?? ""
       );
-  
+
       const objectNameList: string[] = [];
-  
+
       coinTypeList.forEach((type) => {
         const typeIndex = accept_coin_type.indexOf(type);
         const coinName = accept_coin_name[typeIndex];
         objectNameList.push(coinName ?? "");
       });
-  
+
       const objectIdList = bucketList.map((item) => item.objectId);
-  
+
       const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
         ids: objectIdList,
         options: {
@@ -675,30 +677,30 @@ export class BucketClient {
           showType: true, //Check could we get type from response later
         },
       });
-  
+
       const bottleIdList: {
         name: string;
         id: string;
         dec: number;
       }[] = [];
-  
+
       respones.map((res, index) => {
         //Filter out WBTC and WETH
         //When we launch WBTC and WETH, we need to remove this exception
         if (objectNameList[index] === "WBTC" || objectNameList[index] === "WETH")
           return;
-  
+
         const bucketFields = getObjectFields(res) as BucketTypeInfo;
-  
+
         bottleIdList.push({
           name: objectNameList[index] ?? "",
           id: bucketFields.bottle_table.fields.table.fields.id.id,
           dec: bucketFields.collateral_decimal,
         });
       });
-  
+
       const bottleAmountsList: BottleAmountsList = {};
-  
+
       for (const bottle of bottleIdList) {
         await this.client
           .getDynamicFieldObject({
@@ -712,7 +714,7 @@ export class BucketClient {
             const bottleInfoFields = getObjectFields(
               bottleInfo
             ) as BottleInfoResult;
-  
+
             if (!bottleInfoFields) {
               bottleAmountsList[bottle.name ?? ""] = {
                 collateralAmount: 0,
@@ -733,7 +735,7 @@ export class BucketClient {
             console.log("error", error);
           });
       }
-  
+
       return bottleAmountsList;
     } catch (error) {
       return {};

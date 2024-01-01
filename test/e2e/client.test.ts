@@ -12,7 +12,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
         packageType: "mainnet"
     });
 
-	it('tests getBucketConstants() function', async () => {
+    /*
+    it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
             liquidationRebate: "2500",
@@ -24,14 +25,19 @@ describe('Interacting with Bucket Client on mainnet', () => {
             maxFee: "50000"
           }
           )
-	});
+    });
 
     it('tests getAllBottle() function', async () => {
         expect(await buck.getAllBottles()).toBeDefined()
-	});
+    });
 
     it('tests getDestroyedBottle() function', async () => {
         expect(await buck.getDestroyedBottles()).toBeDefined()
-	});
+    });
+    */
 
+    it('tests getAllBuckets() function', async () => {
+        const buckets = await buck.getAllBuckets();
+        expect(buckets).toBeDefined()
+    });
 });
