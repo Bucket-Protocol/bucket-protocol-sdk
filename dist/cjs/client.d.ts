@@ -32,6 +32,15 @@ export declare class BucketClient {
     private encodedBucketConstants;
     getBucketConstants(): Promise<BucketConstants | undefined>;
     getAllBuckets(): Promise<BucketList>;
+    getPrices(): Promise<{
+        SUI: number;
+        USDC: number;
+        USDT: number;
+        afSUI: number;
+        haSUI: number;
+        vSUI: number;
+        WETH: number;
+    }>;
     getUserBottle(address: string): Promise<BottleAmountsList | null>;
 }
 //# sourceMappingURL=client.d.ts.map

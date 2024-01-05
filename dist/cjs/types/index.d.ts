@@ -9,9 +9,36 @@ export type BucketResponseResult = {
     mintedBuckAmount: string;
     minBottleSize: string;
     recoveryModeThreshold: string;
+    price: string;
 };
 export type BucketList = {
     [key: string]: BucketResponseResult;
+};
+export type BucketProtocolInfo = {
+    dataType: string;
+    type: string;
+    hasPublicTransfer: boolean;
+    fields: {
+        buck_treasury_cap: {
+            type: string;
+            fields: {
+                id: {
+                    id: string;
+                };
+                total_supply: {
+                    type: string;
+                    fields: {
+                        value: string;
+                    };
+                };
+            };
+        };
+        id: {
+            id: string;
+        };
+        min_bottle_size: string;
+        version: string;
+    };
 };
 export type BucketTypeInfo = {
     base_fee_rate: string;
@@ -89,5 +116,20 @@ export interface BucketConstants {
     minFee: string;
     maxFee: string;
 }
+export type SupraPriceFeed = {
+    id: {
+        id: string;
+    };
+    name: number;
+    value: {
+        type: string;
+        fields: {
+            decimal: number;
+            round: string;
+            timestamp: string;
+            value: string;
+        };
+    };
+};
 export type PackageType = "mainnet" | "testnet";
 //# sourceMappingURL=index.d.ts.map

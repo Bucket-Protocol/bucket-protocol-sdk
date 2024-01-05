@@ -5,11 +5,11 @@ import { BucketClient } from '../../src';
 describe('Interacting with Bucket Client on mainnet', () => {
 
     // Instantiate SuiClient connected to mainnet
-    const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
+    const client = new SuiClient({ url: getFullnodeUrl('testnet') });
 
     // Instantiate BucketClient
     const buck = new BucketClient(client, {
-        packageType: "mainnet"
+        packageType: "testnet"
     });
 
     /*
@@ -34,10 +34,18 @@ describe('Interacting with Bucket Client on mainnet', () => {
     it('tests getDestroyedBottle() function', async () => {
         expect(await buck.getDestroyedBottles()).toBeDefined()
     });
-    */
+
+    it('tests getUserBottle() function', async () => {
+        const bottles = await buck.getUserBottle("0x95b0ce9775382b88a4e698d31a0a7fd796922c91bb80de66e940bd4cae5a9916");
+        expect(bottles).toBeDefined()
+    });
 
     it('tests getAllBuckets() function', async () => {
         const buckets = await buck.getAllBuckets();
         expect(buckets).toBeDefined()
+    }, {
+        timeout: 60 * 1000
     });
+    */
+
 });

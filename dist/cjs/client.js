@@ -9,6 +9,7 @@ const objectTypes_1 = require("./objects/objectTypes");
 const constants_1 = require("./utils/constants");
 const DUMMY_ADDRESS = (0, utils_1.normalizeSuiAddress)("0x0");
 const packageAddress = { "mainnet": constants_1.MAINNET_PACKAGE_ID, "testnet": constants_1.TESTNET_PACKAGE_ID };
+const protocolAddress = { "mainnet": constants_1.MAINNET_PROTOCOL_ID, "testnet": constants_1.TESTNET_PROTOCOL_ID };
 class BucketClient {
     currentAddress;
     /**
@@ -416,9 +417,18 @@ class BucketClient {
        * @description Get all buckets
        */
         try {
-            const protocolFields = await this.client.getDynamicFields({
-                parentId: constants_1.PROTOCOL_ID,
+            const generalInfo = await this.client.getObject({
+                id: protocolAddress[this.packageType],
+                options: {
+                    showContent: true,
+                }
             });
+            const generalInfoField = generalInfo.data?.content;
+            const minBottleSize = generalInfoField.fields.min_bottle_size;
+            const protocolFields = await this.client.getDynamicFields({
+                parentId: protocolAddress[this.packageType],
+            });
+            console.log(protocolFields);
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
             const objectTypeList = bucketList.map((item) => item.objectType);
             const accept_coin_type = Object.values(constants_1.MARKET_COINS_TYPE_LIST);
@@ -431,7 +441,7 @@ class BucketClient {
                 objectNameList.push(coinName ?? "");
             });
             const objectIdList = bucketList.map((item) => item.objectId);
-            const respones = await this.client.multiGetObjects({
+            const response = await this.client.multiGetObjects({
                 ids: objectIdList,
                 options: {
                     showContent: true,
@@ -439,7 +449,7 @@ class BucketClient {
                 },
             });
             const bucketInfoList = {};
-            respones.map((res, index) => {
+            response.map((res, index) => {
                 const fields = (0, objectTypes_1.getObjectFields)(res);
                 const bucketInfo = {
                     baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
@@ -449,11 +459,16 @@ class BucketClient {
                     latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
                     minCollateralRatio: fields.min_collateral_ratio ?? "",
                     mintedBuckAmount: fields.minted_buck_amount ?? "",
-                    minBottleSize: fields.min_bottle_size ?? "",
+                    minBottleSize: minBottleSize,
                     recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
+                    price: "",
                 };
                 bucketInfoList[objectNameList[index] ?? ""] = bucketInfo;
             });
+            const prices = await this.getPrices();
+            for (const symbol in bucketInfoList) {
+                bucketInfoList[symbol].price = prices[symbol];
+            }
             return bucketInfoList;
         }
         catch (error) {
@@ -461,6 +476,54 @@ class BucketClient {
         }
     }
     ;
+    async getPrices() {
+        const ids = Object.values(constants_1.SUPRA_PRICE_FEEDS);
+        const objectNameList = Object.keys(constants_1.SUPRA_PRICE_FEEDS);
+        const priceObjects = await this.client.multiGetObjects({
+            ids,
+            options: {
+                showContent: true,
+                showType: true, //Check could we get type from response later
+            },
+        });
+        const prices = {
+            WETH: 0,
+            SUI: 0,
+            vSUI: 0,
+            afSUI: 0,
+            haSUI: 0,
+            USDC: 1,
+            USDT: 1,
+        };
+        priceObjects.map((res, index) => {
+            const priceFeed = (0, objectTypes_1.getObjectFields)(res);
+            const priceBn = priceFeed.value.fields.value;
+            const decimals = priceFeed.value.fields.decimal;
+            const price = parseInt(priceBn) / Math.pow(10, decimals);
+            if (objectNameList[index] == 'usdc_usd') {
+                prices['USDC'] = price;
+            }
+            else if (objectNameList[index] == 'usdt_usd') {
+                prices['USDT'] = price;
+            }
+            else if (objectNameList[index] == 'eth_usdt') {
+                prices['WETH'] = prices['USDT'] * price;
+            }
+            else if (objectNameList[index] == 'sui_usdt') {
+                prices['SUI'] = prices['USDT'] * price;
+            }
+            else if (objectNameList[index] == 'vsui_sui') {
+                prices['vSUI'] = prices['SUI'] * price;
+            }
+            else if (objectNameList[index] == 'hasui_sui') {
+                prices['haSUI'] = prices['SUI'] * price;
+            }
+            else if (objectNameList[index] == 'afsui_sui') {
+                prices['afSUI'] = prices['SUI'] * price;
+            }
+        });
+        return prices;
+    }
     async getUserBottle(address) {
         /**
        * @description Get bucket constants (decoded BCS values)
@@ -470,7 +533,7 @@ class BucketClient {
             return null;
         try {
             const protocolFields = await this.client.getDynamicFields({
-                parentId: constants_1.PROTOCOL_ID,
+                parentId: protocolAddress[this.packageType]
             });
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
             const objectTypeList = bucketList.map((item) => item.objectType);
