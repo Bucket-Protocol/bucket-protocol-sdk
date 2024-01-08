@@ -9,7 +9,6 @@ export type BucketResponseResult = {
     mintedBuckAmount: string;
     minBottleSize: string;
     recoveryModeThreshold: string;
-    price: string;
 };
 export type BucketList = {
     [key: string]: BucketResponseResult;

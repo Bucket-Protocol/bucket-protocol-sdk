@@ -461,14 +461,9 @@ class BucketClient {
                     mintedBuckAmount: fields.minted_buck_amount ?? "",
                     minBottleSize: minBottleSize,
                     recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
-                    price: "",
                 };
                 bucketInfoList[objectNameList[index] ?? ""] = bucketInfo;
             });
-            const prices = await this.getPrices();
-            for (const symbol in bucketInfoList) {
-                bucketInfoList[symbol].price = prices[symbol];
-            }
             return bucketInfoList;
         }
         catch (error) {

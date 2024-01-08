@@ -12,7 +12,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
         packageType: "testnet"
     });
 
-    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -23,8 +22,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
             minLockTime: "2592000000",
             minFee: "5000",
             maxFee: "50000"
-          }
-          )
+        }
+        )
     });
 
     it('tests getAllBottle() function', async () => {
@@ -46,6 +45,5 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 60 * 1000
     });
-    */
 
 });
