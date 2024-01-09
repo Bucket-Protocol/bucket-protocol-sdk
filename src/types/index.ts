@@ -1,7 +1,7 @@
 import { EventId } from "@mysten/sui.js/src/client";
 
 
-export type BucketResponseResult = {
+export type BucketInfo = {
   baseFeeRate: number;
   bottleTableSize: string;
   collateralDecimal: number;
@@ -11,10 +11,6 @@ export type BucketResponseResult = {
   mintedBuckAmount: string;
   minBottleSize: string;
   recoveryModeThreshold: string;
-};
-
-export type BucketList = {
-  [key: string]: BucketResponseResult;
 };
 
 export type BucketProtocolInfo = {

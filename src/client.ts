@@ -8,7 +8,7 @@ import { getObjectFields } from "./objects/objectTypes";
 
 
 import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS } from "./utils/constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketList, BucketResponseResult, BucketTypeInfo, BottleAmountsList, BottleInfoResult, BucketProtocolInfo, SupraPriceFeed } from "./types";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketTypeInfo, BottleAmountsList, BottleInfoResult, BucketProtocolInfo, SupraPriceFeed, BucketInfo } from "./types";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -588,7 +588,6 @@ export class BucketClient {
       const protocolFields = await this.client.getDynamicFields({
         parentId: protocolAddress[this.packageType],
       });
-      console.log(protocolFields);
 
       const bucketList = protocolFields.data.filter((item) =>
         item.objectType.includes("Bucket")
@@ -619,12 +618,12 @@ export class BucketClient {
         },
       });
 
-      const bucketInfoList: BucketList = {};
+      let bucketInfoList: Partial<{ [key in ACCEPT_ASSETS]: BucketInfo }> = {};
 
       response.map((res, index) => {
         const fields = getObjectFields(res) as BucketTypeInfo;
 
-        const bucketInfo: BucketResponseResult = {
+        const bucketInfo: BucketInfo = {
           baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
           bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
           collateralDecimal: fields.collateral_decimal ?? 0,
