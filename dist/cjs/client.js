@@ -524,8 +524,7 @@ class BucketClient {
         };
         // Get haSUI APY
         try {
-            const ret = await fetch(constants_1.HASUI_APY_URL);
-            const response = await ret.json();
+            const response = await (await fetch(constants_1.HASUI_APY_URL)).json();
             apys["haSUI"] = response.data.apy;
         }
         catch (error) {
@@ -534,7 +533,7 @@ class BucketClient {
         // Get afSUI APY
         try {
             const apy = await (await fetch(constants_1.AFSUI_APY_URL)).text();
-            apys["afSUI"] = parseFloat(apy);
+            apys["afSUI"] = parseFloat(apy) * 100;
         }
         catch (error) {
             // console.log(error);
