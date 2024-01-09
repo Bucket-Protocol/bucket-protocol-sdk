@@ -425,7 +425,6 @@ export class BucketClient {
             const protocolFields = await this.client.getDynamicFields({
                 parentId: protocolAddress[this.packageType],
             });
-            console.log(protocolFields);
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
             const objectTypeList = bucketList.map((item) => item.objectType);
             const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
@@ -445,7 +444,7 @@ export class BucketClient {
                     showType: true, //Check could we get type from response later
                 },
             });
-            const bucketInfoList = {};
+            let bucketInfoList = {};
             response.map((res, index) => {
                 const fields = getObjectFields(res);
                 const bucketInfo = {
