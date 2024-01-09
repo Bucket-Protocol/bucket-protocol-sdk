@@ -49,6 +49,15 @@ export declare class BucketClient {
         vSUI: number;
         WETH: number;
     }>;
+    getAPYs(): Promise<Partial<{
+        SUI: number;
+        USDC: number;
+        USDT: number;
+        afSUI: number;
+        haSUI: number;
+        vSUI: number;
+        WETH: number;
+    }>>;
     getUserBottle(address: string): Promise<BottleAmountsList | null>;
 }
 //# sourceMappingURL=client.d.ts.map

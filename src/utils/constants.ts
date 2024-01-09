@@ -39,3 +39,6 @@ export const SUPRA_PRICE_FEEDS = {
   vsui_sui: "0xd291ea0aebb1a9314cd60d5142755267f9badbeccd30b91e92b54bef29864f33",
   afsui_sui: "0xbe4289cf638a9ad1f085bd8a3e0aeaed814078e3961b77fb08cc7550ee5d8c00",
 }
+
+export const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
+export const HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";

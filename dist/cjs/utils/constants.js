@@ -1,7 +1,7 @@
 "use strict";
 // Copyright Andrei <andreid.dev@gmail.com>
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SUPRA_PRICE_FEEDS = exports.MARKET_COINS_TYPE_LIST = exports.MAINNET_PROTOCOL_ID = exports.TESTNET_PROTOCOL_ID = exports.TESTNET_BUCKET_OPERATIONS_PACKAGE_ID = exports.TESTNET_PACKAGE_ID = exports.MAINNET_BUCKET_OPERATIONS_PACKAGE_ID = exports.MAINNET_PACKAGE_ID = void 0;
+exports.HASUI_APY_URL = exports.AFSUI_APY_URL = exports.SUPRA_PRICE_FEEDS = exports.MARKET_COINS_TYPE_LIST = exports.MAINNET_PROTOCOL_ID = exports.TESTNET_PROTOCOL_ID = exports.TESTNET_BUCKET_OPERATIONS_PACKAGE_ID = exports.TESTNET_PACKAGE_ID = exports.MAINNET_BUCKET_OPERATIONS_PACKAGE_ID = exports.MAINNET_PACKAGE_ID = void 0;
 exports.MAINNET_PACKAGE_ID = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
 exports.MAINNET_BUCKET_OPERATIONS_PACKAGE_ID = "0x6f206ba15a7d81662e20ac1e6a4e0b443f3972861327584e8a1148c9880e4a09";
 exports.TESTNET_PACKAGE_ID = "0x1ca47988f33d06d748a779e78f321b9ba74f6ad25b3de2840da425022dfaa969";
@@ -26,4 +26,6 @@ exports.SUPRA_PRICE_FEEDS = {
     vsui_sui: "0xd291ea0aebb1a9314cd60d5142755267f9badbeccd30b91e92b54bef29864f33",
     afsui_sui: "0xbe4289cf638a9ad1f085bd8a3e0aeaed814078e3961b77fb08cc7550ee5d8c00",
 };
+exports.AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
+exports.HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";
 //# sourceMappingURL=constants.js.map

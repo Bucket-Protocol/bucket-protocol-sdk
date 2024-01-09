@@ -11,6 +11,7 @@ export type BucketInfo = {
   mintedBuckAmount: string;
   minBottleSize: string;
   recoveryModeThreshold: string;
+  APY?: number;
 };
 
 export type BucketProtocolInfo = {

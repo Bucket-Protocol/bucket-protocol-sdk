@@ -3,7 +3,7 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS } from "./utils/constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL } from "./utils/constants";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
 const protocolAddress = { "mainnet": MAINNET_PROTOCOL_ID, "testnet": TESTNET_PROTOCOL_ID };
@@ -514,6 +514,29 @@ export class BucketClient {
             }
         });
         return prices;
+    }
+    async getAPYs() {
+        let apys = {
+            vSUI: 4.2 // Use constant value
+        };
+        // Get haSUI APY
+        try {
+            const ret = await fetch(HASUI_APY_URL);
+            const response = await ret.json();
+            apys["haSUI"] = response.data.apy;
+        }
+        catch (error) {
+            // console.log(error);
+        }
+        // Get afSUI APY
+        try {
+            const apy = await (await fetch(AFSUI_APY_URL)).text();
+            apys["afSUI"] = parseFloat(apy);
+        }
+        catch (error) {
+            // console.log(error);
+        }
+        return apys;
     }
     async getUserBottle(address) {
         /**

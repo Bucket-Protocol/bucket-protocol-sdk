@@ -7,7 +7,7 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS } from "./utils/constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL } from "./utils/constants";
 import { BucketConstants, PaginatedBottleSummary, PackageType, BucketTypeInfo, BottleAmountsList, BottleInfoResult, BucketProtocolInfo, SupraPriceFeed, BucketInfo } from "./types";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -696,6 +696,33 @@ export class BucketClient {
 
     return prices;
   }
+
+  async getAPYs() {
+
+    let apys: Partial<{ [key in ACCEPT_ASSETS]: number }> = {
+      vSUI: 4.2 // Use constant value
+    };
+
+    // Get haSUI APY
+    try {
+      const response = await (await fetch(HASUI_APY_URL)).json();
+      apys["haSUI"] = response.data.apy;
+    } catch (error) {
+      // console.log(error);
+    }
+
+    // Get afSUI APY
+    try {
+      const apy = await (await fetch(AFSUI_APY_URL)).text();
+      apys["afSUI"] = parseFloat(apy);
+    } catch (error) {
+      // console.log(error);
+    }
+
+    return apys;
+
+  }
+
   async getUserBottle(address: string) {
     /**
    * @description Get bucket constants (decoded BCS values)

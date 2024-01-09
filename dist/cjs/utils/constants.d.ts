@@ -15,4 +15,6 @@ export declare const SUPRA_PRICE_FEEDS: {
     vsui_sui: string;
     afsui_sui: string;
 };
+export declare const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
+export declare const HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";
 //# sourceMappingURL=constants.d.ts.map

@@ -518,6 +518,29 @@ class BucketClient {
         });
         return prices;
     }
+    async getAPYs() {
+        let apys = {
+            vSUI: 4.2 // Use constant value
+        };
+        // Get haSUI APY
+        try {
+            const ret = await fetch(constants_1.HASUI_APY_URL);
+            const response = await ret.json();
+            apys["haSUI"] = response.data.apy;
+        }
+        catch (error) {
+            // console.log(error);
+        }
+        // Get afSUI APY
+        try {
+            const apy = await (await fetch(constants_1.AFSUI_APY_URL)).text();
+            apys["afSUI"] = parseFloat(apy);
+        }
+        catch (error) {
+            // console.log(error);
+        }
+        return apys;
+    }
     async getUserBottle(address) {
         /**
        * @description Get bucket constants (decoded BCS values)
