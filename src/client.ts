@@ -714,7 +714,7 @@ export class BucketClient {
     // Get afSUI APY
     try {
       const apy = await (await fetch(AFSUI_APY_URL)).text();
-      apys["afSUI"] = parseFloat(apy);
+      apys["afSUI"] = parseFloat(apy) * 100;
     } catch (error) {
       // console.log(error);
     }
