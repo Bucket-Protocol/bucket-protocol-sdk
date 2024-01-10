@@ -471,6 +471,9 @@ class BucketClient {
     }
     ;
     async getPrices() {
+        /**
+         * @description Get all prices
+        */
         const ids = Object.values(constants_1.SUPRA_PRICE_FEEDS);
         const objectNameList = Object.keys(constants_1.SUPRA_PRICE_FEEDS);
         const priceObjects = await this.client.multiGetObjects({
@@ -519,6 +522,9 @@ class BucketClient {
         return prices;
     }
     async getAPYs() {
+        /**
+         * @description Get APYs for vSUI, afSUI, haSUI
+        */
         let apys = {
             vSUI: 4.2 // Use constant value
         };
@@ -540,6 +546,39 @@ class BucketClient {
         }
         return apys;
     }
+    async getFountains() {
+        /**
+       * @description Get Aftermath, Kriya, Cetus fountains info
+       */
+        try {
+            const ids = Object.values(constants_1.SUI_LP_REGISTRY_IDS).flat();
+            const fountainResults = await this.client.multiGetObjects({
+                ids,
+                options: {
+                    showContent: true,
+                }
+            });
+            const fountainInfos = fountainResults.map((res) => {
+                const fields = (0, objectTypes_1.getObjectFields)(res);
+                return {
+                    id: res.data?.objectId ?? "",
+                    flowAmount: Number(fields?.flow_amount ?? 0),
+                    flowInterval: Number(fields?.flow_interval ?? 1),
+                    sourceBalance: Number(fields?.source ?? 0),
+                    poolBalance: Number(fields?.pool ?? 0),
+                    stakedBalance: Number(fields?.staked.fields.lsp.fields.balance ?? 0),
+                    totalWeight: Number(fields?.total_weight ?? 0),
+                    cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
+                    latestReleaseTime: Number(fields?.latest_release_time ?? 0),
+                };
+            });
+            return fountainInfos;
+        }
+        catch (error) {
+            return [];
+        }
+    }
+    ;
     async getUserBottle(address) {
         /**
        * @description Get bucket constants (decoded BCS values)

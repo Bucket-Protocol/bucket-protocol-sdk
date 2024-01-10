@@ -7,8 +7,8 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL } from "./utils/constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketTypeInfo, BottleAmountsList, BottleInfoResult, BucketProtocolInfo, SupraPriceFeed, BucketInfo } from "./types";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUI_LP_REGISTRY_IDS } from "./utils/constants";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketTypeInfo, BottleAmountsList, BottleInfoResult, BucketProtocolInfo, SupraPriceFeed, BucketInfo, FountainInfo } from "./types";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -570,6 +570,7 @@ export class BucketClient {
     return bucketObject
 
   }
+
   async getAllBuckets() {
     /**
    * @description Get all buckets
@@ -645,6 +646,9 @@ export class BucketClient {
   };
 
   async getPrices() {
+    /**
+     * @description Get all prices
+    */
     const ids = Object.values(SUPRA_PRICE_FEEDS);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects({
@@ -698,6 +702,9 @@ export class BucketClient {
   }
 
   async getAPYs() {
+    /**
+     * @description Get APYs for vSUI, afSUI, haSUI
+    */
 
     let apys: Partial<{ [key in ACCEPT_ASSETS]: number }> = {
       vSUI: 4.2 // Use constant value
@@ -720,8 +727,41 @@ export class BucketClient {
     }
 
     return apys;
-
   }
+
+  async getFountains() {
+    /**
+   * @description Get Aftermath, Kriya, Cetus fountains info
+   */
+    try {
+      const ids = Object.values(SUI_LP_REGISTRY_IDS).flat();
+      const fountainResults: SuiObjectResponse[] = await this.client.multiGetObjects({
+        ids,
+        options: {
+          showContent: true,
+        }
+      });
+
+      const fountainInfos: FountainInfo[] = fountainResults.map((res) => {
+        const fields = getObjectFields(res);
+        return {
+          id: res.data?.objectId ?? "",
+          flowAmount: Number(fields?.flow_amount ?? 0),
+          flowInterval: Number(fields?.flow_interval ?? 1),
+          sourceBalance: Number(fields?.source ?? 0),
+          poolBalance: Number(fields?.pool ?? 0),
+          stakedBalance: Number(fields?.staked.fields.lsp.fields.balance ?? 0),
+          totalWeight: Number(fields?.total_weight ?? 0),
+          cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
+          latestReleaseTime: Number(fields?.latest_release_time ?? 0),
+        }
+      });
+
+      return fountainInfos;
+    } catch (error) {
+      return [];
+    }
+  };
 
   async getUserBottle(address: string) {
     /**
