@@ -416,6 +416,7 @@ class BucketClient {
         /**
        * @description Get all buckets
        */
+        let buckets = [];
         try {
             const generalInfo = await this.client.getObject({
                 id: protocolAddress[this.packageType],
@@ -429,16 +430,6 @@ class BucketClient {
                 parentId: protocolAddress[this.packageType],
             });
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
-            const objectTypeList = bucketList.map((item) => item.objectType);
-            const accept_coin_type = Object.values(constants_1.MARKET_COINS_TYPE_LIST);
-            const accept_coin_name = Object.keys(constants_1.MARKET_COINS_TYPE_LIST);
-            const coinTypeList = objectTypeList.map((type) => type.split("<").pop()?.replace(">", "") ?? "");
-            const objectNameList = [];
-            coinTypeList.forEach((type) => {
-                const typeIndex = accept_coin_type.indexOf(type);
-                const coinName = accept_coin_name[typeIndex];
-                objectNameList.push(coinName ?? "");
-            });
             const objectIdList = bucketList.map((item) => item.objectId);
             const response = await this.client.multiGetObjects({
                 ids: objectIdList,
@@ -447,10 +438,15 @@ class BucketClient {
                     showType: true, //Check could we get type from response later
                 },
             });
-            let bucketInfoList = {};
             response.map((res, index) => {
+                const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
+                const token = Object.keys(constants_1.MARKET_COINS_TYPE_LIST).find(key => constants_1.MARKET_COINS_TYPE_LIST[key] === typeId);
+                if (!token) {
+                    return;
+                }
                 const fields = (0, objectTypes_1.getObjectFields)(res);
                 const bucketInfo = {
+                    token: token,
                     baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
                     bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
                     collateralDecimal: fields.collateral_decimal ?? 0,
@@ -461,13 +457,13 @@ class BucketClient {
                     minBottleSize: minBottleSize,
                     recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
                 };
-                bucketInfoList[objectNameList[index] ?? ""] = bucketInfo;
+                buckets.push(bucketInfo);
             });
-            return bucketInfoList;
         }
         catch (error) {
-            return {};
+            console.log(error);
         }
+        return buckets;
     }
     ;
     async getPrices() {
@@ -566,15 +562,17 @@ class BucketClient {
                     flowInterval: Number(fields?.flow_interval ?? 1),
                     sourceBalance: Number(fields?.source ?? 0),
                     poolBalance: Number(fields?.pool ?? 0),
-                    stakedBalance: Number(fields?.staked.fields.lsp.fields.balance ?? 0),
+                    stakedBalance: Number(fields?.staked?.fields?.lsp.fields?.balance ?? 0),
                     totalWeight: Number(fields?.total_weight ?? 0),
                     cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
                     latestReleaseTime: Number(fields?.latest_release_time ?? 0),
                 };
             });
+            console.log(fountainInfos);
             return fountainInfos;
         }
         catch (error) {
+            console.log(error);
             return [];
         }
     }

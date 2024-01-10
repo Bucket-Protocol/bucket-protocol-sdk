@@ -31,15 +31,7 @@ export declare class BucketClient {
     getDestroyedBottles(): Promise<PaginatedBottleSummary>;
     private encodedBucketConstants;
     getBucketConstants(): Promise<BucketConstants | undefined>;
-    getAllBuckets(): Promise<Partial<{
-        SUI: BucketInfo;
-        USDC: BucketInfo;
-        USDT: BucketInfo;
-        afSUI: BucketInfo;
-        haSUI: BucketInfo;
-        vSUI: BucketInfo;
-        WETH: BucketInfo;
-    }>>;
+    getAllBuckets(): Promise<BucketInfo[]>;
     getPrices(): Promise<{
         SUI: number;
         USDC: number;

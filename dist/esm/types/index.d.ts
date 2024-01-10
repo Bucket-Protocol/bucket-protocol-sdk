@@ -1,5 +1,7 @@
 import { EventId } from "@mysten/sui.js/src/client";
+import { ACCEPT_ASSETS } from "src/utils";
 export type BucketInfo = {
+    token: ACCEPT_ASSETS;
     baseFeeRate: number;
     bottleTableSize: string;
     collateralDecimal: number;
@@ -9,7 +11,6 @@ export type BucketInfo = {
     mintedBuckAmount: string;
     minBottleSize: string;
     recoveryModeThreshold: string;
-    APY?: number;
 };
 export type BucketProtocolInfo = {
     dataType: string;

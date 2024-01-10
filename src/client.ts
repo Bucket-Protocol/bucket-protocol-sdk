@@ -571,12 +571,13 @@ export class BucketClient {
 
   }
 
-  async getAllBuckets() {
+  async getAllBuckets(): Promise<BucketInfo[]> {
     /**
    * @description Get all buckets
    */
-    try {
+    let buckets: BucketInfo[] = [];
 
+    try {
       const generalInfo = await this.client.getObject({
         id: protocolAddress[this.packageType],
         options: {
@@ -593,22 +594,6 @@ export class BucketClient {
       const bucketList = protocolFields.data.filter((item) =>
         item.objectType.includes("Bucket")
       );
-
-      const objectTypeList = bucketList.map((item) => item.objectType);
-
-      const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
-      const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
-      const coinTypeList = objectTypeList.map(
-        (type) => type.split("<").pop()?.replace(">", "") ?? ""
-      );
-
-      const objectNameList: string[] = [];
-
-      coinTypeList.forEach((type) => {
-        const typeIndex = accept_coin_type.indexOf(type);
-        const coinName = accept_coin_name[typeIndex];
-        objectNameList.push(coinName ?? "");
-      });
       const objectIdList = bucketList.map((item) => item.objectId);
 
       const response: SuiObjectResponse[] = await this.client.multiGetObjects({
@@ -619,12 +604,17 @@ export class BucketClient {
         },
       });
 
-      let bucketInfoList: Partial<{ [key in ACCEPT_ASSETS]: BucketInfo }> = {};
-
       response.map((res, index) => {
+        const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
+        const token = Object.keys(MARKET_COINS_TYPE_LIST).find(key => MARKET_COINS_TYPE_LIST[key] === typeId);
+        if (!token) {
+          return;
+        }
+
         const fields = getObjectFields(res) as BucketTypeInfo;
 
         const bucketInfo: BucketInfo = {
+          token: token as ACCEPT_ASSETS,
           baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
           bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
           collateralDecimal: fields.collateral_decimal ?? 0,
@@ -636,13 +626,13 @@ export class BucketClient {
           recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
         };
 
-        bucketInfoList[objectNameList[index] ?? ""] = bucketInfo;
+        buckets.push(bucketInfo);
       });
-
-      return bucketInfoList;
     } catch (error) {
-      return {};
+      console.log(error);
     }
+
+    return buckets;
   };
 
   async getPrices() {

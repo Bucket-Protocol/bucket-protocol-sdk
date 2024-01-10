@@ -49,11 +49,16 @@ describe('Interacting with Bucket Client on mainnet', () => {
         const apys = await buck.getAPYs();
         expect(apys).toBeDefined()
     });
-    */
 
     it('tests getFountains() function', async () => {
         const fountains = await buck.getFountains();
         expect(fountains).toBeDefined()
     });
+    */
 
+    it('tests getAllBuckets() function', async () => {
+        const buckets = await buck.getAllBuckets();
+        console.log(buckets)
+        expect(buckets).toBeDefined()
+    });
 });
