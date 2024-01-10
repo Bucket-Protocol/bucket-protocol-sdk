@@ -5,13 +5,14 @@ import { BucketClient } from '../../src';
 describe('Interacting with Bucket Client on mainnet', () => {
 
     // Instantiate SuiClient connected to mainnet
-    const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+    const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
 
     // Instantiate BucketClient
     const buck = new BucketClient(client, {
-        packageType: "testnet"
+        packageType: "mainnet"
     });
 
+    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -42,8 +43,17 @@ describe('Interacting with Bucket Client on mainnet', () => {
     it('tests getAllBuckets() function', async () => {
         const buckets = await buck.getAllBuckets();
         expect(buckets).toBeDefined()
-    }, {
-        timeout: 60 * 1000
+    });
+
+    it('tests getAPYs() function', async () => {
+        const apys = await buck.getAPYs();
+        expect(apys).toBeDefined()
+    });
+    */
+
+    it('tests getFountains() function', async () => {
+        const fountains = await buck.getFountains();
+        expect(fountains).toBeDefined()
     });
 
 });

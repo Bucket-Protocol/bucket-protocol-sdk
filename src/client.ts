@@ -750,15 +750,17 @@ export class BucketClient {
           flowInterval: Number(fields?.flow_interval ?? 1),
           sourceBalance: Number(fields?.source ?? 0),
           poolBalance: Number(fields?.pool ?? 0),
-          stakedBalance: Number(fields?.staked.fields.lsp.fields.balance ?? 0),
+          stakedBalance: Number(fields?.staked?.fields?.lsp.fields?.balance ?? 0),
           totalWeight: Number(fields?.total_weight ?? 0),
           cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
           latestReleaseTime: Number(fields?.latest_release_time ?? 0),
         }
       });
+      console.log(fountainInfos);
 
       return fountainInfos;
     } catch (error) {
+      console.log(error);
       return [];
     }
   };
