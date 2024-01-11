@@ -12,6 +12,7 @@ export type BucketInfo = {
   minCollateralRatio: string;
   mintedBuckAmount: string;
   minBottleSize: string;
+  maxMintAmount: string;
   recoveryModeThreshold: string;
 };
 
@@ -74,6 +75,7 @@ export type BucketResponse = {
     id: string;
   };
   latest_redemption_time: string;
+  max_mint_amount: string;
   min_collateral_ratio: string;
   minted_buck_amount: string;
   min_bottle_size: string;
@@ -134,7 +136,6 @@ export type TankInfoReponse = {
 };
 
 export type TankInfo = {
-  token: string;
   buckReserve: string;
   collateralPool: string;
   currentS: string;

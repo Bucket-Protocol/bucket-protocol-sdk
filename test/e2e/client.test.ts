@@ -56,9 +56,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
     });
     */
 
-    it('tests getAllBuckets() function', async () => {
-        const buckets = await buck.getAllBuckets();
-        console.log(buckets)
-        expect(buckets).toBeDefined()
+    it('tests getAllTanks() function', async () => {
+        const tanks = await buck.getAllTanks();
+        console.log(tanks)
+        expect(tanks).toBeDefined()
     });
 });

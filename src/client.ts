@@ -623,6 +623,7 @@ export class BucketClient {
           minCollateralRatio: fields.min_collateral_ratio ?? "",
           mintedBuckAmount: fields.minted_buck_amount ?? "",
           minBottleSize: minBottleSize,
+          maxMintAmount: fields.max_mint_amount ?? "",
           recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
         };
 
@@ -755,23 +756,6 @@ export class BucketClient {
         item.objectType.includes("Tank")
       );
 
-      const objectTypeList = tankList.map((item) => item.objectType);
-
-      const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
-      const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
-
-      const coinTypeList = objectTypeList.map(
-        (type) => type.split("<").pop()?.replace(">", "") ?? ""
-      );
-
-      const objectNameList: string[] = [];
-
-      coinTypeList.forEach((type) => {
-        const typeIndex = accept_coin_type.indexOf(type);
-        const coinName = accept_coin_name[typeIndex];
-        objectNameList.push(coinName ?? "");
-      });
-
       const objectIdList = tankList.map((item) => item.objectId);
 
       const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
@@ -786,7 +770,6 @@ export class BucketClient {
       respones.forEach((res, index) => {
         const fields = getObjectFields(res) as TankInfoReponse;
         const tankInfo: TankInfo = {
-          token: objectNameList[index] as string,
           buckReserve: fields?.reserve || "0",
           collateralPool: fields?.collateral_pool || "0",
           currentS: fields?.current_s || "0",
