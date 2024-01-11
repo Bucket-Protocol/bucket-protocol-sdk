@@ -15,7 +15,7 @@ export type BucketInfo = {
   recoveryModeThreshold: string;
 };
 
-export type BucketProtocolInfo = {
+export type BucketProtocolResponse = {
   dataType: string;
   type: string;
   hasPublicTransfer: boolean;
@@ -42,7 +42,7 @@ export type BucketProtocolInfo = {
   };
 };
 
-export type BucketTypeInfo = {
+export type BucketResponse = {
   base_fee_rate: string;
   bottle_table: {
     type: string;
@@ -87,7 +87,7 @@ export type BottleInfo = {
   decimals: number;
 };
 
-export type BottleInfoResult = {
+export type BottleInfoResponse = {
   value: {
     fields: {
       value: {
@@ -125,6 +125,21 @@ export interface BucketConstants {
   minFee: string,
   maxFee: string
 }
+
+export type TankInfoReponse = {
+  reserve: string;
+  collateral_pool: string;
+  current_s: string;
+  current_p: string;
+};
+
+export type TankInfo = {
+  token: string;
+  buckReserve: string;
+  collateralPool: string;
+  currentS: string;
+  currentP: string;
+};
 
 export type SupraPriceFeed = {
   id: {

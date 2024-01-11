@@ -8,7 +8,7 @@ import { getObjectFields } from "./objects/objectTypes";
 
 
 import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL } from "./utils/constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketTypeInfo, BottleAmountsList, BottleInfoResult, BucketProtocolInfo, SupraPriceFeed, BucketInfo } from "./types";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleAmountsList, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo } from "./types";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -584,7 +584,7 @@ export class BucketClient {
           showContent: true,
         }
       });
-      const generalInfoField = generalInfo.data?.content as BucketProtocolInfo;
+      const generalInfoField = generalInfo.data?.content as BucketProtocolResponse;
       const minBottleSize = generalInfoField.fields.min_bottle_size;
 
       const protocolFields = await this.client.getDynamicFields({
@@ -611,7 +611,7 @@ export class BucketClient {
           return;
         }
 
-        const fields = getObjectFields(res) as BucketTypeInfo;
+        const fields = getObjectFields(res) as BucketResponse;
 
         const bucketInfo: BucketInfo = {
           token: token as ACCEPT_ASSETS,
@@ -634,6 +634,174 @@ export class BucketClient {
 
     return buckets;
   };
+
+  async getUserBottle(address: string) {
+    /**
+   * @description Get bucket constants (decoded BCS values)
+   * @address User address that belong to bottle
+   */
+    if (!address) return null;
+
+    try {
+      const protocolFields = await this.client.getDynamicFields({
+        parentId: protocolAddress[this.packageType]
+      });
+
+      const bucketList = protocolFields.data.filter((item) =>
+        item.objectType.includes("Bucket")
+      );
+
+      const objectTypeList = bucketList.map((item) => item.objectType);
+
+      const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
+      const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
+
+      const coinTypeList = objectTypeList.map(
+        (type) => type.split("<").pop()?.replace(">", "") ?? ""
+      );
+
+      const objectNameList: string[] = [];
+
+      coinTypeList.forEach((type) => {
+        const typeIndex = accept_coin_type.indexOf(type);
+        const coinName = accept_coin_name[typeIndex];
+        objectNameList.push(coinName ?? "");
+      });
+
+      const objectIdList = bucketList.map((item) => item.objectId);
+
+      const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
+        ids: objectIdList,
+        options: {
+          showContent: true,
+          showType: true, //Check could we get type from response later
+        },
+      });
+
+      const bottleIdList: {
+        name: string;
+        id: string;
+        dec: number;
+      }[] = [];
+
+      respones.map((res, index) => {
+        //Filter out WBTC and WETH
+        //When we launch WBTC and WETH, we need to remove this exception
+        if (objectNameList[index] === "WBTC" || objectNameList[index] === "WETH")
+          return;
+
+        const bucketFields = getObjectFields(res) as BucketResponse;
+
+        bottleIdList.push({
+          name: objectNameList[index] ?? "",
+          id: bucketFields.bottle_table.fields.table.fields.id.id,
+          dec: bucketFields.collateral_decimal,
+        });
+      });
+
+      const bottleAmountsList: BottleAmountsList = {};
+
+      for (const bottle of bottleIdList) {
+        await this.client
+          .getDynamicFieldObject({
+            parentId: bottle.id ?? "",
+            name: {
+              type: "address",
+              value: address,
+            },
+          })
+          .then((bottleInfo) => {
+            const bottleInfoFields = getObjectFields(
+              bottleInfo
+            ) as BottleInfoResponse;
+
+            if (!bottleInfoFields) {
+              bottleAmountsList[bottle.name ?? ""] = {
+                collateralAmount: 0,
+                buckAmount: 0,
+                decimals: bottle.dec,
+              };
+            } else {
+              bottleAmountsList[bottle.name ?? ""] = {
+                collateralAmount:
+                  bottleInfoFields.value.fields.value.fields.collateral_amount,
+                buckAmount:
+                  bottleInfoFields.value.fields.value.fields.buck_amount,
+                decimals: bottle.dec,
+              };
+            }
+          })
+          .catch((error) => {
+            console.log("error", error);
+          });
+      }
+
+      return bottleAmountsList;
+    } catch (error) {
+      return {};
+    }
+  };
+
+  async getAllTanks(): Promise<TankInfo[]> {
+    /**
+   * @description Get all tanks objects
+   */
+    try {
+      const protocolFields = await this.client.getDynamicFields({
+        parentId: protocolAddress[this.packageType]
+      });
+
+      const tankList = protocolFields.data.filter((item) =>
+        item.objectType.includes("Tank")
+      );
+
+      const objectTypeList = tankList.map((item) => item.objectType);
+
+      const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
+      const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
+
+      const coinTypeList = objectTypeList.map(
+        (type) => type.split("<").pop()?.replace(">", "") ?? ""
+      );
+
+      const objectNameList: string[] = [];
+
+      coinTypeList.forEach((type) => {
+        const typeIndex = accept_coin_type.indexOf(type);
+        const coinName = accept_coin_name[typeIndex];
+        objectNameList.push(coinName ?? "");
+      });
+
+      const objectIdList = tankList.map((item) => item.objectId);
+
+      const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
+        ids: objectIdList,
+        options: {
+          showContent: true,
+          showType: true, //Check could we get type from response later
+        },
+      });
+      const tankInfoList: TankInfo[] = [];
+
+      respones.forEach((res, index) => {
+        const fields = getObjectFields(res) as TankInfoReponse;
+        const tankInfo: TankInfo = {
+          token: objectNameList[index] as string,
+          buckReserve: fields?.reserve || "0",
+          collateralPool: fields?.collateral_pool || "0",
+          currentS: fields?.current_s || "0",
+          currentP: fields?.current_p || "1",
+        };
+
+        tankInfoList.push(tankInfo);
+      });
+
+      return tankInfoList;
+    } catch (error) {
+      return [];
+    }
+  };
+
 
   async getPrices() {
     /**
@@ -719,111 +887,4 @@ export class BucketClient {
 
     return apys;
   }
-
-  async getUserBottle(address: string) {
-    /**
-   * @description Get bucket constants (decoded BCS values)
-   * @address User address that belong to bottle
-   */
-    if (!address) return null;
-
-    try {
-      const protocolFields = await this.client.getDynamicFields({
-        parentId: protocolAddress[this.packageType]
-      });
-
-      const bucketList = protocolFields.data.filter((item) =>
-        item.objectType.includes("Bucket")
-      );
-
-      const objectTypeList = bucketList.map((item) => item.objectType);
-
-      const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
-      const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
-
-      const coinTypeList = objectTypeList.map(
-        (type) => type.split("<").pop()?.replace(">", "") ?? ""
-      );
-
-      const objectNameList: string[] = [];
-
-      coinTypeList.forEach((type) => {
-        const typeIndex = accept_coin_type.indexOf(type);
-        const coinName = accept_coin_name[typeIndex];
-        objectNameList.push(coinName ?? "");
-      });
-
-      const objectIdList = bucketList.map((item) => item.objectId);
-
-      const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: objectIdList,
-        options: {
-          showContent: true,
-          showType: true, //Check could we get type from response later
-        },
-      });
-
-      const bottleIdList: {
-        name: string;
-        id: string;
-        dec: number;
-      }[] = [];
-
-      respones.map((res, index) => {
-        //Filter out WBTC and WETH
-        //When we launch WBTC and WETH, we need to remove this exception
-        if (objectNameList[index] === "WBTC" || objectNameList[index] === "WETH")
-          return;
-
-        const bucketFields = getObjectFields(res) as BucketTypeInfo;
-
-        bottleIdList.push({
-          name: objectNameList[index] ?? "",
-          id: bucketFields.bottle_table.fields.table.fields.id.id,
-          dec: bucketFields.collateral_decimal,
-        });
-      });
-
-      const bottleAmountsList: BottleAmountsList = {};
-
-      for (const bottle of bottleIdList) {
-        await this.client
-          .getDynamicFieldObject({
-            parentId: bottle.id ?? "",
-            name: {
-              type: "address",
-              value: address,
-            },
-          })
-          .then((bottleInfo) => {
-            const bottleInfoFields = getObjectFields(
-              bottleInfo
-            ) as BottleInfoResult;
-
-            if (!bottleInfoFields) {
-              bottleAmountsList[bottle.name ?? ""] = {
-                collateralAmount: 0,
-                buckAmount: 0,
-                decimals: bottle.dec,
-              };
-            } else {
-              bottleAmountsList[bottle.name ?? ""] = {
-                collateralAmount:
-                  bottleInfoFields.value.fields.value.fields.collateral_amount,
-                buckAmount:
-                  bottleInfoFields.value.fields.value.fields.buck_amount,
-                decimals: bottle.dec,
-              };
-            }
-          })
-          .catch((error) => {
-            console.log("error", error);
-          });
-      }
-
-      return bottleAmountsList;
-    } catch (error) {
-      return {};
-    }
-  };
 }

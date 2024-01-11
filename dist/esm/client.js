@@ -463,83 +463,6 @@ export class BucketClient {
         return buckets;
     }
     ;
-    async getPrices() {
-        /**
-         * @description Get all prices
-        */
-        const ids = Object.values(SUPRA_PRICE_FEEDS);
-        const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
-        const priceObjects = await this.client.multiGetObjects({
-            ids,
-            options: {
-                showContent: true,
-                showType: true, //Check could we get type from response later
-            },
-        });
-        const prices = {
-            WETH: 0,
-            SUI: 0,
-            vSUI: 0,
-            afSUI: 0,
-            haSUI: 0,
-            USDC: 1,
-            USDT: 1,
-            BUCK: 1,
-        };
-        priceObjects.map((res, index) => {
-            const priceFeed = getObjectFields(res);
-            const priceBn = priceFeed.value.fields.value;
-            const decimals = priceFeed.value.fields.decimal;
-            const price = parseInt(priceBn) / Math.pow(10, decimals);
-            if (objectNameList[index] == 'usdc_usd') {
-                prices['USDC'] = price;
-            }
-            else if (objectNameList[index] == 'usdt_usd') {
-                prices['USDT'] = price;
-            }
-            else if (objectNameList[index] == 'eth_usdt') {
-                prices['WETH'] = prices['USDT'] * price;
-            }
-            else if (objectNameList[index] == 'sui_usdt') {
-                prices['SUI'] = prices['USDT'] * price;
-            }
-            else if (objectNameList[index] == 'vsui_sui') {
-                prices['vSUI'] = prices['SUI'] * price;
-            }
-            else if (objectNameList[index] == 'hasui_sui') {
-                prices['haSUI'] = prices['SUI'] * price;
-            }
-            else if (objectNameList[index] == 'afsui_sui') {
-                prices['afSUI'] = prices['SUI'] * price;
-            }
-        });
-        return prices;
-    }
-    async getAPYs() {
-        /**
-         * @description Get APYs for vSUI, afSUI, haSUI
-        */
-        let apys = {
-            vSUI: 4.2 // Use constant value
-        };
-        // Get haSUI APY
-        try {
-            const response = await (await fetch(HASUI_APY_URL)).json();
-            apys["haSUI"] = response.data.apy;
-        }
-        catch (error) {
-            // console.log(error);
-        }
-        // Get afSUI APY
-        try {
-            const apy = await (await fetch(AFSUI_APY_URL)).text();
-            apys["afSUI"] = parseFloat(apy) * 100;
-        }
-        catch (error) {
-            // console.log(error);
-        }
-        return apys;
-    }
     async getUserBottle(address) {
         /**
        * @description Get bucket constants (decoded BCS values)
@@ -621,5 +544,128 @@ export class BucketClient {
         }
     }
     ;
+    async getAllTanks() {
+        /**
+       * @description Get all tanks objects
+       */
+        try {
+            const protocolFields = await this.client.getDynamicFields({
+                parentId: protocolAddress[this.packageType]
+            });
+            const tankList = protocolFields.data.filter((item) => item.objectType.includes("Tank"));
+            const objectTypeList = tankList.map((item) => item.objectType);
+            const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
+            const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
+            const coinTypeList = objectTypeList.map((type) => type.split("<").pop()?.replace(">", "") ?? "");
+            const objectNameList = [];
+            coinTypeList.forEach((type) => {
+                const typeIndex = accept_coin_type.indexOf(type);
+                const coinName = accept_coin_name[typeIndex];
+                objectNameList.push(coinName ?? "");
+            });
+            const objectIdList = tankList.map((item) => item.objectId);
+            const respones = await this.client.multiGetObjects({
+                ids: objectIdList,
+                options: {
+                    showContent: true,
+                    showType: true, //Check could we get type from response later
+                },
+            });
+            const tankInfoList = [];
+            respones.forEach((res, index) => {
+                const fields = getObjectFields(res);
+                const tankInfo = {
+                    token: objectNameList[index],
+                    buckReserve: fields?.reserve || "0",
+                    collateralPool: fields?.collateral_pool || "0",
+                    currentS: fields?.current_s || "0",
+                    currentP: fields?.current_p || "1",
+                };
+                tankInfoList.push(tankInfo);
+            });
+            return tankInfoList;
+        }
+        catch (error) {
+            return [];
+        }
+    }
+    ;
+    async getPrices() {
+        /**
+         * @description Get all prices
+        */
+        const ids = Object.values(SUPRA_PRICE_FEEDS);
+        const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
+        const priceObjects = await this.client.multiGetObjects({
+            ids,
+            options: {
+                showContent: true,
+                showType: true, //Check could we get type from response later
+            },
+        });
+        const prices = {
+            WETH: 0,
+            SUI: 0,
+            vSUI: 0,
+            afSUI: 0,
+            haSUI: 0,
+            USDC: 1,
+            USDT: 1,
+            BUCK: 1,
+        };
+        priceObjects.map((res, index) => {
+            const priceFeed = getObjectFields(res);
+            const priceBn = priceFeed.value.fields.value;
+            const decimals = priceFeed.value.fields.decimal;
+            const price = parseInt(priceBn) / Math.pow(10, decimals);
+            if (objectNameList[index] == 'usdc_usd') {
+                prices['USDC'] = price;
+            }
+            else if (objectNameList[index] == 'usdt_usd') {
+                prices['USDT'] = price;
+            }
+            else if (objectNameList[index] == 'eth_usdt') {
+                prices['WETH'] = prices['USDT'] * price;
+            }
+            else if (objectNameList[index] == 'sui_usdt') {
+                prices['SUI'] = prices['USDT'] * price;
+            }
+            else if (objectNameList[index] == 'vsui_sui') {
+                prices['vSUI'] = prices['SUI'] * price;
+            }
+            else if (objectNameList[index] == 'hasui_sui') {
+                prices['haSUI'] = prices['SUI'] * price;
+            }
+            else if (objectNameList[index] == 'afsui_sui') {
+                prices['afSUI'] = prices['SUI'] * price;
+            }
+        });
+        return prices;
+    }
+    async getAPYs() {
+        /**
+         * @description Get APYs for vSUI, afSUI, haSUI
+        */
+        let apys = {
+            vSUI: 4.2 // Use constant value
+        };
+        // Get haSUI APY
+        try {
+            const response = await (await fetch(HASUI_APY_URL)).json();
+            apys["haSUI"] = response.data.apy;
+        }
+        catch (error) {
+            // console.log(error);
+        }
+        // Get afSUI APY
+        try {
+            const apy = await (await fetch(AFSUI_APY_URL)).text();
+            apys["afSUI"] = parseFloat(apy) * 100;
+        }
+        catch (error) {
+            // console.log(error);
+        }
+        return apys;
+    }
 }
 //# sourceMappingURL=client.js.map
