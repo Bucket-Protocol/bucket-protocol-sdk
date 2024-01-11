@@ -44,19 +44,3 @@ export const SUPRA_PRICE_FEEDS = {
 
 export const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
 export const HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";
-
-
-export const SUI_LP_REGISTRY_IDS: Record<FOUNTAIN_PROVIDER, string[]> = {
-  CETUS: [
-    "0x7778d68f02810b2c002b6f40084c5f3fe0b1bcc7d7a7c64d72ba40ff9a815bac", // CETUS_SUI_BUCK_LP_REGISTRY_ID
-    "0x8533d3b9a2c33bc9fef49022d80d7db11a823d6a53038a782bdc01a14f0f409a", // CETUS_USDC_BUCK_LP_REGISTRY_ID
-  ],
-  KRIYA: [
-    "0xcc39bcc2c438a79beb2656ff043714a60baf89ba37592bef2e14ee8bca0cf007", // KRIYA_SUI_BUCK_LP_REGISTRY_ID
-    "0xae1910e5bcb13a4f5b12688f0da939b9c9d3e8a9e8d0a2e02c818f6a94e598fd", // KRIYA_USDC_BUCK_LP_REGISTRY_ID
-  ],
-  AF: [
-    "0xe2569ee20149c2909f0f6527c210bc9d97047fe948d34737de5420fab2db7062",  // AF_SUI_BUCK_LP_REGISTRY_ID
-    "0x885e09419b395fcf5c8ee5e2b7c77e23b590e58ef3d61260b6b4eb44bbcc8c62", // AF_USDC_BUCK_LP_REGISTRY_ID
-  ],
-};

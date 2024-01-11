@@ -487,6 +487,7 @@ class BucketClient {
             haSUI: 0,
             USDC: 1,
             USDT: 1,
+            BUCK: 1,
         };
         priceObjects.map((res, index) => {
             const priceFeed = (0, objectTypes_1.getObjectFields)(res);
@@ -542,41 +543,6 @@ class BucketClient {
         }
         return apys;
     }
-    async getFountains() {
-        /**
-       * @description Get Aftermath, Kriya, Cetus fountains info
-       */
-        try {
-            const ids = Object.values(constants_1.SUI_LP_REGISTRY_IDS).flat();
-            const fountainResults = await this.client.multiGetObjects({
-                ids,
-                options: {
-                    showContent: true,
-                }
-            });
-            const fountainInfos = fountainResults.map((res) => {
-                const fields = (0, objectTypes_1.getObjectFields)(res);
-                return {
-                    id: res.data?.objectId ?? "",
-                    flowAmount: Number(fields?.flow_amount ?? 0),
-                    flowInterval: Number(fields?.flow_interval ?? 1),
-                    sourceBalance: Number(fields?.source ?? 0),
-                    poolBalance: Number(fields?.pool ?? 0),
-                    stakedBalance: Number(fields?.staked?.fields?.lsp.fields?.balance ?? 0),
-                    totalWeight: Number(fields?.total_weight ?? 0),
-                    cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
-                    latestReleaseTime: Number(fields?.latest_release_time ?? 0),
-                };
-            });
-            console.log(fountainInfos);
-            return fountainInfos;
-        }
-        catch (error) {
-            console.log(error);
-            return [];
-        }
-    }
-    ;
     async getUserBottle(address) {
         /**
        * @description Get bucket constants (decoded BCS values)

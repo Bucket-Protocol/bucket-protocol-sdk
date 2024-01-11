@@ -18,5 +18,4 @@ export declare const SUPRA_PRICE_FEEDS: {
 };
 export declare const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
 export declare const HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";
-export declare const SUI_LP_REGISTRY_IDS: Record<FOUNTAIN_PROVIDER, string[]>;
 //# sourceMappingURL=constants.d.ts.map

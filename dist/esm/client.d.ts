@@ -1,6 +1,6 @@
 import { SuiClient } from "@mysten/sui.js/client";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BottleAmountsList, BucketInfo, FountainInfo } from "./types";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BottleAmountsList, BucketInfo } from "./types";
 export declare class BucketClient {
     currentAddress: string;
     /**
@@ -33,13 +33,7 @@ export declare class BucketClient {
     getBucketConstants(): Promise<BucketConstants | undefined>;
     getAllBuckets(): Promise<BucketInfo[]>;
     getPrices(): Promise<{
-        SUI: number;
-        USDC: number;
-        USDT: number;
-        afSUI: number;
-        haSUI: number;
-        vSUI: number;
-        WETH: number;
+        [key: string]: number;
     }>;
     getAPYs(): Promise<Partial<{
         SUI: number;
@@ -50,7 +44,6 @@ export declare class BucketClient {
         vSUI: number;
         WETH: number;
     }>>;
-    getFountains(): Promise<FountainInfo[]>;
     getUserBottle(address: string): Promise<BottleAmountsList | null>;
 }
 //# sourceMappingURL=client.d.ts.map

@@ -3,7 +3,7 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUI_LP_REGISTRY_IDS } from "./utils/constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL } from "./utils/constants";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
 const protocolAddress = { "mainnet": MAINNET_PROTOCOL_ID, "testnet": TESTNET_PROTOCOL_ID };
@@ -484,6 +484,7 @@ export class BucketClient {
             haSUI: 0,
             USDC: 1,
             USDT: 1,
+            BUCK: 1,
         };
         priceObjects.map((res, index) => {
             const priceFeed = getObjectFields(res);
@@ -539,41 +540,6 @@ export class BucketClient {
         }
         return apys;
     }
-    async getFountains() {
-        /**
-       * @description Get Aftermath, Kriya, Cetus fountains info
-       */
-        try {
-            const ids = Object.values(SUI_LP_REGISTRY_IDS).flat();
-            const fountainResults = await this.client.multiGetObjects({
-                ids,
-                options: {
-                    showContent: true,
-                }
-            });
-            const fountainInfos = fountainResults.map((res) => {
-                const fields = getObjectFields(res);
-                return {
-                    id: res.data?.objectId ?? "",
-                    flowAmount: Number(fields?.flow_amount ?? 0),
-                    flowInterval: Number(fields?.flow_interval ?? 1),
-                    sourceBalance: Number(fields?.source ?? 0),
-                    poolBalance: Number(fields?.pool ?? 0),
-                    stakedBalance: Number(fields?.staked?.fields?.lsp.fields?.balance ?? 0),
-                    totalWeight: Number(fields?.total_weight ?? 0),
-                    cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
-                    latestReleaseTime: Number(fields?.latest_release_time ?? 0),
-                };
-            });
-            console.log(fountainInfos);
-            return fountainInfos;
-        }
-        catch (error) {
-            console.log(error);
-            return [];
-        }
-    }
-    ;
     async getUserBottle(address) {
         /**
        * @description Get bucket constants (decoded BCS values)

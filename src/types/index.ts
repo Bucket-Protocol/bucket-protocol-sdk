@@ -142,18 +142,4 @@ export type SupraPriceFeed = {
   }
 };
 
-
-export type FountainInfo = {
-  id: string;
-  sourceBalance: number;
-  flowAmount: number;
-  flowInterval: number;
-  poolBalance: number;
-  stakedBalance: number;
-  totalWeight: number;
-  cumulativeUnit: number;
-  latestReleaseTime: number;
-};
-
-
 export type PackageType = "mainnet" | "testnet";
