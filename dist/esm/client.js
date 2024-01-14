@@ -469,9 +469,10 @@ export class BucketClient {
         /**
        * @description Get bucket constants (decoded BCS values)
        * @address User address that belong to bottle
+       * @returns Promise<BottleInfo>
        */
         if (!address)
-            return null;
+            return [];
         try {
             const protocolFields = await this.client.getDynamicFields({
                 parentId: protocolAddress[this.packageType]
@@ -526,7 +527,7 @@ export class BucketClient {
             return userBottles;
         }
         catch (error) {
-            return {};
+            return [];
         }
     }
     ;

@@ -637,12 +637,13 @@ export class BucketClient {
     return buckets;
   };
 
-  async getUserBottles(address: string) {
-    /**
+  async getUserBottles(address: string): Promise<BottleInfo[]> {
+  /**
    * @description Get bucket constants (decoded BCS values)
    * @address User address that belong to bottle
+   * @returns Promise<BottleInfo>
    */
-    if (!address) return null;
+    if (!address) return [];
 
     try {
       const protocolFields = await this.client.getDynamicFields({
@@ -717,7 +718,7 @@ export class BucketClient {
 
       return userBottles;
     } catch (error) {
-      return {};
+      return [];
     }
   };
 
