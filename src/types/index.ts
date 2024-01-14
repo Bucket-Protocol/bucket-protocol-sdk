@@ -84,9 +84,9 @@ export type BucketResponse = {
 };
 
 export type BottleInfo = {
+  token: string;
   collateralAmount: number;
-  buckAmount: number; //user debt
-  decimals: number;
+  buckAmount: number;
 };
 
 export type BottleInfoResponse = {
@@ -101,11 +101,6 @@ export type BottleInfoResponse = {
     };
   };
 };
-
-export type BottleAmountsList = {
-  [key: string]: BottleInfo;
-};
-
 
 export interface BottleSummary {
   bottleId: string;

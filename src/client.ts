@@ -7,8 +7,9 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL } from "./utils/constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleAmountsList, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo } from "./types";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL } from "./constants";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo } from "./types";
+import { getObjectNames } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -636,7 +637,7 @@ export class BucketClient {
     return buckets;
   };
 
-  async getUserBottle(address: string) {
+  async getUserBottles(address: string) {
     /**
    * @description Get bucket constants (decoded BCS values)
    * @address User address that belong to bottle
@@ -653,23 +654,8 @@ export class BucketClient {
       );
 
       const objectTypeList = bucketList.map((item) => item.objectType);
-
-      const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
-      const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
-
-      const coinTypeList = objectTypeList.map(
-        (type) => type.split("<").pop()?.replace(">", "") ?? ""
-      );
-
-      const objectNameList: string[] = [];
-
-      coinTypeList.forEach((type) => {
-        const typeIndex = accept_coin_type.indexOf(type);
-        const coinName = accept_coin_name[typeIndex];
-        objectNameList.push(coinName ?? "");
-      });
-
       const objectIdList = bucketList.map((item) => item.objectId);
+      const objectNameList = getObjectNames(objectTypeList);
 
       const respones: SuiObjectResponse[] = await this.client.multiGetObjects({
         ids: objectIdList,
@@ -682,7 +668,6 @@ export class BucketClient {
       const bottleIdList: {
         name: string;
         id: string;
-        dec: number;
       }[] = [];
 
       respones.map((res, index) => {
@@ -696,11 +681,10 @@ export class BucketClient {
         bottleIdList.push({
           name: objectNameList[index] ?? "",
           id: bucketFields.bottle_table.fields.table.fields.id.id,
-          dec: bucketFields.collateral_decimal,
         });
       });
 
-      const bottleAmountsList: BottleAmountsList = {};
+      const userBottles: BottleInfo[] = [];
 
       for (const bottle of bottleIdList) {
         await this.client
@@ -716,20 +700,14 @@ export class BucketClient {
               bottleInfo
             ) as BottleInfoResponse;
 
-            if (!bottleInfoFields) {
-              bottleAmountsList[bottle.name ?? ""] = {
-                collateralAmount: 0,
-                buckAmount: 0,
-                decimals: bottle.dec,
-              };
-            } else {
-              bottleAmountsList[bottle.name ?? ""] = {
+            if (bottleInfoFields) {
+              userBottles.push({
+                token: bottle.name ?? "",
                 collateralAmount:
                   bottleInfoFields.value.fields.value.fields.collateral_amount,
                 buckAmount:
                   bottleInfoFields.value.fields.value.fields.buck_amount,
-                decimals: bottle.dec,
-              };
+              });
             }
           })
           .catch((error) => {
@@ -737,7 +715,7 @@ export class BucketClient {
           });
       }
 
-      return bottleAmountsList;
+      return userBottles;
     } catch (error) {
       return {};
     }

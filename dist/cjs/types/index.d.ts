@@ -79,9 +79,9 @@ export type BucketResponse = {
     total_flash_loan_amount: string;
 };
 export type BottleInfo = {
+    token: string;
     collateralAmount: number;
     buckAmount: number;
-    decimals: number;
 };
 export type BottleInfoResponse = {
     value: {
@@ -94,9 +94,6 @@ export type BottleInfoResponse = {
             };
         };
     };
-};
-export type BottleAmountsList = {
-    [key: string]: BottleInfo;
 };
 export interface BottleSummary {
     bottleId: string;

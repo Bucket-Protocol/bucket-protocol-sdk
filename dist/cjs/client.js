@@ -6,7 +6,8 @@ const transactions_1 = require("@mysten/sui.js/transactions");
 const utils_1 = require("@mysten/sui.js/utils");
 const bcs_1 = require("@mysten/bcs");
 const objectTypes_1 = require("./objects/objectTypes");
-const constants_1 = require("./utils/constants");
+const constants_1 = require("./constants");
+const utils_2 = require("./utils");
 const DUMMY_ADDRESS = (0, utils_1.normalizeSuiAddress)("0x0");
 const packageAddress = { "mainnet": constants_1.MAINNET_PACKAGE_ID, "testnet": constants_1.TESTNET_PACKAGE_ID };
 const protocolAddress = { "mainnet": constants_1.MAINNET_PROTOCOL_ID, "testnet": constants_1.TESTNET_PROTOCOL_ID };
@@ -467,7 +468,7 @@ class BucketClient {
         return buckets;
     }
     ;
-    async getUserBottle(address) {
+    async getUserBottles(address) {
         /**
        * @description Get bucket constants (decoded BCS values)
        * @address User address that belong to bottle
@@ -480,16 +481,8 @@ class BucketClient {
             });
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
             const objectTypeList = bucketList.map((item) => item.objectType);
-            const accept_coin_type = Object.values(constants_1.MARKET_COINS_TYPE_LIST);
-            const accept_coin_name = Object.keys(constants_1.MARKET_COINS_TYPE_LIST);
-            const coinTypeList = objectTypeList.map((type) => type.split("<").pop()?.replace(">", "") ?? "");
-            const objectNameList = [];
-            coinTypeList.forEach((type) => {
-                const typeIndex = accept_coin_type.indexOf(type);
-                const coinName = accept_coin_name[typeIndex];
-                objectNameList.push(coinName ?? "");
-            });
             const objectIdList = bucketList.map((item) => item.objectId);
+            const objectNameList = (0, utils_2.getObjectNames)(objectTypeList);
             const respones = await this.client.multiGetObjects({
                 ids: objectIdList,
                 options: {
@@ -507,10 +500,9 @@ class BucketClient {
                 bottleIdList.push({
                     name: objectNameList[index] ?? "",
                     id: bucketFields.bottle_table.fields.table.fields.id.id,
-                    dec: bucketFields.collateral_decimal,
                 });
             });
-            const bottleAmountsList = {};
+            const userBottles = [];
             for (const bottle of bottleIdList) {
                 await this.client
                     .getDynamicFieldObject({
@@ -522,26 +514,19 @@ class BucketClient {
                 })
                     .then((bottleInfo) => {
                     const bottleInfoFields = (0, objectTypes_1.getObjectFields)(bottleInfo);
-                    if (!bottleInfoFields) {
-                        bottleAmountsList[bottle.name ?? ""] = {
-                            collateralAmount: 0,
-                            buckAmount: 0,
-                            decimals: bottle.dec,
-                        };
-                    }
-                    else {
-                        bottleAmountsList[bottle.name ?? ""] = {
+                    if (bottleInfoFields) {
+                        userBottles.push({
+                            token: bottle.name ?? "",
                             collateralAmount: bottleInfoFields.value.fields.value.fields.collateral_amount,
                             buckAmount: bottleInfoFields.value.fields.value.fields.buck_amount,
-                            decimals: bottle.dec,
-                        };
+                        });
                     }
                 })
                     .catch((error) => {
                     console.log("error", error);
                 });
             }
-            return bottleAmountsList;
+            return userBottles;
         }
         catch (error) {
             return {};

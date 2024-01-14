@@ -3,7 +3,8 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL } from "./utils/constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL } from "./constants";
+import { getObjectNames } from "./utils";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
 const protocolAddress = { "mainnet": MAINNET_PROTOCOL_ID, "testnet": TESTNET_PROTOCOL_ID };
@@ -464,7 +465,7 @@ export class BucketClient {
         return buckets;
     }
     ;
-    async getUserBottle(address) {
+    async getUserBottles(address) {
         /**
        * @description Get bucket constants (decoded BCS values)
        * @address User address that belong to bottle
@@ -477,16 +478,8 @@ export class BucketClient {
             });
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
             const objectTypeList = bucketList.map((item) => item.objectType);
-            const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
-            const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
-            const coinTypeList = objectTypeList.map((type) => type.split("<").pop()?.replace(">", "") ?? "");
-            const objectNameList = [];
-            coinTypeList.forEach((type) => {
-                const typeIndex = accept_coin_type.indexOf(type);
-                const coinName = accept_coin_name[typeIndex];
-                objectNameList.push(coinName ?? "");
-            });
             const objectIdList = bucketList.map((item) => item.objectId);
+            const objectNameList = getObjectNames(objectTypeList);
             const respones = await this.client.multiGetObjects({
                 ids: objectIdList,
                 options: {
@@ -504,10 +497,9 @@ export class BucketClient {
                 bottleIdList.push({
                     name: objectNameList[index] ?? "",
                     id: bucketFields.bottle_table.fields.table.fields.id.id,
-                    dec: bucketFields.collateral_decimal,
                 });
             });
-            const bottleAmountsList = {};
+            const userBottles = [];
             for (const bottle of bottleIdList) {
                 await this.client
                     .getDynamicFieldObject({
@@ -519,26 +511,19 @@ export class BucketClient {
                 })
                     .then((bottleInfo) => {
                     const bottleInfoFields = getObjectFields(bottleInfo);
-                    if (!bottleInfoFields) {
-                        bottleAmountsList[bottle.name ?? ""] = {
-                            collateralAmount: 0,
-                            buckAmount: 0,
-                            decimals: bottle.dec,
-                        };
-                    }
-                    else {
-                        bottleAmountsList[bottle.name ?? ""] = {
+                    if (bottleInfoFields) {
+                        userBottles.push({
+                            token: bottle.name ?? "",
                             collateralAmount: bottleInfoFields.value.fields.value.fields.collateral_amount,
                             buckAmount: bottleInfoFields.value.fields.value.fields.buck_amount,
-                            decimals: bottle.dec,
-                        };
+                        });
                     }
                 })
                     .catch((error) => {
                     console.log("error", error);
                 });
             }
-            return bottleAmountsList;
+            return userBottles;
         }
         catch (error) {
             return {};
