@@ -131,7 +131,7 @@ export class BucketClient {
                     tx.object(protocol),
                     collateralInput,
                     tx.pure(insertionPlace, "address"),
-                    isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
+                    tx.pure([]),
                 ],
             });
         }
