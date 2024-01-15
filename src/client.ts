@@ -188,13 +188,14 @@ export class BucketClient {
     const protocol = protocolAddress[this.packageType];
 
     if (bucketOutputAmount == 0) {
+      console.log('bucketOutputAmount');
       tx.moveCall({
         target: `${packageAddress[this.packageType]}::buck::top_up`,
         typeArguments: [assetType],
         arguments: [
           tx.object(protocol),
           tx.pure(collateralInput),
-          tx.pure(insertionPlace, "address"),
+          tx.pure(insertionPlace),
           isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
         ],
       });
