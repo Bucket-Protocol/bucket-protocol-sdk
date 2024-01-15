@@ -1,7 +1,7 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
 import { CoinStruct, DevInspectResults, SuiClient, SuiObjectResponse } from "@mysten/sui.js/client";
-import { TransactionBlock } from "@mysten/sui.js/transactions";
+import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
@@ -172,7 +172,7 @@ export class BucketClient {
     tx: TransactionBlock,
     isNewBottle: boolean,
     assetType: string,
-    collateralInput: string,
+    collateralInput: TransactionResult,
     bucketOutputAmount: number,
     insertionPlace: string,
   ): Promise<TransactionBlock | null> {
@@ -194,7 +194,7 @@ export class BucketClient {
         typeArguments: [assetType],
         arguments: [
           tx.object(protocol),
-          tx.pure(collateralInput),
+          collateralInput,
           tx.pure(insertionPlace),
           isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
         ],
@@ -225,7 +225,7 @@ export class BucketClient {
           tx.object(protocol),
           tx.object(ORACLE_OBJECT_ID),
           tx.object(SUI_CLOCK_OBJECT_ID),
-          tx.pure(collateralInput),
+          collateralInput,
           tx.pure(bucketOutputAmount, "u64"),
           isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
         ],

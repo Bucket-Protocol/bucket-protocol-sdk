@@ -132,7 +132,7 @@ class BucketClient {
                 typeArguments: [assetType],
                 arguments: [
                     tx.object(protocol),
-                    tx.pure(collateralInput),
+                    collateralInput,
                     tx.pure(insertionPlace),
                     isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
                 ],
@@ -161,7 +161,7 @@ class BucketClient {
                     tx.object(protocol),
                     tx.object(constants_1.ORACLE_OBJECT_ID),
                     tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
-                    tx.pure(collateralInput),
+                    collateralInput,
                     tx.pure(bucketOutputAmount, "u64"),
                     isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
                 ],
