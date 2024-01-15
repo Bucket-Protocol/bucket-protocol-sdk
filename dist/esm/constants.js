@@ -23,6 +23,20 @@ export const SUPRA_PRICE_FEEDS = {
     vsui_sui: "0xd291ea0aebb1a9314cd60d5142755267f9badbeccd30b91e92b54bef29864f33",
     afsui_sui: "0xbe4289cf638a9ad1f085bd8a3e0aeaed814078e3961b77fb08cc7550ee5d8c00",
 };
+export const SUPRA_ID = {
+    USDT: "48",
+    USDC: "89",
+    // WBTC: "18",
+    WETH: "19",
+    SUI: "90",
+    afSUI: "90",
+    haSUI: "90",
+    vSUI: "90",
+};
+export const SWITCHBOARD_UPDATE_TARGET = "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_switchboard";
+export const SUPRA_HANDLER_OBJECT = "0xaa0315f0748c1f24ddb2b45f7939cff40f7a8104af5ccbc4a1d32f870c0b4105";
+export const SUPRA_UPDATE_TARGET = "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_supra";
+export const ORACLE_OBJECT_ID = "0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078";
 export const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
 export const HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";
 //# sourceMappingURL=constants.js.map

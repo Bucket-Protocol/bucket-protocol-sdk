@@ -1,13 +1,13 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { DevInspectResults, SuiClient, SuiObjectResponse } from "@mysten/sui.js/client";
+import { CoinStruct, DevInspectResults, SuiClient, SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL } from "./constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID } from "./constants";
 import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo } from "./types";
 import { getObjectNames } from "./utils";
 
@@ -169,13 +169,15 @@ export class BucketClient {
   }
 
   async borrow(
+    tx: TransactionBlock,
+    isNewBottle: boolean,
     assetType: string,
     protocol: string,
     oracle: string,
     collateralInput: string,
     bucketOutputAmount: number,
     insertionPlace: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<TransactionBlock | null> {
     /**
      * @description Borrow
      * @param assetType Asset , e.g "0x2::sui::SUI"
@@ -187,19 +189,49 @@ export class BucketClient {
      * @returns Promise<TransactionBlock>
      */
 
-    const tx = new TransactionBlock();
-    tx.moveCall({
-      target: `${packageAddress[this.packageType]}::buck::borrow`,
-      typeArguments: [assetType],
-      arguments: [
-        tx.object(protocol),
-        tx.object(oracle),
-        tx.object(SUI_CLOCK_OBJECT_ID),
-        tx.pure(collateralInput),
-        tx.pure(bucketOutputAmount),
-        tx.pure([insertionPlace]),
-      ],
-    });
+    if (bucketOutputAmount == 0) {
+      tx.moveCall({
+        target: `${packageAddress[this.packageType]}::buck::top_up`,
+        typeArguments: [assetType],
+        arguments: [
+          tx.object(protocol),
+          tx.pure(collateralInput),
+          tx.pure(insertionPlace, "address"),
+          isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
+        ],
+      });
+    }
+    else {
+      const coinSymbol = Object.keys(MARKET_COINS_TYPE_LIST).find(key => MARKET_COINS_TYPE_LIST[key] === assetType);
+      console.log(coinSymbol);
+      if (!coinSymbol) {
+        return null;
+      }
+
+      tx.moveCall({
+        target: SUPRA_UPDATE_TARGET,
+        typeArguments: [assetType],
+        arguments: [
+          tx.object(oracle),
+          tx.object(SUI_CLOCK_OBJECT_ID),
+          tx.object(SUPRA_HANDLER_OBJECT),
+          tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
+        ],
+      });
+
+      tx.moveCall({
+        target: `${packageAddress[this.packageType]}::buck::borrow`,
+        typeArguments: [assetType],
+        arguments: [
+          tx.object(protocol),
+          tx.object(oracle),
+          tx.object(SUI_CLOCK_OBJECT_ID),
+          tx.pure(collateralInput),
+          tx.pure(bucketOutputAmount, "u64"),
+          isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
+        ],
+      });
+    }
 
     return tx;
   }
@@ -638,11 +670,11 @@ export class BucketClient {
   };
 
   async getUserBottles(address: string): Promise<BottleInfo[]> {
-  /**
-   * @description Get bucket constants (decoded BCS values)
-   * @address User address that belong to bottle
-   * @returns Promise<BottleInfo>
-   */
+    /**
+     * @description Get bucket constants (decoded BCS values)
+     * @address User address that belong to bottle
+     * @returns Promise<BottleInfo>
+     */
     if (!address) return [];
 
     try {
