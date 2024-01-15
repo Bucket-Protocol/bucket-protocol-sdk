@@ -18,7 +18,7 @@ export declare class BucketClient {
     withdrawFromTank(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock>;
     claimFromTank(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock>;
     claimBkt(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock>;
-    borrow(tx: TransactionBlock, isNewBottle: boolean, assetType: string, protocol: string, oracle: string, collateralInput: string, bucketOutputAmount: number, insertionPlace: string): Promise<TransactionBlock | null>;
+    borrow(tx: TransactionBlock, isNewBottle: boolean, assetType: string, collateralInput: string, bucketOutputAmount: number, insertionPlace: string): Promise<TransactionBlock | null>;
     topUp(assetType: string, protocol: string, collateralInput: string, forAddress: string, insertionPlace: string): Promise<TransactionBlock>;
     withdraw(assetType: string, protocol: string, oracle: string, collateralAmount: string, insertionPlace: string): Promise<TransactionBlock>;
     repay(assetType: string, protocol: string, buckInput: string): Promise<TransactionBlock>;

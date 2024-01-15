@@ -7,7 +7,7 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID } from "./constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID } from "./constants";
 import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo } from "./types";
 import { getObjectNames } from "./utils";
 
@@ -172,8 +172,6 @@ export class BucketClient {
     tx: TransactionBlock,
     isNewBottle: boolean,
     assetType: string,
-    protocol: string,
-    oracle: string,
     collateralInput: string,
     bucketOutputAmount: number,
     insertionPlace: string,
@@ -181,13 +179,13 @@ export class BucketClient {
     /**
      * @description Borrow
      * @param assetType Asset , e.g "0x2::sui::SUI"
-     * @param protocol Protocol id
-     * @param oracle Oracle id
      * @param collateralInput collateral input
      * @param bucketOutputAmount
      * @param insertionPlace
      * @returns Promise<TransactionBlock>
      */
+
+    const protocol = protocolAddress[this.packageType];
 
     if (bucketOutputAmount == 0) {
       tx.moveCall({
@@ -212,7 +210,7 @@ export class BucketClient {
         target: SUPRA_UPDATE_TARGET,
         typeArguments: [assetType],
         arguments: [
-          tx.object(oracle),
+          tx.object(ORACLE_OBJECT_ID),
           tx.object(SUI_CLOCK_OBJECT_ID),
           tx.object(SUPRA_HANDLER_OBJECT),
           tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
@@ -224,7 +222,7 @@ export class BucketClient {
         typeArguments: [assetType],
         arguments: [
           tx.object(protocol),
-          tx.object(oracle),
+          tx.object(ORACLE_OBJECT_ID),
           tx.object(SUI_CLOCK_OBJECT_ID),
           tx.pure(collateralInput),
           tx.pure(bucketOutputAmount, "u64"),

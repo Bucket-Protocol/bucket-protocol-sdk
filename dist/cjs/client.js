@@ -115,17 +115,16 @@ class BucketClient {
         });
         return tx;
     }
-    async borrow(tx, isNewBottle, assetType, protocol, oracle, collateralInput, bucketOutputAmount, insertionPlace) {
+    async borrow(tx, isNewBottle, assetType, collateralInput, bucketOutputAmount, insertionPlace) {
         /**
          * @description Borrow
          * @param assetType Asset , e.g "0x2::sui::SUI"
-         * @param protocol Protocol id
-         * @param oracle Oracle id
          * @param collateralInput collateral input
          * @param bucketOutputAmount
          * @param insertionPlace
          * @returns Promise<TransactionBlock>
          */
+        const protocol = protocolAddress[this.packageType];
         if (bucketOutputAmount == 0) {
             tx.moveCall({
                 target: `${packageAddress[this.packageType]}::buck::top_up`,
@@ -148,7 +147,7 @@ class BucketClient {
                 target: constants_1.SUPRA_UPDATE_TARGET,
                 typeArguments: [assetType],
                 arguments: [
-                    tx.object(oracle),
+                    tx.object(constants_1.ORACLE_OBJECT_ID),
                     tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
                     tx.object(constants_1.SUPRA_HANDLER_OBJECT),
                     tx.pure(constants_1.SUPRA_ID[coinSymbol] ?? "", "u32"),
@@ -159,7 +158,7 @@ class BucketClient {
                 typeArguments: [assetType],
                 arguments: [
                     tx.object(protocol),
-                    tx.object(oracle),
+                    tx.object(constants_1.ORACLE_OBJECT_ID),
                     tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
                     tx.pure(collateralInput),
                     tx.pure(bucketOutputAmount, "u64"),
