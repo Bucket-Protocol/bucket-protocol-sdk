@@ -133,7 +133,7 @@ class BucketClient {
                 arguments: [
                     tx.object(protocol),
                     collateralInput,
-                    tx.pure(insertionPlace),
+                    tx.pure(insertionPlace, "address"),
                     isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
                 ],
             });
