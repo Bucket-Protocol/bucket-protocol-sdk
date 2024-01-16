@@ -5,10 +5,10 @@ export type ACCEPT_ASSETS = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI"
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 
 export const MAINNET_PACKAGE_ID: string =
-  "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
+  "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 
 export const MAINNET_BUCKET_OPERATIONS_PACKAGE_ID: string =
-  "0x6f206ba15a7d81662e20ac1e6a4e0b443f3972861327584e8a1148c9880e4a09";
+  "0xb59c19de88addb7b3e721066c6c99987d09ad22fa829c69dbf0f0c1c0be20625";
 
 export const TESTNET_PACKAGE_ID: string =
   "0x1ca47988f33d06d748a779e78f321b9ba74f6ad25b3de2840da425022dfaa969";
