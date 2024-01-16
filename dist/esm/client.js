@@ -3,7 +3,7 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID } from "./constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID } from "./constants";
 import { getObjectNames } from "./utils";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
@@ -438,7 +438,7 @@ export class BucketClient {
             });
             response.map((res, index) => {
                 const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
-                const token = Object.keys(MARKET_COINS_TYPE_LIST).find(key => MARKET_COINS_TYPE_LIST[key] === typeId);
+                const token = Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key] === typeId);
                 if (!token) {
                     return;
                 }
@@ -646,6 +646,7 @@ export class BucketClient {
     async getBorrowTx(isNewBottle, collateralType, collateralAmount, borrowAmount, walletAddress) {
         /**
          * @description Borrow
+         * @param isNewBottle
          * @param collateralType Asset , e.g "0x2::sui::SUI"
          * @param collateralAmount
          * @param borrowAmount
@@ -659,9 +660,9 @@ export class BucketClient {
         });
         const protocolId = protocolAddress[this.packageType];
         const packageId = bucketOpAddress[this.packageType];
-        let coinSymbol = Object.keys(MARKET_COINS_TYPE_LIST).filter(symbol => MARKET_COINS_TYPE_LIST[symbol] == collateralType)[0];
+        let coinSymbol = Object.keys(COINS_TYPE_LIST).filter(symbol => COINS_TYPE_LIST[symbol] == collateralType)[0];
         let collateralCoinInput = undefined;
-        if (collateralType === MARKET_COINS_TYPE_LIST.SUI) {
+        if (collateralType === COINS_TYPE_LIST.SUI) {
             collateralCoinInput = tx.splitCoins(tx.gas, [
                 tx.pure(collateralAmount, "u64"),
             ]);
@@ -731,6 +732,64 @@ export class BucketClient {
             });
         }
         ;
+        return tx;
+    }
+    async getRepayTx(collateralType, repayAmount, withdrawAmount, walletAddress) {
+        /**
+         * @description Repay
+         * @param collateralType Asset , e.g "0x2::sui::SUI"
+         * @param repayAmount
+         * @param withdrawAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new TransactionBlock();
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: COINS_TYPE_LIST.BUCK,
+        });
+        const protocolId = protocolAddress[this.packageType];
+        const packageId = bucketOpAddress[this.packageType];
+        let buckCoinInput = undefined;
+        const [mainCoin, ...otherCoins] = coins
+            .filter((coin) => coin.coinType === COINS_TYPE_LIST.BUCK)
+            .map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            digest: coin.digest,
+            version: coin.version,
+        }));
+        if (mainCoin) {
+            if (otherCoins.length !== 0)
+                tx.mergeCoins(mainCoin, otherCoins);
+            buckCoinInput = tx.splitCoins(mainCoin, [
+                tx.pure(repayAmount, "u64"),
+            ]);
+        }
+        if (!buckCoinInput)
+            return tx;
+        let coinSymbol = Object.keys(COINS_TYPE_LIST).filter(symbol => COINS_TYPE_LIST[symbol] == collateralType)[0];
+        tx.moveCall({
+            target: SUPRA_UPDATE_TARGET,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(ORACLE_OBJECT_ID),
+                tx.object(SUI_CLOCK_OBJECT_ID),
+                tx.object(SUPRA_HANDLER_OBJECT),
+                tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
+            ],
+        });
+        tx.moveCall({
+            target: `${packageId}::bucket_operations::repay_and_withdraw`,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(protocolId),
+                tx.object(ORACLE_OBJECT_ID),
+                tx.object(SUI_CLOCK_OBJECT_ID),
+                buckCoinInput,
+                tx.pure(withdrawAmount, "u64"),
+                tx.pure([walletAddress]),
+            ],
+        });
         return tx;
     }
 }

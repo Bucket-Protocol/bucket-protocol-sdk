@@ -47,5 +47,6 @@ export declare class BucketClient {
         WETH: number;
     }>>;
     getBorrowTx(isNewBottle: boolean, collateralType: string, collateralAmount: number, borrowAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getRepayTx(collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
 }
 //# sourceMappingURL=client.d.ts.map
