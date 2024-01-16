@@ -484,7 +484,7 @@ class BucketClient {
             const objectTypeList = bucketList.map((item) => item.objectType);
             const objectIdList = bucketList.map((item) => item.objectId);
             const objectNameList = (0, utils_2.getObjectNames)(objectTypeList);
-            const respones = await this.client.multiGetObjects({
+            const response = await this.client.multiGetObjects({
                 ids: objectIdList,
                 options: {
                     showContent: true,
@@ -492,7 +492,7 @@ class BucketClient {
                 },
             });
             const bottleIdList = [];
-            respones.map((res, index) => {
+            response.map((res, index) => {
                 //Filter out WBTC and WETH
                 //When we launch WBTC and WETH, we need to remove this exception
                 if (objectNameList[index] === "WBTC" || objectNameList[index] === "WETH")
@@ -544,7 +544,7 @@ class BucketClient {
             });
             const tankList = protocolFields.data.filter((item) => item.objectType.includes("Tank"));
             const objectIdList = tankList.map((item) => item.objectId);
-            const respones = await this.client.multiGetObjects({
+            const response = await this.client.multiGetObjects({
                 ids: objectIdList,
                 options: {
                     showContent: true,
@@ -552,9 +552,16 @@ class BucketClient {
                 },
             });
             const tankInfoList = [];
-            respones.forEach((res, index) => {
+            response.forEach((res, index) => {
                 const fields = (0, objectTypes_1.getObjectFields)(res);
+                let token = "";
+                const objectType = res.data?.type;
+                if (objectType) {
+                    const assetType = objectType.split(",")[1].trim().split(">")[0].trim();
+                    token = Object.keys(constants_1.COINS_TYPE_LIST).find(symbol => constants_1.COINS_TYPE_LIST[symbol] == assetType) ?? "";
+                }
                 const tankInfo = {
+                    token,
                     buckReserve: fields?.reserve || "0",
                     collateralPool: fields?.collateral_pool || "0",
                     currentS: fields?.current_s || "0",

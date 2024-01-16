@@ -120,6 +120,7 @@ export type TankInfoReponse = {
     current_p: string;
 };
 export type TankInfo = {
+    token: string;
     buckReserve: string;
     collateralPool: string;
     currentS: string;
