@@ -3,11 +3,12 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID } from "./constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID } from "./constants";
 import { getObjectNames } from "./utils";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
 const protocolAddress = { "mainnet": MAINNET_PROTOCOL_ID, "testnet": TESTNET_PROTOCOL_ID };
+const bucketOpAddress = { "mainnet": MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, "testnet": TESTNET_BUCKET_OPERATIONS_PACKAGE_ID };
 export class BucketClient {
     currentAddress;
     /**
@@ -112,58 +113,29 @@ export class BucketClient {
         });
         return tx;
     }
-    async borrow(tx, isNewBottle, assetType, collateralInput, bucketOutputAmount, insertionPlace) {
+    async borrow(assetType, protocol, collateralInput, bucketOutputAmount, insertionPlace) {
         /**
          * @description Borrow
          * @param assetType Asset , e.g "0x2::sui::SUI"
+         * @param protocol Protocol id
          * @param collateralInput collateral input
          * @param bucketOutputAmount
          * @param insertionPlace
          * @returns Promise<TransactionBlock>
          */
-        const protocol = protocolAddress[this.packageType];
-        if (bucketOutputAmount == 0) {
-            console.log('bucketOutputAmount');
-            tx.moveCall({
-                target: `${packageAddress[this.packageType]}::buck::top_up`,
-                typeArguments: [assetType],
-                arguments: [
-                    tx.object(protocol),
-                    collateralInput,
-                    tx.pure(insertionPlace, "address"),
-                    tx.pure([]),
-                ],
-            });
-        }
-        else {
-            const coinSymbol = Object.keys(MARKET_COINS_TYPE_LIST).find(key => MARKET_COINS_TYPE_LIST[key] === assetType);
-            console.log(coinSymbol);
-            if (!coinSymbol) {
-                return null;
-            }
-            tx.moveCall({
-                target: SUPRA_UPDATE_TARGET,
-                typeArguments: [assetType],
-                arguments: [
-                    tx.object(ORACLE_OBJECT_ID),
-                    tx.object(SUI_CLOCK_OBJECT_ID),
-                    tx.object(SUPRA_HANDLER_OBJECT),
-                    tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
-                ],
-            });
-            tx.moveCall({
-                target: `${packageAddress[this.packageType]}::buck::borrow`,
-                typeArguments: [assetType],
-                arguments: [
-                    tx.object(protocol),
-                    tx.object(ORACLE_OBJECT_ID),
-                    tx.object(SUI_CLOCK_OBJECT_ID),
-                    collateralInput,
-                    tx.pure(bucketOutputAmount, "u64"),
-                    isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
-                ],
-            });
-        }
+        const tx = new TransactionBlock();
+        tx.moveCall({
+            target: `${packageAddress[this.packageType]}::buck::borrow`,
+            typeArguments: [assetType],
+            arguments: [
+                tx.object(protocol),
+                tx.object(ORACLE_OBJECT_ID),
+                tx.object(SUI_CLOCK_OBJECT_ID),
+                collateralInput,
+                tx.pure(bucketOutputAmount, "u64"),
+                tx.pure([insertionPlace]),
+            ],
+        });
         return tx;
     }
     async topUp(assetType, protocol, collateralInput, forAddress, insertionPlace) {
@@ -670,6 +642,96 @@ export class BucketClient {
             // console.log(error);
         }
         return apys;
+    }
+    async getBorrowTx(isNewBottle, collateralType, collateralAmount, borrowAmount, walletAddress) {
+        /**
+         * @description Borrow
+         * @param collateralType Asset , e.g "0x2::sui::SUI"
+         * @param collateralAmount
+         * @param borrowAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new TransactionBlock();
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: collateralType,
+        });
+        const protocolId = protocolAddress[this.packageType];
+        const packageId = bucketOpAddress[this.packageType];
+        let coinSymbol = Object.keys(MARKET_COINS_TYPE_LIST).filter(symbol => MARKET_COINS_TYPE_LIST[symbol] == collateralType)[0];
+        let collateralCoinInput = undefined;
+        if (collateralType === MARKET_COINS_TYPE_LIST.SUI) {
+            collateralCoinInput = tx.splitCoins(tx.gas, [
+                tx.pure(collateralAmount, "u64"),
+            ]);
+        }
+        else {
+            const [mainCoin, ...otherCoins] = coins
+                .filter((coin) => coin.coinType === collateralType)
+                .map((coin) => tx.objectRef({
+                objectId: coin.coinObjectId,
+                digest: coin.digest,
+                version: coin.version,
+            }));
+            if (mainCoin) {
+                if (otherCoins.length > 0) {
+                    tx.mergeCoins(mainCoin, otherCoins);
+                    collateralCoinInput = tx.splitCoins(mainCoin, [
+                        tx.pure(collateralAmount, "u64"),
+                    ]);
+                }
+                else {
+                    collateralCoinInput = tx.splitCoins(mainCoin, [
+                        tx.pure(collateralAmount, "u64"),
+                    ]);
+                }
+            }
+        }
+        if (!collateralCoinInput)
+            return tx;
+        if (borrowAmount == 0) {
+            tx.moveCall({
+                target: `${packageId}::bucket_operations::top_up`,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(protocolId),
+                    collateralCoinInput,
+                    tx.pure(walletAddress, "address"),
+                    isNewBottle ?
+                        tx.pure([]) :
+                        tx.pure([walletAddress]),
+                ],
+            });
+        }
+        else {
+            tx.moveCall({
+                target: SUPRA_UPDATE_TARGET,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(ORACLE_OBJECT_ID),
+                    tx.object(SUI_CLOCK_OBJECT_ID),
+                    tx.object(SUPRA_HANDLER_OBJECT),
+                    tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
+                ],
+            });
+            tx.moveCall({
+                target: `${packageId}::bucket_operations::borrow`,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(protocolId),
+                    tx.object(ORACLE_OBJECT_ID),
+                    tx.object(SUI_CLOCK_OBJECT_ID),
+                    collateralCoinInput,
+                    tx.pure(borrowAmount, "u64"),
+                    isNewBottle ?
+                        tx.pure([]) :
+                        tx.pure([walletAddress]),
+                ],
+            });
+        }
+        ;
+        return tx;
     }
 }
 //# sourceMappingURL=client.js.map

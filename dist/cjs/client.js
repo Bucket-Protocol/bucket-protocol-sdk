@@ -11,6 +11,7 @@ const utils_2 = require("./utils");
 const DUMMY_ADDRESS = (0, utils_1.normalizeSuiAddress)("0x0");
 const packageAddress = { "mainnet": constants_1.MAINNET_PACKAGE_ID, "testnet": constants_1.TESTNET_PACKAGE_ID };
 const protocolAddress = { "mainnet": constants_1.MAINNET_PROTOCOL_ID, "testnet": constants_1.TESTNET_PROTOCOL_ID };
+const bucketOpAddress = { "mainnet": constants_1.MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, "testnet": constants_1.TESTNET_BUCKET_OPERATIONS_PACKAGE_ID };
 class BucketClient {
     currentAddress;
     /**
@@ -115,58 +116,29 @@ class BucketClient {
         });
         return tx;
     }
-    async borrow(tx, isNewBottle, assetType, collateralInput, bucketOutputAmount, insertionPlace) {
+    async borrow(assetType, protocol, collateralInput, bucketOutputAmount, insertionPlace) {
         /**
          * @description Borrow
          * @param assetType Asset , e.g "0x2::sui::SUI"
+         * @param protocol Protocol id
          * @param collateralInput collateral input
          * @param bucketOutputAmount
          * @param insertionPlace
          * @returns Promise<TransactionBlock>
          */
-        const protocol = protocolAddress[this.packageType];
-        if (bucketOutputAmount == 0) {
-            console.log('bucketOutputAmount');
-            tx.moveCall({
-                target: `${packageAddress[this.packageType]}::buck::top_up`,
-                typeArguments: [assetType],
-                arguments: [
-                    tx.object(protocol),
-                    collateralInput,
-                    tx.pure(insertionPlace, "address"),
-                    tx.pure([]),
-                ],
-            });
-        }
-        else {
-            const coinSymbol = Object.keys(constants_1.MARKET_COINS_TYPE_LIST).find(key => constants_1.MARKET_COINS_TYPE_LIST[key] === assetType);
-            console.log(coinSymbol);
-            if (!coinSymbol) {
-                return null;
-            }
-            tx.moveCall({
-                target: constants_1.SUPRA_UPDATE_TARGET,
-                typeArguments: [assetType],
-                arguments: [
-                    tx.object(constants_1.ORACLE_OBJECT_ID),
-                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
-                    tx.object(constants_1.SUPRA_HANDLER_OBJECT),
-                    tx.pure(constants_1.SUPRA_ID[coinSymbol] ?? "", "u32"),
-                ],
-            });
-            tx.moveCall({
-                target: `${packageAddress[this.packageType]}::buck::borrow`,
-                typeArguments: [assetType],
-                arguments: [
-                    tx.object(protocol),
-                    tx.object(constants_1.ORACLE_OBJECT_ID),
-                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
-                    collateralInput,
-                    tx.pure(bucketOutputAmount, "u64"),
-                    isNewBottle ? tx.pure([]) : tx.pure([insertionPlace]),
-                ],
-            });
-        }
+        const tx = new transactions_1.TransactionBlock();
+        tx.moveCall({
+            target: `${packageAddress[this.packageType]}::buck::borrow`,
+            typeArguments: [assetType],
+            arguments: [
+                tx.object(protocol),
+                tx.object(constants_1.ORACLE_OBJECT_ID),
+                tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                collateralInput,
+                tx.pure(bucketOutputAmount, "u64"),
+                tx.pure([insertionPlace]),
+            ],
+        });
         return tx;
     }
     async topUp(assetType, protocol, collateralInput, forAddress, insertionPlace) {
@@ -673,6 +645,96 @@ class BucketClient {
             // console.log(error);
         }
         return apys;
+    }
+    async getBorrowTx(isNewBottle, collateralType, collateralAmount, borrowAmount, walletAddress) {
+        /**
+         * @description Borrow
+         * @param collateralType Asset , e.g "0x2::sui::SUI"
+         * @param collateralAmount
+         * @param borrowAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: collateralType,
+        });
+        const protocolId = protocolAddress[this.packageType];
+        const packageId = bucketOpAddress[this.packageType];
+        let coinSymbol = Object.keys(constants_1.MARKET_COINS_TYPE_LIST).filter(symbol => constants_1.MARKET_COINS_TYPE_LIST[symbol] == collateralType)[0];
+        let collateralCoinInput = undefined;
+        if (collateralType === constants_1.MARKET_COINS_TYPE_LIST.SUI) {
+            collateralCoinInput = tx.splitCoins(tx.gas, [
+                tx.pure(collateralAmount, "u64"),
+            ]);
+        }
+        else {
+            const [mainCoin, ...otherCoins] = coins
+                .filter((coin) => coin.coinType === collateralType)
+                .map((coin) => tx.objectRef({
+                objectId: coin.coinObjectId,
+                digest: coin.digest,
+                version: coin.version,
+            }));
+            if (mainCoin) {
+                if (otherCoins.length > 0) {
+                    tx.mergeCoins(mainCoin, otherCoins);
+                    collateralCoinInput = tx.splitCoins(mainCoin, [
+                        tx.pure(collateralAmount, "u64"),
+                    ]);
+                }
+                else {
+                    collateralCoinInput = tx.splitCoins(mainCoin, [
+                        tx.pure(collateralAmount, "u64"),
+                    ]);
+                }
+            }
+        }
+        if (!collateralCoinInput)
+            return tx;
+        if (borrowAmount == 0) {
+            tx.moveCall({
+                target: `${packageId}::bucket_operations::top_up`,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(protocolId),
+                    collateralCoinInput,
+                    tx.pure(walletAddress, "address"),
+                    isNewBottle ?
+                        tx.pure([]) :
+                        tx.pure([walletAddress]),
+                ],
+            });
+        }
+        else {
+            tx.moveCall({
+                target: constants_1.SUPRA_UPDATE_TARGET,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(constants_1.ORACLE_OBJECT_ID),
+                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                    tx.object(constants_1.SUPRA_HANDLER_OBJECT),
+                    tx.pure(constants_1.SUPRA_ID[coinSymbol] ?? "", "u32"),
+                ],
+            });
+            tx.moveCall({
+                target: `${packageId}::bucket_operations::borrow`,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(protocolId),
+                    tx.object(constants_1.ORACLE_OBJECT_ID),
+                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                    collateralCoinInput,
+                    tx.pure(borrowAmount, "u64"),
+                    isNewBottle ?
+                        tx.pure([]) :
+                        tx.pure([walletAddress]),
+                ],
+            });
+        }
+        ;
+        return tx;
     }
 }
 exports.BucketClient = BucketClient;
