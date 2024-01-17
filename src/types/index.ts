@@ -1,6 +1,9 @@
 import { EventId } from "@mysten/sui.js/src/client";
 import { ACCEPT_ASSETS, COIN } from "src/utils";
 
+export type ProtocolInfo = {
+  buckSupply: number;
+}
 
 export type BucketInfo = {
   token: ACCEPT_ASSETS;

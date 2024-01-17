@@ -7,7 +7,7 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
 import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_CONTRIBUTOR_TOKEN_ID, TESTNET_CONTRIBUTOR_TOKEN_ID, MAINNET_CORE_PACKAGE_ID, TESTNET_CORE_PACKAGE_ID, COIN_DECIMALS, COIN, TREASURY_OBJECT_ID } from "./constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo, ContributorToken, UserTankInfo, UserTankList } from "./types";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo, ContributorToken, UserTankInfo, UserTankList, ProtocolInfo } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, parseBigInt } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -447,56 +447,6 @@ export class BucketClient {
     return tx;
   }
 
-  async getAllBottles(): Promise<PaginatedBottleSummary> {
-    /**
-     * @description Get all bottles by querying `BottleCreated` event.
-     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
-     */
-
-    const resp = await this.client.queryEvents({
-      query: {
-        MoveEventType: `${packageAddress[this.packageType]}::bucket_events::BottleCreated`,
-      },
-    });
-    const bottles = resp.data.map((event) => {
-      const rawEvent = event.parsedJson as any;
-      return {
-        bottleId: rawEvent.bottle_id as string,
-      };
-    });
-
-    return {
-      data: bottles,
-      nextCursor: resp.nextCursor,
-      hasNextPage: resp.hasNextPage,
-    };
-  }
-
-  async getDestroyedBottles(): Promise<PaginatedBottleSummary> {
-    /**
-     * @description Get all destroyed bottles by querying `BottleDestroyed` event.
-     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
-     */
-
-    const resp = await this.client.queryEvents({
-      query: {
-        MoveEventType: `${packageAddress[this.packageType]}::bucket_events::BottleDestroyed`,
-      },
-    });
-    const destroyedBottles = resp.data.map((event) => {
-      const rawEvent = event.parsedJson as any;
-      return {
-        bottleId: rawEvent.bottle_id as string,
-      };
-    });
-
-    return {
-      data: destroyedBottles,
-      nextCursor: resp.nextCursor,
-      hasNextPage: resp.hasNextPage,
-    };
-  }
-
   private async encodedBucketConstants(): Promise<DevInspectResults> {
     /**
      * @description Get encoded BCS Bucket values
@@ -570,6 +520,80 @@ export class BucketClient {
 
     return bucketObject
 
+  }
+
+  async getProtocol(): Promise<ProtocolInfo> {
+    /**
+     * @description Get protocol information including BUCK supply.
+     * @returns Promise<ProtocolInfo>
+     */
+    const PROTOCOL_ID = protocolAddress[this.packageType];
+
+    const resp = (await this.client.getObject({
+      id: PROTOCOL_ID,
+      options: {
+        showContent: true,
+      },
+    })) as any;
+
+    const buckSupply = Number(
+      resp.data?.content.fields.buck_treasury_cap.fields.total_supply.fields
+        .value
+    ) / 10 ** 9;
+
+    return {
+      buckSupply
+    };
+  }
+
+  async getAllBottles(): Promise<PaginatedBottleSummary> {
+    /**
+     * @description Get all bottles by querying `BottleCreated` event.
+     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
+     */
+
+    const resp = await this.client.queryEvents({
+      query: {
+        MoveEventType: `${packageAddress[this.packageType]}::bucket_events::BottleCreated`,
+      },
+    });
+    const bottles = resp.data.map((event) => {
+      const rawEvent = event.parsedJson as any;
+      return {
+        bottleId: rawEvent.bottle_id as string,
+      };
+    });
+
+    return {
+      data: bottles,
+      nextCursor: resp.nextCursor,
+      hasNextPage: resp.hasNextPage,
+    };
+  }
+
+  async getDestroyedBottles(): Promise<PaginatedBottleSummary> {
+    /**
+     * @description Get all destroyed bottles by querying `BottleDestroyed` event.
+     * @returns Promise<PaginatedBottleSummary> - otherwise `null` if the upstream data source is pruned.
+     */
+
+    const resp = await this.client.queryEvents({
+      query: {
+        MoveEventType: `${packageAddress[this.packageType]}::bucket_events::BottleDestroyed`,
+      },
+    });
+    const destroyedBottles = resp.data.map((event) => {
+      const rawEvent = event.parsedJson as any;
+      return {
+        bottleId: rawEvent.bottle_id as string,
+      };
+    });
+
+    return {
+      data: destroyedBottles,
+      nextCursor: resp.nextCursor,
+      hasNextPage: resp.hasNextPage,
+    };
   }
 
   async getAllBuckets(): Promise<BucketInfo[]> {

@@ -59,13 +59,19 @@ describe('Interacting with Bucket Client on mainnet', () => {
         const tanks = await buck.getAllTanks();
         expect(tanks).toBeDefined()
     });
-    */
 
     it('tests getUserTanks() function', async () => {
-        const tanks = await buck.getUserTanks("0xb5f59df8059cccb0f4f9a55e8adf60f0bbc16180cb9ccf5d50e0c1c3e2bd4401");
+        const tanks = await buck.getUserTanks("");
         console.log(tanks);
         expect(tanks).toBeDefined()
     }, {
         timeout: 1000 * 60
+    });
+    */
+
+    it('tests getProtocol() function', async () => {
+        const protocol = await buck.getProtocol();
+        console.log(protocol);
+        expect(protocol).toBeDefined()
     });
 });
