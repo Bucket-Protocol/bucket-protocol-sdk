@@ -89,5 +89,7 @@ export const SUPRA_UPDATE_TARGET =
 
 export const ORACLE_OBJECT_ID = "0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078";
 
+export const TREASURY_OBJECT_ID = "0x7032c4d7afd30cd0dd04c924d63f1127de6fcc429968306807091d3ad3ff78b1";
+
 export const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
 export const HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";

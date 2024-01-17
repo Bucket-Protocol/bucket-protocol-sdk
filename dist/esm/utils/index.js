@@ -30,4 +30,37 @@ export const formatUnits = (value, decimals) => {
     fraction = fraction.replace(/(0+)$/, "");
     return `${negative ? "-" : ""}${integer || "0"}${fraction ? `.${fraction}` : ""}`;
 };
+export const parseUnits = (value, decimals) => {
+    let [integer, fraction = "0"] = value.split(".");
+    if (integer === undefined) {
+        return BigInt(0);
+    }
+    const negative = integer.startsWith("-");
+    if (negative)
+        integer = integer.slice(1);
+    // trim leading zeros.
+    fraction = fraction.replace(/(0+)$/, "");
+    // round off if the fraction is larger than the number of decimals.
+    if (decimals === 0) {
+        integer = `${Math.round(Number(`${integer}.${fraction}`))}`;
+        fraction = "";
+    }
+    else if (fraction.length > decimals) {
+        const [before, after] = [
+            fraction.slice(0, decimals),
+            fraction.slice(decimals),
+        ];
+        fraction = `${/^0+$/.test(before) ? before.slice(0, before.length - 1) : ""}${Math.round(Number(`${before}.${after}`))}`;
+    }
+    else {
+        fraction = fraction.padEnd(decimals, "0");
+    }
+    return BigInt(`${negative ? "-" : ""}${integer}${fraction}`);
+};
+export const parseBigInt = (number, decimal) => {
+    return parseUnits(number, decimal);
+};
+export const getCoinSymbol = (coinType) => {
+    return Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key] === coinType);
+};
 //# sourceMappingURL=index.js.map

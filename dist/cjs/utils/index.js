@@ -14,7 +14,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatUnits = exports.U64FromBytes = exports.getObjectNames = void 0;
+exports.getCoinSymbol = exports.parseBigInt = exports.parseUnits = exports.formatUnits = exports.U64FromBytes = exports.getObjectNames = void 0;
 const constants_1 = require("../constants");
 __exportStar(require("../constants"), exports);
 function getObjectNames(objectTypes) {
@@ -50,4 +50,40 @@ const formatUnits = (value, decimals) => {
     return `${negative ? "-" : ""}${integer || "0"}${fraction ? `.${fraction}` : ""}`;
 };
 exports.formatUnits = formatUnits;
+const parseUnits = (value, decimals) => {
+    let [integer, fraction = "0"] = value.split(".");
+    if (integer === undefined) {
+        return BigInt(0);
+    }
+    const negative = integer.startsWith("-");
+    if (negative)
+        integer = integer.slice(1);
+    // trim leading zeros.
+    fraction = fraction.replace(/(0+)$/, "");
+    // round off if the fraction is larger than the number of decimals.
+    if (decimals === 0) {
+        integer = `${Math.round(Number(`${integer}.${fraction}`))}`;
+        fraction = "";
+    }
+    else if (fraction.length > decimals) {
+        const [before, after] = [
+            fraction.slice(0, decimals),
+            fraction.slice(decimals),
+        ];
+        fraction = `${/^0+$/.test(before) ? before.slice(0, before.length - 1) : ""}${Math.round(Number(`${before}.${after}`))}`;
+    }
+    else {
+        fraction = fraction.padEnd(decimals, "0");
+    }
+    return BigInt(`${negative ? "-" : ""}${integer}${fraction}`);
+};
+exports.parseUnits = parseUnits;
+const parseBigInt = (number, decimal) => {
+    return (0, exports.parseUnits)(number, decimal);
+};
+exports.parseBigInt = parseBigInt;
+const getCoinSymbol = (coinType) => {
+    return Object.keys(constants_1.COINS_TYPE_LIST).find(key => constants_1.COINS_TYPE_LIST[key] === coinType);
+};
+exports.getCoinSymbol = getCoinSymbol;
 //# sourceMappingURL=index.js.map

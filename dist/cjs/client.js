@@ -443,7 +443,7 @@ class BucketClient {
             });
             response.map((res, index) => {
                 const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
-                const token = Object.keys(constants_1.COINS_TYPE_LIST).find(key => constants_1.COINS_TYPE_LIST[key] === typeId);
+                const token = (0, utils_2.getCoinSymbol)(typeId);
                 if (!token) {
                     return;
                 }
@@ -494,7 +494,7 @@ class BucketClient {
                 const objectType = res.data?.type;
                 if (objectType) {
                     const assetType = objectType.split(",")[1].trim().split(">")[0].trim();
-                    token = Object.keys(constants_1.COINS_TYPE_LIST).find(symbol => constants_1.COINS_TYPE_LIST[symbol] == assetType) ?? "";
+                    token = (0, utils_2.getCoinSymbol)(assetType) ?? "";
                 }
                 const tankInfo = {
                     token,
@@ -625,6 +625,10 @@ class BucketClient {
                 if (!tankType) {
                     continue;
                 }
+                const token = (0, utils_2.getCoinSymbol)(tankType);
+                if (!token) {
+                    continue;
+                }
                 // Filter contributor tokens by selected tank
                 const tokens = contributorTokens.filter(x => {
                     if (x.data?.content?.dataType == 'moveObject') {
@@ -633,7 +637,6 @@ class BucketClient {
                     }
                     return false;
                 });
-                const token = Object.keys(constants_1.COINS_TYPE_LIST).filter(x => constants_1.COINS_TYPE_LIST[x] == tankType)[0];
                 const totalBUCK = await this.getUserTankBUCK(tankType, tokens);
                 const totalEarned = await this.getUserTankEarn(tankType, tokens);
                 userTanks[token] = {
@@ -701,7 +704,10 @@ class BucketClient {
         if (tokens.length == 0) {
             return 0;
         }
-        const coinSymbol = Object.keys(constants_1.COINS_TYPE_LIST).filter(x => constants_1.COINS_TYPE_LIST[x] == tankType)[0];
+        const token = (0, utils_2.getCoinSymbol)(tankType);
+        if (!token) {
+            return 0;
+        }
         const tx = new transactions_1.TransactionBlock();
         const CORE_PACKAGE_ID = corePackageId[this.packageType];
         const PROTOCOL_ID = protocolAddress[this.packageType];
@@ -744,7 +750,7 @@ class BucketClient {
         let total = 0;
         bytesArray.forEach((bytes) => {
             const u64 = (0, utils_2.U64FromBytes)(bytes);
-            total += Number((0, utils_2.formatUnits)(u64, constants_1.COIN_DECIMALS[coinSymbol] ?? 9));
+            total += Number((0, utils_2.formatUnits)(u64, constants_1.COIN_DECIMALS[token] ?? 9));
         });
         return total;
     }
@@ -836,13 +842,16 @@ class BucketClient {
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
+        const token = (0, utils_2.getCoinSymbol)(collateralType);
+        if (!token) {
+            return tx;
+        }
         const { data: coins } = await this.client.getCoins({
             owner: walletAddress,
             coinType: collateralType,
         });
         const protocolId = protocolAddress[this.packageType];
         const packageId = bucketOpAddress[this.packageType];
-        let coinSymbol = Object.keys(constants_1.COINS_TYPE_LIST).filter(symbol => constants_1.COINS_TYPE_LIST[symbol] == collateralType)[0];
         let collateralCoinInput = undefined;
         if (collateralType === constants_1.COINS_TYPE_LIST.SUI) {
             collateralCoinInput = tx.splitCoins(tx.gas, [
@@ -895,7 +904,7 @@ class BucketClient {
                     tx.object(constants_1.ORACLE_OBJECT_ID),
                     tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
                     tx.object(constants_1.SUPRA_HANDLER_OBJECT),
-                    tx.pure(constants_1.SUPRA_ID[coinSymbol] ?? "", "u32"),
+                    tx.pure(constants_1.SUPRA_ID[token] ?? "", "u32"),
                 ],
             });
             tx.moveCall({
@@ -926,6 +935,10 @@ class BucketClient {
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
+        const token = (0, utils_2.getCoinSymbol)(collateralType);
+        if (!token) {
+            return tx;
+        }
         const { data: coins } = await this.client.getCoins({
             owner: walletAddress,
             coinType: constants_1.COINS_TYPE_LIST.BUCK,
@@ -949,7 +962,6 @@ class BucketClient {
         }
         if (!buckCoinInput)
             return tx;
-        let coinSymbol = Object.keys(constants_1.COINS_TYPE_LIST).filter(symbol => constants_1.COINS_TYPE_LIST[symbol] == collateralType)[0];
         tx.moveCall({
             target: constants_1.SUPRA_UPDATE_TARGET,
             typeArguments: [collateralType],
@@ -957,7 +969,7 @@ class BucketClient {
                 tx.object(constants_1.ORACLE_OBJECT_ID),
                 tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
                 tx.object(constants_1.SUPRA_HANDLER_OBJECT),
-                tx.pure(constants_1.SUPRA_ID[coinSymbol] ?? "", "u32"),
+                tx.pure(constants_1.SUPRA_ID[token] ?? "", "u32"),
             ],
         });
         tx.moveCall({
@@ -972,6 +984,147 @@ class BucketClient {
                 tx.pure([walletAddress]),
             ],
         });
+        return tx;
+    }
+    async getTankDepositTx(tankType, depositAmount, walletAddress) {
+        /**
+         * @description Get transaction for deposit token to tank
+         * @param tankType Asset , e.g "0x2::sui::SUI"
+         * @param depositAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const protocolId = protocolAddress[this.packageType];
+        const packageId = bucketOpAddress[this.packageType];
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: constants_1.COINS_TYPE_LIST.BUCK,
+        });
+        const [mainCoin, ...otherCoins] = coins.map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            digest: coin.digest,
+            version: coin.version,
+        }));
+        if (!mainCoin)
+            return tx;
+        if (otherCoins.length > 0) {
+            tx.mergeCoins(mainCoin, otherCoins);
+        }
+        const buckCoinInput = tx.splitCoins(mainCoin, [
+            tx.pure(depositAmount * 10 ** 9, "u64"),
+        ]);
+        if (!buckCoinInput)
+            return tx;
+        tx.moveCall({
+            target: `${packageId}::tank_operations::deposit`,
+            typeArguments: [tankType],
+            arguments: [
+                tx.object(protocolId),
+                buckCoinInput
+            ],
+        });
+        return tx;
+    }
+    async getTankWithdrawTx(tankType, withdrawAmount, walletAddress) {
+        /**
+         * @description Get transaction for withdraw token from tank
+         * @param tankType Asset , e.g "0x2::sui::SUI"
+         * @param withdrawAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const protocolId = protocolAddress[this.packageType];
+        const packageId = bucketOpAddress[this.packageType];
+        const CONTRIBUTOR_TOKEN_ID = contributorId[this.packageType];
+        const token = (0, utils_2.getCoinSymbol)(tankType);
+        if (!token) {
+            return tx;
+        }
+        const { data: contributorTokens } = await this.client.getOwnedObjects({
+            owner: walletAddress,
+            filter: {
+                StructType: `${CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
+            },
+            options: {
+                showContent: true,
+            },
+        });
+        const tokens = contributorTokens.map((token) => tx.objectRef({
+            objectId: token.data?.objectId ?? "",
+            digest: token.data?.digest ?? "",
+            version: token.data?.version ?? "",
+        }));
+        const tokenObjs = tx.makeMoveVec({
+            objects: tokens,
+        });
+        tx.moveCall({
+            target: constants_1.SUPRA_UPDATE_TARGET,
+            typeArguments: [tankType],
+            arguments: [
+                tx.object(constants_1.ORACLE_OBJECT_ID),
+                tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                tx.object(constants_1.SUPRA_HANDLER_OBJECT),
+                tx.pure(constants_1.SUPRA_ID[token] ?? "", "u32"),
+            ],
+        });
+        tx.moveCall({
+            target: `${packageId}::tank_operations::withdraw`,
+            typeArguments: [tankType],
+            arguments: [
+                tx.object(protocolId),
+                tx.object(constants_1.ORACLE_OBJECT_ID),
+                tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                tx.object(constants_1.TREASURY_OBJECT_ID),
+                tokenObjs,
+                tx.pure((0, utils_2.parseBigInt)(`${withdrawAmount ?? 0}`, 9), "u64"),
+            ],
+        });
+        return tx;
+    }
+    async getTankClaimTx(tankType, walletAddress) {
+        /**
+         * @description Get transaction for claim token from tank
+         * @param tankType Asset , e.g "0x2::sui::SUI"
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const protocolId = protocolAddress[this.packageType];
+        const packageId = bucketOpAddress[this.packageType];
+        const CONTRIBUTOR_TOKEN_ID = contributorId[this.packageType];
+        const token = (0, utils_2.getCoinSymbol)(tankType);
+        if (!token) {
+            return tx;
+        }
+        const { data: contributorTokens } = await this.client.getOwnedObjects({
+            owner: walletAddress,
+            filter: {
+                StructType: `${CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
+            },
+            options: {
+                showContent: true,
+            },
+        });
+        const tokens = contributorTokens.map((token) => tx.objectRef({
+            objectId: token.data?.objectId ?? "",
+            digest: token.data?.digest ?? "",
+            version: token.data?.version ?? "",
+        }));
+        if (!tokens || tokens.length === 0)
+            return tx;
+        for (const token of tokens) {
+            tx.moveCall({
+                target: `${packageId}::tank_operations::claim`,
+                typeArguments: [tankType],
+                arguments: [
+                    tx.object(protocolId),
+                    tx.object(constants_1.TREASURY_OBJECT_ID),
+                    token,
+                ],
+            });
+        }
         return tx;
     }
 }
