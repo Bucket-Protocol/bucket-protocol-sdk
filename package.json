@@ -1,7 +1,7 @@
 {
   "name": "bucket-protocol-sdk",
   "author": "Andrei <andreid.dev@gmail.com>",
-  "version": "0.6.1",
+  "version": "0.6.3",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
   "files": [

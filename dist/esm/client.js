@@ -3,9 +3,12 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, MARKET_COINS_TYPE_LIST, PROTOCOL_ID } from "./utils/constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID } from "./constants";
+import { getObjectNames } from "./utils";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
+const protocolAddress = { "mainnet": MAINNET_PROTOCOL_ID, "testnet": TESTNET_PROTOCOL_ID };
+const bucketOpAddress = { "mainnet": MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, "testnet": TESTNET_BUCKET_OPERATIONS_PACKAGE_ID };
 export class BucketClient {
     currentAddress;
     /**
@@ -110,12 +113,11 @@ export class BucketClient {
         });
         return tx;
     }
-    async borrow(assetType, protocol, oracle, collateralInput, bucketOutputAmount, insertionPlace) {
+    async borrow(assetType, protocol, collateralInput, bucketOutputAmount, insertionPlace) {
         /**
          * @description Borrow
          * @param assetType Asset , e.g "0x2::sui::SUI"
          * @param protocol Protocol id
-         * @param oracle Oracle id
          * @param collateralInput collateral input
          * @param bucketOutputAmount
          * @param insertionPlace
@@ -127,10 +129,10 @@ export class BucketClient {
             typeArguments: [assetType],
             arguments: [
                 tx.object(protocol),
-                tx.object(oracle),
+                tx.object(ORACLE_OBJECT_ID),
                 tx.object(SUI_CLOCK_OBJECT_ID),
-                tx.pure(collateralInput),
-                tx.pure(bucketOutputAmount),
+                collateralInput,
+                tx.pure(bucketOutputAmount, "u64"),
                 tx.pure([insertionPlace]),
             ],
         });
@@ -412,33 +414,37 @@ export class BucketClient {
         /**
        * @description Get all buckets
        */
+        let buckets = [];
         try {
+            const generalInfo = await this.client.getObject({
+                id: protocolAddress[this.packageType],
+                options: {
+                    showContent: true,
+                }
+            });
+            const generalInfoField = generalInfo.data?.content;
+            const minBottleSize = generalInfoField.fields.min_bottle_size;
             const protocolFields = await this.client.getDynamicFields({
-                parentId: PROTOCOL_ID,
+                parentId: protocolAddress[this.packageType],
             });
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
-            const objectTypeList = bucketList.map((item) => item.objectType);
-            const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
-            const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
-            const coinTypeList = objectTypeList.map((type) => type.split("<").pop()?.replace(">", "") ?? "");
-            const objectNameList = [];
-            coinTypeList.forEach((type) => {
-                const typeIndex = accept_coin_type.indexOf(type);
-                const coinName = accept_coin_name[typeIndex];
-                objectNameList.push(coinName ?? "");
-            });
             const objectIdList = bucketList.map((item) => item.objectId);
-            const respones = await this.client.multiGetObjects({
+            const response = await this.client.multiGetObjects({
                 ids: objectIdList,
                 options: {
                     showContent: true,
                     showType: true, //Check could we get type from response later
                 },
             });
-            const bucketInfoList = {};
-            respones.map((res, index) => {
+            response.map((res, index) => {
+                const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
+                const token = Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key] === typeId);
+                if (!token) {
+                    return;
+                }
                 const fields = getObjectFields(res);
                 const bucketInfo = {
+                    token: token,
                     baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
                     bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
                     collateralDecimal: fields.collateral_decimal ?? 0,
@@ -446,42 +452,36 @@ export class BucketClient {
                     latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
                     minCollateralRatio: fields.min_collateral_ratio ?? "",
                     mintedBuckAmount: fields.minted_buck_amount ?? "",
-                    minBottleSize: fields.min_bottle_size ?? "",
+                    minBottleSize: minBottleSize,
+                    maxMintAmount: fields.max_mint_amount ?? "",
                     recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
                 };
-                bucketInfoList[objectNameList[index] ?? ""] = bucketInfo;
+                buckets.push(bucketInfo);
             });
-            return bucketInfoList;
         }
         catch (error) {
-            return {};
+            console.log(error);
         }
+        return buckets;
     }
     ;
-    async getUserBottle(address) {
+    async getUserBottles(address) {
         /**
-       * @description Get bucket constants (decoded BCS values)
-       * @address User address that belong to bottle
-       */
+         * @description Get bucket constants (decoded BCS values)
+         * @address User address that belong to bottle
+         * @returns Promise<BottleInfo>
+         */
         if (!address)
-            return null;
+            return [];
         try {
             const protocolFields = await this.client.getDynamicFields({
-                parentId: PROTOCOL_ID,
+                parentId: protocolAddress[this.packageType]
             });
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
             const objectTypeList = bucketList.map((item) => item.objectType);
-            const accept_coin_type = Object.values(MARKET_COINS_TYPE_LIST);
-            const accept_coin_name = Object.keys(MARKET_COINS_TYPE_LIST);
-            const coinTypeList = objectTypeList.map((type) => type.split("<").pop()?.replace(">", "") ?? "");
-            const objectNameList = [];
-            coinTypeList.forEach((type) => {
-                const typeIndex = accept_coin_type.indexOf(type);
-                const coinName = accept_coin_name[typeIndex];
-                objectNameList.push(coinName ?? "");
-            });
             const objectIdList = bucketList.map((item) => item.objectId);
-            const respones = await this.client.multiGetObjects({
+            const objectNameList = getObjectNames(objectTypeList);
+            const response = await this.client.multiGetObjects({
                 ids: objectIdList,
                 options: {
                     showContent: true,
@@ -489,7 +489,7 @@ export class BucketClient {
                 },
             });
             const bottleIdList = [];
-            respones.map((res, index) => {
+            response.map((res, index) => {
                 //Filter out WBTC and WETH
                 //When we launch WBTC and WETH, we need to remove this exception
                 if (objectNameList[index] === "WBTC" || objectNameList[index] === "WETH")
@@ -498,10 +498,9 @@ export class BucketClient {
                 bottleIdList.push({
                     name: objectNameList[index] ?? "",
                     id: bucketFields.bottle_table.fields.table.fields.id.id,
-                    dec: bucketFields.collateral_decimal,
                 });
             });
-            const bottleAmountsList = {};
+            const userBottles = [];
             for (const bottle of bottleIdList) {
                 await this.client
                     .getDynamicFieldObject({
@@ -513,31 +512,292 @@ export class BucketClient {
                 })
                     .then((bottleInfo) => {
                     const bottleInfoFields = getObjectFields(bottleInfo);
-                    if (!bottleInfoFields) {
-                        bottleAmountsList[bottle.name ?? ""] = {
-                            collateralAmount: 0,
-                            buckAmount: 0,
-                            decimals: bottle.dec,
-                        };
-                    }
-                    else {
-                        bottleAmountsList[bottle.name ?? ""] = {
+                    if (bottleInfoFields) {
+                        userBottles.push({
+                            token: bottle.name ?? "",
                             collateralAmount: bottleInfoFields.value.fields.value.fields.collateral_amount,
                             buckAmount: bottleInfoFields.value.fields.value.fields.buck_amount,
-                            decimals: bottle.dec,
-                        };
+                        });
                     }
                 })
                     .catch((error) => {
                     console.log("error", error);
                 });
             }
-            return bottleAmountsList;
+            return userBottles;
         }
         catch (error) {
-            return {};
+            return [];
         }
     }
     ;
+    async getAllTanks() {
+        /**
+       * @description Get all tanks objects
+       */
+        try {
+            const protocolFields = await this.client.getDynamicFields({
+                parentId: protocolAddress[this.packageType]
+            });
+            const tankList = protocolFields.data.filter((item) => item.objectType.includes("Tank"));
+            const objectIdList = tankList.map((item) => item.objectId);
+            const response = await this.client.multiGetObjects({
+                ids: objectIdList,
+                options: {
+                    showContent: true,
+                    showType: true, //Check could we get type from response later
+                },
+            });
+            const tankInfoList = [];
+            response.forEach((res, index) => {
+                const fields = getObjectFields(res);
+                let token = "";
+                const objectType = res.data?.type;
+                if (objectType) {
+                    const assetType = objectType.split(",")[1].trim().split(">")[0].trim();
+                    token = Object.keys(COINS_TYPE_LIST).find(symbol => COINS_TYPE_LIST[symbol] == assetType) ?? "";
+                }
+                const tankInfo = {
+                    token,
+                    buckReserve: fields?.reserve || "0",
+                    collateralPool: fields?.collateral_pool || "0",
+                    currentS: fields?.current_s || "0",
+                    currentP: fields?.current_p || "1",
+                };
+                tankInfoList.push(tankInfo);
+            });
+            return tankInfoList;
+        }
+        catch (error) {
+            return [];
+        }
+    }
+    ;
+    async getPrices() {
+        /**
+         * @description Get all prices
+        */
+        const ids = Object.values(SUPRA_PRICE_FEEDS);
+        const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
+        const priceObjects = await this.client.multiGetObjects({
+            ids,
+            options: {
+                showContent: true,
+                showType: true, //Check could we get type from response later
+            },
+        });
+        const prices = {
+            WETH: 0,
+            SUI: 0,
+            vSUI: 0,
+            afSUI: 0,
+            haSUI: 0,
+            USDC: 1,
+            USDT: 1,
+            BUCK: 1,
+        };
+        priceObjects.map((res, index) => {
+            const priceFeed = getObjectFields(res);
+            const priceBn = priceFeed.value.fields.value;
+            const decimals = priceFeed.value.fields.decimal;
+            const price = parseInt(priceBn) / Math.pow(10, decimals);
+            if (objectNameList[index] == 'usdc_usd') {
+                prices['USDC'] = price;
+            }
+            else if (objectNameList[index] == 'usdt_usd') {
+                prices['USDT'] = price;
+            }
+            else if (objectNameList[index] == 'eth_usdt') {
+                prices['WETH'] = prices['USDT'] * price;
+            }
+            else if (objectNameList[index] == 'sui_usdt') {
+                prices['SUI'] = prices['USDT'] * price;
+            }
+            else if (objectNameList[index] == 'vsui_sui') {
+                prices['vSUI'] = prices['SUI'] * price;
+            }
+            else if (objectNameList[index] == 'hasui_sui') {
+                prices['haSUI'] = prices['SUI'] * price;
+            }
+            else if (objectNameList[index] == 'afsui_sui') {
+                prices['afSUI'] = prices['SUI'] * price;
+            }
+        });
+        return prices;
+    }
+    async getAPYs() {
+        /**
+         * @description Get APYs for vSUI, afSUI, haSUI
+        */
+        let apys = {
+            vSUI: 4.2 // Use constant value
+        };
+        // Get haSUI APY
+        try {
+            const response = await (await fetch(HASUI_APY_URL)).json();
+            apys["haSUI"] = response.data.apy;
+        }
+        catch (error) {
+            // console.log(error);
+        }
+        // Get afSUI APY
+        try {
+            const apy = await (await fetch(AFSUI_APY_URL)).text();
+            apys["afSUI"] = parseFloat(apy) * 100;
+        }
+        catch (error) {
+            // console.log(error);
+        }
+        return apys;
+    }
+    async getBorrowTx(isNewBottle, collateralType, collateralAmount, borrowAmount, walletAddress) {
+        /**
+         * @description Borrow
+         * @param isNewBottle
+         * @param collateralType Asset , e.g "0x2::sui::SUI"
+         * @param collateralAmount
+         * @param borrowAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new TransactionBlock();
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: collateralType,
+        });
+        const protocolId = protocolAddress[this.packageType];
+        const packageId = bucketOpAddress[this.packageType];
+        let coinSymbol = Object.keys(COINS_TYPE_LIST).filter(symbol => COINS_TYPE_LIST[symbol] == collateralType)[0];
+        let collateralCoinInput = undefined;
+        if (collateralType === COINS_TYPE_LIST.SUI) {
+            collateralCoinInput = tx.splitCoins(tx.gas, [
+                tx.pure(collateralAmount, "u64"),
+            ]);
+        }
+        else {
+            const [mainCoin, ...otherCoins] = coins
+                .filter((coin) => coin.coinType === collateralType)
+                .map((coin) => tx.objectRef({
+                objectId: coin.coinObjectId,
+                digest: coin.digest,
+                version: coin.version,
+            }));
+            if (mainCoin) {
+                if (otherCoins.length > 0) {
+                    tx.mergeCoins(mainCoin, otherCoins);
+                    collateralCoinInput = tx.splitCoins(mainCoin, [
+                        tx.pure(collateralAmount, "u64"),
+                    ]);
+                }
+                else {
+                    collateralCoinInput = tx.splitCoins(mainCoin, [
+                        tx.pure(collateralAmount, "u64"),
+                    ]);
+                }
+            }
+        }
+        if (!collateralCoinInput)
+            return tx;
+        if (borrowAmount == 0) {
+            tx.moveCall({
+                target: `${packageId}::bucket_operations::top_up`,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(protocolId),
+                    collateralCoinInput,
+                    tx.pure(walletAddress, "address"),
+                    isNewBottle ?
+                        tx.pure([]) :
+                        tx.pure([walletAddress]),
+                ],
+            });
+        }
+        else {
+            tx.moveCall({
+                target: SUPRA_UPDATE_TARGET,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(ORACLE_OBJECT_ID),
+                    tx.object(SUI_CLOCK_OBJECT_ID),
+                    tx.object(SUPRA_HANDLER_OBJECT),
+                    tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
+                ],
+            });
+            tx.moveCall({
+                target: `${packageId}::bucket_operations::borrow`,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.object(protocolId),
+                    tx.object(ORACLE_OBJECT_ID),
+                    tx.object(SUI_CLOCK_OBJECT_ID),
+                    collateralCoinInput,
+                    tx.pure(borrowAmount, "u64"),
+                    isNewBottle ?
+                        tx.pure([]) :
+                        tx.pure([walletAddress]),
+                ],
+            });
+        }
+        ;
+        return tx;
+    }
+    async getRepayTx(collateralType, repayAmount, withdrawAmount, walletAddress) {
+        /**
+         * @description Repay
+         * @param collateralType Asset , e.g "0x2::sui::SUI"
+         * @param repayAmount
+         * @param withdrawAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new TransactionBlock();
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: COINS_TYPE_LIST.BUCK,
+        });
+        const protocolId = protocolAddress[this.packageType];
+        const packageId = bucketOpAddress[this.packageType];
+        let buckCoinInput = undefined;
+        const [mainCoin, ...otherCoins] = coins
+            .filter((coin) => coin.coinType === COINS_TYPE_LIST.BUCK)
+            .map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            digest: coin.digest,
+            version: coin.version,
+        }));
+        if (mainCoin) {
+            if (otherCoins.length !== 0)
+                tx.mergeCoins(mainCoin, otherCoins);
+            buckCoinInput = tx.splitCoins(mainCoin, [
+                tx.pure(repayAmount, "u64"),
+            ]);
+        }
+        if (!buckCoinInput)
+            return tx;
+        let coinSymbol = Object.keys(COINS_TYPE_LIST).filter(symbol => COINS_TYPE_LIST[symbol] == collateralType)[0];
+        tx.moveCall({
+            target: SUPRA_UPDATE_TARGET,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(ORACLE_OBJECT_ID),
+                tx.object(SUI_CLOCK_OBJECT_ID),
+                tx.object(SUPRA_HANDLER_OBJECT),
+                tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
+            ],
+        });
+        tx.moveCall({
+            target: `${packageId}::bucket_operations::repay_and_withdraw`,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(protocolId),
+                tx.object(ORACLE_OBJECT_ID),
+                tx.object(SUI_CLOCK_OBJECT_ID),
+                buckCoinInput,
+                tx.pure(withdrawAmount, "u64"),
+                tx.pure([walletAddress]),
+            ],
+        });
+        return tx;
+    }
 }
 //# sourceMappingURL=client.js.map

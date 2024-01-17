@@ -1,7 +1,9 @@
 import { EventId } from "@mysten/sui.js/src/client";
+import { ACCEPT_ASSETS } from "src/utils";
 
 
-export type BucketResponseResult = {
+export type BucketInfo = {
+  token: ACCEPT_ASSETS;
   baseFeeRate: number;
   bottleTableSize: string;
   collateralDecimal: number;
@@ -10,14 +12,38 @@ export type BucketResponseResult = {
   minCollateralRatio: string;
   mintedBuckAmount: string;
   minBottleSize: string;
+  maxMintAmount: string;
   recoveryModeThreshold: string;
 };
 
-export type BucketList = {
-  [key: string]: BucketResponseResult;
+export type BucketProtocolResponse = {
+  dataType: string;
+  type: string;
+  hasPublicTransfer: boolean;
+  fields: {
+    buck_treasury_cap: {
+      type: string;
+      fields: {
+        id: {
+          id: string;
+        };
+        total_supply: {
+          type: string;
+          fields: {
+            value: string;
+          }
+        }
+      };
+    };
+    id: {
+      id: string;
+    };
+    min_bottle_size: string;
+    version: string;
+  };
 };
 
-export type BucketTypeInfo = {
+export type BucketResponse = {
   base_fee_rate: string;
   bottle_table: {
     type: string;
@@ -49,6 +75,7 @@ export type BucketTypeInfo = {
     id: string;
   };
   latest_redemption_time: string;
+  max_mint_amount: string;
   min_collateral_ratio: string;
   minted_buck_amount: string;
   min_bottle_size: string;
@@ -57,12 +84,12 @@ export type BucketTypeInfo = {
 };
 
 export type BottleInfo = {
+  token: string;
   collateralAmount: number;
-  buckAmount: number; //user debt
-  decimals: number;
+  buckAmount: number;
 };
 
-export type BottleInfoResult = {
+export type BottleInfoResponse = {
   value: {
     fields: {
       value: {
@@ -74,11 +101,6 @@ export type BottleInfoResult = {
     };
   };
 };
-
-export type BottleAmountsList = {
-  [key: string]: BottleInfo;
-};
-
 
 export interface BottleSummary {
   bottleId: string;
@@ -100,5 +122,36 @@ export interface BucketConstants {
   minFee: string,
   maxFee: string
 }
+
+export type TankInfoReponse = {
+  reserve: string;
+  collateral_pool: string;
+  current_s: string;
+  current_p: string;
+};
+
+export type TankInfo = {
+  token: string;
+  buckReserve: string;
+  collateralPool: string;
+  currentS: string;
+  currentP: string;
+};
+
+export type SupraPriceFeed = {
+  id: {
+    id: string;
+  };
+  name: number;
+  value: {
+    type: string;
+    fields: {
+      decimal: number;
+      round: string;
+      timestamp: string;
+      value: string;
+    }
+  }
+};
 
 export type PackageType = "mainnet" | "testnet";

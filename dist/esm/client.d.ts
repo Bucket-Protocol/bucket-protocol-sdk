@@ -1,6 +1,6 @@
 import { SuiClient } from "@mysten/sui.js/client";
-import { TransactionBlock } from "@mysten/sui.js/transactions";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketList, BottleAmountsList } from "./types";
+import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketInfo, TankInfo, BottleInfo } from "./types";
 export declare class BucketClient {
     currentAddress: string;
     /**
@@ -18,7 +18,7 @@ export declare class BucketClient {
     withdrawFromTank(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock>;
     claimFromTank(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock>;
     claimBkt(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock>;
-    borrow(assetType: string, protocol: string, oracle: string, collateralInput: string, bucketOutputAmount: number, insertionPlace: string): Promise<TransactionBlock>;
+    borrow(assetType: string, protocol: string, collateralInput: TransactionResult, bucketOutputAmount: number, insertionPlace: string): Promise<TransactionBlock>;
     topUp(assetType: string, protocol: string, collateralInput: string, forAddress: string, insertionPlace: string): Promise<TransactionBlock>;
     withdraw(assetType: string, protocol: string, oracle: string, collateralAmount: string, insertionPlace: string): Promise<TransactionBlock>;
     repay(assetType: string, protocol: string, buckInput: string): Promise<TransactionBlock>;
@@ -31,7 +31,22 @@ export declare class BucketClient {
     getDestroyedBottles(): Promise<PaginatedBottleSummary>;
     private encodedBucketConstants;
     getBucketConstants(): Promise<BucketConstants | undefined>;
-    getAllBuckets(): Promise<BucketList>;
-    getUserBottle(address: string): Promise<BottleAmountsList | null>;
+    getAllBuckets(): Promise<BucketInfo[]>;
+    getUserBottles(address: string): Promise<BottleInfo[]>;
+    getAllTanks(): Promise<TankInfo[]>;
+    getPrices(): Promise<{
+        [key: string]: number;
+    }>;
+    getAPYs(): Promise<Partial<{
+        SUI: number;
+        USDC: number;
+        USDT: number;
+        afSUI: number;
+        haSUI: number;
+        vSUI: number;
+        WETH: number;
+    }>>;
+    getBorrowTx(isNewBottle: boolean, collateralType: string, collateralAmount: number, borrowAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getRepayTx(collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
 }
 //# sourceMappingURL=client.d.ts.map
