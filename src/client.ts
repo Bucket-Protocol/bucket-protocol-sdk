@@ -6,8 +6,8 @@ import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { SuiObjectData, SuiObjectRef, getObjectFields } from "./objects/objectTypes";
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_CONTRIBUTOR_TOKEN_ID, TESTNET_CONTRIBUTOR_TOKEN_ID, MAINNET_CORE_PACKAGE_ID, TESTNET_CORE_PACKAGE_ID, COIN_DECIMALS } from "./constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo, ContributorToken, UserTankInfo } from "./types";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_CONTRIBUTOR_TOKEN_ID, TESTNET_CONTRIBUTOR_TOKEN_ID, MAINNET_CORE_PACKAGE_ID, TESTNET_CORE_PACKAGE_ID, COIN_DECIMALS, COIN } from "./constants";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo, ContributorToken, UserTankInfo, UserTankList } from "./types";
 import { U64FromBytes, formatUnits, getObjectNames } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -773,17 +773,17 @@ export class BucketClient {
     }
   };
 
-  async getUserTanks(address: string): Promise<UserTankInfo[]> {
+  async getUserTanks(address: string): Promise<UserTankList> {
     /**
      * @description Get tanks array for input address
      * @address User address that belong to bottle
      * @returns Promise<TankInfo>
      */
-    if (!address) return [];
+    if (!address) return {};
 
     const CONTRIBUTOR_TOKEN_ID = contributorId[this.packageType];
 
-    let userTanks: UserTankInfo[] = [];
+    let userTanks: UserTankList = {};
 
     try {
       // Get all tank objects
@@ -844,17 +844,15 @@ export class BucketClient {
         const token = Object.keys(COINS_TYPE_LIST).filter(x => COINS_TYPE_LIST[x] == tankType)[0];
         const totalBUCK = await this.getUserTankBUCK(tankType, tokens);
         const totalEarned = await this.getUserTankEarn(tankType, tokens);
-        userTanks.push({
-          token,
+        userTanks[token] = {
           totalBUCK,
           totalEarned,
-        })
+        };
       }
-
-      return userTanks;
     } catch (error) {
-      return [];
     }
+
+    return userTanks;
   };
 
   async getUserTankBUCK(tankType: string, tokens: SuiObjectResponse[]) {

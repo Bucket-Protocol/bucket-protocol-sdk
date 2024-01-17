@@ -1,5 +1,5 @@
 import { EventId } from "@mysten/sui.js/src/client";
-import { ACCEPT_ASSETS } from "src/utils";
+import { ACCEPT_ASSETS, COIN } from "src/utils";
 export type BucketInfo = {
     token: ACCEPT_ASSETS;
     baseFeeRate: number;
@@ -134,7 +134,6 @@ export type ContributorToken = {
     };
 };
 export type UserTankInfo = {
-    token: string;
     totalEarned: number;
     totalBUCK: number;
 };
@@ -153,5 +152,6 @@ export type SupraPriceFeed = {
         };
     };
 };
+export type UserTankList = Partial<Record<COIN, UserTankInfo>>;
 export type PackageType = "mainnet" | "testnet";
 //# sourceMappingURL=index.d.ts.map

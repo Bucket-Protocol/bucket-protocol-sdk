@@ -582,9 +582,9 @@ export class BucketClient {
          * @returns Promise<TankInfo>
          */
         if (!address)
-            return [];
+            return {};
         const CONTRIBUTOR_TOKEN_ID = contributorId[this.packageType];
-        let userTanks = [];
+        let userTanks = {};
         try {
             // Get all tank objects
             const protocolFields = await this.client.getDynamicFields({
@@ -633,17 +633,15 @@ export class BucketClient {
                 const token = Object.keys(COINS_TYPE_LIST).filter(x => COINS_TYPE_LIST[x] == tankType)[0];
                 const totalBUCK = await this.getUserTankBUCK(tankType, tokens);
                 const totalEarned = await this.getUserTankEarn(tankType, tokens);
-                userTanks.push({
-                    token,
+                userTanks[token] = {
                     totalBUCK,
                     totalEarned,
-                });
+                };
             }
-            return userTanks;
         }
         catch (error) {
-            return [];
         }
+        return userTanks;
     }
     ;
     async getUserTankBUCK(tankType, tokens) {
