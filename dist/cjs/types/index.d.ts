@@ -126,6 +126,18 @@ export type TankInfo = {
     currentS: string;
     currentP: string;
 };
+export type ContributorToken = {
+    data: {
+        digest: string;
+        objectId: string;
+        version: string;
+    };
+};
+export type UserTankInfo = {
+    token: string;
+    totalEarned: number;
+    totalBUCK: number;
+};
 export type SupraPriceFeed = {
     id: {
         id: string;

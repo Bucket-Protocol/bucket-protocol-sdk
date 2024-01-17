@@ -1,13 +1,18 @@
 export type ACCEPT_ASSETS = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "WETH";
-export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "WETH" | "BUCK" | "BKT";
+export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT";
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 export declare const MAINNET_PACKAGE_ID: string;
 export declare const MAINNET_BUCKET_OPERATIONS_PACKAGE_ID: string;
+export declare const MAINNET_PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
+export declare const MAINNET_CONTRIBUTOR_TOKEN_ID = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
+export declare const MAINNET_CORE_PACKAGE_ID = "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 export declare const TESTNET_PACKAGE_ID: string;
 export declare const TESTNET_BUCKET_OPERATIONS_PACKAGE_ID: string;
 export declare const TESTNET_PROTOCOL_ID = "0x8b7ff1f21c8e80683a4504f8e564ad42e51361875ecce8c9ecc5596a67abd225";
-export declare const MAINNET_PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
+export declare const TESTNET_CONTRIBUTOR_TOKEN_ID = "0x1ca47988f33d06d748a779e78f321b9ba74f6ad25b3de2840da425022dfaa969";
+export declare const TESTNET_CORE_PACKAGE_ID = "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 export declare const COINS_TYPE_LIST: Record<COIN, string>;
+export declare const COIN_DECIMALS: Record<COIN, number>;
 export declare const SUPRA_PRICE_FEEDS: {
     usdc_usd: string;
     usdt_usd: string;

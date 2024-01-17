@@ -3,12 +3,14 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID } from "./constants";
-import { getObjectNames } from "./utils";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_CONTRIBUTOR_TOKEN_ID, TESTNET_CONTRIBUTOR_TOKEN_ID, MAINNET_CORE_PACKAGE_ID, TESTNET_CORE_PACKAGE_ID, COIN_DECIMALS } from "./constants";
+import { U64FromBytes, formatUnits, getObjectNames } from "./utils";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
 const protocolAddress = { "mainnet": MAINNET_PROTOCOL_ID, "testnet": TESTNET_PROTOCOL_ID };
 const bucketOpAddress = { "mainnet": MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, "testnet": TESTNET_BUCKET_OPERATIONS_PACKAGE_ID };
+const contributorId = { "mainnet": MAINNET_CONTRIBUTOR_TOKEN_ID, "testnet": TESTNET_CONTRIBUTOR_TOKEN_ID };
+const corePackageId = { "mainnet": MAINNET_CORE_PACKAGE_ID, "testnet": TESTNET_CORE_PACKAGE_ID };
 export class BucketClient {
     currentAddress;
     /**
@@ -465,9 +467,51 @@ export class BucketClient {
         return buckets;
     }
     ;
+    async getAllTanks() {
+        /**
+       * @description Get all tanks objects
+       */
+        try {
+            const protocolFields = await this.client.getDynamicFields({
+                parentId: protocolAddress[this.packageType]
+            });
+            const tankList = protocolFields.data.filter((item) => item.objectType.includes("Tank"));
+            const objectIdList = tankList.map((item) => item.objectId);
+            const response = await this.client.multiGetObjects({
+                ids: objectIdList,
+                options: {
+                    showContent: true,
+                    showType: true, //Check could we get type from response later
+                },
+            });
+            const tankInfoList = [];
+            response.forEach((res, index) => {
+                const fields = getObjectFields(res);
+                let token = "";
+                const objectType = res.data?.type;
+                if (objectType) {
+                    const assetType = objectType.split(",")[1].trim().split(">")[0].trim();
+                    token = Object.keys(COINS_TYPE_LIST).find(symbol => COINS_TYPE_LIST[symbol] == assetType) ?? "";
+                }
+                const tankInfo = {
+                    token,
+                    buckReserve: fields?.reserve || "0",
+                    collateralPool: fields?.collateral_pool || "0",
+                    currentS: fields?.current_s || "0",
+                    currentP: fields?.current_p || "1",
+                };
+                tankInfoList.push(tankInfo);
+            });
+            return tankInfoList;
+        }
+        catch (error) {
+            return [];
+        }
+    }
+    ;
     async getUserBottles(address) {
         /**
-         * @description Get bucket constants (decoded BCS values)
+         * @description Get positions array for input address
          * @address User address that belong to bottle
          * @returns Promise<BottleInfo>
          */
@@ -531,48 +575,178 @@ export class BucketClient {
         }
     }
     ;
-    async getAllTanks() {
+    async getUserTanks(address) {
         /**
-       * @description Get all tanks objects
-       */
+         * @description Get tanks array for input address
+         * @address User address that belong to bottle
+         * @returns Promise<TankInfo>
+         */
+        if (!address)
+            return [];
+        const CONTRIBUTOR_TOKEN_ID = contributorId[this.packageType];
+        let userTanks = [];
         try {
+            // Get all tank objects
             const protocolFields = await this.client.getDynamicFields({
                 parentId: protocolAddress[this.packageType]
             });
             const tankList = protocolFields.data.filter((item) => item.objectType.includes("Tank"));
-            const objectIdList = tankList.map((item) => item.objectId);
-            const response = await this.client.multiGetObjects({
-                ids: objectIdList,
+            // Split coin type from result
+            const tankTypes = tankList.map(tank => {
+                const tankType = tank.objectType;
+                const splitTypeString = tankType.split("<").pop();
+                if (!splitTypeString)
+                    return;
+                const coinType = splitTypeString.replace(">", "").split(",").pop();
+                if (!coinType)
+                    return;
+                return coinType.trim();
+            });
+            // Build contributor token filter
+            const filters = tankTypes.map(tankType => {
+                return {
+                    StructType: `${CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
+                };
+            });
+            // Get contributor token accounts for user address
+            const { data: contributorTokens } = await this.client.getOwnedObjects({
+                owner: address,
+                filter: {
+                    MatchAny: filters
+                },
                 options: {
                     showContent: true,
-                    showType: true, //Check could we get type from response later
-                },
-            });
-            const tankInfoList = [];
-            response.forEach((res, index) => {
-                const fields = getObjectFields(res);
-                let token = "";
-                const objectType = res.data?.type;
-                if (objectType) {
-                    const assetType = objectType.split(",")[1].trim().split(">")[0].trim();
-                    token = Object.keys(COINS_TYPE_LIST).find(symbol => COINS_TYPE_LIST[symbol] == assetType) ?? "";
                 }
-                const tankInfo = {
-                    token,
-                    buckReserve: fields?.reserve || "0",
-                    collateralPool: fields?.collateral_pool || "0",
-                    currentS: fields?.current_s || "0",
-                    currentP: fields?.current_p || "1",
-                };
-                tankInfoList.push(tankInfo);
             });
-            return tankInfoList;
+            for (const tankType of tankTypes) {
+                if (!tankType) {
+                    continue;
+                }
+                // Filter contributor tokens by selected tank
+                const tokens = contributorTokens.filter(x => {
+                    if (x.data?.content?.dataType == 'moveObject') {
+                        const typeId = x.data.content.type;
+                        return typeId.endsWith(tankType + ">");
+                    }
+                    return false;
+                });
+                const token = Object.keys(COINS_TYPE_LIST).filter(x => COINS_TYPE_LIST[x] == tankType)[0];
+                const totalBUCK = await this.getUserTankBUCK(tankType, tokens);
+                const totalEarned = await this.getUserTankEarn(tankType, tokens);
+                userTanks.push({
+                    token,
+                    totalBUCK,
+                    totalEarned,
+                });
+            }
+            return userTanks;
         }
         catch (error) {
             return [];
         }
     }
     ;
+    async getUserTankBUCK(tankType, tokens) {
+        if (tokens.length == 0) {
+            return 0;
+        }
+        const tx = new TransactionBlock();
+        const CORE_PACKAGE_ID = corePackageId[this.packageType];
+        const PROTOCOL_ID = protocolAddress[this.packageType];
+        const tank = tx.moveCall({
+            target: `${CORE_PACKAGE_ID}::buck::borrow_tank`,
+            typeArguments: [tankType],
+            arguments: [tx.object(PROTOCOL_ID)],
+        });
+        const target = `${CORE_PACKAGE_ID}::tank::get_token_weight`;
+        for (const token of tokens) {
+            if (!token.data) {
+                continue;
+            }
+            tx.moveCall({
+                target: target,
+                typeArguments: [COINS_TYPE_LIST.BUCK, tankType],
+                arguments: [tank, tx.objectRef({
+                        objectId: token.data.objectId,
+                        digest: token.data.digest,
+                        version: token.data.version,
+                    })],
+            });
+        }
+        const res = await this.client.devInspectTransactionBlock({
+            transactionBlock: tx,
+            sender: PROTOCOL_ID,
+        });
+        const resultArray = res?.results?.slice(1);
+        if (resultArray?.length === 0)
+            return 0;
+        const bytesArray = resultArray?.map((result) => {
+            if (result?.returnValues === undefined)
+                return [0];
+            if (result?.returnValues[0] === undefined)
+                return [0];
+            return result?.returnValues[0][0];
+        });
+        if (!bytesArray)
+            return 0;
+        let total = 0;
+        bytesArray.forEach((bytes) => {
+            const u64 = U64FromBytes(bytes);
+            total += Number(formatUnits(u64, 9)); //BUCK decimals
+        });
+        return total;
+    }
+    async getUserTankEarn(tankType, tokens) {
+        if (tokens.length == 0) {
+            return 0;
+        }
+        const coinSymbol = Object.keys(COINS_TYPE_LIST).filter(x => COINS_TYPE_LIST[x] == tankType)[0];
+        const tx = new TransactionBlock();
+        const CORE_PACKAGE_ID = corePackageId[this.packageType];
+        const PROTOCOL_ID = protocolAddress[this.packageType];
+        const tank = tx.moveCall({
+            target: `${CORE_PACKAGE_ID}::buck::borrow_tank`,
+            typeArguments: [tankType],
+            arguments: [tx.object(PROTOCOL_ID)],
+        });
+        const target = `${CORE_PACKAGE_ID}::tank::get_collateral_reward_amount`;
+        for (const token of tokens) {
+            if (!token.data) {
+                continue;
+            }
+            tx.moveCall({
+                target: target,
+                typeArguments: [COINS_TYPE_LIST.BUCK, tankType],
+                arguments: [tank, tx.objectRef({
+                        objectId: token.data.objectId,
+                        digest: token.data.digest,
+                        version: token.data.version,
+                    })],
+            });
+        }
+        const res = await this.client.devInspectTransactionBlock({
+            transactionBlock: tx,
+            sender: PROTOCOL_ID,
+        });
+        const resultArray = res?.results?.slice(1);
+        if (resultArray?.length === 0)
+            return 0;
+        const bytesArray = resultArray?.map((result) => {
+            if (result?.returnValues === undefined)
+                return [0];
+            if (result?.returnValues[0] === undefined)
+                return [0];
+            return result?.returnValues[0][0];
+        });
+        if (!bytesArray)
+            return 0;
+        let total = 0;
+        bytesArray.forEach((bytes) => {
+            const u64 = U64FromBytes(bytes);
+            total += Number(formatUnits(u64, COIN_DECIMALS[coinSymbol] ?? 9));
+        });
+        return total;
+    }
     async getPrices() {
         /**
          * @description Get all prices

@@ -1,27 +1,31 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
 export type ACCEPT_ASSETS = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "WETH";
-export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "WETH" | "BUCK" | "BKT";
+export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT";
 
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 
 export const MAINNET_PACKAGE_ID: string =
   "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
-
 export const MAINNET_BUCKET_OPERATIONS_PACKAGE_ID: string =
   "0xb59c19de88addb7b3e721066c6c99987d09ad22fa829c69dbf0f0c1c0be20625";
+export const MAINNET_PROTOCOL_ID =
+  "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
+export const MAINNET_CONTRIBUTOR_TOKEN_ID =
+  "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
+export const MAINNET_CORE_PACKAGE_ID =
+  "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 
 export const TESTNET_PACKAGE_ID: string =
   "0x1ca47988f33d06d748a779e78f321b9ba74f6ad25b3de2840da425022dfaa969";
-
 export const TESTNET_BUCKET_OPERATIONS_PACKAGE_ID: string =
   "0x6f206ba15a7d81662e20ac1e6a4e0b443f3972861327584e8a1148c9880e4a09";
-
 export const TESTNET_PROTOCOL_ID =
   "0x8b7ff1f21c8e80683a4504f8e564ad42e51361875ecce8c9ecc5596a67abd225";
-
-export const MAINNET_PROTOCOL_ID =
-  "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
+export const TESTNET_CONTRIBUTOR_TOKEN_ID =
+  "0x1ca47988f33d06d748a779e78f321b9ba74f6ad25b3de2840da425022dfaa969";
+export const TESTNET_CORE_PACKAGE_ID =
+  "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
   SUI: "0x2::sui::SUI",
@@ -31,8 +35,26 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   haSUI: "0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI",
   vSUI: "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT",
   WETH: "0xaf8cd5edc19c4512f4259f0bee101a40d41ebed738ade5874359610ef8eeced5::coin::COIN",
+  AF_LP_USDC_BUCK:
+    "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
+  AF_LP_SUI_BUCK:
+    "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
   BUCK: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK",
   BKT: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::bkt::BKT",
+};
+
+export const COIN_DECIMALS: Record<COIN, number> = {
+  SUI: 9,
+  USDC: 6,
+  USDT: 6,
+  afSUI: 9,
+  haSUI: 9,
+  vSUI: 9,
+  WETH: 8,
+  BUCK: 9,
+  BKT: 9,
+  AF_LP_USDC_BUCK: 9,
+  AF_LP_SUI_BUCK: 9,
 };
 
 export const SUPRA_PRICE_FEEDS = {
