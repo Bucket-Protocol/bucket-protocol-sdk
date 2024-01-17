@@ -12,7 +12,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
         packageType: "mainnet"
     });
 
-    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -36,7 +35,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     });
 
     it('tests getUserBottle() function', async () => {
-        const bottles = await buck.getUserBottle("0x95b0ce9775382b88a4e698d31a0a7fd796922c91bb80de66e940bd4cae5a9916");
+        const bottles = await buck.getUserBottles("");
         expect(bottles).toBeDefined()
     });
 
@@ -50,15 +49,13 @@ describe('Interacting with Bucket Client on mainnet', () => {
         expect(apys).toBeDefined()
     });
 
-    it('tests getFountains() function', async () => {
-        const fountains = await buck.getFountains();
-        expect(fountains).toBeDefined()
+    it('tests getPrices() function', async () => {
+        const prices = await buck.getPrices();
+        expect(prices).toBeDefined()
     });
-    */
 
     it('tests getAllTanks() function', async () => {
         const tanks = await buck.getAllTanks();
-        console.log(tanks)
         expect(tanks).toBeDefined()
     });
 });
