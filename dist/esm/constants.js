@@ -1,4 +1,5 @@
 // Copyright Andrei <andreid.dev@gmail.com>
+import { Inputs } from "@mysten/sui.js/src/builder";
 export const MAINNET_PACKAGE_ID = "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 export const MAINNET_BUCKET_OPERATIONS_PACKAGE_ID = "0xb59c19de88addb7b3e721066c6c99987d09ad22fa829c69dbf0f0c1c0be20625";
 export const MAINNET_PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
@@ -59,6 +60,65 @@ export const SUPRA_HANDLER_OBJECT = "0xaa0315f0748c1f24ddb2b45f7939cff40f7a8104a
 export const SUPRA_UPDATE_TARGET = "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_supra";
 export const ORACLE_OBJECT_ID = "0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078";
 export const TREASURY_OBJECT_ID = "0x7032c4d7afd30cd0dd04c924d63f1127de6fcc429968306807091d3ad3ff78b1";
+export const FOUNTAIN_PERIHERY_PACKAGE_ID = "0x8c51a9c8d235413e5dd4ff922191d5fc1f79b5b0c4d70620f00415a411f1040d";
+export const CETUS_SUI_BUCK_LP_REGISTRY_ID = "0x7778d68f02810b2c002b6f40084c5f3fe0b1bcc7d7a7c64d72ba40ff9a815bac";
+export const CETUS_SUI_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+    objectId: CETUS_SUI_BUCK_LP_REGISTRY_ID,
+    mutable: true,
+    initialSharedVersion: 7598161,
+});
+export const CETUS_USDC_BUCK_LP_REGISTRY_ID = "0xb9d46d57d933fabaf9c81f4fc6f54f9c1570d3ef49785c6b7200cad6fe302909";
+export const CETUS_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+    objectId: CETUS_USDC_BUCK_LP_REGISTRY_ID,
+    mutable: true,
+    initialSharedVersion: 61717743,
+});
+export const KRIYA_SUI_BUCK_LP_REGISTRY_ID = "0xcc39bcc2c438a79beb2656ff043714a60baf89ba37592bef2e14ee8bca0cf007";
+export const KRIYA_SUI_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+    objectId: KRIYA_SUI_BUCK_LP_REGISTRY_ID,
+    mutable: true,
+    initialSharedVersion: 18368425,
+});
+export const KRIYA_USDC_BUCK_LP_REGISTRY_ID = "0xae1910e5bcb13a4f5b12688f0da939b9c9d3e8a9e8d0a2e02c818f6a94e598fd";
+export const KRIYA_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+    objectId: KRIYA_USDC_BUCK_LP_REGISTRY_ID,
+    mutable: true,
+    initialSharedVersion: 18368428,
+});
+export const AF_SUI_BUCK_LP_REGISTRY_ID = "0xe2569ee20149c2909f0f6527c210bc9d97047fe948d34737de5420fab2db7062";
+export const AF_SUI_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+    objectId: AF_SUI_BUCK_LP_REGISTRY_ID,
+    mutable: true,
+    initialSharedVersion: 6366296,
+});
+export const AF_USDC_BUCK_LP_REGISTRY_ID = "0x885e09419b395fcf5c8ee5e2b7c77e23b590e58ef3d61260b6b4eb44bbcc8c62";
+export const AF_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+    objectId: AF_USDC_BUCK_LP_REGISTRY_ID,
+    mutable: true,
+    initialSharedVersion: 6366295,
+});
+export const AF_OBJS = {
+    pool: "0xeec6b5fb1ddbbe2eb1bdcd185a75a8e67f52a5295704dd73f3e447394775402b",
+    poolRegistry: "0xfcc774493db2c45c79f688f88d28023a3e7d98e4ee9f48bbf5c7990f651577ae",
+    protocolFeeVault: "0xf194d9b1bcad972e45a7dd67dd49b3ee1e3357a00a50850c52cd51bb450e13b4",
+    treasury: "0x28e499dff5e864a2eafe476269a4f5035f1c16f338da7be18b103499abf271ce",
+    insuranceFund: "0xf0c40d67b078000e18032334c3325c47b9ec9f3d9ae4128be820d54663d14e3b",
+    referralVault: "0x35d35b0e5b177593d8c3a801462485572fc30861e6ce96a55af6dc4730709278"
+};
+export const CETUS_OBJS = {
+    poolBuckUsdc: "0x6ecf6d01120f5f055f9a605b56fd661412a81ec7c8b035255e333c664a0c12e7",
+    globalConfig: "0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f"
+};
+export const BUCKETUS_TREASURY = Inputs.SharedObjectRef({
+    objectId: "0x781d3060afe9f5427bb865088ab25c8d827ed2b0be71ab140ff9ab5a0d8c9466",
+    initialSharedVersion: 61707529,
+    mutable: true,
+});
+export const BUCKETUS_LP_VAULT = Inputs.SharedObjectRef({
+    objectId: "0x1a0b93fd2965ce3ceb4039c90b232ddee7b0e79015cab0ca10528bb5f4285188",
+    initialSharedVersion: 61717741,
+    mutable: true,
+});
 export const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
 export const HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";
 //# sourceMappingURL=constants.js.map

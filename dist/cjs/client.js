@@ -492,6 +492,7 @@ class BucketClient {
         /**
        * @description Get all tanks objects
        */
+        const tankInfoList = {};
         try {
             const protocolFields = await this.client.getDynamicFields({
                 parentId: protocolAddress[this.packageType]
@@ -505,7 +506,6 @@ class BucketClient {
                     showType: true, //Check could we get type from response later
                 },
             });
-            const tankInfoList = [];
             response.forEach((res, index) => {
                 const fields = (0, objectTypes_1.getObjectFields)(res);
                 let token = "";
@@ -515,19 +515,17 @@ class BucketClient {
                     token = (0, utils_2.getCoinSymbol)(assetType) ?? "";
                 }
                 const tankInfo = {
-                    token,
                     buckReserve: fields?.reserve || "0",
                     collateralPool: fields?.collateral_pool || "0",
                     currentS: fields?.current_s || "0",
                     currentP: fields?.current_p || "1",
                 };
-                tankInfoList.push(tankInfo);
+                tankInfoList[token] = tankInfo;
             });
-            return tankInfoList;
         }
         catch (error) {
-            return [];
         }
+        return tankInfoList;
     }
     ;
     async getUserBottles(address) {
@@ -1141,6 +1139,72 @@ class BucketClient {
                     tx.object(constants_1.TREASURY_OBJECT_ID),
                     token,
                 ],
+            });
+        }
+        return tx;
+    }
+    async getStakeUSDCTx(isAf, stakeAmount, walletAddress) {
+        /**
+         * @description Get transaction for stake token to pool
+         * @param isAf Boolean value for Aftermath or not
+         * @param stakeAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const protocolId = protocolAddress[this.packageType];
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: constants_1.COINS_TYPE_LIST.BUCK,
+        });
+        const [mainCoin, ...otherCoins] = coins.map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            digest: coin.digest,
+            version: coin.version,
+        }));
+        if (!mainCoin)
+            return tx;
+        if (otherCoins.length > 0)
+            tx.mergeCoins(mainCoin, otherCoins);
+        const stakeCoinInput = tx.splitCoins(mainCoin, [
+            tx.pure(stakeAmount * 10 ** constants_1.COIN_DECIMALS['USDC'], "u64"),
+        ]);
+        if (!stakeCoinInput)
+            return tx;
+        if (isAf) {
+            tx.moveCall({
+                target: `${constants_1.FOUNTAIN_PERIHERY_PACKAGE_ID}::aftermath_fountain::stake`,
+                typeArguments: [constants_1.COINS_TYPE_LIST.AF_LP_USDC_BUCK, constants_1.COINS_TYPE_LIST.USDC],
+                arguments: [
+                    tx.object(protocolId),
+                    tx.object(constants_1.AF_OBJS.pool),
+                    tx.object(constants_1.AF_OBJS.poolRegistry),
+                    tx.object(constants_1.AF_OBJS.protocolFeeVault),
+                    tx.object(constants_1.AF_OBJS.treasury),
+                    tx.object(constants_1.AF_OBJS.insuranceFund),
+                    tx.object(constants_1.AF_OBJS.referralVault),
+                    tx.object(constants_1.AF_USDC_BUCK_LP_REGISTRY_ID),
+                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                    stakeCoinInput,
+                    tx.pure(walletAddress, "address"),
+                ]
+            });
+        }
+        else {
+            tx.moveCall({
+                target: `${constants_1.FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::stake`,
+                typeArguments: [constants_1.COINS_TYPE_LIST.USDC],
+                arguments: [
+                    tx.object(protocolId),
+                    tx.object(constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID),
+                    tx.object(constants_1.BUCKETUS_TREASURY),
+                    tx.object(constants_1.BUCKETUS_LP_VAULT),
+                    tx.object(constants_1.CETUS_OBJS.globalConfig),
+                    tx.object(constants_1.CETUS_OBJS.poolBuckUsdc),
+                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                    stakeCoinInput,
+                    tx.pure(walletAddress, "address"),
+                ]
             });
         }
         return tx;

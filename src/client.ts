@@ -6,8 +6,8 @@ import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_CONTRIBUTOR_TOKEN_ID, TESTNET_CONTRIBUTOR_TOKEN_ID, MAINNET_CORE_PACKAGE_ID, TESTNET_CORE_PACKAGE_ID, COIN_DECIMALS, COIN, TREASURY_OBJECT_ID } from "./constants";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo, ContributorToken, UserTankInfo, UserTankList, ProtocolInfo } from "./types";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, ACCEPT_ASSETS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_CONTRIBUTOR_TOKEN_ID, TESTNET_CONTRIBUTOR_TOKEN_ID, MAINNET_CORE_PACKAGE_ID, TESTNET_CORE_PACKAGE_ID, COIN_DECIMALS, COIN, TREASURY_OBJECT_ID, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT, CETUS_OBJS, CETUS_USDC_BUCK_LP_REGISTRY_ID } from "./constants";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeed, BucketInfo, TankInfoReponse, TankInfo, BottleInfo, ContributorToken, UserTankInfo, UserTankList, ProtocolInfo, TankList } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, parseBigInt } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -661,10 +661,13 @@ export class BucketClient {
     return buckets;
   };
 
-  async getAllTanks(): Promise<TankInfo[]> {
+  async getAllTanks(): Promise<TankList> {
     /**
    * @description Get all tanks objects
    */
+
+    const tankInfoList: TankList = {};
+
     try {
       const protocolFields = await this.client.getDynamicFields({
         parentId: protocolAddress[this.packageType]
@@ -683,7 +686,6 @@ export class BucketClient {
           showType: true, //Check could we get type from response later
         },
       });
-      const tankInfoList: TankInfo[] = [];
 
       response.forEach((res, index) => {
         const fields = getObjectFields(res) as TankInfoReponse;
@@ -696,20 +698,19 @@ export class BucketClient {
         }
 
         const tankInfo: TankInfo = {
-          token,
           buckReserve: fields?.reserve || "0",
           collateralPool: fields?.collateral_pool || "0",
           currentS: fields?.current_s || "0",
           currentP: fields?.current_p || "1",
         };
 
-        tankInfoList.push(tankInfo);
+        tankInfoList[token] = tankInfo;
       });
 
-      return tankInfoList;
     } catch (error) {
-      return [];
     }
+
+    return tankInfoList;
   };
 
   async getUserBottles(address: string): Promise<BottleInfo[]> {
@@ -1443,6 +1444,83 @@ export class BucketClient {
           tx.object(TREASURY_OBJECT_ID),
           token,
         ],
+      });
+    }
+
+    return tx;
+  }
+
+  async getStakeUSDCTx(
+    isAf: boolean,
+    stakeAmount: number,
+    walletAddress: string,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description Get transaction for stake token to pool
+     * @param isAf Boolean value for Aftermath or not
+     * @param stakeAmount
+     * @param walletAddress
+     * @returns Promise<TransactionBlock>
+     */
+    const tx = new TransactionBlock();
+
+    const protocolId = protocolAddress[this.packageType];
+
+    const { data: coins } = await this.client.getCoins({
+      owner: walletAddress,
+      coinType: COINS_TYPE_LIST.BUCK,
+    });
+
+    const [mainCoin, ...otherCoins] = coins.map((coin) =>
+      tx.objectRef({
+        objectId: coin.coinObjectId,
+        digest: coin.digest,
+        version: coin.version,
+      })
+    );
+    if (!mainCoin) return tx;
+
+    if (otherCoins.length > 0) tx.mergeCoins(mainCoin, otherCoins);
+
+    const stakeCoinInput = tx.splitCoins(mainCoin, [
+      tx.pure(stakeAmount * 10 ** COIN_DECIMALS['USDC'], "u64"),
+    ]);
+    if (!stakeCoinInput) return tx;
+
+    if (isAf) {
+      tx.moveCall({
+        target: `${FOUNTAIN_PERIHERY_PACKAGE_ID}::aftermath_fountain::stake`,
+        typeArguments: [COINS_TYPE_LIST.AF_LP_USDC_BUCK, COINS_TYPE_LIST.USDC],
+        arguments: [
+          tx.object(protocolId),
+          tx.object(AF_OBJS.pool),
+          tx.object(AF_OBJS.poolRegistry),
+          tx.object(AF_OBJS.protocolFeeVault),
+          tx.object(AF_OBJS.treasury),
+          tx.object(AF_OBJS.insuranceFund),
+          tx.object(AF_OBJS.referralVault),
+          tx.object(AF_USDC_BUCK_LP_REGISTRY_ID),
+          tx.object(SUI_CLOCK_OBJECT_ID),
+          stakeCoinInput,
+          tx.pure(walletAddress, "address"),
+        ]
+      });
+    }
+    else {
+      tx.moveCall({
+        target: `${FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::stake`,
+        typeArguments: [COINS_TYPE_LIST.USDC],
+        arguments: [
+          tx.object(protocolId),
+          tx.object(CETUS_USDC_BUCK_LP_REGISTRY_ID),
+          tx.object(BUCKETUS_TREASURY),
+          tx.object(BUCKETUS_LP_VAULT),
+          tx.object(CETUS_OBJS.globalConfig),
+          tx.object(CETUS_OBJS.poolBuckUsdc),
+          tx.object(SUI_CLOCK_OBJECT_ID),
+          stakeCoinInput,
+          tx.pure(walletAddress, "address"),
+        ]
       });
     }
 

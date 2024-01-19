@@ -134,12 +134,13 @@ export type TankInfoReponse = {
 };
 
 export type TankInfo = {
-  token: string;
   buckReserve: string;
   collateralPool: string;
   currentS: string;
   currentP: string;
 };
+
+export type TankList = Partial<Record<COIN, TankInfo>>;
 
 export type ContributorToken = {
   data: {
@@ -153,6 +154,8 @@ export type UserTankInfo = {
   totalEarned: number;
   totalBUCK: number;
 };
+
+export type UserTankList = Partial<Record<COIN, UserTankInfo>>;
 
 export type SupraPriceFeed = {
   id: {
@@ -169,7 +172,5 @@ export type SupraPriceFeed = {
     }
   }
 };
-
-export type UserTankList = Partial<Record<COIN, UserTankInfo>>;
 
 export type PackageType = "mainnet" | "testnet";

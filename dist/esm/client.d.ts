@@ -1,6 +1,6 @@
 import { SuiClient, SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketInfo, TankInfo, BottleInfo, UserTankList, ProtocolInfo } from "./types";
+import { BucketConstants, PaginatedBottleSummary, PackageType, BucketInfo, BottleInfo, UserTankList, ProtocolInfo, TankList } from "./types";
 export declare class BucketClient {
     currentAddress: string;
     /**
@@ -33,7 +33,7 @@ export declare class BucketClient {
     getAllBottles(): Promise<PaginatedBottleSummary>;
     getDestroyedBottles(): Promise<PaginatedBottleSummary>;
     getAllBuckets(): Promise<BucketInfo[]>;
-    getAllTanks(): Promise<TankInfo[]>;
+    getAllTanks(): Promise<TankList>;
     getUserBottles(address: string): Promise<BottleInfo[]>;
     getUserTanks(address: string): Promise<UserTankList>;
     getUserTankBUCK(tankType: string, tokens: SuiObjectResponse[]): Promise<number>;
@@ -55,5 +55,6 @@ export declare class BucketClient {
     getTankDepositTx(tankType: string, depositAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getTankWithdrawTx(tankType: string, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getTankClaimTx(tankType: string, walletAddress: string): Promise<TransactionBlock>;
+    getStakeUSDCTx(isAf: boolean, stakeAmount: number, walletAddress: string): Promise<TransactionBlock>;
 }
 //# sourceMappingURL=client.d.ts.map
