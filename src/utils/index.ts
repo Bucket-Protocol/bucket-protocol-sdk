@@ -1,7 +1,5 @@
 import { COINS_TYPE_LIST } from "../constants";
 
-export * from "../constants";
-
 export function getObjectNames(objectTypes: string[]) {
 
     const accept_coin_type = Object.values(COINS_TYPE_LIST);

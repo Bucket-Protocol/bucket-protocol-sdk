@@ -3,7 +3,7 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress, SUI_CLOCK_OBJECT_ID } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_CONTRIBUTOR_TOKEN_ID, TESTNET_CONTRIBUTOR_TOKEN_ID, MAINNET_CORE_PACKAGE_ID, TESTNET_CORE_PACKAGE_ID, COIN_DECIMALS, TREASURY_OBJECT_ID, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT, CETUS_OBJS, CETUS_USDC_BUCK_LP_REGISTRY_ID } from "./constants";
+import { MAINNET_PACKAGE_ID, TESTNET_PACKAGE_ID, COINS_TYPE_LIST, MAINNET_PROTOCOL_ID, TESTNET_PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, ORACLE_OBJECT_ID, TESTNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, MAINNET_CONTRIBUTOR_TOKEN_ID, TESTNET_CONTRIBUTOR_TOKEN_ID, MAINNET_CORE_PACKAGE_ID, TESTNET_CORE_PACKAGE_ID, COIN_DECIMALS, TREASURY_OBJECT_ID, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT, CETUS_OBJS, CETUS_USDC_BUCK_LP_REGISTRY_ID, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID } from "./constants";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, parseBigInt } from "./utils";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 const packageAddress = { "mainnet": MAINNET_PACKAGE_ID, "testnet": TESTNET_PACKAGE_ID };
@@ -525,6 +525,44 @@ export class BucketClient {
         return tankInfoList;
     }
     ;
+    async getAllFountains() {
+        /**
+         * @description Get all fountains from KRIYA, CETUS, AFTERMATHs
+         * @returns Promise<FountainList>
+         */
+        const objectIds = [
+            KRIYA_SUI_BUCK_LP_REGISTRY_ID,
+            KRIYA_USDC_BUCK_LP_REGISTRY_ID,
+            AF_SUI_BUCK_LP_REGISTRY_ID,
+            AF_USDC_BUCK_LP_REGISTRY_ID,
+            CETUS_SUI_BUCK_LP_REGISTRY_ID,
+            CETUS_USDC_BUCK_LP_REGISTRY_ID,
+        ];
+        const fountainResults = await this.client.multiGetObjects({
+            ids: objectIds,
+            options: {
+                showContent: true,
+            }
+        });
+        const fountains = {};
+        fountainResults.map((res) => {
+            const id = res.data?.objectId ?? "";
+            const isKriya = id == KRIYA_SUI_BUCK_LP_REGISTRY_ID || id == KRIYA_USDC_BUCK_LP_REGISTRY_ID;
+            const fields = getObjectFields(res);
+            fountains[id] = {
+                id: res.data?.objectId ?? "",
+                flowAmount: Number(fields?.flow_amount ?? 0),
+                flowInterval: Number(fields?.flow_interval ?? 1),
+                sourceBalance: Number(fields?.source ?? 0),
+                poolBalance: Number(fields?.pool ?? 0),
+                stakedBalance: isKriya ? Number(fields?.staked?.fields?.lsp.fields?.balance ?? 0) : Number(fields?.staked ?? 0),
+                totalWeight: Number(fields?.total_weight ?? 0),
+                cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
+                latestReleaseTime: Number(fields?.latest_release_time ?? 0),
+            };
+        });
+        return fountains;
+    }
     async getUserBottles(address) {
         /**
          * @description Get positions array for input address
@@ -766,6 +804,57 @@ export class BucketClient {
             total += Number(formatUnits(u64, COIN_DECIMALS[token] ?? 9));
         });
         return total;
+    }
+    async getUserLpProofs(owner) {
+        /**
+         * @description Get all LP proofs from KRIYA, CETUS, AFTERMATHs
+         * @param owner User address
+         * @returns Promise<UserLpList>
+         */
+        const lpRegistryIds = [
+            AF_USDC_BUCK_LP_REGISTRY_ID,
+            AF_SUI_BUCK_LP_REGISTRY_ID,
+            CETUS_USDC_BUCK_LP_REGISTRY_ID,
+            CETUS_SUI_BUCK_LP_REGISTRY_ID,
+            KRIYA_USDC_BUCK_LP_REGISTRY_ID,
+            KRIYA_SUI_BUCK_LP_REGISTRY_ID,
+        ];
+        const res = await this.client.getOwnedObjects({
+            owner,
+            filter: {
+                MatchAny: [
+                    {
+                        Package: FOUNTAIN_PACKAGE_ID,
+                    },
+                    {
+                        Package: KRIYA_FOUNTAIN_PACKAGE_ID,
+                    }
+                ]
+            },
+            options: {
+                showContent: true,
+                showType: true,
+            },
+        });
+        const proofs = res.data.map((object) => {
+            const fields = getObjectFields(object);
+            return {
+                objectId: object.data?.objectId ?? "",
+                version: object.data?.version ?? "",
+                digest: object.data?.digest ?? "",
+                typeName: object.data?.type ?? "",
+                fountainId: fields?.fountain_id ?? "",
+                startUnit: Number(fields?.start_uint ?? 0),
+                stakeAmount: Number(fields?.stake_amount ?? 0),
+                stakeWeight: Number(fields?.stake_weight ?? 0),
+                lockUntil: Number(fields?.lock_until ?? 0),
+            };
+        });
+        const userLpList = {};
+        for (const lpRegistryId in lpRegistryIds) {
+            userLpList[lpRegistryId] = proofs.filter((proof) => lpRegistryId === proof.fountainId);
+        }
+        return userLpList;
     }
     async getPrices() {
         /**

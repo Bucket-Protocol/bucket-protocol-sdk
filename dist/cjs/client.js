@@ -528,6 +528,44 @@ class BucketClient {
         return tankInfoList;
     }
     ;
+    async getAllFountains() {
+        /**
+         * @description Get all fountains from KRIYA, CETUS, AFTERMATHs
+         * @returns Promise<FountainList>
+         */
+        const objectIds = [
+            constants_1.KRIYA_SUI_BUCK_LP_REGISTRY_ID,
+            constants_1.KRIYA_USDC_BUCK_LP_REGISTRY_ID,
+            constants_1.AF_SUI_BUCK_LP_REGISTRY_ID,
+            constants_1.AF_USDC_BUCK_LP_REGISTRY_ID,
+            constants_1.CETUS_SUI_BUCK_LP_REGISTRY_ID,
+            constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID,
+        ];
+        const fountainResults = await this.client.multiGetObjects({
+            ids: objectIds,
+            options: {
+                showContent: true,
+            }
+        });
+        const fountains = {};
+        fountainResults.map((res) => {
+            const id = res.data?.objectId ?? "";
+            const isKriya = id == constants_1.KRIYA_SUI_BUCK_LP_REGISTRY_ID || id == constants_1.KRIYA_USDC_BUCK_LP_REGISTRY_ID;
+            const fields = (0, objectTypes_1.getObjectFields)(res);
+            fountains[id] = {
+                id: res.data?.objectId ?? "",
+                flowAmount: Number(fields?.flow_amount ?? 0),
+                flowInterval: Number(fields?.flow_interval ?? 1),
+                sourceBalance: Number(fields?.source ?? 0),
+                poolBalance: Number(fields?.pool ?? 0),
+                stakedBalance: isKriya ? Number(fields?.staked?.fields?.lsp.fields?.balance ?? 0) : Number(fields?.staked ?? 0),
+                totalWeight: Number(fields?.total_weight ?? 0),
+                cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
+                latestReleaseTime: Number(fields?.latest_release_time ?? 0),
+            };
+        });
+        return fountains;
+    }
     async getUserBottles(address) {
         /**
          * @description Get positions array for input address
@@ -769,6 +807,57 @@ class BucketClient {
             total += Number((0, utils_2.formatUnits)(u64, constants_1.COIN_DECIMALS[token] ?? 9));
         });
         return total;
+    }
+    async getUserLpProofs(owner) {
+        /**
+         * @description Get all LP proofs from KRIYA, CETUS, AFTERMATHs
+         * @param owner User address
+         * @returns Promise<UserLpList>
+         */
+        const lpRegistryIds = [
+            constants_1.AF_USDC_BUCK_LP_REGISTRY_ID,
+            constants_1.AF_SUI_BUCK_LP_REGISTRY_ID,
+            constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID,
+            constants_1.CETUS_SUI_BUCK_LP_REGISTRY_ID,
+            constants_1.KRIYA_USDC_BUCK_LP_REGISTRY_ID,
+            constants_1.KRIYA_SUI_BUCK_LP_REGISTRY_ID,
+        ];
+        const res = await this.client.getOwnedObjects({
+            owner,
+            filter: {
+                MatchAny: [
+                    {
+                        Package: constants_1.FOUNTAIN_PACKAGE_ID,
+                    },
+                    {
+                        Package: constants_1.KRIYA_FOUNTAIN_PACKAGE_ID,
+                    }
+                ]
+            },
+            options: {
+                showContent: true,
+                showType: true,
+            },
+        });
+        const proofs = res.data.map((object) => {
+            const fields = (0, objectTypes_1.getObjectFields)(object);
+            return {
+                objectId: object.data?.objectId ?? "",
+                version: object.data?.version ?? "",
+                digest: object.data?.digest ?? "",
+                typeName: object.data?.type ?? "",
+                fountainId: fields?.fountain_id ?? "",
+                startUnit: Number(fields?.start_uint ?? 0),
+                stakeAmount: Number(fields?.stake_amount ?? 0),
+                stakeWeight: Number(fields?.stake_weight ?? 0),
+                lockUntil: Number(fields?.lock_until ?? 0),
+            };
+        });
+        const userLpList = {};
+        for (const lpRegistryId in lpRegistryIds) {
+            userLpList[lpRegistryId] = proofs.filter((proof) => lpRegistryId === proof.fountainId);
+        }
+        return userLpList;
     }
     async getPrices() {
         /**

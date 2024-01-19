@@ -151,6 +151,21 @@ export const AF_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
 });
 
 
+export const CETUS_SUI_BUCK_POOL_ID = "0x9379d2d3f221dcea70f7f7d4a7bf30bab0128bcfda0d13a85267e51f7e6e15c0";
+
+export const CETUS_BUCK_USDC_POOL_ID = "0x6ecf6d01120f5f055f9a605b56fd661412a81ec7c8b035255e333c664a0c12e7";
+
+
+export const KRIYA_SUI_BUCK_POOL_ID = "0x3c334f9d1b969767007d26bc886786f9f197ffb14771f7903cd8772c46d08dea";
+
+export const KRIYA_BUCK_USDC_POOL_ID = "0xbb4a712b3353176092cdfe3dd2d1251b725f9372e954248e5dd2eb2ab6a5f21a";
+
+
+export const AF_SUI_BUCK_POOL_ID = "0xdeacf7ab460385d4bcb567f183f916367f7d43666a2c72323013822eb3c57026";
+
+export const AF_USDC_BUCK_POOL_ID = "0xeec6b5fb1ddbbe2eb1bdcd185a75a8e67f52a5295704dd73f3e447394775402b";
+
+
 export const AF_OBJS = {
   pool: "0xeec6b5fb1ddbbe2eb1bdcd185a75a8e67f52a5295704dd73f3e447394775402b",
   poolRegistry: "0xfcc774493db2c45c79f688f88d28023a3e7d98e4ee9f48bbf5c7990f651577ae",
@@ -175,6 +190,13 @@ export const BUCKETUS_LP_VAULT = Inputs.SharedObjectRef({
   initialSharedVersion: 61717741,
   mutable: true,
 });
+
+
+export const FOUNTAIN_PACKAGE_ID =
+  "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";
+
+export const KRIYA_FOUNTAIN_PACKAGE_ID =
+  "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
 
 
 export const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";

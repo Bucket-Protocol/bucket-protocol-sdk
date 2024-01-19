@@ -1,5 +1,5 @@
 import { EventId } from "@mysten/sui.js/src/client";
-import { ACCEPT_ASSETS, COIN } from "src/utils";
+import { ACCEPT_ASSETS, COIN } from "src/constants";
 
 export type ProtocolInfo = {
   buckSupply: number;
@@ -142,6 +142,21 @@ export type TankInfo = {
 
 export type TankList = Partial<Record<COIN, TankInfo>>;
 
+
+export type FountainInfo = {
+  id: string;
+  sourceBalance: number;
+  flowAmount: number;
+  flowInterval: number;
+  poolBalance: number;
+  stakedBalance: number;
+  totalWeight: number;
+  cumulativeUnit: number;
+  latestReleaseTime: number;
+};
+
+export type FountainList = Record<string, FountainInfo>;
+
 export type ContributorToken = {
   data: {
     digest: string;
@@ -172,5 +187,19 @@ export type SupraPriceFeed = {
     }
   }
 };
+
+export type UserLpProof = {
+  objectId: string;
+  version: string;
+  digest: string;
+  typeName: string;
+  fountainId: string;
+  startUnit: number;
+  stakeAmount: number;
+  stakeWeight: number;
+  lockUntil: number;
+};
+
+export type UserLpList = Record<string, UserLpProof[]>;
 
 export type PackageType = "mainnet" | "testnet";
