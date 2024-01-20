@@ -3,7 +3,8 @@
 import { Inputs } from "@mysten/sui.js/transactions"
 
 export type ACCEPT_ASSETS = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "WETH";
-export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT";
+export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT"
+  | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb";
 
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 
@@ -25,6 +26,12 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   haSUI: "0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI",
   vSUI: "0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT",
   WETH: "0xaf8cd5edc19c4512f4259f0bee101a40d41ebed738ade5874359610ef8eeced5::coin::COIN",
+
+  USDCbnb: "0x909cba62ce96d54de25bec9502de5ca7b4f28901747bbf96b76c2e63ec5f1cba::coin::COIN",
+  USDCsol: "0xb231fcda8bbddb31f2ef02e6161444aec64a514e2c89279584ac9806ce9cf037::coin::COIN",
+  USDCpol: "0xcf72ec52c0f8ddead746252481fb44ff6e8485a39b803825bde6b00d77cdb0bb::coin::COIN",
+  USDCarb: "0xe32d3ebafa42e6011b87ef1087bbc6053b499bf6f095807b9013aff5a6ecd7bb::coin::COIN",
+
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
   AF_LP_SUI_BUCK:
@@ -45,6 +52,11 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   BKT: 9,
   AF_LP_USDC_BUCK: 9,
   AF_LP_SUI_BUCK: 9,
+
+  USDCarb: 6,
+  USDCbnb: 6,
+  USDCpol: 6,
+  USDCsol: 6,
 };
 
 export const SUPRA_PRICE_FEEDS = {
