@@ -1098,4 +1098,20 @@ export declare const ObjectRead: import("superstruct").Struct<{
     status: "VersionTooHigh";
 }, null>;
 export type ObjectRead = Infer<typeof ObjectRead>;
+/**
+ * A reference to a shared object.
+ */
+export declare const SharedObjectRef: import("superstruct").Struct<{
+    objectId: string;
+    mutable: boolean;
+    initialSharedVersion: string | number;
+}, {
+    /** Hex code as string representing the object id */
+    objectId: import("superstruct").Struct<string, null>;
+    /** Object version */
+    initialSharedVersion: import("superstruct").Struct<string | number, null>;
+    /** Whether reference is mutable */
+    mutable: import("superstruct").Struct<boolean, null>;
+}>;
+export type SharedObjectRef = Infer<typeof SharedObjectRef>;
 //# sourceMappingURL=objectTypes.d.ts.map

@@ -62,4 +62,15 @@ export const parseBigInt = (number, decimal) => {
 export const getCoinSymbol = (coinType) => {
     return Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key] === coinType);
 };
+export const proofTypeToCoinType = (poolType) => {
+    const coinTypes = poolType.split("<")[1].replace(">", "").split(", ");
+    return coinTypes;
+};
+export const lpProofToObject = (lpProof) => {
+    return {
+        objectId: lpProof.objectId,
+        digest: lpProof.digest,
+        version: lpProof.version,
+    };
+};
 //# sourceMappingURL=index.js.map

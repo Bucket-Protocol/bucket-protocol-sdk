@@ -1,33 +1,21 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { Inputs } from "@mysten/sui.js/src/builder";
+import { Inputs } from "@mysten/sui.js/transactions"
 
 export type ACCEPT_ASSETS = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "WETH";
 export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT";
 
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 
-export const MAINNET_PACKAGE_ID: string =
-  "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
-export const MAINNET_BUCKET_OPERATIONS_PACKAGE_ID: string =
+export const BUCKET_OPERATIONS_PACKAGE_ID: string =
   "0xb59c19de88addb7b3e721066c6c99987d09ad22fa829c69dbf0f0c1c0be20625";
-export const MAINNET_PROTOCOL_ID =
+export const PROTOCOL_ID =
   "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
-export const MAINNET_CONTRIBUTOR_TOKEN_ID =
+export const CONTRIBUTOR_TOKEN_ID =
   "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
-export const MAINNET_CORE_PACKAGE_ID =
+export const CORE_PACKAGE_ID =
   "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 
-export const TESTNET_PACKAGE_ID: string =
-  "0x1ca47988f33d06d748a779e78f321b9ba74f6ad25b3de2840da425022dfaa969";
-export const TESTNET_BUCKET_OPERATIONS_PACKAGE_ID: string =
-  "0x6f206ba15a7d81662e20ac1e6a4e0b443f3972861327584e8a1148c9880e4a09";
-export const TESTNET_PROTOCOL_ID =
-  "0x8b7ff1f21c8e80683a4504f8e564ad42e51361875ecce8c9ecc5596a67abd225";
-export const TESTNET_CONTRIBUTOR_TOKEN_ID =
-  "0x1ca47988f33d06d748a779e78f321b9ba74f6ad25b3de2840da425022dfaa969";
-export const TESTNET_CORE_PACKAGE_ID =
-  "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
   SUI: "0x2::sui::SUI",
@@ -89,12 +77,35 @@ export const SUPRA_HANDLER_OBJECT =
 export const SUPRA_UPDATE_TARGET =
   "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_supra";
 
-export const ORACLE_OBJECT_ID = "0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078";
 
-export const TREASURY_OBJECT_ID = "0x7032c4d7afd30cd0dd04c924d63f1127de6fcc429968306807091d3ad3ff78b1";
+export const CLOCK_OBJECT = Inputs.SharedObjectRef({
+  objectId:
+    "0x0000000000000000000000000000000000000000000000000000000000000006",
+  mutable: false,
+  initialSharedVersion: 1,
+});
+
+export const ORACLE_OBJECT = Inputs.SharedObjectRef({
+  objectId:
+    "0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078",
+  mutable: true,
+  initialSharedVersion: 5174506,
+});
+
+export const TREASURY_OBJECT = Inputs.SharedObjectRef({
+  objectId:
+    "0x7032c4d7afd30cd0dd04c924d63f1127de6fcc429968306807091d3ad3ff78b1",
+  mutable: true,
+  initialSharedVersion: 6365975,
+});
+
+export const PROTOCOL_OBJECT = Inputs.SharedObjectRef({
+  objectId: PROTOCOL_ID,
+  mutable: true,
+  initialSharedVersion: 6365975,
+});
 
 export const FOUNTAIN_PERIHERY_PACKAGE_ID = "0x8c51a9c8d235413e5dd4ff922191d5fc1f79b5b0c4d70620f00415a411f1040d";
-
 
 export const CETUS_SUI_BUCK_LP_REGISTRY_ID =
   "0x7778d68f02810b2c002b6f40084c5f3fe0b1bcc7d7a7c64d72ba40ff9a815bac";
@@ -119,8 +130,8 @@ export const KRIYA_SUI_BUCK_LP_REGISTRY_ID =
 
 export const KRIYA_SUI_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
   objectId: KRIYA_SUI_BUCK_LP_REGISTRY_ID,
-  mutable: true,
   initialSharedVersion: 18368425,
+  mutable: true,
 });
 
 export const KRIYA_USDC_BUCK_LP_REGISTRY_ID =
@@ -128,8 +139,8 @@ export const KRIYA_USDC_BUCK_LP_REGISTRY_ID =
 
 export const KRIYA_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
   objectId: KRIYA_USDC_BUCK_LP_REGISTRY_ID,
-  mutable: true,
   initialSharedVersion: 18368428,
+  mutable: true,
 });
 
 export const AF_SUI_BUCK_LP_REGISTRY_ID =
@@ -137,8 +148,8 @@ export const AF_SUI_BUCK_LP_REGISTRY_ID =
 
 export const AF_SUI_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
   objectId: AF_SUI_BUCK_LP_REGISTRY_ID,
-  mutable: true,
   initialSharedVersion: 6366296,
+  mutable: true,
 });
 
 export const AF_USDC_BUCK_LP_REGISTRY_ID =
@@ -146,8 +157,8 @@ export const AF_USDC_BUCK_LP_REGISTRY_ID =
 
 export const AF_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
   objectId: AF_USDC_BUCK_LP_REGISTRY_ID,
-  mutable: true,
   initialSharedVersion: 6366295,
+  mutable: true,
 });
 
 
@@ -183,14 +194,16 @@ export const CETUS_OBJS = {
 export const BUCKETUS_TREASURY = Inputs.SharedObjectRef({
   objectId: "0x781d3060afe9f5427bb865088ab25c8d827ed2b0be71ab140ff9ab5a0d8c9466",
   initialSharedVersion: 61707529,
-  mutable: true,
+  mutable: true
 });
+
 export const BUCKETUS_LP_VAULT = Inputs.SharedObjectRef({
   objectId: "0x1a0b93fd2965ce3ceb4039c90b232ddee7b0e79015cab0ca10528bb5f4285188",
   initialSharedVersion: 61717741,
   mutable: true,
 });
 
+export const BUCKETUS_TYPE = "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS";
 
 export const FOUNTAIN_PACKAGE_ID =
   "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";

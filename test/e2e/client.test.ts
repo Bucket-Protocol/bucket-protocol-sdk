@@ -8,9 +8,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
 
     // Instantiate BucketClient
-    const buck = new BucketClient(client, {
-        packageType: "mainnet"
-    });
+    const buck = new BucketClient(client);
 
     /*
     it('tests getBucketConstants() function', async () => {
@@ -25,6 +23,12 @@ describe('Interacting with Bucket Client on mainnet', () => {
             maxFee: "50000"
         }
         )
+    });
+
+    it('tests getProtocol() function', async () => {
+        const protocol = await buck.getProtocol();
+        console.log(protocol);
+        expect(protocol).toBeDefined()
     });
 
     it('tests getAllBottle() function', async () => {
@@ -68,10 +72,4 @@ describe('Interacting with Bucket Client on mainnet', () => {
         timeout: 1000 * 60
     });
     */
-
-    it('tests getProtocol() function', async () => {
-        const protocol = await buck.getProtocol();
-        console.log(protocol);
-        expect(protocol).toBeDefined()
-    });
 });

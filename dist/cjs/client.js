@@ -9,24 +9,17 @@ const objectTypes_1 = require("./objects/objectTypes");
 const constants_1 = require("./constants");
 const utils_2 = require("./utils");
 const DUMMY_ADDRESS = (0, utils_1.normalizeSuiAddress)("0x0");
-const packageAddress = { "mainnet": constants_1.MAINNET_PACKAGE_ID, "testnet": constants_1.TESTNET_PACKAGE_ID };
-const protocolAddress = { "mainnet": constants_1.MAINNET_PROTOCOL_ID, "testnet": constants_1.TESTNET_PROTOCOL_ID };
-const bucketOpAddress = { "mainnet": constants_1.MAINNET_BUCKET_OPERATIONS_PACKAGE_ID, "testnet": constants_1.TESTNET_BUCKET_OPERATIONS_PACKAGE_ID };
-const contributorId = { "mainnet": constants_1.MAINNET_CONTRIBUTOR_TOKEN_ID, "testnet": constants_1.TESTNET_CONTRIBUTOR_TOKEN_ID };
-const corePackageId = { "mainnet": constants_1.MAINNET_CORE_PACKAGE_ID, "testnet": constants_1.TESTNET_CORE_PACKAGE_ID };
 class BucketClient {
-    currentAddress;
+    owner;
     /**
      * @description a TS wrapper over Bucket Protocol Move packages.
      * @param client connection to fullnode
-     * @param currentAddress (optional) address of the current user (default: DUMMY_ADDRESS)
+     * @param owner (optional) address of the current user (default: DUMMY_ADDRESS)
      */
     client;
-    packageType;
-    constructor(client, options, currentAddress = DUMMY_ADDRESS) {
-        this.currentAddress = currentAddress;
+    constructor(client, owner = DUMMY_ADDRESS) {
+        this.owner = owner;
         this.client = client;
-        this.packageType = options?.packageType ?? "mainnet";
     }
     async depositToTank(assetBuck, assetType, tankId, depositAmount) {
         /**
@@ -39,7 +32,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::tank::deposit`,
+            target: `${constants_1.CORE_PACKAGE_ID}::tank::deposit`,
             typeArguments: [assetBuck, assetType],
             arguments: [tx.object(tankId), tx.pure(depositAmount)],
         });
@@ -57,7 +50,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::tank::absorb`,
+            target: `${constants_1.CORE_PACKAGE_ID}::tank::absorb`,
             typeArguments: [assetBuck, assetType],
             arguments: [
                 tx.object(tankId),
@@ -78,7 +71,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::tank::withdraw`,
+            target: `${constants_1.CORE_PACKAGE_ID}::tank::withdraw`,
             typeArguments: [assetBuck, assetType],
             arguments: [tx.object(tankId), tx.pure(contributorToken)],
         });
@@ -95,7 +88,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::tank::claim`,
+            target: `${constants_1.CORE_PACKAGE_ID}::tank::claim`,
             typeArguments: [assetBuck, assetType],
             arguments: [tx.object(tankId), tx.pure(contributorToken)],
         });
@@ -112,7 +105,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::tank::claim_bkt`,
+            target: `${constants_1.CORE_PACKAGE_ID}::tank::claim_bkt`,
             typeArguments: [assetBuck, assetType],
             arguments: [tx.object(tankId), tx.pure(contributorToken)],
         });
@@ -130,12 +123,12 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::buck::borrow`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow`,
             typeArguments: [assetType],
             arguments: [
                 tx.object(protocol),
-                tx.object(constants_1.ORACLE_OBJECT_ID),
-                tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                tx.object(constants_1.ORACLE_OBJECT),
+                tx.object(constants_1.CLOCK_OBJECT),
                 collateralInput,
                 tx.pure(bucketOutputAmount, "u64"),
                 tx.pure([insertionPlace]),
@@ -155,7 +148,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::buck::top_up`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::top_up`,
             typeArguments: [assetType],
             arguments: [
                 tx.object(protocol),
@@ -178,12 +171,12 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::buck::withdraw`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::withdraw`,
             typeArguments: [assetType],
             arguments: [
                 tx.object(protocol),
                 tx.object(oracle),
-                tx.pure(utils_1.SUI_CLOCK_OBJECT_ID),
+                tx.pure(constants_1.CLOCK_OBJECT),
                 tx.pure(collateralAmount),
                 tx.pure([insertionPlace]),
             ],
@@ -200,7 +193,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::buck::repay`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::repay`,
             typeArguments: [assetType],
             arguments: [tx.object(protocol), tx.pure(buckInput)],
         });
@@ -218,12 +211,12 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::buck::redeem`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::redeem`,
             typeArguments: [assetType],
             arguments: [
                 tx.object(protocol),
                 tx.object(oracle),
-                tx.pure(utils_1.SUI_CLOCK_OBJECT_ID),
+                tx.pure(constants_1.CLOCK_OBJECT),
                 tx.pure(buckInput),
                 tx.pure([insertionPlace]),
             ],
@@ -241,13 +234,13 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::well::stake`,
+            target: `${constants_1.CORE_PACKAGE_ID}::well::stake`,
             typeArguments: [assetType],
             arguments: [
                 tx.object(well),
                 tx.pure(bktInput),
                 tx.pure(lockTime),
-                tx.object(utils_1.SUI_CLOCK_OBJECT_ID)
+                tx.object(constants_1.CLOCK_OBJECT)
             ],
         });
         return tx;
@@ -262,12 +255,12 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::well::unstake`,
+            target: `${constants_1.CORE_PACKAGE_ID}::well::unstake`,
             typeArguments: [assetType],
             arguments: [
                 tx.object(well),
                 tx.pure(stakedBkt),
-                tx.object(utils_1.SUI_CLOCK_OBJECT_ID)
+                tx.object(constants_1.CLOCK_OBJECT)
             ],
         });
         return tx;
@@ -282,13 +275,13 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::well::force_unstake`,
+            target: `${constants_1.CORE_PACKAGE_ID}::well::force_unstake`,
             typeArguments: [assetType],
             arguments: [
                 tx.object(well),
                 tx.object(bktTreasury),
                 tx.pure(stakedBkt),
-                tx.object(utils_1.SUI_CLOCK_OBJECT_ID)
+                tx.object(constants_1.CLOCK_OBJECT)
             ],
         });
         return tx;
@@ -303,7 +296,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::well::claim`,
+            target: `${constants_1.CORE_PACKAGE_ID}::well::claim`,
             typeArguments: [assetType],
             arguments: [
                 tx.object(well),
@@ -319,32 +312,32 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::constants::fee_precision`,
+            target: `${constants_1.CORE_PACKAGE_ID}::constants::fee_precision`,
         });
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::constants::liquidation_rebate`,
+            target: `${constants_1.CORE_PACKAGE_ID}::constants::liquidation_rebate`,
         });
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::constants::flash_loan_fee`,
+            target: `${constants_1.CORE_PACKAGE_ID}::constants::flash_loan_fee`,
         });
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::constants::buck_decimal`,
+            target: `${constants_1.CORE_PACKAGE_ID}::constants::buck_decimal`,
         });
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::constants::max_lock_time`,
+            target: `${constants_1.CORE_PACKAGE_ID}::constants::max_lock_time`,
         });
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::constants::min_lock_time`,
+            target: `${constants_1.CORE_PACKAGE_ID}::constants::min_lock_time`,
         });
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::constants::min_fee`,
+            target: `${constants_1.CORE_PACKAGE_ID}::constants::min_fee`,
         });
         tx.moveCall({
-            target: `${packageAddress[this.packageType]}::constants::max_fee`,
+            target: `${constants_1.CORE_PACKAGE_ID}::constants::max_fee`,
         });
         return await this.client.devInspectTransactionBlock({
             transactionBlock: tx,
-            sender: this.currentAddress,
+            sender: this.owner,
         });
     }
     async getBucketConstants() {
@@ -376,9 +369,8 @@ class BucketClient {
          * @description Get protocol information including BUCK supply.
          * @returns Promise<ProtocolInfo>
          */
-        const PROTOCOL_ID = protocolAddress[this.packageType];
         const resp = (await this.client.getObject({
-            id: PROTOCOL_ID,
+            id: constants_1.PROTOCOL_ID,
             options: {
                 showContent: true,
             },
@@ -396,7 +388,7 @@ class BucketClient {
          */
         const resp = await this.client.queryEvents({
             query: {
-                MoveEventType: `${packageAddress[this.packageType]}::bucket_events::BottleCreated`,
+                MoveEventType: `${constants_1.CORE_PACKAGE_ID}::bucket_events::BottleCreated`,
             },
         });
         const bottles = resp.data.map((event) => {
@@ -418,7 +410,7 @@ class BucketClient {
          */
         const resp = await this.client.queryEvents({
             query: {
-                MoveEventType: `${packageAddress[this.packageType]}::bucket_events::BottleDestroyed`,
+                MoveEventType: `${constants_1.CORE_PACKAGE_ID}::bucket_events::BottleDestroyed`,
             },
         });
         const destroyedBottles = resp.data.map((event) => {
@@ -440,7 +432,7 @@ class BucketClient {
         let buckets = [];
         try {
             const generalInfo = await this.client.getObject({
-                id: protocolAddress[this.packageType],
+                id: constants_1.PROTOCOL_ID,
                 options: {
                     showContent: true,
                 }
@@ -448,7 +440,7 @@ class BucketClient {
             const generalInfoField = generalInfo.data?.content;
             const minBottleSize = generalInfoField.fields.min_bottle_size;
             const protocolFields = await this.client.getDynamicFields({
-                parentId: protocolAddress[this.packageType],
+                parentId: constants_1.PROTOCOL_ID,
             });
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
             const objectIdList = bucketList.map((item) => item.objectId);
@@ -495,7 +487,7 @@ class BucketClient {
         const tankInfoList = {};
         try {
             const protocolFields = await this.client.getDynamicFields({
-                parentId: protocolAddress[this.packageType]
+                parentId: constants_1.PROTOCOL_ID
             });
             const tankList = protocolFields.data.filter((item) => item.objectType.includes("Tank"));
             const objectIdList = tankList.map((item) => item.objectId);
@@ -576,7 +568,7 @@ class BucketClient {
             return [];
         try {
             const protocolFields = await this.client.getDynamicFields({
-                parentId: protocolAddress[this.packageType]
+                parentId: constants_1.PROTOCOL_ID
             });
             const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
             const objectTypeList = bucketList.map((item) => item.objectType);
@@ -640,12 +632,11 @@ class BucketClient {
          */
         if (!address)
             return {};
-        const CONTRIBUTOR_TOKEN_ID = contributorId[this.packageType];
         let userTanks = {};
         try {
             // Get all tank objects
             const protocolFields = await this.client.getDynamicFields({
-                parentId: protocolAddress[this.packageType]
+                parentId: constants_1.PROTOCOL_ID
             });
             const tankList = protocolFields.data.filter((item) => item.objectType.includes("Tank"));
             // Split coin type from result
@@ -662,7 +653,7 @@ class BucketClient {
             // Build contributor token filter
             const filters = tankTypes.map(tankType => {
                 return {
-                    StructType: `${CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
+                    StructType: `${constants_1.CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${constants_1.CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
                 };
             });
             // Get contributor token accounts for user address
@@ -709,14 +700,12 @@ class BucketClient {
             return 0;
         }
         const tx = new transactions_1.TransactionBlock();
-        const CORE_PACKAGE_ID = corePackageId[this.packageType];
-        const PROTOCOL_ID = protocolAddress[this.packageType];
         const tank = tx.moveCall({
-            target: `${CORE_PACKAGE_ID}::buck::borrow_tank`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow_tank`,
             typeArguments: [tankType],
-            arguments: [tx.object(PROTOCOL_ID)],
+            arguments: [tx.object(constants_1.PROTOCOL_OBJECT)],
         });
-        const target = `${CORE_PACKAGE_ID}::tank::get_token_weight`;
+        const target = `${constants_1.CORE_PACKAGE_ID}::tank::get_token_weight`;
         for (const token of tokens) {
             if (!token.data) {
                 continue;
@@ -733,7 +722,7 @@ class BucketClient {
         }
         const res = await this.client.devInspectTransactionBlock({
             transactionBlock: tx,
-            sender: PROTOCOL_ID,
+            sender: constants_1.PROTOCOL_ID,
         });
         const resultArray = res?.results?.slice(1);
         if (resultArray?.length === 0)
@@ -763,14 +752,12 @@ class BucketClient {
             return 0;
         }
         const tx = new transactions_1.TransactionBlock();
-        const CORE_PACKAGE_ID = corePackageId[this.packageType];
-        const PROTOCOL_ID = protocolAddress[this.packageType];
         const tank = tx.moveCall({
-            target: `${CORE_PACKAGE_ID}::buck::borrow_tank`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow_tank`,
             typeArguments: [tankType],
-            arguments: [tx.object(PROTOCOL_ID)],
+            arguments: [tx.object(constants_1.PROTOCOL_OBJECT)],
         });
-        const target = `${CORE_PACKAGE_ID}::tank::get_collateral_reward_amount`;
+        const target = `${constants_1.CORE_PACKAGE_ID}::tank::get_collateral_reward_amount`;
         for (const token of tokens) {
             if (!token.data) {
                 continue;
@@ -787,7 +774,7 @@ class BucketClient {
         }
         const res = await this.client.devInspectTransactionBlock({
             transactionBlock: tx,
-            sender: PROTOCOL_ID,
+            sender: constants_1.PROTOCOL_ID,
         });
         const resultArray = res?.results?.slice(1);
         if (resultArray?.length === 0)
@@ -854,7 +841,7 @@ class BucketClient {
             };
         });
         const userLpList = {};
-        for (const lpRegistryId in lpRegistryIds) {
+        for (const lpRegistryId of lpRegistryIds) {
             userLpList[lpRegistryId] = proofs.filter((proof) => lpRegistryId === proof.fountainId);
         }
         return userLpList;
@@ -955,8 +942,6 @@ class BucketClient {
             owner: walletAddress,
             coinType: collateralType,
         });
-        const protocolId = protocolAddress[this.packageType];
-        const packageId = bucketOpAddress[this.packageType];
         let collateralCoinInput = undefined;
         if (collateralType === constants_1.COINS_TYPE_LIST.SUI) {
             collateralCoinInput = tx.splitCoins(tx.gas, [
@@ -989,10 +974,10 @@ class BucketClient {
             return tx;
         if (borrowAmount == 0) {
             tx.moveCall({
-                target: `${packageId}::bucket_operations::top_up`,
+                target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::top_up`,
                 typeArguments: [collateralType],
                 arguments: [
-                    tx.object(protocolId),
+                    tx.object(constants_1.PROTOCOL_OBJECT),
                     collateralCoinInput,
                     tx.pure(walletAddress, "address"),
                     isNewBottle ?
@@ -1006,19 +991,19 @@ class BucketClient {
                 target: constants_1.SUPRA_UPDATE_TARGET,
                 typeArguments: [collateralType],
                 arguments: [
-                    tx.object(constants_1.ORACLE_OBJECT_ID),
-                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                    tx.object(constants_1.ORACLE_OBJECT),
+                    tx.object(constants_1.CLOCK_OBJECT),
                     tx.object(constants_1.SUPRA_HANDLER_OBJECT),
                     tx.pure(constants_1.SUPRA_ID[token] ?? "", "u32"),
                 ],
             });
             tx.moveCall({
-                target: `${packageId}::bucket_operations::borrow`,
+                target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::borrow`,
                 typeArguments: [collateralType],
                 arguments: [
-                    tx.object(protocolId),
-                    tx.object(constants_1.ORACLE_OBJECT_ID),
-                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                    tx.object(constants_1.PROTOCOL_OBJECT),
+                    tx.object(constants_1.ORACLE_OBJECT),
+                    tx.object(constants_1.CLOCK_OBJECT),
                     collateralCoinInput,
                     tx.pure(borrowAmount, "u64"),
                     isNewBottle ?
@@ -1048,8 +1033,6 @@ class BucketClient {
             owner: walletAddress,
             coinType: constants_1.COINS_TYPE_LIST.BUCK,
         });
-        const protocolId = protocolAddress[this.packageType];
-        const packageId = bucketOpAddress[this.packageType];
         let buckCoinInput = undefined;
         const [mainCoin, ...otherCoins] = coins
             .filter((coin) => coin.coinType === constants_1.COINS_TYPE_LIST.BUCK)
@@ -1071,19 +1054,19 @@ class BucketClient {
             target: constants_1.SUPRA_UPDATE_TARGET,
             typeArguments: [collateralType],
             arguments: [
-                tx.object(constants_1.ORACLE_OBJECT_ID),
-                tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                tx.object(constants_1.ORACLE_OBJECT),
+                tx.object(constants_1.CLOCK_OBJECT),
                 tx.object(constants_1.SUPRA_HANDLER_OBJECT),
                 tx.pure(constants_1.SUPRA_ID[token] ?? "", "u32"),
             ],
         });
         tx.moveCall({
-            target: `${packageId}::bucket_operations::repay_and_withdraw`,
+            target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::repay_and_withdraw`,
             typeArguments: [collateralType],
             arguments: [
-                tx.object(protocolId),
-                tx.object(constants_1.ORACLE_OBJECT_ID),
-                tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                tx.object(constants_1.PROTOCOL_OBJECT),
+                tx.object(constants_1.ORACLE_OBJECT),
+                tx.object(constants_1.CLOCK_OBJECT),
                 buckCoinInput,
                 tx.pure(withdrawAmount, "u64"),
                 tx.pure([walletAddress]),
@@ -1100,8 +1083,6 @@ class BucketClient {
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
-        const protocolId = protocolAddress[this.packageType];
-        const packageId = bucketOpAddress[this.packageType];
         const { data: coins } = await this.client.getCoins({
             owner: walletAddress,
             coinType: constants_1.COINS_TYPE_LIST.BUCK,
@@ -1122,10 +1103,10 @@ class BucketClient {
         if (!buckCoinInput)
             return tx;
         tx.moveCall({
-            target: `${packageId}::tank_operations::deposit`,
+            target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::deposit`,
             typeArguments: [tankType],
             arguments: [
-                tx.object(protocolId),
+                tx.object(constants_1.PROTOCOL_OBJECT),
                 buckCoinInput
             ],
         });
@@ -1140,9 +1121,6 @@ class BucketClient {
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
-        const protocolId = protocolAddress[this.packageType];
-        const packageId = bucketOpAddress[this.packageType];
-        const CONTRIBUTOR_TOKEN_ID = contributorId[this.packageType];
         const token = (0, utils_2.getCoinSymbol)(tankType);
         if (!token) {
             return tx;
@@ -1150,7 +1128,7 @@ class BucketClient {
         const { data: contributorTokens } = await this.client.getOwnedObjects({
             owner: walletAddress,
             filter: {
-                StructType: `${CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
+                StructType: `${constants_1.CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${constants_1.CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
             },
             options: {
                 showContent: true,
@@ -1168,20 +1146,20 @@ class BucketClient {
             target: constants_1.SUPRA_UPDATE_TARGET,
             typeArguments: [tankType],
             arguments: [
-                tx.object(constants_1.ORACLE_OBJECT_ID),
-                tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                tx.object(constants_1.ORACLE_OBJECT),
+                tx.object(constants_1.CLOCK_OBJECT),
                 tx.object(constants_1.SUPRA_HANDLER_OBJECT),
                 tx.pure(constants_1.SUPRA_ID[token] ?? "", "u32"),
             ],
         });
         tx.moveCall({
-            target: `${packageId}::tank_operations::withdraw`,
+            target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::withdraw`,
             typeArguments: [tankType],
             arguments: [
-                tx.object(protocolId),
-                tx.object(constants_1.ORACLE_OBJECT_ID),
-                tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
-                tx.object(constants_1.TREASURY_OBJECT_ID),
+                tx.object(constants_1.PROTOCOL_OBJECT),
+                tx.object(constants_1.ORACLE_OBJECT),
+                tx.object(constants_1.CLOCK_OBJECT),
+                tx.object(constants_1.TREASURY_OBJECT),
                 tokenObjs,
                 tx.pure((0, utils_2.parseBigInt)(`${withdrawAmount ?? 0}`, 9), "u64"),
             ],
@@ -1196,9 +1174,6 @@ class BucketClient {
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
-        const protocolId = protocolAddress[this.packageType];
-        const packageId = bucketOpAddress[this.packageType];
-        const CONTRIBUTOR_TOKEN_ID = contributorId[this.packageType];
         const token = (0, utils_2.getCoinSymbol)(tankType);
         if (!token) {
             return tx;
@@ -1206,7 +1181,7 @@ class BucketClient {
         const { data: contributorTokens } = await this.client.getOwnedObjects({
             owner: walletAddress,
             filter: {
-                StructType: `${CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
+                StructType: `${constants_1.CONTRIBUTOR_TOKEN_ID}::tank::ContributorToken<${constants_1.CONTRIBUTOR_TOKEN_ID}::buck::BUCK, ${tankType}>`
             },
             options: {
                 showContent: true,
@@ -1221,18 +1196,18 @@ class BucketClient {
             return tx;
         for (const token of tokens) {
             tx.moveCall({
-                target: `${packageId}::tank_operations::claim`,
+                target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::claim`,
                 typeArguments: [tankType],
                 arguments: [
-                    tx.object(protocolId),
-                    tx.object(constants_1.TREASURY_OBJECT_ID),
+                    tx.object(constants_1.PROTOCOL_OBJECT),
+                    tx.object(constants_1.TREASURY_OBJECT),
                     token,
                 ],
             });
         }
         return tx;
     }
-    async getStakeUSDCTx(isAf, stakeAmount, walletAddress) {
+    async getStakeUsdcTx(isAf, stakeAmount, walletAddress) {
         /**
          * @description Get transaction for stake token to pool
          * @param isAf Boolean value for Aftermath or not
@@ -1241,10 +1216,9 @@ class BucketClient {
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
-        const protocolId = protocolAddress[this.packageType];
         const { data: coins } = await this.client.getCoins({
             owner: walletAddress,
-            coinType: constants_1.COINS_TYPE_LIST.BUCK,
+            coinType: constants_1.COINS_TYPE_LIST.USDC,
         });
         const [mainCoin, ...otherCoins] = coins.map((coin) => tx.objectRef({
             objectId: coin.coinObjectId,
@@ -1256,7 +1230,7 @@ class BucketClient {
         if (otherCoins.length > 0)
             tx.mergeCoins(mainCoin, otherCoins);
         const stakeCoinInput = tx.splitCoins(mainCoin, [
-            tx.pure(stakeAmount * 10 ** constants_1.COIN_DECIMALS['USDC'], "u64"),
+            tx.pure(stakeAmount * 10 ** constants_1.COIN_DECIMALS.USDC, "u64"),
         ]);
         if (!stakeCoinInput)
             return tx;
@@ -1265,15 +1239,15 @@ class BucketClient {
                 target: `${constants_1.FOUNTAIN_PERIHERY_PACKAGE_ID}::aftermath_fountain::stake`,
                 typeArguments: [constants_1.COINS_TYPE_LIST.AF_LP_USDC_BUCK, constants_1.COINS_TYPE_LIST.USDC],
                 arguments: [
-                    tx.object(protocolId),
+                    tx.object(constants_1.PROTOCOL_OBJECT),
                     tx.object(constants_1.AF_OBJS.pool),
                     tx.object(constants_1.AF_OBJS.poolRegistry),
                     tx.object(constants_1.AF_OBJS.protocolFeeVault),
                     tx.object(constants_1.AF_OBJS.treasury),
                     tx.object(constants_1.AF_OBJS.insuranceFund),
                     tx.object(constants_1.AF_OBJS.referralVault),
-                    tx.object(constants_1.AF_USDC_BUCK_LP_REGISTRY_ID),
-                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                    tx.object(constants_1.AF_USDC_BUCK_LP_REGISTRY),
+                    tx.object(constants_1.CLOCK_OBJECT),
                     stakeCoinInput,
                     tx.pure(walletAddress, "address"),
                 ]
@@ -1284,18 +1258,121 @@ class BucketClient {
                 target: `${constants_1.FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::stake`,
                 typeArguments: [constants_1.COINS_TYPE_LIST.USDC],
                 arguments: [
-                    tx.object(protocolId),
-                    tx.object(constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID),
+                    tx.object(constants_1.PROTOCOL_OBJECT),
+                    tx.object(constants_1.CETUS_USDC_BUCK_LP_REGISTRY),
                     tx.object(constants_1.BUCKETUS_TREASURY),
                     tx.object(constants_1.BUCKETUS_LP_VAULT),
                     tx.object(constants_1.CETUS_OBJS.globalConfig),
                     tx.object(constants_1.CETUS_OBJS.poolBuckUsdc),
-                    tx.object(utils_1.SUI_CLOCK_OBJECT_ID),
+                    tx.object(constants_1.CLOCK_OBJECT),
                     stakeCoinInput,
                     tx.pure(walletAddress, "address"),
                 ]
             });
         }
+        return tx;
+    }
+    async getAfUnstakeTx(fountainId, lpProof) {
+        /**
+         * @description Get transaction for unstake token from AF pool
+         * @param fountainId
+         * @param lpProof UserLpProof object
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const [stakeType, rewardType] = (0, utils_2.proofTypeToCoinType)(lpProof.typeName);
+        tx.moveCall({
+            target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
+            typeArguments: [stakeType, rewardType],
+            arguments: [
+                tx.object(constants_1.CLOCK_OBJECT),
+                tx.object(fountainId),
+                tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
+            ]
+        });
+        return tx;
+    }
+    async getCetusUnstakeTx(fountainId, lpProof, walletAddress) {
+        /**
+         * @description Get transaction for unstake token from Cetus pool
+         * @param fountainId
+         * @param lpProof UserLpProof object
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const [bucketusOut, suiReward] = tx.moveCall({
+            target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
+            typeArguments: [constants_1.BUCKETUS_TYPE, constants_1.COINS_TYPE_LIST.SUI],
+            arguments: [
+                tx.object(constants_1.CLOCK_OBJECT),
+                tx.object(fountainId),
+                tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
+            ],
+        });
+        const suiCoin = tx.moveCall({
+            target: "0x2::coin::from_balance",
+            typeArguments: [constants_1.COINS_TYPE_LIST.SUI],
+            arguments: [suiReward],
+        });
+        const bucketusCoin = tx.moveCall({
+            target: "0x2::coin::from_balance",
+            typeArguments: [constants_1.BUCKETUS_TYPE],
+            arguments: [bucketusOut],
+        });
+        const [buckCoin, usdcCoin] = tx.moveCall({
+            target: "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::withdraw",
+            typeArguments: [constants_1.COINS_TYPE_LIST.BUCK, constants_1.COINS_TYPE_LIST.USDC],
+            arguments: [
+                tx.object(constants_1.BUCKETUS_TREASURY),
+                tx.object(constants_1.BUCKETUS_LP_VAULT),
+                tx.object(constants_1.CETUS_OBJS.globalConfig),
+                tx.object(constants_1.CETUS_OBJS.poolBuckUsdc),
+                tx.object(constants_1.CLOCK_OBJECT),
+                bucketusCoin,
+            ],
+        });
+        tx.transferObjects([buckCoin, usdcCoin, suiCoin], tx.pure(walletAddress, "address"));
+        return tx;
+    }
+    async getAfClaimTx(fountainId, lpProof) {
+        /**
+         * @description Get transaction for claim token from AF pool
+         * @param fountainId
+         * @param lpProof UserLpProof object
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const [stakeType, rewardType] = (0, utils_2.proofTypeToCoinType)(lpProof.typeName);
+        tx.moveCall({
+            target: `${constants_1.FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
+            typeArguments: [stakeType, rewardType],
+            arguments: [
+                tx.object(constants_1.CLOCK_OBJECT),
+                tx.object(fountainId),
+                tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
+            ]
+        });
+        return tx;
+    }
+    async getCetusClaimTx(fountainId, lpProof, walletAddress) {
+        /**
+         * @description Get transaction for unstake token from Cetus pool
+         * @param fountainId
+         * @param lpObject UserLpProof object
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        tx.moveCall({
+            target: `${constants_1.FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::claim`,
+            arguments: [
+                tx.object(fountainId),
+                tx.object(constants_1.CLOCK_OBJECT),
+                tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
+                tx.pure(walletAddress, "address"),
+            ],
+        });
         return tx;
     }
 }

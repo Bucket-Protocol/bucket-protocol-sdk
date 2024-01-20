@@ -201,5 +201,3 @@ export type UserLpProof = {
 };
 
 export type UserLpList = Record<string, UserLpProof[]>;
-
-export type PackageType = "mainnet" | "testnet";

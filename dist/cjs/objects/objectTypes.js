@@ -2,7 +2,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ObjectRead = exports.PaginatedObjectsResponse = exports.CheckpointedObjectId = exports.getMovePackageContent = exports.hasPublicTransfer = exports.getMoveObject = exports.getObjectFields = exports.getMoveObjectType = exports.isImmutableObject = exports.isSharedObject = exports.getSharedObjectInitialVersion = exports.getObjectDisplay = exports.getObjectOwner = exports.getObjectPreviousTransactionDigest = exports.getObjectType = exports.isSuiObjectResponse = exports.getObjectVersion = exports.getObjectId = exports.getObjectReference = exports.getObjectNotExistsResponse = exports.getObjectDeletedResponse = exports.getSuiObjectData = exports.SuiObjectResponse = exports.GetOwnedObjectsResponse = exports.ObjectStatus = exports.SuiObjectDataOptions = exports.SuiObjectData = exports.DisplayFieldsBackwardCompatibleResponse = exports.DisplayFieldsResponse = exports.SuiObjectResponseError = exports.MIST_PER_SUI = exports.SUI_DECIMALS = exports.SuiRawData = exports.SuiRawMovePackage = exports.SuiRawMoveObject = exports.SuiParsedData = exports.SuiMovePackage = exports.SuiMoveObject = exports.MovePackageContent = exports.ObjectContentFields = exports.SuiObjectInfo = exports.SuiGasData = exports.TransactionEffectsModifiedAtVersions = exports.OwnedObjectRef = exports.SuiObjectRef = exports.ObjectType = void 0;
+exports.SharedObjectRef = exports.ObjectRead = exports.PaginatedObjectsResponse = exports.CheckpointedObjectId = exports.getMovePackageContent = exports.hasPublicTransfer = exports.getMoveObject = exports.getObjectFields = exports.getMoveObjectType = exports.isImmutableObject = exports.isSharedObject = exports.getSharedObjectInitialVersion = exports.getObjectDisplay = exports.getObjectOwner = exports.getObjectPreviousTransactionDigest = exports.getObjectType = exports.isSuiObjectResponse = exports.getObjectVersion = exports.getObjectId = exports.getObjectReference = exports.getObjectNotExistsResponse = exports.getObjectDeletedResponse = exports.getSuiObjectData = exports.SuiObjectResponse = exports.GetOwnedObjectsResponse = exports.ObjectStatus = exports.SuiObjectDataOptions = exports.SuiObjectData = exports.DisplayFieldsBackwardCompatibleResponse = exports.DisplayFieldsResponse = exports.SuiObjectResponseError = exports.MIST_PER_SUI = exports.SUI_DECIMALS = exports.SuiRawData = exports.SuiRawMovePackage = exports.SuiRawMoveObject = exports.SuiParsedData = exports.SuiMovePackage = exports.SuiMoveObject = exports.MovePackageContent = exports.ObjectContentFields = exports.SuiObjectInfo = exports.SuiGasData = exports.TransactionEffectsModifiedAtVersions = exports.OwnedObjectRef = exports.SuiObjectRef = exports.ObjectType = void 0;
 const superstruct_1 = require("superstruct");
 const common_1 = require("./common");
 exports.ObjectType = (0, superstruct_1.union)([(0, superstruct_1.string)(), (0, superstruct_1.literal)("package")]);
@@ -359,4 +359,15 @@ exports.ObjectRead = (0, superstruct_1.union)([
         status: (0, superstruct_1.literal)("VersionTooHigh"),
     }),
 ]);
+/**
+ * A reference to a shared object.
+ */
+exports.SharedObjectRef = (0, superstruct_1.object)({
+    /** Hex code as string representing the object id */
+    objectId: (0, superstruct_1.string)(),
+    /** Object version */
+    initialSharedVersion: (0, superstruct_1.union)([(0, superstruct_1.number)(), (0, superstruct_1.string)()]),
+    /** Whether reference is mutable */
+    mutable: (0, superstruct_1.boolean)(),
+});
 //# sourceMappingURL=objectTypes.js.map

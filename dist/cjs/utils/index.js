@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCoinSymbol = exports.parseBigInt = exports.parseUnits = exports.formatUnits = exports.U64FromBytes = exports.getObjectNames = void 0;
+exports.lpProofToObject = exports.proofTypeToCoinType = exports.getCoinSymbol = exports.parseBigInt = exports.parseUnits = exports.formatUnits = exports.U64FromBytes = exports.getObjectNames = void 0;
 const constants_1 = require("../constants");
 function getObjectNames(objectTypes) {
     const accept_coin_type = Object.values(constants_1.COINS_TYPE_LIST);
@@ -71,4 +71,17 @@ const getCoinSymbol = (coinType) => {
     return Object.keys(constants_1.COINS_TYPE_LIST).find(key => constants_1.COINS_TYPE_LIST[key] === coinType);
 };
 exports.getCoinSymbol = getCoinSymbol;
+const proofTypeToCoinType = (poolType) => {
+    const coinTypes = poolType.split("<")[1].replace(">", "").split(", ");
+    return coinTypes;
+};
+exports.proofTypeToCoinType = proofTypeToCoinType;
+const lpProofToObject = (lpProof) => {
+    return {
+        objectId: lpProof.objectId,
+        digest: lpProof.digest,
+        version: lpProof.version,
+    };
+};
+exports.lpProofToObject = lpProofToObject;
 //# sourceMappingURL=index.js.map

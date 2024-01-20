@@ -1,3 +1,4 @@
+import { UserLpProof } from "src/types";
 import { COINS_TYPE_LIST } from "../constants";
 
 export function getObjectNames(objectTypes: string[]) {
@@ -81,4 +82,17 @@ export const parseBigInt = (number: `${number}`, decimal: number) => {
 
 export const getCoinSymbol = (coinType: string) => {
     return Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key] === coinType);
+}
+
+export const proofTypeToCoinType = (poolType: string): string[] => {
+    const coinTypes = poolType.split("<")[1].replace(">", "").split(", ");
+    return coinTypes;
+};
+
+export const lpProofToObject = (lpProof: UserLpProof) => {
+    return {
+        objectId: lpProof.objectId,
+        digest: lpProof.digest,
+        version: lpProof.version,
+    }
 }

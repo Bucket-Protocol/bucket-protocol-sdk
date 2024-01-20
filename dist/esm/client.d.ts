@@ -1,18 +1,15 @@
 import { SuiClient, SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
-import { BucketConstants, PaginatedBottleSummary, PackageType, BucketInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpList } from "./types";
+import { BucketConstants, PaginatedBottleSummary, BucketInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList } from "./types";
 export declare class BucketClient {
-    currentAddress: string;
+    owner: string;
     /**
      * @description a TS wrapper over Bucket Protocol Move packages.
      * @param client connection to fullnode
-     * @param currentAddress (optional) address of the current user (default: DUMMY_ADDRESS)
+     * @param owner (optional) address of the current user (default: DUMMY_ADDRESS)
      */
     private client;
-    packageType: PackageType;
-    constructor(client: SuiClient, options?: {
-        packageType?: PackageType;
-    }, currentAddress?: string);
+    constructor(client: SuiClient, owner?: string);
     depositToTank(assetBuck: string, assetType: string, tankId: string, depositAmount: string): Promise<TransactionBlock>;
     absorbFromTank(assetBuck: string, assetType: string, tankId: string, collteralInput: string, debtAmount: number): Promise<TransactionBlock>;
     withdrawFromTank(assetBuck: string, assetType: string, tankId: string, contributorToken: string): Promise<TransactionBlock>;
@@ -57,6 +54,10 @@ export declare class BucketClient {
     getTankDepositTx(tankType: string, depositAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getTankWithdrawTx(tankType: string, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getTankClaimTx(tankType: string, walletAddress: string): Promise<TransactionBlock>;
-    getStakeUSDCTx(isAf: boolean, stakeAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getStakeUsdcTx(isAf: boolean, stakeAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getAfUnstakeTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
+    getCetusUnstakeTx(fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
+    getAfClaimTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
+    getCetusClaimTx(fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
 }
 //# sourceMappingURL=client.d.ts.map
