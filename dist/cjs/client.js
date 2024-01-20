@@ -1282,7 +1282,7 @@ class BucketClient {
         const tx = new transactions_1.TransactionBlock();
         const [stakeType, rewardType] = (0, utils_2.proofTypeToCoinType)(lpProof.typeName);
         tx.moveCall({
-            target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
+            target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_periphery::force_unstake",
             typeArguments: [stakeType, rewardType],
             arguments: [
                 tx.object(constants_1.CLOCK_OBJECT),
