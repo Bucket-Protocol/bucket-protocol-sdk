@@ -4,7 +4,7 @@ import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, HASUI_APY_URL, AFSUI_APY_URL, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT, CETUS_OBJS, CETUS_USDC_BUCK_LP_REGISTRY_ID, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, CETUS_USDC_BUCK_LP_REGISTRY, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, BUCKETUS_TYPE } from "./constants";
-import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType } from "./utils";
+import { U64FromBytes, coinFromBalance, coinIntoBalance, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType } from "./utils";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 export class BucketClient {
     owner;
@@ -426,7 +426,7 @@ export class BucketClient {
         /**
        * @description Get all buckets
        */
-        let buckets = [];
+        let buckets = {};
         try {
             const generalInfo = await this.client.getObject({
                 id: PROTOCOL_ID,
@@ -468,7 +468,7 @@ export class BucketClient {
                     maxMintAmount: fields.max_mint_amount ?? "",
                     recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
                 };
-                buckets.push(bucketInfo);
+                buckets[token] = bucketInfo;
             });
         }
         catch (error) {
@@ -1372,5 +1372,112 @@ export class BucketClient {
         });
         return tx;
     }
+    async getPsmTx(psmCoin, psmAmount, psmSwith, walletAddress) {
+        /**
+         * @description Get transaction for PSM
+         * @param psmCoin Asset , e.g "0x2::sui::SUI"
+         * @param psmAmount
+         * @param psmSwith stable coin -> BUCK or not
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new TransactionBlock();
+        const inputCoinType = psmSwith ? COINS_TYPE_LIST.BUCK : COINS_TYPE_LIST[psmCoin];
+        const inputCoinDecimals = COIN_DECIMALS[psmSwith ? 'BUCK' : psmCoin] ?? 9;
+        const [inputCoin] = await this.getInputCoin(tx, walletAddress, inputCoinType, psmAmount * 10 ** inputCoinDecimals);
+        const outCoinType = psmSwith ? COINS_TYPE_LIST[psmCoin] : COINS_TYPE_LIST.BUCK;
+        const inputCoinBalance = coinIntoBalance(tx, inputCoinType, inputCoin);
+        if (psmSwith) {
+            let outBalance = tx.moveCall({
+                target: `${CORE_PACKAGE_ID}::buck::discharge_reservoir`,
+                typeArguments: [outCoinType],
+                arguments: [
+                    tx.object(PROTOCOL_OBJECT),
+                    inputCoinBalance
+                ],
+            });
+            const coinOut = coinFromBalance(tx, outCoinType, outBalance);
+            tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
+        }
+        else {
+            let outBalance = tx.moveCall({
+                target: `${CORE_PACKAGE_ID}::buck::charge_reservoir`,
+                typeArguments: [inputCoinType],
+                arguments: [
+                    tx.object(PROTOCOL_OBJECT),
+                    inputCoinBalance
+                ],
+            });
+            const coinOut = coinFromBalance(tx, outCoinType, outBalance);
+            tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
+        }
+        return tx;
+    }
+    async getRedeemTx(collateralType, redeemAmount, walletAddress) {
+        /**
+         * @description Get transaction for Redeem
+         * @param collateralType Asset , e.g "0x2::sui::SUI"
+         * @param redeemAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new TransactionBlock();
+        const coinSymbol = getCoinSymbol(collateralType) ?? "";
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: COINS_TYPE_LIST.BUCK,
+        });
+        const [mainCoin, ...otherCoins] = coins
+            .filter(x => x.coinType == COINS_TYPE_LIST.BUCK)
+            .map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            version: coin.version,
+            digest: coin.digest,
+        }));
+        let buckCoinInput;
+        if (mainCoin) {
+            if (otherCoins.length !== 0)
+                tx.mergeCoins(mainCoin, otherCoins);
+            buckCoinInput = tx.splitCoins(mainCoin, [
+                tx.pure(redeemAmount * 10 ** 9, "u64"),
+            ]);
+        }
+        if (!buckCoinInput)
+            return tx;
+        tx.moveCall({
+            target: SUPRA_UPDATE_TARGET,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(ORACLE_OBJECT),
+                tx.object(CLOCK_OBJECT),
+                tx.object(SUPRA_HANDLER_OBJECT),
+                tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
+            ],
+        });
+        tx.moveCall({
+            target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::redeem`,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(PROTOCOL_OBJECT),
+                tx.object(ORACLE_OBJECT),
+                tx.object(CLOCK_OBJECT),
+                buckCoinInput,
+                tx.pure([]),
+            ],
+        });
+        return tx;
+    }
+    async getInputCoin(tx, owner, coinType, ...amounts) {
+        const { data: userCoins } = await this.client.getCoins({ owner, coinType });
+        const [mainCoin, ...otherCoins] = userCoins.map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            version: coin.version,
+            digest: coin.digest,
+        }));
+        if (otherCoins.length > 0)
+            tx.mergeCoins(mainCoin, otherCoins);
+        return tx.splitCoins(mainCoin, amounts.map(amount => tx.pure(amount, "u64")));
+    }
+    ;
 }
 //# sourceMappingURL=client.js.map

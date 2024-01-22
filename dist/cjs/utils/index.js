@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.lpProofToObject = exports.proofTypeToCoinType = exports.getCoinSymbol = exports.parseBigInt = exports.parseUnits = exports.formatUnits = exports.U64FromBytes = exports.getObjectNames = void 0;
+exports.lpProofToObject = exports.proofTypeToCoinType = exports.coinFromBalance = exports.coinIntoBalance = exports.getCoinSymbol = exports.parseBigInt = exports.parseUnits = exports.formatUnits = exports.U64FromBytes = exports.getObjectNames = void 0;
 const constants_1 = require("../constants");
 function getObjectNames(objectTypes) {
     const accept_coin_type = Object.values(constants_1.COINS_TYPE_LIST);
@@ -71,6 +71,22 @@ const getCoinSymbol = (coinType) => {
     return Object.keys(constants_1.COINS_TYPE_LIST).find(key => constants_1.COINS_TYPE_LIST[key] === coinType);
 };
 exports.getCoinSymbol = getCoinSymbol;
+function coinIntoBalance(tx, coinType, coinInput) {
+    return tx.moveCall({
+        target: "0x2::coin::into_balance",
+        typeArguments: [coinType],
+        arguments: [coinInput],
+    });
+}
+exports.coinIntoBalance = coinIntoBalance;
+function coinFromBalance(tx, coinType, balanceInput) {
+    return tx.moveCall({
+        target: "0x2::coin::from_balance",
+        typeArguments: [coinType],
+        arguments: [balanceInput],
+    });
+}
+exports.coinFromBalance = coinFromBalance;
 const proofTypeToCoinType = (poolType) => {
     const coinTypes = poolType.split("<")[1].replace(">", "").split(", ");
     return coinTypes;

@@ -1,4 +1,3 @@
-export type ACCEPT_ASSETS = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "WETH";
 export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT" | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb";
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 export declare const BUCKET_OPERATIONS_PACKAGE_ID: string;

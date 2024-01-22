@@ -1,6 +1,6 @@
 import { SuiClient, SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
-import { BucketConstants, PaginatedBottleSummary, BucketInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList } from "./types";
+import { BucketConstants, PaginatedBottleSummary, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList } from "./types";
 export declare class BucketClient {
     owner: string;
     /**
@@ -29,7 +29,7 @@ export declare class BucketClient {
     getProtocol(): Promise<ProtocolInfo>;
     getAllBottles(): Promise<PaginatedBottleSummary>;
     getDestroyedBottles(): Promise<PaginatedBottleSummary>;
-    getAllBuckets(): Promise<BucketInfo[]>;
+    getAllBuckets(): Promise<BucketList>;
     getAllTanks(): Promise<TankList>;
     getAllFountains(): Promise<FountainList>;
     getUserBottles(address: string): Promise<BottleInfo[]>;
@@ -47,7 +47,15 @@ export declare class BucketClient {
         afSUI: number;
         haSUI: number;
         vSUI: number;
+        AF_LP_USDC_BUCK: number;
+        AF_LP_SUI_BUCK: number;
         WETH: number;
+        BUCK: number;
+        BKT: number;
+        USDCbnb: number;
+        USDCsol: number;
+        USDCpol: number;
+        USDCarb: number;
     }>>;
     getBorrowTx(isNewBottle: boolean, collateralType: string, collateralAmount: number, borrowAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getRepayTx(collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
@@ -59,5 +67,8 @@ export declare class BucketClient {
     getCetusUnstakeTx(fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
     getAfClaimTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
     getCetusClaimTx(fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
+    getPsmTx(psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<TransactionBlock>;
+    getRedeemTx(collateralType: string, redeemAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getInputCoin(tx: TransactionBlock, owner: string, coinType: string, ...amounts: number[]): Promise<TransactionResult>;
 }
 //# sourceMappingURL=client.d.ts.map

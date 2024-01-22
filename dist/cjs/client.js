@@ -429,7 +429,7 @@ class BucketClient {
         /**
        * @description Get all buckets
        */
-        let buckets = [];
+        let buckets = {};
         try {
             const generalInfo = await this.client.getObject({
                 id: constants_1.PROTOCOL_ID,
@@ -471,7 +471,7 @@ class BucketClient {
                     maxMintAmount: fields.max_mint_amount ?? "",
                     recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
                 };
-                buckets.push(bucketInfo);
+                buckets[token] = bucketInfo;
             });
         }
         catch (error) {
@@ -1375,6 +1375,113 @@ class BucketClient {
         });
         return tx;
     }
+    async getPsmTx(psmCoin, psmAmount, psmSwith, walletAddress) {
+        /**
+         * @description Get transaction for PSM
+         * @param psmCoin Asset , e.g "0x2::sui::SUI"
+         * @param psmAmount
+         * @param psmSwith stable coin -> BUCK or not
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const inputCoinType = psmSwith ? constants_1.COINS_TYPE_LIST.BUCK : constants_1.COINS_TYPE_LIST[psmCoin];
+        const inputCoinDecimals = constants_1.COIN_DECIMALS[psmSwith ? 'BUCK' : psmCoin] ?? 9;
+        const [inputCoin] = await this.getInputCoin(tx, walletAddress, inputCoinType, psmAmount * 10 ** inputCoinDecimals);
+        const outCoinType = psmSwith ? constants_1.COINS_TYPE_LIST[psmCoin] : constants_1.COINS_TYPE_LIST.BUCK;
+        const inputCoinBalance = (0, utils_2.coinIntoBalance)(tx, inputCoinType, inputCoin);
+        if (psmSwith) {
+            let outBalance = tx.moveCall({
+                target: `${constants_1.CORE_PACKAGE_ID}::buck::discharge_reservoir`,
+                typeArguments: [outCoinType],
+                arguments: [
+                    tx.object(constants_1.PROTOCOL_OBJECT),
+                    inputCoinBalance
+                ],
+            });
+            const coinOut = (0, utils_2.coinFromBalance)(tx, outCoinType, outBalance);
+            tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
+        }
+        else {
+            let outBalance = tx.moveCall({
+                target: `${constants_1.CORE_PACKAGE_ID}::buck::charge_reservoir`,
+                typeArguments: [inputCoinType],
+                arguments: [
+                    tx.object(constants_1.PROTOCOL_OBJECT),
+                    inputCoinBalance
+                ],
+            });
+            const coinOut = (0, utils_2.coinFromBalance)(tx, outCoinType, outBalance);
+            tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
+        }
+        return tx;
+    }
+    async getRedeemTx(collateralType, redeemAmount, walletAddress) {
+        /**
+         * @description Get transaction for Redeem
+         * @param collateralType Asset , e.g "0x2::sui::SUI"
+         * @param redeemAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const tx = new transactions_1.TransactionBlock();
+        const coinSymbol = (0, utils_2.getCoinSymbol)(collateralType) ?? "";
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: constants_1.COINS_TYPE_LIST.BUCK,
+        });
+        const [mainCoin, ...otherCoins] = coins
+            .filter(x => x.coinType == constants_1.COINS_TYPE_LIST.BUCK)
+            .map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            version: coin.version,
+            digest: coin.digest,
+        }));
+        let buckCoinInput;
+        if (mainCoin) {
+            if (otherCoins.length !== 0)
+                tx.mergeCoins(mainCoin, otherCoins);
+            buckCoinInput = tx.splitCoins(mainCoin, [
+                tx.pure(redeemAmount * 10 ** 9, "u64"),
+            ]);
+        }
+        if (!buckCoinInput)
+            return tx;
+        tx.moveCall({
+            target: constants_1.SUPRA_UPDATE_TARGET,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(constants_1.ORACLE_OBJECT),
+                tx.object(constants_1.CLOCK_OBJECT),
+                tx.object(constants_1.SUPRA_HANDLER_OBJECT),
+                tx.pure(constants_1.SUPRA_ID[coinSymbol] ?? "", "u32"),
+            ],
+        });
+        tx.moveCall({
+            target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::redeem`,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(constants_1.PROTOCOL_OBJECT),
+                tx.object(constants_1.ORACLE_OBJECT),
+                tx.object(constants_1.CLOCK_OBJECT),
+                buckCoinInput,
+                tx.pure([]),
+            ],
+        });
+        return tx;
+    }
+    async getInputCoin(tx, owner, coinType, ...amounts) {
+        const { data: userCoins } = await this.client.getCoins({ owner, coinType });
+        const [mainCoin, ...otherCoins] = userCoins.map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            version: coin.version,
+            digest: coin.digest,
+        }));
+        if (otherCoins.length > 0)
+            tx.mergeCoins(mainCoin, otherCoins);
+        return tx.splitCoins(mainCoin, amounts.map(amount => tx.pure(amount, "u64")));
+    }
+    ;
 }
 exports.BucketClient = BucketClient;
 //# sourceMappingURL=client.js.map

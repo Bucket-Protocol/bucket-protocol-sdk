@@ -1,5 +1,6 @@
 import { UserLpProof } from "src/types";
 import { COINS_TYPE_LIST } from "../constants";
+import { TransactionBlock, TransactionArgument } from "@mysten/sui.js/transactions";
 
 export function getObjectNames(objectTypes: string[]) {
 
@@ -82,6 +83,30 @@ export const parseBigInt = (number: `${number}`, decimal: number) => {
 
 export const getCoinSymbol = (coinType: string) => {
     return Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key] === coinType);
+}
+
+export function coinIntoBalance(
+    tx: TransactionBlock,
+    coinType: string,
+    coinInput: TransactionArgument,
+) {
+    return tx.moveCall({
+        target: "0x2::coin::into_balance",
+        typeArguments: [coinType],
+        arguments: [coinInput],
+    });
+}
+
+export function coinFromBalance(
+    tx: TransactionBlock,
+    coinType: string,
+    balanceInput: TransactionArgument,
+) {
+    return tx.moveCall({
+        target: "0x2::coin::from_balance",
+        typeArguments: [coinType],
+        arguments: [balanceInput],
+    });
 }
 
 export const proofTypeToCoinType = (poolType: string): string[] => {

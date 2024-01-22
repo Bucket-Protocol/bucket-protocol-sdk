@@ -62,6 +62,20 @@ export const parseBigInt = (number, decimal) => {
 export const getCoinSymbol = (coinType) => {
     return Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key] === coinType);
 };
+export function coinIntoBalance(tx, coinType, coinInput) {
+    return tx.moveCall({
+        target: "0x2::coin::into_balance",
+        typeArguments: [coinType],
+        arguments: [coinInput],
+    });
+}
+export function coinFromBalance(tx, coinType, balanceInput) {
+    return tx.moveCall({
+        target: "0x2::coin::from_balance",
+        typeArguments: [coinType],
+        arguments: [balanceInput],
+    });
+}
 export const proofTypeToCoinType = (poolType) => {
     const coinTypes = poolType.split("<")[1].replace(">", "").split(", ");
     return coinTypes;

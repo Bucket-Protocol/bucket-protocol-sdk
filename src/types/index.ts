@@ -1,12 +1,12 @@
 import { EventId } from "@mysten/sui.js/src/client";
-import { ACCEPT_ASSETS, COIN } from "src/constants";
+import { COIN } from "src/constants";
 
 export type ProtocolInfo = {
   buckSupply: number;
 }
 
 export type BucketInfo = {
-  token: ACCEPT_ASSETS;
+  token: COIN;
   baseFeeRate: number;
   bottleTableSize: string;
   collateralDecimal: number;
@@ -18,6 +18,8 @@ export type BucketInfo = {
   maxMintAmount: string;
   recoveryModeThreshold: string;
 };
+
+export type BucketList = Partial<Record<COIN, BucketInfo>>;
 
 export type BucketProtocolResponse = {
   dataType: string;
