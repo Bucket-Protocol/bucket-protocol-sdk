@@ -3,7 +3,7 @@
 import { Inputs } from "@mysten/sui.js/transactions"
 
 export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT"
-  | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb";
+  | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb" | "BUCKETUS";
 
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 
@@ -37,6 +37,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
   BUCK: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK",
   BKT: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::bkt::BKT",
+  BUCKETUS: "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS",
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -53,9 +54,20 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   AF_LP_SUI_BUCK: 9,
 
   USDCarb: 6,
-  USDCbnb: 6,
   USDCpol: 6,
   USDCsol: 6,
+  USDCbnb: 8,
+  BUCKETUS: 9,
+};
+
+export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
+  BUCKETUS: "0xba86a0f37377844f38060a9f62b5c5cd3f8ba13901fa6c4ee5777c1cc535306b",
+  USDC: "0x0c2e5fbfeb5caa4c2f7c8645ffe9eca7e3c783536efef859be03146b235f9e04",
+  USDT: "0x607e7d386e29066b964934e0eb1daa084538a79b5707c34f38e190d64e24923e",
+  USDCbnb: "0x973c51875b3fb9c8cf5d8ec4aeac83fddaacb88c17960fd5258d8fa38bc4dd82",
+  USDCsol: "0x596d696153f405cdee285a0da122c8c9a4cf6c883298aaf9bec1149e0909e168",
+  USDCpol: "0x741ec9190953ee9eaa1b92b2285f15a0c7068bac2e591bfa5f7f596a75ada351",
+  USDCarb: "0x10970069e17f31aee9cb55c53237d3a62584582e05f3c2030f92ce9fc6365c90",
 };
 
 export const SUPRA_PRICE_FEEDS = {
@@ -78,6 +90,7 @@ export const SUPRA_ID: Record<string, string> = {
   haSUI: "90",
   vSUI: "90",
 };
+
 
 export const SWITCHBOARD_UPDATE_TARGET =
   "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_switchboard";
@@ -213,8 +226,6 @@ export const BUCKETUS_LP_VAULT = Inputs.SharedObjectRef({
   initialSharedVersion: 61717741,
   mutable: true,
 });
-
-export const BUCKETUS_TYPE = "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS";
 
 export const FOUNTAIN_PACKAGE_ID =
   "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";

@@ -159,6 +159,8 @@ export type FountainInfo = {
 
 export type FountainList = Record<string, FountainInfo>;
 
+export type TvlList = Record<string, number>;
+
 export type ContributorToken = {
   data: {
     digest: string;
@@ -203,3 +205,13 @@ export type UserLpProof = {
 };
 
 export type UserLpList = Record<string, UserLpProof[]>;
+
+export type PsmPoolResponse = {
+  buck_minted_amount: string;
+  charge_fee_rate: string;
+  conversion_rate: string;
+  id: {
+    id: string;
+  };
+  pool: string;
+};

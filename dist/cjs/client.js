@@ -558,6 +558,36 @@ class BucketClient {
         });
         return fountains;
     }
+    async getPsmTVL() {
+        /**
+       * @description Get all PSM's TVL
+       */
+        let tvlList = {};
+        try {
+            const objectIdList = Object.values(constants_1.PSM_POOL_IDS);
+            const response = await this.client.multiGetObjects({
+                ids: objectIdList,
+                options: {
+                    showContent: true,
+                    showType: true, //Check could we get type from response later
+                },
+            });
+            response.map((res) => {
+                const fields = (0, objectTypes_1.getObjectFields)(res);
+                const poolId = fields.id.id;
+                const coins = Object.keys(constants_1.PSM_POOL_IDS).filter(symbol => constants_1.PSM_POOL_IDS[symbol] == poolId);
+                if (coins.length > 0) {
+                    let coin = coins[0];
+                    tvlList[coin] = Number((0, utils_2.formatUnits)(BigInt(fields.pool), constants_1.COIN_DECIMALS[coin] ?? 9));
+                }
+            });
+        }
+        catch (error) {
+            console.log(error);
+        }
+        return tvlList;
+    }
+    ;
     async getUserBottles(address) {
         /**
          * @description Get positions array for input address
@@ -1303,7 +1333,7 @@ class BucketClient {
         const tx = new transactions_1.TransactionBlock();
         const [bucketusOut, suiReward] = tx.moveCall({
             target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
-            typeArguments: [constants_1.BUCKETUS_TYPE, constants_1.COINS_TYPE_LIST.SUI],
+            typeArguments: [constants_1.COINS_TYPE_LIST.BUCKETUS, constants_1.COINS_TYPE_LIST.SUI],
             arguments: [
                 tx.object(constants_1.CLOCK_OBJECT),
                 tx.object(fountainId),
@@ -1317,7 +1347,7 @@ class BucketClient {
         });
         const bucketusCoin = tx.moveCall({
             target: "0x2::coin::from_balance",
-            typeArguments: [constants_1.BUCKETUS_TYPE],
+            typeArguments: [constants_1.COINS_TYPE_LIST.BUCKETUS],
             arguments: [bucketusOut],
         });
         const [buckCoin, usdcCoin] = tx.moveCall({

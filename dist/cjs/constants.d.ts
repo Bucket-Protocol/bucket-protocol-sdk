@@ -1,4 +1,4 @@
-export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT" | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb";
+export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT" | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb" | "BUCKETUS";
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 export declare const BUCKET_OPERATIONS_PACKAGE_ID: string;
 export declare const PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
@@ -6,6 +6,7 @@ export declare const CONTRIBUTOR_TOKEN_ID = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a
 export declare const CORE_PACKAGE_ID = "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
 export declare const COINS_TYPE_LIST: Record<COIN, string>;
 export declare const COIN_DECIMALS: Record<COIN, number>;
+export declare const PSM_POOL_IDS: Partial<Record<COIN, string>>;
 export declare const SUPRA_PRICE_FEEDS: {
     usdc_usd: string;
     usdt_usd: string;
@@ -296,7 +297,6 @@ export declare const BUCKETUS_LP_VAULT: {
         };
     };
 };
-export declare const BUCKETUS_TYPE = "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS";
 export declare const FOUNTAIN_PACKAGE_ID = "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";
 export declare const KRIYA_FOUNTAIN_PACKAGE_ID = "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
 export declare const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";

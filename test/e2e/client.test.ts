@@ -71,5 +71,12 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 1000 * 60
     });
+
+    it('tests getPsmTVL() function', async () => {
+        const tvl = await buck.getPsmTVL();
+        expect(tvl).toBeDefined;
+    });
     */
+
+
 });

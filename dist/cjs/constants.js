@@ -1,7 +1,7 @@
 "use strict";
 // Copyright Andrei <andreid.dev@gmail.com>
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HASUI_APY_URL = exports.AFSUI_APY_URL = exports.KRIYA_FOUNTAIN_PACKAGE_ID = exports.FOUNTAIN_PACKAGE_ID = exports.BUCKETUS_TYPE = exports.BUCKETUS_LP_VAULT = exports.BUCKETUS_TREASURY = exports.CETUS_OBJS = exports.AF_OBJS = exports.AF_USDC_BUCK_POOL_ID = exports.AF_SUI_BUCK_POOL_ID = exports.KRIYA_BUCK_USDC_POOL_ID = exports.KRIYA_SUI_BUCK_POOL_ID = exports.CETUS_BUCK_USDC_POOL_ID = exports.CETUS_SUI_BUCK_POOL_ID = exports.AF_USDC_BUCK_LP_REGISTRY = exports.AF_USDC_BUCK_LP_REGISTRY_ID = exports.AF_SUI_BUCK_LP_REGISTRY = exports.AF_SUI_BUCK_LP_REGISTRY_ID = exports.KRIYA_USDC_BUCK_LP_REGISTRY = exports.KRIYA_USDC_BUCK_LP_REGISTRY_ID = exports.KRIYA_SUI_BUCK_LP_REGISTRY = exports.KRIYA_SUI_BUCK_LP_REGISTRY_ID = exports.CETUS_USDC_BUCK_LP_REGISTRY = exports.CETUS_USDC_BUCK_LP_REGISTRY_ID = exports.CETUS_SUI_BUCK_LP_REGISTRY = exports.CETUS_SUI_BUCK_LP_REGISTRY_ID = exports.FOUNTAIN_PERIHERY_PACKAGE_ID = exports.PROTOCOL_OBJECT = exports.TREASURY_OBJECT = exports.ORACLE_OBJECT = exports.CLOCK_OBJECT = exports.SUPRA_UPDATE_TARGET = exports.SUPRA_HANDLER_OBJECT = exports.SWITCHBOARD_UPDATE_TARGET = exports.SUPRA_ID = exports.SUPRA_PRICE_FEEDS = exports.COIN_DECIMALS = exports.COINS_TYPE_LIST = exports.CORE_PACKAGE_ID = exports.CONTRIBUTOR_TOKEN_ID = exports.PROTOCOL_ID = exports.BUCKET_OPERATIONS_PACKAGE_ID = void 0;
+exports.HASUI_APY_URL = exports.AFSUI_APY_URL = exports.KRIYA_FOUNTAIN_PACKAGE_ID = exports.FOUNTAIN_PACKAGE_ID = exports.BUCKETUS_LP_VAULT = exports.BUCKETUS_TREASURY = exports.CETUS_OBJS = exports.AF_OBJS = exports.AF_USDC_BUCK_POOL_ID = exports.AF_SUI_BUCK_POOL_ID = exports.KRIYA_BUCK_USDC_POOL_ID = exports.KRIYA_SUI_BUCK_POOL_ID = exports.CETUS_BUCK_USDC_POOL_ID = exports.CETUS_SUI_BUCK_POOL_ID = exports.AF_USDC_BUCK_LP_REGISTRY = exports.AF_USDC_BUCK_LP_REGISTRY_ID = exports.AF_SUI_BUCK_LP_REGISTRY = exports.AF_SUI_BUCK_LP_REGISTRY_ID = exports.KRIYA_USDC_BUCK_LP_REGISTRY = exports.KRIYA_USDC_BUCK_LP_REGISTRY_ID = exports.KRIYA_SUI_BUCK_LP_REGISTRY = exports.KRIYA_SUI_BUCK_LP_REGISTRY_ID = exports.CETUS_USDC_BUCK_LP_REGISTRY = exports.CETUS_USDC_BUCK_LP_REGISTRY_ID = exports.CETUS_SUI_BUCK_LP_REGISTRY = exports.CETUS_SUI_BUCK_LP_REGISTRY_ID = exports.FOUNTAIN_PERIHERY_PACKAGE_ID = exports.PROTOCOL_OBJECT = exports.TREASURY_OBJECT = exports.ORACLE_OBJECT = exports.CLOCK_OBJECT = exports.SUPRA_UPDATE_TARGET = exports.SUPRA_HANDLER_OBJECT = exports.SWITCHBOARD_UPDATE_TARGET = exports.SUPRA_ID = exports.SUPRA_PRICE_FEEDS = exports.PSM_POOL_IDS = exports.COIN_DECIMALS = exports.COINS_TYPE_LIST = exports.CORE_PACKAGE_ID = exports.CONTRIBUTOR_TOKEN_ID = exports.PROTOCOL_ID = exports.BUCKET_OPERATIONS_PACKAGE_ID = void 0;
 const transactions_1 = require("@mysten/sui.js/transactions");
 exports.BUCKET_OPERATIONS_PACKAGE_ID = "0xb59c19de88addb7b3e721066c6c99987d09ad22fa829c69dbf0f0c1c0be20625";
 exports.PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
@@ -23,6 +23,7 @@ exports.COINS_TYPE_LIST = {
     AF_LP_SUI_BUCK: "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
     BUCK: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK",
     BKT: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::bkt::BKT",
+    BUCKETUS: "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS",
 };
 exports.COIN_DECIMALS = {
     SUI: 9,
@@ -37,9 +38,19 @@ exports.COIN_DECIMALS = {
     AF_LP_USDC_BUCK: 9,
     AF_LP_SUI_BUCK: 9,
     USDCarb: 6,
-    USDCbnb: 6,
     USDCpol: 6,
     USDCsol: 6,
+    USDCbnb: 8,
+    BUCKETUS: 9,
+};
+exports.PSM_POOL_IDS = {
+    BUCKETUS: "0xba86a0f37377844f38060a9f62b5c5cd3f8ba13901fa6c4ee5777c1cc535306b",
+    USDC: "0x0c2e5fbfeb5caa4c2f7c8645ffe9eca7e3c783536efef859be03146b235f9e04",
+    USDT: "0x607e7d386e29066b964934e0eb1daa084538a79b5707c34f38e190d64e24923e",
+    USDCbnb: "0x973c51875b3fb9c8cf5d8ec4aeac83fddaacb88c17960fd5258d8fa38bc4dd82",
+    USDCsol: "0x596d696153f405cdee285a0da122c8c9a4cf6c883298aaf9bec1149e0909e168",
+    USDCpol: "0x741ec9190953ee9eaa1b92b2285f15a0c7068bac2e591bfa5f7f596a75ada351",
+    USDCarb: "0x10970069e17f31aee9cb55c53237d3a62584582e05f3c2030f92ce9fc6365c90",
 };
 exports.SUPRA_PRICE_FEEDS = {
     usdc_usd: "0x1c400c096e8b52a22c43c080fea4aa22661c9a35b469493dfac5332aecb4789c",
@@ -148,7 +159,6 @@ exports.BUCKETUS_LP_VAULT = transactions_1.Inputs.SharedObjectRef({
     initialSharedVersion: 61717741,
     mutable: true,
 });
-exports.BUCKETUS_TYPE = "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS";
 exports.FOUNTAIN_PACKAGE_ID = "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";
 exports.KRIYA_FOUNTAIN_PACKAGE_ID = "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
 exports.AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
