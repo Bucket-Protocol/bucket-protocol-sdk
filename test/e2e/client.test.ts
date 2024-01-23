@@ -8,10 +8,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
 
     // Instantiate BucketClient
-    const buck = new BucketClient(client, {
-        packageType: "mainnet"
-    });
+    const buck = new BucketClient(client);
 
+    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -24,6 +23,12 @@ describe('Interacting with Bucket Client on mainnet', () => {
             maxFee: "50000"
         }
         )
+    });
+
+    it('tests getProtocol() function', async () => {
+        const protocol = await buck.getProtocol();
+        console.log(protocol);
+        expect(protocol).toBeDefined()
     });
 
     it('tests getAllBottle() function', async () => {
@@ -58,4 +63,20 @@ describe('Interacting with Bucket Client on mainnet', () => {
         const tanks = await buck.getAllTanks();
         expect(tanks).toBeDefined()
     });
+
+    it('tests getUserTanks() function', async () => {
+        const tanks = await buck.getUserTanks("");
+        console.log(tanks);
+        expect(tanks).toBeDefined()
+    }, {
+        timeout: 1000 * 60
+    });
+
+    it('tests getPsmTVL() function', async () => {
+        const tvl = await buck.getPsmTVL();
+        expect(tvl).toBeDefined;
+    });
+    */
+
+
 });

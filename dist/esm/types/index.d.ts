@@ -1,7 +1,10 @@
 import { EventId } from "@mysten/sui.js/src/client";
-import { ACCEPT_ASSETS } from "src/utils";
+import { COIN } from "src/constants";
+export type ProtocolInfo = {
+    buckSupply: number;
+};
 export type BucketInfo = {
-    token: ACCEPT_ASSETS;
+    token: COIN;
     baseFeeRate: number;
     bottleTableSize: string;
     collateralDecimal: number;
@@ -13,6 +16,7 @@ export type BucketInfo = {
     maxMintAmount: string;
     recoveryModeThreshold: string;
 };
+export type BucketList = Partial<Record<COIN, BucketInfo>>;
 export type BucketProtocolResponse = {
     dataType: string;
     type: string;
@@ -120,12 +124,37 @@ export type TankInfoReponse = {
     current_p: string;
 };
 export type TankInfo = {
-    token: string;
     buckReserve: string;
     collateralPool: string;
     currentS: string;
     currentP: string;
 };
+export type TankList = Partial<Record<COIN, TankInfo>>;
+export type FountainInfo = {
+    id: string;
+    sourceBalance: number;
+    flowAmount: number;
+    flowInterval: number;
+    poolBalance: number;
+    stakedBalance: number;
+    totalWeight: number;
+    cumulativeUnit: number;
+    latestReleaseTime: number;
+};
+export type FountainList = Record<string, FountainInfo>;
+export type TvlList = Record<string, number>;
+export type ContributorToken = {
+    data: {
+        digest: string;
+        objectId: string;
+        version: string;
+    };
+};
+export type UserTankInfo = {
+    totalEarned: number;
+    totalBUCK: number;
+};
+export type UserTankList = Partial<Record<COIN, UserTankInfo>>;
 export type SupraPriceFeed = {
     id: {
         id: string;
@@ -141,5 +170,25 @@ export type SupraPriceFeed = {
         };
     };
 };
-export type PackageType = "mainnet" | "testnet";
+export type UserLpProof = {
+    objectId: string;
+    version: string;
+    digest: string;
+    typeName: string;
+    fountainId: string;
+    startUnit: number;
+    stakeAmount: number;
+    stakeWeight: number;
+    lockUntil: number;
+};
+export type UserLpList = Record<string, UserLpProof[]>;
+export type PsmPoolResponse = {
+    buck_minted_amount: string;
+    charge_fee_rate: string;
+    conversion_rate: string;
+    id: {
+        id: string;
+    };
+    pool: string;
+};
 //# sourceMappingURL=index.d.ts.map

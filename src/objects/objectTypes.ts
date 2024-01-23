@@ -507,3 +507,18 @@ export const ObjectRead = union([
   }),
 ]);
 export type ObjectRead = Infer<typeof ObjectRead>;
+
+
+
+/**
+ * A reference to a shared object.
+ */
+export const SharedObjectRef = object({
+  /** Hex code as string representing the object id */
+  objectId: string(),
+  /** Object version */
+  initialSharedVersion: union([number(), string()]),
+  /** Whether reference is mutable */
+  mutable: boolean(),
+});
+export type SharedObjectRef = Infer<typeof SharedObjectRef>;

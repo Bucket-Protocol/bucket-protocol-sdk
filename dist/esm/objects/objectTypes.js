@@ -337,4 +337,15 @@ export const ObjectRead = union([
         status: literal("VersionTooHigh"),
     }),
 ]);
+/**
+ * A reference to a shared object.
+ */
+export const SharedObjectRef = object({
+    /** Hex code as string representing the object id */
+    objectId: string(),
+    /** Object version */
+    initialSharedVersion: union([number(), string()]),
+    /** Whether reference is mutable */
+    mutable: boolean(),
+});
 //# sourceMappingURL=objectTypes.js.map
