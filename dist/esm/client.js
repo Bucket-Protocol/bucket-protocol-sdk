@@ -950,7 +950,7 @@ export class BucketClient {
         }
         return apys;
     }
-    async getBorrowTx(isNewBottle, collateralType, collateralAmount, borrowAmount, walletAddress) {
+    async getBorrowTx(tx, isNewBottle, collateralType, collateralAmount, borrowAmount, walletAddress) {
         /**
          * @description Borrow
          * @param isNewBottle
@@ -960,7 +960,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const token = getCoinSymbol(collateralType);
         if (!token) {
             return tx;
@@ -1042,7 +1041,7 @@ export class BucketClient {
         ;
         return tx;
     }
-    async getRepayTx(collateralType, repayAmount, withdrawAmount, walletAddress) {
+    async getRepayTx(tx, collateralType, repayAmount, withdrawAmount, walletAddress) {
         /**
          * @description Repay
          * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -1051,7 +1050,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const token = getCoinSymbol(collateralType);
         if (!token) {
             return tx;
@@ -1101,7 +1099,7 @@ export class BucketClient {
         });
         return tx;
     }
-    async getTankDepositTx(tankType, depositAmount, walletAddress) {
+    async getTankDepositTx(tx, tankType, depositAmount, walletAddress) {
         /**
          * @description Get transaction for deposit token to tank
          * @param tankType Asset , e.g "0x2::sui::SUI"
@@ -1109,7 +1107,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const { data: coins } = await this.client.getCoins({
             owner: walletAddress,
             coinType: COINS_TYPE_LIST.BUCK,
@@ -1139,7 +1136,7 @@ export class BucketClient {
         });
         return tx;
     }
-    async getTankWithdrawTx(tankType, withdrawAmount, walletAddress) {
+    async getTankWithdrawTx(tx, tankType, withdrawAmount, walletAddress) {
         /**
          * @description Get transaction for withdraw token from tank
          * @param tankType Asset , e.g "0x2::sui::SUI"
@@ -1147,7 +1144,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const token = getCoinSymbol(tankType);
         if (!token) {
             return tx;
@@ -1193,14 +1189,13 @@ export class BucketClient {
         });
         return tx;
     }
-    async getTankClaimTx(tankType, walletAddress) {
+    async getTankClaimTx(tx, tankType, walletAddress) {
         /**
          * @description Get transaction for claim token from tank
          * @param tankType Asset , e.g "0x2::sui::SUI"
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const token = getCoinSymbol(tankType);
         if (!token) {
             return tx;
@@ -1234,7 +1229,7 @@ export class BucketClient {
         }
         return tx;
     }
-    async getStakeUsdcTx(isAf, stakeAmount, walletAddress) {
+    async getStakeUsdcTx(tx, isAf, stakeAmount, walletAddress) {
         /**
          * @description Get transaction for stake token to pool
          * @param isAf Boolean value for Aftermath or not
@@ -1242,7 +1237,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const { data: coins } = await this.client.getCoins({
             owner: walletAddress,
             coinType: COINS_TYPE_LIST.USDC,
@@ -1299,14 +1293,13 @@ export class BucketClient {
         }
         return tx;
     }
-    async getAfUnstakeTx(fountainId, lpProof) {
+    async getAfUnstakeTx(tx, fountainId, lpProof) {
         /**
          * @description Get transaction for unstake token from AF pool
          * @param fountainId
          * @param lpProof UserLpProof object
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
         tx.moveCall({
             target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_periphery::force_unstake",
@@ -1319,7 +1312,7 @@ export class BucketClient {
         });
         return tx;
     }
-    async getCetusUnstakeTx(fountainId, lpProof, walletAddress) {
+    async getCetusUnstakeTx(tx, fountainId, lpProof, walletAddress) {
         /**
          * @description Get transaction for unstake token from Cetus pool
          * @param fountainId
@@ -1327,7 +1320,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const [bucketusOut, suiReward] = tx.moveCall({
             target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
             typeArguments: [COINS_TYPE_LIST.BUCKETUS, COINS_TYPE_LIST.SUI],
@@ -1362,14 +1354,13 @@ export class BucketClient {
         tx.transferObjects([buckCoin, usdcCoin, suiCoin], tx.pure(walletAddress, "address"));
         return tx;
     }
-    async getAfClaimTx(fountainId, lpProof) {
+    async getAfClaimTx(tx, fountainId, lpProof) {
         /**
          * @description Get transaction for claim token from AF pool
          * @param fountainId
          * @param lpProof UserLpProof object
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
         tx.moveCall({
             target: `${FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
@@ -1382,7 +1373,7 @@ export class BucketClient {
         });
         return tx;
     }
-    async getCetusClaimTx(fountainId, lpProof, walletAddress) {
+    async getCetusClaimTx(tx, fountainId, lpProof, walletAddress) {
         /**
          * @description Get transaction for unstake token from Cetus pool
          * @param fountainId
@@ -1390,7 +1381,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         tx.moveCall({
             target: `${FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::claim`,
             arguments: [
@@ -1402,7 +1392,7 @@ export class BucketClient {
         });
         return tx;
     }
-    async getPsmTx(psmCoin, psmAmount, psmSwith, walletAddress) {
+    async getPsmTx(tx, psmCoin, psmAmount, psmSwith, walletAddress) {
         /**
          * @description Get transaction for PSM
          * @param psmCoin Asset , e.g "0x2::sui::SUI"
@@ -1411,7 +1401,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const inputCoinType = psmSwith ? COINS_TYPE_LIST.BUCK : COINS_TYPE_LIST[psmCoin];
         const inputCoinDecimals = COIN_DECIMALS[psmSwith ? 'BUCK' : psmCoin] ?? 9;
         const [inputCoin] = await this.getInputCoin(tx, walletAddress, inputCoinType, psmAmount * 10 ** inputCoinDecimals);
@@ -1443,7 +1432,7 @@ export class BucketClient {
         }
         return tx;
     }
-    async getRedeemTx(collateralType, redeemAmount, walletAddress) {
+    async getRedeemTx(tx, collateralType, redeemAmount, walletAddress) {
         /**
          * @description Get transaction for Redeem
          * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -1451,7 +1440,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const tx = new TransactionBlock();
         const coinSymbol = getCoinSymbol(collateralType) ?? "";
         const { data: coins } = await this.client.getCoins({
             owner: walletAddress,
