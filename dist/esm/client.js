@@ -1122,7 +1122,7 @@ export class BucketClient {
             tx.mergeCoins(mainCoin, otherCoins);
         }
         const buckCoinInput = tx.splitCoins(mainCoin, [
-            tx.pure(depositAmount * 10 ** 9, "u64"),
+            tx.pure(Math.floor(depositAmount * 10 ** 9), "u64"),
         ]);
         if (!buckCoinInput)
             return tx;
@@ -1251,7 +1251,7 @@ export class BucketClient {
         if (otherCoins.length > 0)
             tx.mergeCoins(mainCoin, otherCoins);
         const stakeCoinInput = tx.splitCoins(mainCoin, [
-            tx.pure(stakeAmount * 10 ** COIN_DECIMALS.USDC, "u64"),
+            tx.pure(Math.floor(stakeAmount * 10 ** COIN_DECIMALS.USDC), "u64"),
         ]);
         if (!stakeCoinInput)
             return tx;
@@ -1403,7 +1403,7 @@ export class BucketClient {
          */
         const inputCoinType = psmSwith ? COINS_TYPE_LIST.BUCK : COINS_TYPE_LIST[psmCoin];
         const inputCoinDecimals = COIN_DECIMALS[psmSwith ? 'BUCK' : psmCoin] ?? 9;
-        const [inputCoin] = await this.getInputCoin(tx, walletAddress, inputCoinType, psmAmount * 10 ** inputCoinDecimals);
+        const [inputCoin] = await this.getInputCoin(tx, walletAddress, inputCoinType, Math.floor(psmAmount * 10 ** inputCoinDecimals));
         const outCoinType = psmSwith ? COINS_TYPE_LIST[psmCoin] : COINS_TYPE_LIST.BUCK;
         const inputCoinBalance = coinIntoBalance(tx, inputCoinType, inputCoin);
         if (psmSwith) {
@@ -1457,7 +1457,7 @@ export class BucketClient {
             if (otherCoins.length !== 0)
                 tx.mergeCoins(mainCoin, otherCoins);
             buckCoinInput = tx.splitCoins(mainCoin, [
-                tx.pure(redeemAmount * 10 ** 9, "u64"),
+                tx.pure(Math.floor(redeemAmount * 10 ** 9), "u64"),
             ]);
         }
         if (!buckCoinInput)
