@@ -1784,7 +1784,6 @@ export class BucketClient {
     tx: TransactionBlock,
     fountainId: string,
     lpProof: UserLpProof,
-    walletAddress: string,
   ): Promise<TransactionBlock> {
     /**
      * @description Get transaction for claim token from Kriya pool
