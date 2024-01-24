@@ -1411,7 +1411,7 @@ export class BucketClient {
         });
         return tx;
     }
-    async getKriyaClaimTx(tx, fountainId, lpProof, walletAddress) {
+    async getKriyaClaimTx(tx, fountainId, lpProof) {
         /**
          * @description Get transaction for claim token from Kriya pool
          * @param fountainId

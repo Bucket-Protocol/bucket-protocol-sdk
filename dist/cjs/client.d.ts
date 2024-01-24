@@ -70,7 +70,7 @@ export declare class BucketClient {
     getCetusUnstakeTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
     getAfClaimTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
     getCetusClaimTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
-    getKriyaClaimTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
+    getKriyaClaimTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
     getPsmTx(tx: TransactionBlock, psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<TransactionBlock>;
     getRedeemTx(tx: TransactionBlock, collateralType: string, redeemAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getInputCoin(tx: TransactionBlock, owner: string, coinType: string, ...amounts: number[]): Promise<TransactionResult>;
