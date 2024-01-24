@@ -66,9 +66,11 @@ export declare class BucketClient {
     getTankClaimTx(tx: TransactionBlock, tankType: string, walletAddress: string): Promise<TransactionBlock>;
     getStakeUsdcTx(tx: TransactionBlock, isAf: boolean, stakeAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getAfUnstakeTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
+    getKriyaUnstakeTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
     getCetusUnstakeTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
     getAfClaimTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
     getCetusClaimTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
+    getKriyaClaimTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
     getPsmTx(tx: TransactionBlock, psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<TransactionBlock>;
     getRedeemTx(tx: TransactionBlock, collateralType: string, redeemAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getInputCoin(tx: TransactionBlock, owner: string, coinType: string, ...amounts: number[]): Promise<TransactionResult>;

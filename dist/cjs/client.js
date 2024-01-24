@@ -1315,6 +1315,25 @@ class BucketClient {
         });
         return tx;
     }
+    async getKriyaUnstakeTx(tx, fountainId, lpProof) {
+        /**
+         * @description Get transaction for unstake token from Kriya pool
+         * @param fountainId
+         * @param lpProof UserLpProof object
+         * @returns Promise<TransactionBlock>
+         */
+        const [stakeType, rewardType] = (0, utils_2.proofTypeToCoinType)(lpProof.typeName);
+        tx.moveCall({
+            target: "0x4379259b0f0f547b84ec1c81d704f24861edd8afd8fa6bb9c082e44fbf97a27a::fountain_periphery::force_unstake",
+            typeArguments: [stakeType, rewardType],
+            arguments: [
+                tx.object(constants_1.CLOCK_OBJECT),
+                tx.object(fountainId),
+                tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
+            ]
+        });
+        return tx;
+    }
     async getCetusUnstakeTx(tx, fountainId, lpProof, walletAddress) {
         /**
          * @description Get transaction for unstake token from Cetus pool
@@ -1378,7 +1397,7 @@ class BucketClient {
     }
     async getCetusClaimTx(tx, fountainId, lpProof, walletAddress) {
         /**
-         * @description Get transaction for unstake token from Cetus pool
+         * @description Get transaction for claim token from Cetus pool
          * @param fountainId
          * @param lpObject UserLpProof object
          * @param walletAddress
@@ -1391,6 +1410,25 @@ class BucketClient {
                 tx.object(constants_1.CLOCK_OBJECT),
                 tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
                 tx.pure(walletAddress, "address"),
+            ],
+        });
+        return tx;
+    }
+    async getKriyaClaimTx(tx, fountainId, lpProof, walletAddress) {
+        /**
+         * @description Get transaction for claim token from Kriya pool
+         * @param fountainId
+         * @param lpObject UserLpProof object
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        tx.moveCall({
+            target: `${constants_1.KRIYA_FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
+            typeArguments: (0, utils_2.proofTypeToCoinType)(lpProof.typeName),
+            arguments: [
+                tx.object(constants_1.CLOCK_OBJECT),
+                tx.object(fountainId),
+                tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
             ],
         });
         return tx;
