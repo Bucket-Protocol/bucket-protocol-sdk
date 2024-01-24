@@ -1647,6 +1647,32 @@ export class BucketClient {
     return tx;
   }
 
+  async getKriyaUnstakeTx(
+    tx: TransactionBlock,
+    fountainId: string,
+    lpProof: UserLpProof,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description Get transaction for unstake token from Kriya pool
+     * @param fountainId
+     * @param lpProof UserLpProof object
+     * @returns Promise<TransactionBlock>
+     */
+    const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
+
+    tx.moveCall({
+      target: "0x4379259b0f0f547b84ec1c81d704f24861edd8afd8fa6bb9c082e44fbf97a27a::fountain_periphery::force_unstake",
+      typeArguments: [stakeType, rewardType],
+      arguments: [
+        tx.object(CLOCK_OBJECT),
+        tx.object(fountainId),
+        tx.objectRef(lpProofToObject(lpProof)),
+      ]
+    });
+
+    return tx;
+  }
+
   async getCetusUnstakeTx(
     tx: TransactionBlock,
     fountainId: string,
@@ -1734,7 +1760,7 @@ export class BucketClient {
     walletAddress: string,
   ): Promise<TransactionBlock> {
     /**
-     * @description Get transaction for unstake token from Cetus pool
+     * @description Get transaction for claim token from Cetus pool
      * @param fountainId
      * @param lpObject UserLpProof object
      * @param walletAddress
@@ -1748,6 +1774,32 @@ export class BucketClient {
         tx.object(CLOCK_OBJECT),
         tx.objectRef(lpProofToObject(lpProof)),
         tx.pure(walletAddress, "address"),
+      ],
+    });
+
+    return tx;
+  }
+
+  async getKriyaClaimTx(
+    tx: TransactionBlock,
+    fountainId: string,
+    lpProof: UserLpProof,
+  ): Promise<TransactionBlock> {
+    /**
+     * @description Get transaction for claim token from Kriya pool
+     * @param fountainId
+     * @param lpObject UserLpProof object
+     * @param walletAddress
+     * @returns Promise<TransactionBlock>
+     */
+
+    tx.moveCall({
+      target: `${KRIYA_FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
+      typeArguments: proofTypeToCoinType(lpProof.typeName),
+      arguments: [
+        tx.object(CLOCK_OBJECT),
+        tx.object(fountainId),
+        tx.objectRef(lpProofToObject(lpProof)),
       ],
     });
 
