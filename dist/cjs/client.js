@@ -1361,7 +1361,7 @@ class BucketClient {
             arguments: [bucketusOut],
         });
         const [buckCoin, usdcCoin] = tx.moveCall({
-            target: "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::withdraw",
+            target: "0x8da48ef1e49dcb81631ce468df5c273d2f8eb5770af4d27ec2f1049bc8a61f75::bucketus::withdraw",
             typeArguments: [constants_1.COINS_TYPE_LIST.BUCK, constants_1.COINS_TYPE_LIST.USDC],
             arguments: [
                 tx.object(constants_1.BUCKETUS_TREASURY),
