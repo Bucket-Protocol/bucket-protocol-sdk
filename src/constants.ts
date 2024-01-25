@@ -149,6 +149,15 @@ export const CETUS_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
   initialSharedVersion: 61717743,
 });
 
+export const CETUS_USDC_BUCK_LP_REGISTRY_2_ID =
+  "0x504799d041ea541d252b4742ba9388ff602a9e91b23ccb239d4abc499761f42f";
+
+export const CETUS_USDC_BUCK_LP_REGISTRY_2 = Inputs.SharedObjectRef({
+  objectId: CETUS_USDC_BUCK_LP_REGISTRY_2_ID,
+  mutable: true,
+  initialSharedVersion: 63666426,
+});
+
 export const KRIYA_SUI_BUCK_LP_REGISTRY_ID =
   "0xcc39bcc2c438a79beb2656ff043714a60baf89ba37592bef2e14ee8bca0cf007";
 
@@ -187,17 +196,15 @@ export const AF_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
 
 
 export const CETUS_SUI_BUCK_POOL_ID = "0x9379d2d3f221dcea70f7f7d4a7bf30bab0128bcfda0d13a85267e51f7e6e15c0";
-
 export const CETUS_BUCK_USDC_POOL_ID = "0x6ecf6d01120f5f055f9a605b56fd661412a81ec7c8b035255e333c664a0c12e7";
+export const CETUS_BUCK_USDC_POOL_2_ID = "0xd4573bdd25c629127d54c5671d72a0754ef47767e6c01758d6dc651f57951e7d";
 
 
 export const KRIYA_SUI_BUCK_POOL_ID = "0x3c334f9d1b969767007d26bc886786f9f197ffb14771f7903cd8772c46d08dea";
-
 export const KRIYA_BUCK_USDC_POOL_ID = "0xbb4a712b3353176092cdfe3dd2d1251b725f9372e954248e5dd2eb2ab6a5f21a";
 
 
 export const AF_SUI_BUCK_POOL_ID = "0xdeacf7ab460385d4bcb567f183f916367f7d43666a2c72323013822eb3c57026";
-
 export const AF_USDC_BUCK_POOL_ID = "0xeec6b5fb1ddbbe2eb1bdcd185a75a8e67f52a5295704dd73f3e447394775402b";
 
 
