@@ -1625,6 +1625,7 @@ export class BucketClient {
     tx: TransactionBlock,
     fountainId: string,
     lpProof: UserLpProof,
+    recipient: string,
   ): Promise<TransactionBlock> {
     /**
      * @description Get transaction for unstake token from AF pool
@@ -1634,8 +1635,8 @@ export class BucketClient {
      */
     const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
 
-    tx.moveCall({
-      target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_periphery::force_unstake",
+    const [afLpBalance, rewardBalance] = tx.moveCall({
+      target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
       typeArguments: [stakeType, rewardType],
       arguments: [
         tx.object(CLOCK_OBJECT),
@@ -1643,6 +1644,23 @@ export class BucketClient {
         tx.objectRef(lpProofToObject(lpProof)),
       ]
     });
+    const afLpCoin = coinFromBalance(tx, COINS_TYPE_LIST.AF_LP_USDC_BUCK, afLpBalance);
+    const rewardCoin = coinFromBalance(tx, COINS_TYPE_LIST.SUI, rewardBalance);
+    const [buckCoin, usdcCoin] = tx.moveCall({
+      target: "0xefe170ec0be4d762196bedecd7a065816576198a6527c99282a2551aaa7da38c::withdraw::all_coin_withdraw_2_coins",
+      typeArguments: [COINS_TYPE_LIST.BUCK, COINS_TYPE_LIST.USDC],
+      arguments: [
+        tx.object(AF_OBJS.pool),
+        tx.object(AF_OBJS.poolRegistry),
+        tx.object(AF_OBJS.protocolFeeVault),
+        tx.object(AF_OBJS.treasury),
+        tx.object(AF_OBJS.insuranceFund),
+        tx.object(AF_OBJS.referralVault),
+        afLpCoin,
+      ],
+    });
+
+    tx.transferObjects([buckCoin, usdcCoin, rewardCoin], tx.pure(recipient, "address"));
 
     return tx;
   }
