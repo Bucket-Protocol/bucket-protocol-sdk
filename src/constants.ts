@@ -239,7 +239,3 @@ export const FOUNTAIN_PACKAGE_ID =
 
 export const KRIYA_FOUNTAIN_PACKAGE_ID =
   "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
-
-
-export const AFSUI_APY_URL = "https://aftermath.finance/api/staking/apy";
-export const HASUI_APY_URL = "https://www.haedal.xyz/api/stats/home";

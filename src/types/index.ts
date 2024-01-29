@@ -79,6 +79,13 @@ export type BucketResponse = {
   id: {
     id: string;
   };
+  surplus_bottle_table: {
+    fields: {
+      id: {
+        id: string;
+      };
+    };
+  };
   latest_redemption_time: string;
   max_mint_amount: string;
   min_collateral_ratio: string;
