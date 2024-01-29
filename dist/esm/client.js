@@ -1038,7 +1038,7 @@ export class BucketClient {
         }
         return tx;
     }
-    async getRedeemTx(collateralType, redeemAmount, walletAddress) {
+    async _getRedeemTx(collateralType, redeemAmount, walletAddress) {
         /**
          * @description Get transaction for Redeem
          * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -1056,6 +1056,59 @@ export class BucketClient {
         const collateralOutput = this.redeem(tx, collateralType, buckInput);
         const collateralCoin = coinFromBalance(tx, collateralType, collateralOutput);
         tx.transferObjects([collateralCoin], tx.pure(walletAddress, "address"));
+        return tx;
+    }
+    async getRedeemTx(tx, collateralType, redeemAmount, walletAddress) {
+        /**
+         * @description Get transaction for Redeem
+         * @param collateralType Asset , e.g "0x2::sui::SUI"
+         * @param redeemAmount
+         * @param walletAddress
+         * @returns Promise<TransactionBlock>
+         */
+        const coinSymbol = getCoinSymbol(collateralType) ?? "";
+        const { data: coins } = await this.client.getCoins({
+            owner: walletAddress,
+            coinType: COINS_TYPE_LIST.BUCK,
+        });
+        const [mainCoin, ...otherCoins] = coins
+            .filter(x => x.coinType == COINS_TYPE_LIST.BUCK)
+            .map((coin) => tx.objectRef({
+            objectId: coin.coinObjectId,
+            version: coin.version,
+            digest: coin.digest,
+        }));
+        let buckCoinInput;
+        if (mainCoin) {
+            if (otherCoins.length !== 0)
+                tx.mergeCoins(mainCoin, otherCoins);
+            buckCoinInput = tx.splitCoins(mainCoin, [
+                redeemAmount
+            ]);
+        }
+        if (!buckCoinInput)
+            return tx;
+        tx.moveCall({
+            target: SUPRA_UPDATE_TARGET,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(ORACLE_OBJECT),
+                tx.object(CLOCK_OBJECT),
+                tx.object(SUPRA_HANDLER_OBJECT),
+                tx.pure(SUPRA_ID[coinSymbol] ?? "", "u32"),
+            ],
+        });
+        tx.moveCall({
+            target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::redeem`,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.object(PROTOCOL_OBJECT),
+                tx.object(ORACLE_OBJECT),
+                tx.object(CLOCK_OBJECT),
+                buckCoinInput,
+                tx.pure([]),
+            ],
+        });
         return tx;
     }
     async getTankDepositTx(tankType, depositAmount, walletAddress) {
