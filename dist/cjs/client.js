@@ -1069,7 +1069,7 @@ class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        const coinSymbol = (0, utils_2.getCoinSymbol)(collateralType) ?? "";
+        const token = (0, utils_2.getCoinSymbol)(collateralType) ?? "";
         const { data: coins } = await this.client.getCoins({
             owner: walletAddress,
             coinType: constants_1.COINS_TYPE_LIST.BUCK,
@@ -1091,27 +1091,11 @@ class BucketClient {
         }
         if (!buckCoinInput)
             return tx;
-        tx.moveCall({
-            target: constants_1.SUPRA_UPDATE_TARGET,
-            typeArguments: [collateralType],
-            arguments: [
-                tx.object(constants_1.ORACLE_OBJECT),
-                tx.object(constants_1.CLOCK_OBJECT),
-                tx.object(constants_1.SUPRA_HANDLER_OBJECT),
-                tx.pure(constants_1.SUPRA_ID[coinSymbol] ?? "", "u32"),
-            ],
-        });
-        tx.moveCall({
-            target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::redeem`,
-            typeArguments: [collateralType],
-            arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
-                tx.object(constants_1.ORACLE_OBJECT),
-                tx.object(constants_1.CLOCK_OBJECT),
-                buckCoinInput,
-                tx.pure([]),
-            ],
-        });
+        this.updateSupraOracle(tx, token);
+        const buckInput = (0, utils_2.coinIntoBalance)(tx, constants_1.COINS_TYPE_LIST.BUCK, buckCoinInput);
+        const collateralOutput = this.redeem(tx, collateralType, buckInput);
+        const collateralCoin = (0, utils_2.coinFromBalance)(tx, collateralType, collateralOutput);
+        tx.transferObjects([collateralCoin], tx.pure(walletAddress, "address"));
         return tx;
     }
     async getTankDepositTx(tankType, depositAmount, walletAddress) {
