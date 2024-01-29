@@ -1322,11 +1322,11 @@ export class BucketClient {
     return tx;
   }
 
-  async _getRedeemTx(
+  async getRedeemTx(
     collateralType: string,
     redeemAmount: number,
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+): Promise<TransactionBlock> {
     /**
      * @description Get transaction for Redeem
      * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -1342,64 +1342,20 @@ export class BucketClient {
 
     this.updateSupraOracle(tx, token);
 
-    const buckInput = coinIntoBalance(tx, COINS_TYPE_LIST.BUCK, buckCoinInput);
-
-    const collateralOutput = this.redeem(tx, collateralType, buckInput);
-    const collateralCoin = coinFromBalance(tx, collateralType, collateralOutput);
-    tx.transferObjects([collateralCoin], tx.pure(walletAddress, "address"));
-    return tx;
-  }
-
-  async getRedeemTx(
-    tx: TransactionBlock,
-    collateralType: string,
-    redeemAmount: number,
-    walletAddress: string,
-  ): Promise<TransactionBlock> {
-    /**
-     * @description Get transaction for Redeem
-     * @param collateralType Asset , e.g "0x2::sui::SUI"
-     * @param redeemAmount
-     * @param walletAddress
-     * @returns Promise<TransactionBlock>
-     */
-
-    const token = getCoinSymbol(collateralType) ?? "";
-
-    const { data: coins } = await this.client.getCoins({
-      owner: walletAddress,
-      coinType: COINS_TYPE_LIST.BUCK,
+    tx.moveCall({
+        target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::redeem`,
+        typeArguments: [collateralType],
+        arguments: [
+            tx.object(PROTOCOL_OBJECT),
+            tx.object(ORACLE_OBJECT),
+            tx.object(CLOCK_OBJECT),
+            buckCoinInput,
+            tx.pure([]),
+        ],
     });
 
-    const [mainCoin, ...otherCoins] = coins
-      .filter(x => x.coinType == COINS_TYPE_LIST.BUCK)
-      .map((coin) =>
-        tx.objectRef({
-          objectId: coin.coinObjectId,
-          version: coin.version,
-          digest: coin.digest,
-        })
-      );
-
-    let buckCoinInput;
-    if (mainCoin) {
-      if (otherCoins.length !== 0) tx.mergeCoins(mainCoin, otherCoins);
-      buckCoinInput = tx.splitCoins(mainCoin, [
-        redeemAmount
-      ]);
-    }
-    if (!buckCoinInput) return tx;
-
-    this.updateSupraOracle(tx, token);
-
-    const buckInput = coinIntoBalance(tx, COINS_TYPE_LIST.BUCK, buckCoinInput);
-
-    const collateralOutput = this.redeem(tx, collateralType, buckInput);
-    const collateralCoin = coinFromBalance(tx, collateralType, collateralOutput);
-    tx.transferObjects([collateralCoin], tx.pure(walletAddress, "address"));
-
     return tx;
-  }
+}
 
   async getTankDepositTx(
     tankType: string,
