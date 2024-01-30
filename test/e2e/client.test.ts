@@ -71,12 +71,21 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 1000 * 60
     });
+    
+    it('tests getUserBottle() function', async () => {
+        const bottles = await buck.getUserBottles("");
+        console.log(bottles)
+        expect(bottles).toBeDefined()
+    }, {
+        timeout: 60_000
+    });
 
     it('tests getPsmTVL() function', async () => {
         const tvl = await buck.getPsmTVL();
         expect(tvl).toBeDefined;
     });
     */
+
 
 
 });

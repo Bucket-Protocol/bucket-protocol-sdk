@@ -757,9 +757,8 @@ export class BucketClient {
       }[] = [];
 
       response.map((res, index) => {
-        //Filter out WBTC and WETH
-        //When we launch WBTC and WETH, we need to remove this exception
-        if (objectNameList[index] === "WBTC" || objectNameList[index] === "WETH")
+        //Filter out WBTC, when we launch WBTC we need to remove this exception
+        if (objectNameList[index] === "WBTC")
           return;
 
         const bucketFields = getObjectFields(res) as BucketResponse;
