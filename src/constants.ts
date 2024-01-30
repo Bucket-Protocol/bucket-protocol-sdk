@@ -102,97 +102,97 @@ export const SUPRA_UPDATE_TARGET =
   "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_supra";
 
 
-export const CLOCK_OBJECT = Inputs.SharedObjectRef({
+export const CLOCK_OBJECT = {
   objectId:
     "0x0000000000000000000000000000000000000000000000000000000000000006",
   mutable: false,
   initialSharedVersion: 1,
-});
+};
 
-export const ORACLE_OBJECT = Inputs.SharedObjectRef({
+export const ORACLE_OBJECT = {
   objectId:
     "0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078",
   mutable: true,
   initialSharedVersion: 5174506,
-});
+};
 
-export const TREASURY_OBJECT = Inputs.SharedObjectRef({
+export const TREASURY_OBJECT = {
   objectId:
     "0x7032c4d7afd30cd0dd04c924d63f1127de6fcc429968306807091d3ad3ff78b1",
   mutable: true,
   initialSharedVersion: 6365975,
-});
+};
 
-export const PROTOCOL_OBJECT = Inputs.SharedObjectRef({
+export const PROTOCOL_OBJECT = {
   objectId: PROTOCOL_ID,
   mutable: true,
   initialSharedVersion: 6365975,
-});
+};
 
 export const FOUNTAIN_PERIHERY_PACKAGE_ID = "0x8c51a9c8d235413e5dd4ff922191d5fc1f79b5b0c4d70620f00415a411f1040d";
 
 export const CETUS_SUI_BUCK_LP_REGISTRY_ID =
   "0x7778d68f02810b2c002b6f40084c5f3fe0b1bcc7d7a7c64d72ba40ff9a815bac";
 
-export const CETUS_SUI_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+export const CETUS_SUI_BUCK_LP_REGISTRY = {
   objectId: CETUS_SUI_BUCK_LP_REGISTRY_ID,
   mutable: true,
   initialSharedVersion: 7598161,
-});
+};
 
 export const CETUS_USDC_BUCK_LP_REGISTRY_ID =
   "0xb9d46d57d933fabaf9c81f4fc6f54f9c1570d3ef49785c6b7200cad6fe302909";
 
-export const CETUS_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+export const CETUS_USDC_BUCK_LP_REGISTRY = {
   objectId: CETUS_USDC_BUCK_LP_REGISTRY_ID,
   mutable: true,
   initialSharedVersion: 61717743,
-});
+};
 
 export const CETUS_USDC_BUCK_LP_REGISTRY_2_ID =
   "0x504799d041ea541d252b4742ba9388ff602a9e91b23ccb239d4abc499761f42f";
 
-export const CETUS_USDC_BUCK_LP_REGISTRY_2 = Inputs.SharedObjectRef({
+export const CETUS_USDC_BUCK_LP_REGISTRY_2 = {
   objectId: CETUS_USDC_BUCK_LP_REGISTRY_2_ID,
   mutable: true,
   initialSharedVersion: 63666426,
-});
+};
 
 export const KRIYA_SUI_BUCK_LP_REGISTRY_ID =
   "0xcc39bcc2c438a79beb2656ff043714a60baf89ba37592bef2e14ee8bca0cf007";
 
-export const KRIYA_SUI_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+export const KRIYA_SUI_BUCK_LP_REGISTRY = {
   objectId: KRIYA_SUI_BUCK_LP_REGISTRY_ID,
   initialSharedVersion: 18368425,
   mutable: true,
-});
+};
 
 export const KRIYA_USDC_BUCK_LP_REGISTRY_ID =
   "0xae1910e5bcb13a4f5b12688f0da939b9c9d3e8a9e8d0a2e02c818f6a94e598fd";
 
-export const KRIYA_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+export const KRIYA_USDC_BUCK_LP_REGISTRY = {
   objectId: KRIYA_USDC_BUCK_LP_REGISTRY_ID,
   initialSharedVersion: 18368428,
   mutable: true,
-});
+};
 
 export const AF_SUI_BUCK_LP_REGISTRY_ID =
   "0xe2569ee20149c2909f0f6527c210bc9d97047fe948d34737de5420fab2db7062";
 
-export const AF_SUI_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+export const AF_SUI_BUCK_LP_REGISTRY = {
   objectId: AF_SUI_BUCK_LP_REGISTRY_ID,
   initialSharedVersion: 6366296,
   mutable: true,
-});
+};
 
 export const AF_USDC_BUCK_LP_REGISTRY_ID =
   "0x885e09419b395fcf5c8ee5e2b7c77e23b590e58ef3d61260b6b4eb44bbcc8c62";
 
-export const AF_USDC_BUCK_LP_REGISTRY = Inputs.SharedObjectRef({
+export const AF_USDC_BUCK_LP_REGISTRY = {
   objectId: AF_USDC_BUCK_LP_REGISTRY_ID,
   initialSharedVersion: 6366295,
   mutable: true,
-});
+};
 
 
 export const CETUS_SUI_BUCK_POOL_ID = "0x9379d2d3f221dcea70f7f7d4a7bf30bab0128bcfda0d13a85267e51f7e6e15c0";
@@ -222,17 +222,17 @@ export const CETUS_OBJS = {
   globalConfig: "0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f"
 };
 
-export const BUCKETUS_TREASURY = Inputs.SharedObjectRef({
+export const BUCKETUS_TREASURY = {
   objectId: "0x781d3060afe9f5427bb865088ab25c8d827ed2b0be71ab140ff9ab5a0d8c9466",
   initialSharedVersion: 61707529,
   mutable: true
-});
+};
 
-export const BUCKETUS_LP_VAULT = Inputs.SharedObjectRef({
+export const BUCKETUS_LP_VAULT = {
   objectId: "0x1a0b93fd2965ce3ceb4039c90b232ddee7b0e79015cab0ca10528bb5f4285188",
   initialSharedVersion: 61717741,
   mutable: true,
-});
+};
 
 export const FOUNTAIN_PACKAGE_ID =
   "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";

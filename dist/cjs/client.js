@@ -95,9 +95,9 @@ class BucketClient {
             target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow`,
             typeArguments: [collateralType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
-                tx.object(constants_1.ORACLE_OBJECT),
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 collateralInput,
                 tx.pure(bucketOutputAmount, "u64"),
                 tx.pure(insertionPlace ? [insertionPlace] : []),
@@ -118,7 +118,7 @@ class BucketClient {
             target: `${constants_1.CORE_PACKAGE_ID}::buck::top_up`,
             typeArguments: [collateralType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                 collateralInput,
                 tx.pure(forAddress, "address"),
                 tx.pure(insertionPlace ? [insertionPlace] : []),
@@ -137,8 +137,8 @@ class BucketClient {
             target: `${constants_1.CORE_PACKAGE_ID}::buck::withdraw`,
             typeArguments: [assetType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
-                tx.object(constants_1.ORACLE_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
                 tx.pure(constants_1.CLOCK_OBJECT),
                 tx.pure(collateralAmount, "u64"),
                 tx.pure(insertionPlace ? [insertionPlace] : []),
@@ -156,7 +156,7 @@ class BucketClient {
             target: `${constants_1.CORE_PACKAGE_ID}::buck::repay`,
             typeArguments: [assetType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                 buckInput,
             ],
         });
@@ -173,8 +173,8 @@ class BucketClient {
             target: `${constants_1.CORE_PACKAGE_ID}::buck::redeem`,
             typeArguments: [assetType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
-                tx.object(constants_1.ORACLE_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
                 tx.pure(constants_1.CLOCK_OBJECT),
                 buckInput,
                 tx.pure(insertionPlace ? [insertionPlace] : []),
@@ -197,7 +197,7 @@ class BucketClient {
                 tx.object(well),
                 tx.pure(bktInput),
                 tx.pure(lockTime),
-                tx.object(constants_1.CLOCK_OBJECT)
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT)
             ],
         });
     }
@@ -215,7 +215,7 @@ class BucketClient {
             arguments: [
                 tx.object(well),
                 tx.pure(stakedBkt),
-                tx.object(constants_1.CLOCK_OBJECT)
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT)
             ],
         });
     }
@@ -234,7 +234,7 @@ class BucketClient {
                 tx.object(well),
                 tx.object(bktTreasury),
                 tx.pure(stakedBkt),
-                tx.object(constants_1.CLOCK_OBJECT)
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT)
             ],
         });
     }
@@ -264,8 +264,8 @@ class BucketClient {
             target: constants_1.SUPRA_UPDATE_TARGET,
             typeArguments: [constants_1.COINS_TYPE_LIST[token]],
             arguments: [
-                tx.object(constants_1.ORACLE_OBJECT),
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 tx.object(constants_1.SUPRA_HANDLER_OBJECT),
                 tx.pure(constants_1.SUPRA_ID[token] ?? "", "u32"),
             ],
@@ -717,7 +717,7 @@ class BucketClient {
         const tank = tx.moveCall({
             target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow_tank`,
             typeArguments: [tankType],
-            arguments: [tx.object(constants_1.PROTOCOL_OBJECT)],
+            arguments: [tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT)],
         });
         const target = `${constants_1.CORE_PACKAGE_ID}::tank::get_token_weight`;
         for (const token of tokens) {
@@ -769,7 +769,7 @@ class BucketClient {
         const tank = tx.moveCall({
             target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow_tank`,
             typeArguments: [tankType],
-            arguments: [tx.object(constants_1.PROTOCOL_OBJECT)],
+            arguments: [tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT)],
         });
         const target = `${constants_1.CORE_PACKAGE_ID}::tank::get_collateral_reward_amount`;
         for (const token of tokens) {
@@ -968,9 +968,9 @@ class BucketClient {
             target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::repay_and_withdraw`,
             typeArguments: [collateralType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
-                tx.object(constants_1.ORACLE_OBJECT),
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 buckCoinInput,
                 tx.pure(withdrawAmount, "u64"),
                 tx.pure([walletAddress]),
@@ -994,7 +994,7 @@ class BucketClient {
             target: `${constants_1.CORE_PACKAGE_ID}::buck::withdraw_surplus_collateral`,
             typeArguments: [collateralType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
             ],
         });
         const surplusCoin = (0, utils_2.coinFromBalance)(tx, collateralType, surplusCollateral);
@@ -1020,7 +1020,7 @@ class BucketClient {
                 target: `${constants_1.CORE_PACKAGE_ID}::buck::discharge_reservoir`,
                 typeArguments: [outCoinType],
                 arguments: [
-                    tx.object(constants_1.PROTOCOL_OBJECT),
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                     inputCoinBalance
                 ],
             });
@@ -1032,7 +1032,7 @@ class BucketClient {
                 target: `${constants_1.CORE_PACKAGE_ID}::buck::charge_reservoir`,
                 typeArguments: [inputCoinType],
                 arguments: [
-                    tx.object(constants_1.PROTOCOL_OBJECT),
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                     inputCoinBalance
                 ],
             });
@@ -1059,9 +1059,9 @@ class BucketClient {
             target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::redeem`,
             typeArguments: [collateralType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
-                tx.object(constants_1.ORACLE_OBJECT),
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 buckCoinInput,
                 tx.pure([]),
             ],
@@ -1084,7 +1084,7 @@ class BucketClient {
             target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::deposit`,
             typeArguments: [tankType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                 buckCoinInput
             ],
         });
@@ -1125,10 +1125,10 @@ class BucketClient {
             target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::withdraw`,
             typeArguments: [tankType],
             arguments: [
-                tx.object(constants_1.PROTOCOL_OBJECT),
-                tx.object(constants_1.ORACLE_OBJECT),
-                tx.object(constants_1.CLOCK_OBJECT),
-                tx.object(constants_1.TREASURY_OBJECT),
+                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.TREASURY_OBJECT),
                 tokenObjs,
                 tx.pure((0, utils_2.parseBigInt)(`${withdrawAmount ?? 0}`, 9), "u64"),
             ],
@@ -1168,8 +1168,8 @@ class BucketClient {
                 target: `${constants_1.BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::claim`,
                 typeArguments: [tankType],
                 arguments: [
-                    tx.object(constants_1.PROTOCOL_OBJECT),
-                    tx.object(constants_1.TREASURY_OBJECT),
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                    tx.sharedObjectRef(constants_1.TREASURY_OBJECT),
                     token,
                 ],
             });
@@ -1193,15 +1193,15 @@ class BucketClient {
                 target: `${constants_1.FOUNTAIN_PERIHERY_PACKAGE_ID}::aftermath_fountain::stake`,
                 typeArguments: [constants_1.COINS_TYPE_LIST.AF_LP_USDC_BUCK, constants_1.COINS_TYPE_LIST.USDC],
                 arguments: [
-                    tx.object(constants_1.PROTOCOL_OBJECT),
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                     tx.object(constants_1.AF_OBJS.pool),
                     tx.object(constants_1.AF_OBJS.poolRegistry),
                     tx.object(constants_1.AF_OBJS.protocolFeeVault),
                     tx.object(constants_1.AF_OBJS.treasury),
                     tx.object(constants_1.AF_OBJS.insuranceFund),
                     tx.object(constants_1.AF_OBJS.referralVault),
-                    tx.object(constants_1.AF_USDC_BUCK_LP_REGISTRY),
-                    tx.object(constants_1.CLOCK_OBJECT),
+                    tx.sharedObjectRef(constants_1.AF_USDC_BUCK_LP_REGISTRY),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                     stakeCoinInput,
                     tx.pure(walletAddress, "address"),
                 ]
@@ -1212,13 +1212,13 @@ class BucketClient {
                 target: `${constants_1.FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::stake`,
                 typeArguments: [constants_1.COINS_TYPE_LIST.USDC],
                 arguments: [
-                    tx.object(constants_1.PROTOCOL_OBJECT),
-                    tx.object(constants_1.CETUS_USDC_BUCK_LP_REGISTRY),
-                    tx.object(constants_1.BUCKETUS_TREASURY),
-                    tx.object(constants_1.BUCKETUS_LP_VAULT),
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                    tx.sharedObjectRef(constants_1.CETUS_USDC_BUCK_LP_REGISTRY),
+                    tx.sharedObjectRef(constants_1.BUCKETUS_TREASURY),
+                    tx.sharedObjectRef(constants_1.BUCKETUS_LP_VAULT),
                     tx.object(constants_1.CETUS_OBJS.globalConfig),
                     tx.object(constants_1.CETUS_OBJS.poolBuckUsdc),
-                    tx.object(constants_1.CLOCK_OBJECT),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                     stakeCoinInput,
                     tx.pure(walletAddress, "address"),
                 ]
@@ -1240,7 +1240,7 @@ class BucketClient {
             target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
             typeArguments: [stakeType, rewardType],
             arguments: [
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 tx.object(fountainId),
                 tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
             ]
@@ -1275,7 +1275,7 @@ class BucketClient {
             target: "0x4379259b0f0f547b84ec1c81d704f24861edd8afd8fa6bb9c082e44fbf97a27a::fountain_periphery::force_unstake",
             typeArguments: (0, utils_2.proofTypeToCoinType)(lpProof.typeName),
             arguments: [
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 tx.object(fountainId),
                 tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
             ]
@@ -1295,7 +1295,7 @@ class BucketClient {
             target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
             typeArguments: [constants_1.COINS_TYPE_LIST.BUCKETUS, constants_1.COINS_TYPE_LIST.SUI],
             arguments: [
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 tx.object(fountainId),
                 tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
             ],
@@ -1306,11 +1306,11 @@ class BucketClient {
             target: "0x8da48ef1e49dcb81631ce468df5c273d2f8eb5770af4d27ec2f1049bc8a61f75::bucketus::withdraw",
             typeArguments: [constants_1.COINS_TYPE_LIST.BUCK, constants_1.COINS_TYPE_LIST.USDC],
             arguments: [
-                tx.object(constants_1.BUCKETUS_TREASURY),
-                tx.object(constants_1.BUCKETUS_LP_VAULT),
+                tx.sharedObjectRef(constants_1.BUCKETUS_TREASURY),
+                tx.sharedObjectRef(constants_1.BUCKETUS_LP_VAULT),
                 tx.object(constants_1.CETUS_OBJS.globalConfig),
                 tx.object(constants_1.CETUS_OBJS.poolBuckUsdc),
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 bucketusCoin,
             ],
         });
@@ -1330,7 +1330,7 @@ class BucketClient {
             target: `${constants_1.FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
             typeArguments: [stakeType, rewardType],
             arguments: [
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 tx.object(fountainId),
                 tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
             ]
@@ -1350,7 +1350,7 @@ class BucketClient {
             target: `${constants_1.FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::claim`,
             arguments: [
                 tx.object(fountainId),
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
                 tx.pure(walletAddress, "address"),
             ],
@@ -1370,7 +1370,7 @@ class BucketClient {
             target: `${constants_1.KRIYA_FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
             typeArguments: (0, utils_2.proofTypeToCoinType)(lpProof.typeName),
             arguments: [
-                tx.object(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 tx.object(fountainId),
                 tx.objectRef((0, utils_2.lpProofToObject)(lpProof)),
             ],
