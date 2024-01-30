@@ -13,12 +13,12 @@ export function coinFromBalance(tx, coinType, balanceInput) {
         arguments: [balanceInput],
     });
 }
-export async function getInputCoins(tx, owner, coinType, ...amounts) {
+export async function getInputCoins(tx, client, owner, coinType, ...amounts) {
     if (coinType === COINS_TYPE_LIST.SUI) {
         return tx.splitCoins(tx.gas, amounts.map(amount => tx.pure(amount, "u64")));
     }
     else {
-        const { data: userCoins } = await this.client.getCoins({ owner, coinType });
+        const { data: userCoins } = await client.getCoins({ owner, coinType });
         const [mainCoin, ...otherCoins] = userCoins.map((coin) => tx.objectRef({
             objectId: coin.coinObjectId,
             version: coin.version,

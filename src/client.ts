@@ -1171,7 +1171,7 @@ export class BucketClient {
       return tx;
     }
 
-    const [collateralInput] = await getInputCoins(tx, recipient, collateralType, collateralAmount);
+    const [collateralInput] = await getInputCoins(tx, this.client, recipient, collateralType, collateralAmount);
     if (!collateralInput) return tx;
 
     const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
@@ -1218,7 +1218,7 @@ export class BucketClient {
       return tx;
     }
 
-    const [buckCoinInput] = await getInputCoins(tx, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
+    const [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
     if (!buckCoinInput) return tx;
 
     this.updateSupraOracle(tx, token);
@@ -1287,7 +1287,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     const inputCoinType = psmSwith ? COINS_TYPE_LIST.BUCK : COINS_TYPE_LIST[psmCoin];
-    const [inputCoin] = await getInputCoins(tx, walletAddress, inputCoinType, psmAmount);
+    const [inputCoin] = await getInputCoins(tx, this.client, walletAddress, inputCoinType, psmAmount);
 
     const outCoinType = psmSwith ? COINS_TYPE_LIST[psmCoin] : COINS_TYPE_LIST.BUCK;
     const inputCoinBalance = coinIntoBalance(tx, inputCoinType, inputCoin);
@@ -1337,7 +1337,7 @@ export class BucketClient {
     const tx = new TransactionBlock();
 
     const token = getCoinSymbol(collateralType) ?? "";
-    const [buckCoinInput] = await getInputCoins(tx, walletAddress, COINS_TYPE_LIST.BUCK, redeemAmount);
+    const [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, redeemAmount);
     if (!buckCoinInput) return tx;
 
     this.updateSupraOracle(tx, token);
@@ -1371,7 +1371,7 @@ export class BucketClient {
      */
     const tx = new TransactionBlock();
 
-    const [buckCoinInput] = await getInputCoins(tx, walletAddress, COINS_TYPE_LIST.BUCK, depositAmount);
+    const [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, depositAmount);
     if (!buckCoinInput) return tx;
 
     tx.moveCall({
@@ -1507,7 +1507,7 @@ export class BucketClient {
      */
     const tx = new TransactionBlock();
 
-    const [stakeCoinInput] = await getInputCoins(tx, walletAddress, COINS_TYPE_LIST.USDC, stakeAmount);
+    const [stakeCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.USDC, stakeAmount);
     if (!stakeCoinInput) return tx;
 
     if (isAf) {

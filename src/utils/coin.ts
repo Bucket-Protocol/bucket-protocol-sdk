@@ -1,5 +1,6 @@
-import { COINS_TYPE_LIST } from "../constants";
+import { SuiClient } from "@mysten/sui.js/client";
 import { TransactionBlock, TransactionArgument } from "@mysten/sui.js/transactions";
+import { COINS_TYPE_LIST } from "../constants";
 
 export function coinIntoBalance(
     tx: TransactionBlock,
@@ -27,6 +28,7 @@ export function coinFromBalance(
 
 export async function getInputCoins(
     tx: TransactionBlock,
+    client: SuiClient,
     owner: string,
     coinType: string,
     ...amounts: number[]
@@ -34,7 +36,7 @@ export async function getInputCoins(
     if (coinType === COINS_TYPE_LIST.SUI) {
         return tx.splitCoins(tx.gas, amounts.map(amount => tx.pure(amount, "u64")));
     } else {
-        const { data: userCoins } = await this.client.getCoins({ owner, coinType });
+        const { data: userCoins } = await client.getCoins({ owner, coinType });
         const [mainCoin, ...otherCoins] = userCoins.map((coin) =>
             tx.objectRef({
                 objectId: coin.coinObjectId,
