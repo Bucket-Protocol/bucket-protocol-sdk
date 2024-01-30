@@ -56,6 +56,5 @@ export declare class BucketClient {
     getAfClaimTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
     getCetusClaimTx(fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
     getKriyaClaimTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
-    getInputCoins(tx: TransactionBlock, owner: string, coinType: string, ...amounts: number[]): Promise<TransactionResult>;
 }
 //# sourceMappingURL=client.d.ts.map

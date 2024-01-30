@@ -928,7 +928,7 @@ class BucketClient {
         if (!token) {
             return tx;
         }
-        const [collateralInput] = await this.getInputCoins(tx, recipient, collateralType, collateralAmount);
+        const [collateralInput] = await (0, utils_2.getInputCoins)(tx, recipient, collateralType, collateralAmount);
         if (!collateralInput)
             return tx;
         const collateralBalance = (0, utils_2.coinIntoBalance)(tx, collateralType, collateralInput);
@@ -960,7 +960,7 @@ class BucketClient {
         if (!token) {
             return tx;
         }
-        const [buckCoinInput] = await this.getInputCoins(tx, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, repayAmount);
+        const [buckCoinInput] = await (0, utils_2.getInputCoins)(tx, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, repayAmount);
         if (!buckCoinInput)
             return tx;
         this.updateSupraOracle(tx, token);
@@ -1012,7 +1012,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         const inputCoinType = psmSwith ? constants_1.COINS_TYPE_LIST.BUCK : constants_1.COINS_TYPE_LIST[psmCoin];
-        const [inputCoin] = await this.getInputCoins(tx, walletAddress, inputCoinType, psmAmount);
+        const [inputCoin] = await (0, utils_2.getInputCoins)(tx, walletAddress, inputCoinType, psmAmount);
         const outCoinType = psmSwith ? constants_1.COINS_TYPE_LIST[psmCoin] : constants_1.COINS_TYPE_LIST.BUCK;
         const inputCoinBalance = (0, utils_2.coinIntoBalance)(tx, inputCoinType, inputCoin);
         if (psmSwith) {
@@ -1051,7 +1051,7 @@ class BucketClient {
          */
         const tx = new transactions_1.TransactionBlock();
         const token = (0, utils_2.getCoinSymbol)(collateralType) ?? "";
-        const [buckCoinInput] = await this.getInputCoins(tx, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, redeemAmount);
+        const [buckCoinInput] = await (0, utils_2.getInputCoins)(tx, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, redeemAmount);
         if (!buckCoinInput)
             return tx;
         this.updateSupraOracle(tx, token);
@@ -1077,7 +1077,7 @@ class BucketClient {
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
-        const [buckCoinInput] = await this.getInputCoins(tx, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, depositAmount);
+        const [buckCoinInput] = await (0, utils_2.getInputCoins)(tx, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, depositAmount);
         if (!buckCoinInput)
             return tx;
         tx.moveCall({
@@ -1185,7 +1185,7 @@ class BucketClient {
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
-        const [stakeCoinInput] = await this.getInputCoins(tx, walletAddress, constants_1.COINS_TYPE_LIST.USDC, stakeAmount);
+        const [stakeCoinInput] = await (0, utils_2.getInputCoins)(tx, walletAddress, constants_1.COINS_TYPE_LIST.USDC, stakeAmount);
         if (!stakeCoinInput)
             return tx;
         if (isAf) {
@@ -1377,23 +1377,6 @@ class BucketClient {
         });
         return tx;
     }
-    async getInputCoins(tx, owner, coinType, ...amounts) {
-        if (coinType === constants_1.COINS_TYPE_LIST.SUI) {
-            return tx.splitCoins(tx.gas, amounts.map(amount => tx.pure(amount, "u64")));
-        }
-        else {
-            const { data: userCoins } = await this.client.getCoins({ owner, coinType });
-            const [mainCoin, ...otherCoins] = userCoins.map((coin) => tx.objectRef({
-                objectId: coin.coinObjectId,
-                version: coin.version,
-                digest: coin.digest,
-            }));
-            if (otherCoins.length > 0)
-                tx.mergeCoins(mainCoin, otherCoins);
-            return tx.splitCoins(mainCoin, amounts.map(amount => tx.pure(amount, "u64")));
-        }
-    }
-    ;
 }
 exports.BucketClient = BucketClient;
 //# sourceMappingURL=client.js.map
