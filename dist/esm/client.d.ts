@@ -53,8 +53,8 @@ export declare class BucketClient {
     getAfUnstakeTx(fountainId: string, lpProof: UserLpProof, recipient: string): Promise<TransactionBlock>;
     getKriyaUnstakeTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
     getCetusUnstakeTx(fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
-    getAfClaimTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
-    getCetusClaimTx(fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
-    getKriyaClaimTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
+    getAfClaimTx(fountainId: string, lpProofs: UserLpProof[]): Promise<TransactionBlock>;
+    getCetusClaimTx(fountainId: string, lpProofs: UserLpProof[], walletAddress: string): Promise<TransactionBlock>;
+    getKriyaClaimTx(fountainId: string, lpProofs: UserLpProof[]): Promise<TransactionBlock>;
 }
 //# sourceMappingURL=client.d.ts.map

@@ -1667,7 +1667,7 @@ export class BucketClient {
 
   async getAfClaimTx(
     fountainId: string,
-    lpProof: UserLpProof,
+    lpProofs: UserLpProof[],
   ): Promise<TransactionBlock> {
     /**
      * @description Get transaction for claim token from AF pool
@@ -1677,70 +1677,76 @@ export class BucketClient {
      */
     const tx = new TransactionBlock();
 
-    const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
+    for (const lpProof of lpProofs) {
+      const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
 
-    tx.moveCall({
-      target: `${FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
-      typeArguments: [stakeType, rewardType],
-      arguments: [
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.object(fountainId),
-        tx.objectRef(lpProofToObject(lpProof)),
-      ]
-    });
+      tx.moveCall({
+        target: `${FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
+        typeArguments: [stakeType, rewardType],
+        arguments: [
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.object(fountainId),
+          tx.objectRef(lpProofToObject(lpProof)),
+        ]
+      });
+    }
 
     return tx;
   }
 
   async getCetusClaimTx(
     fountainId: string,
-    lpProof: UserLpProof,
+    lpProofs: UserLpProof[],
     walletAddress: string,
   ): Promise<TransactionBlock> {
     /**
      * @description Get transaction for claim token from Cetus pool
      * @param fountainId
-     * @param lpObject UserLpProof object
+     * @param lpProofs UserLpProof objects array
      * @param walletAddress
      * @returns Promise<TransactionBlock>
      */
     const tx = new TransactionBlock();
 
-    tx.moveCall({
-      target: `${FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::claim`,
-      arguments: [
-        tx.object(fountainId),
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.objectRef(lpProofToObject(lpProof)),
-        tx.pure(walletAddress, "address"),
-      ],
-    });
+    for (const lpProof of lpProofs) {
+      tx.moveCall({
+        target: `${FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::claim`,
+        arguments: [
+          tx.object(fountainId),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.objectRef(lpProofToObject(lpProof)),
+          tx.pure(walletAddress, "address"),
+        ],
+      });
+    }
 
     return tx;
   }
 
   async getKriyaClaimTx(
     fountainId: string,
-    lpProof: UserLpProof,
+    lpProofs: UserLpProof[],
   ): Promise<TransactionBlock> {
     /**
      * @description Get transaction for claim token from Kriya pool
      * @param fountainId
-     * @param lpObject UserLpProof object
+     * @param lpProofs UserLpProof object array
      * @param walletAddress
      * @returns Promise<TransactionBlock>
      */
     const tx = new TransactionBlock();
 
-    tx.moveCall({
-      target: `${KRIYA_FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
-      typeArguments: proofTypeToCoinType(lpProof.typeName),
-      arguments: [
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.object(fountainId),
-        tx.objectRef(lpProofToObject(lpProof)),
-      ],
-    });
+    for (const lpProof of lpProofs) {
+      tx.moveCall({
+        target: `${KRIYA_FOUNTAIN_PACKAGE_ID}::fountain_periphery::claim`,
+        typeArguments: proofTypeToCoinType(lpProof.typeName),
+        arguments: [
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.object(fountainId),
+          tx.objectRef(lpProofToObject(lpProof)),
+        ],
+      });
+    }
 
     return tx;
   }
