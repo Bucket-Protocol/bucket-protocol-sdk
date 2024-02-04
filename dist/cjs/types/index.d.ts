@@ -8,6 +8,7 @@ export type BucketInfo = {
     token: COIN;
     baseFeeRate: number;
     bottleTableSize: string;
+    bottleTableId: string;
     collateralDecimal: number;
     collateralVault: string;
     latestRedemptionTime: number;

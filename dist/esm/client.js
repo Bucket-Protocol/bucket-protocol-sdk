@@ -423,6 +423,7 @@ export class BucketClient {
                     token: token,
                     baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
                     bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
+                    bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? "",
                     collateralDecimal: fields.collateral_decimal ?? 0,
                     collateralVault: fields.collateral_vault ?? "",
                     latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
