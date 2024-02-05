@@ -74,6 +74,8 @@ export type BucketResponse = {
 export type BottleInfoResponse = {
     value: {
         fields: {
+            next: string;
+            prev: string;
             value: {
                 fields: {
                     collateral_amount: number;

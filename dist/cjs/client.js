@@ -506,14 +506,12 @@ class BucketClient {
                     },
                 });
                 for (const res of response) {
-                    const ownerObj = (0, objectTypes_1.getObjectOwner)(res);
-                    const owner = ownerObj.ObjectOwner;
                     const bottleInfo = (0, objectTypes_1.getObjectFields)(res);
                     const bottleFields = bottleInfo.value.fields.value.fields;
                     const cr = bottleFields.collateral_amount / bottleFields.buck_amount;
                     if (cr > targetCR * (1 - (tolerance / 100))
                         && cr < targetCR * (1 + (tolerance / 100))) {
-                        return owner;
+                        return bottleInfo.value.fields.next;
                     }
                 }
                 ;
@@ -1086,12 +1084,13 @@ class BucketClient {
         }
         return tx;
     }
-    async getRedeemTx(collateralType, redeemAmount, walletAddress) {
+    async getRedeemTx(collateralType, redeemAmount, walletAddress, insertionPlace) {
         /**
          * @description Get transaction for Redeem
          * @param collateralType Asset , e.g "0x2::sui::SUI"
          * @param redeemAmount
          * @param walletAddress
+         * @param insertionPlace  Optional
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
@@ -1108,7 +1107,7 @@ class BucketClient {
                 tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
                 tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 buckCoinInput,
-                tx.pure([]),
+                tx.pure(insertionPlace ? [] : [insertionPlace]),
             ],
         });
         return tx;

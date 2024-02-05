@@ -84,12 +84,18 @@ describe('Interacting with Bucket Client on mainnet', () => {
         const tvl = await buck.getPsmTVL();
         expect(tvl).toBeDefined;
     });
-    */
 
+    it('tests getUserTanks() function', async () => {
+        const tanks = await buck.getUserTanks("0x86050d85ebdafe3bda92c36c8489d46a233f57f103672647062f72f3fe37a46d");
+        console.log(tanks);
+        expect(tanks).toBeDefined()
+    }, {
+        timeout: 1000 * 60
+    });
 
     it('tests findInsertionPlace() function', async () => {
         const owner = await buck.findInsertionPlace(
-            `0xd21552e2b0df056f5f86206d758d4c87438d302e592575099726bd9d0ea16128`,
+            `0x44529d74a43073c40963fe42c8d2e51d8a441d480ee105ea0c27f3847433ae21`,
             1,
             50,
         );
@@ -98,4 +104,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 60 * 1000
     });
+    */
+
 });

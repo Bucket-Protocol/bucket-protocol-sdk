@@ -46,7 +46,7 @@ export declare class BucketClient {
     getRepayTx(collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getSurplusWithdrawTx(collateralType: string, walletAddress: string): Promise<TransactionBlock>;
     getPsmTx(psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<TransactionBlock>;
-    getRedeemTx(collateralType: string, redeemAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getRedeemTx(collateralType: string, redeemAmount: number, walletAddress: string, insertionPlace?: string): Promise<TransactionBlock>;
     getTankDepositTx(tankType: string, depositAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getTankWithdrawTx(tankType: string, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getTankClaimTx(tankType: string, walletAddress: string): Promise<TransactionBlock>;

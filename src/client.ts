@@ -655,7 +655,6 @@ export class BucketClient {
     /**
    * @description Find insertaion place in tolerance range
    */
-
     try {
       let cursor: string | null = null;
 
@@ -677,11 +676,6 @@ export class BucketClient {
         });
 
         for (const res of response) {
-          const ownerObj = getObjectOwner(res) as {
-            ObjectOwner: string;
-          };
-          const owner = ownerObj.ObjectOwner;
-
           const bottleInfo = getObjectFields(
             res
           ) as BottleInfoResponse;
@@ -689,7 +683,7 @@ export class BucketClient {
           const cr = bottleFields.collateral_amount / bottleFields.buck_amount;
           if (cr > targetCR * (1 - (tolerance / 100))
             && cr < targetCR * (1 + (tolerance / 100))) {
-            return owner;
+            return bottleInfo.value.fields.next;
           }
         };
 
@@ -1387,12 +1381,14 @@ export class BucketClient {
     collateralType: string,
     redeemAmount: number,
     walletAddress: string,
+    insertionPlace?: string,
   ): Promise<TransactionBlock> {
     /**
      * @description Get transaction for Redeem
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param redeemAmount
      * @param walletAddress
+     * @param insertionPlace  Optional
      * @returns Promise<TransactionBlock>
      */
     const tx = new TransactionBlock();
@@ -1411,7 +1407,7 @@ export class BucketClient {
         tx.sharedObjectRef(ORACLE_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
         buckCoinInput,
-        tx.pure([]),
+        tx.pure(insertionPlace ? [] : [insertionPlace]),
       ],
     });
 
