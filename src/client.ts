@@ -4,11 +4,12 @@ import { DevInspectResults, SuiClient, SuiObjectResponse } from "@mysten/sui.js/
 import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
-import { getObjectFields } from "./objects/objectTypes";
+import { ObjectRead, getObjectFields, getObjectOwner } from "./objects/objectTypes";
 
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, COIN, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT, CETUS_OBJS, CETUS_USDC_BUCK_LP_REGISTRY_ID, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, CETUS_USDC_BUCK_LP_REGISTRY, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS } from "./constants";
 import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, TvlList } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance } from "./utils";
+import { ObjectOwner } from "@mysten/sui.js/src/types/common";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -646,6 +647,67 @@ export class BucketClient {
     return tankInfoList;
   };
 
+  async findInsertionPlace(
+    bottleTableId: string,
+    targetCR: number,
+    tolerance: number,
+  ): Promise<string> {
+    /**
+   * @description Find insertaion place in tolerance range
+   */
+
+    try {
+      let cursor: string | null = null;
+
+      while (true) {
+        const bottlesResp = await this.client.getDynamicFields({
+          parentId: bottleTableId,
+          cursor,
+        });
+
+        const bottles = bottlesResp.data;
+        const objectTypeList = bottles.map((item) => item.objectType);
+        const objectIdList = bottles.map((item) => item.objectId);
+        const objectNameList = getObjectNames(objectTypeList);
+
+        const response: SuiObjectResponse[] = await this.client.multiGetObjects({
+          ids: objectIdList,
+          options: {
+            showContent: true,
+            showOwner: true,
+          },
+        });
+
+        for (const res of response) {
+          const ownerObj = getObjectOwner(res) as {
+            ObjectOwner: string;
+          };
+          const owner = ownerObj.ObjectOwner;
+
+          const bottleInfo = getObjectFields(
+            res
+          ) as BottleInfoResponse;
+          const bottleFields = bottleInfo.value.fields.value.fields;
+          const cr = bottleFields.buck_amount / bottleFields.collateral_amount;
+          if (cr > targetCR * (1 - (tolerance / 100))
+            && cr < targetCR * (1 + (tolerance / 100))) {
+            console.log(cr);
+            return owner;
+          }
+        };
+
+        if (!bottlesResp.hasNextPage) {
+          break;
+        }
+        cursor = bottlesResp.nextCursor;
+      }
+    } catch (error) {
+      console.log(error)
+    }
+
+    return "";
+  };
+
   async getAllFountains(): Promise<FountainList> {
     /**
      * @description Get all fountains from KRIYA, CETUS, AFTERMATHs
@@ -1153,6 +1215,7 @@ export class BucketClient {
     recipient: string,
     isNewBottle: boolean,
     isUpdateOracle: boolean,
+    insertionPlace?: string,
   ): Promise<TransactionBlock> {
     /**
      * @description Borrow
@@ -1162,6 +1225,7 @@ export class BucketClient {
      * @param recipient
      * @param isNewBottle
      * @param isUpdateOracle
+     * @param insertionPlace Optional
      * @returns Promise<TransactionBlock>
      */
     const tx = new TransactionBlock();
@@ -1177,7 +1241,7 @@ export class BucketClient {
     const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
 
     if (borrowAmount == 0) {
-      this.topUp(tx, collateralType, collateralBalance, recipient, !isNewBottle ? recipient : undefined);
+      this.topUp(tx, collateralType, collateralBalance, recipient, isNewBottle ? insertionPlace : recipient);
     } else {
       if (isUpdateOracle) {
         this.updateSupraOracle(tx, token);
@@ -1188,7 +1252,7 @@ export class BucketClient {
         collateralType,
         collateralBalance,
         borrowAmount,
-        !isNewBottle ? recipient : undefined,
+        isNewBottle ? insertionPlace : recipient,
       );
       const buckCoinBalance = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance);
       tx.transferObjects([buckCoinBalance], tx.pure(recipient, "address"));

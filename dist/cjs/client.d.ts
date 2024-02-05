@@ -31,6 +31,7 @@ export declare class BucketClient {
     getDestroyedBottles(): Promise<PaginatedBottleSummary>;
     getAllBuckets(): Promise<BucketList>;
     getAllTanks(): Promise<TankList>;
+    findInsertionPlace(bottleTableId: string, targetCR: number, tolerance: number): Promise<string>;
     getAllFountains(): Promise<FountainList>;
     getPsmTVL(): Promise<TvlList>;
     getUserBottles(address: string): Promise<BottleInfo[]>;
@@ -41,7 +42,7 @@ export declare class BucketClient {
     getPrices(): Promise<{
         [key: string]: number;
     }>;
-    getBorrowTx(collateralType: string, collateralAmount: number, borrowAmount: number, recipient: string, isNewBottle: boolean, isUpdateOracle: boolean): Promise<TransactionBlock>;
+    getBorrowTx(collateralType: string, collateralAmount: number, borrowAmount: number, recipient: string, isNewBottle: boolean, isUpdateOracle: boolean, insertionPlace?: string): Promise<TransactionBlock>;
     getRepayTx(collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
     getSurplusWithdrawTx(collateralType: string, walletAddress: string): Promise<TransactionBlock>;
     getPsmTx(psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<TransactionBlock>;

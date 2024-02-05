@@ -81,6 +81,12 @@ export type BottleInfoResponse = {
         fields: {
           collateral_amount: number;
           buck_amount: number;
+          id: {
+            id: string;
+          };
+          reward_coll_snapshot: string;
+          reward_debt_snapshot: string;
+          stake_amount: string;
         };
       };
     };

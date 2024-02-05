@@ -485,6 +485,53 @@ class BucketClient {
         return tankInfoList;
     }
     ;
+    async findInsertionPlace(bottleTableId, targetCR, tolerance) {
+        /**
+       * @description Find insertaion place in tolerance range
+       */
+        try {
+            let cursor = null;
+            while (true) {
+                const bottlesResp = await this.client.getDynamicFields({
+                    parentId: bottleTableId,
+                    cursor,
+                });
+                const bottles = bottlesResp.data;
+                const objectTypeList = bottles.map((item) => item.objectType);
+                const objectIdList = bottles.map((item) => item.objectId);
+                const objectNameList = (0, utils_2.getObjectNames)(objectTypeList);
+                const response = await this.client.multiGetObjects({
+                    ids: objectIdList,
+                    options: {
+                        showContent: true,
+                        showOwner: true,
+                    },
+                });
+                for (const res of response) {
+                    const ownerObj = (0, objectTypes_1.getObjectOwner)(res);
+                    const owner = ownerObj.ObjectOwner;
+                    const bottleInfo = (0, objectTypes_1.getObjectFields)(res);
+                    const bottleFields = bottleInfo.value.fields.value.fields;
+                    const cr = bottleFields.buck_amount / bottleFields.collateral_amount;
+                    if (cr > targetCR * (1 - (tolerance / 100))
+                        && cr < targetCR * (1 + (tolerance / 100))) {
+                        console.log(cr);
+                        return owner;
+                    }
+                }
+                ;
+                if (!bottlesResp.hasNextPage) {
+                    break;
+                }
+                cursor = bottlesResp.nextCursor;
+            }
+        }
+        catch (error) {
+            console.log(error);
+        }
+        return "";
+    }
+    ;
     async getAllFountains() {
         /**
          * @description Get all fountains from KRIYA, CETUS, AFTERMATHs
@@ -912,7 +959,7 @@ class BucketClient {
         });
         return prices;
     }
-    async getBorrowTx(collateralType, collateralAmount, borrowAmount, recipient, isNewBottle, isUpdateOracle) {
+    async getBorrowTx(collateralType, collateralAmount, borrowAmount, recipient, isNewBottle, isUpdateOracle, insertionPlace) {
         /**
          * @description Borrow
          * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -921,6 +968,7 @@ class BucketClient {
          * @param recipient
          * @param isNewBottle
          * @param isUpdateOracle
+         * @param insertionPlace Optional
          * @returns Promise<TransactionBlock>
          */
         const tx = new transactions_1.TransactionBlock();
@@ -933,13 +981,13 @@ class BucketClient {
             return tx;
         const collateralBalance = (0, utils_2.coinIntoBalance)(tx, collateralType, collateralInput);
         if (borrowAmount == 0) {
-            this.topUp(tx, collateralType, collateralBalance, recipient, !isNewBottle ? recipient : undefined);
+            this.topUp(tx, collateralType, collateralBalance, recipient, isNewBottle ? insertionPlace : recipient);
         }
         else {
             if (isUpdateOracle) {
                 this.updateSupraOracle(tx, token);
             }
-            const buckBalance = this.borrow(tx, collateralType, collateralBalance, borrowAmount, !isNewBottle ? recipient : undefined);
+            const buckBalance = this.borrow(tx, collateralType, collateralBalance, borrowAmount, isNewBottle ? insertionPlace : recipient);
             const buckCoinBalance = (0, utils_2.coinFromBalance)(tx, constants_1.COINS_TYPE_LIST.BUCK, buckBalance);
             tx.transferObjects([buckCoinBalance], tx.pure(recipient, "address"));
         }

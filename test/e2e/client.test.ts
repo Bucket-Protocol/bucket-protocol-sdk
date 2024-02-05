@@ -87,4 +87,15 @@ describe('Interacting with Bucket Client on mainnet', () => {
     */
 
 
+    it('tests findInsertionPlace() function', async () => {
+        const owner = await buck.findInsertionPlace(
+            `0x86050d85ebdafe3bda92c36c8489d46a233f57f103672647062f72f3fe37a46d`,
+            1.8,
+            50,
+        );
+        console.log(owner);
+        expect(owner).toBeDefined;
+    }, {
+        timeout: 60 * 1000
+    });
 });
