@@ -89,8 +89,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     it('tests findInsertionPlace() function', async () => {
         const owner = await buck.findInsertionPlace(
-            `0x86050d85ebdafe3bda92c36c8489d46a233f57f103672647062f72f3fe37a46d`,
-            1.8,
+            `0xd21552e2b0df056f5f86206d758d4c87438d302e592575099726bd9d0ea16128`,
+            1,
             50,
         );
         console.log(owner);

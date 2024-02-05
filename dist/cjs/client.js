@@ -497,9 +497,7 @@ class BucketClient {
                     cursor,
                 });
                 const bottles = bottlesResp.data;
-                const objectTypeList = bottles.map((item) => item.objectType);
                 const objectIdList = bottles.map((item) => item.objectId);
-                const objectNameList = (0, utils_2.getObjectNames)(objectTypeList);
                 const response = await this.client.multiGetObjects({
                     ids: objectIdList,
                     options: {
@@ -512,10 +510,9 @@ class BucketClient {
                     const owner = ownerObj.ObjectOwner;
                     const bottleInfo = (0, objectTypes_1.getObjectFields)(res);
                     const bottleFields = bottleInfo.value.fields.value.fields;
-                    const cr = bottleFields.buck_amount / bottleFields.collateral_amount;
+                    const cr = bottleFields.collateral_amount / bottleFields.buck_amount;
                     if (cr > targetCR * (1 - (tolerance / 100))
                         && cr < targetCR * (1 + (tolerance / 100))) {
-                        console.log(cr);
                         return owner;
                     }
                 }
