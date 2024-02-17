@@ -1165,6 +1165,7 @@ export class BucketClient {
       USDC: 1,
       USDT: 1,
       BUCK: 1,
+      Cetable: 1,
     };
 
     priceObjects.map((res, index) => {
