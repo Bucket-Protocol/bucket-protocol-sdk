@@ -18,6 +18,7 @@ exports.COINS_TYPE_LIST = {
     USDCsol: "0xb231fcda8bbddb31f2ef02e6161444aec64a514e2c89279584ac9806ce9cf037::coin::COIN",
     USDCpol: "0xcf72ec52c0f8ddead746252481fb44ff6e8485a39b803825bde6b00d77cdb0bb::coin::COIN",
     USDCarb: "0xe32d3ebafa42e6011b87ef1087bbc6053b499bf6f095807b9013aff5a6ecd7bb::coin::COIN",
+    Cetable: "0x072f3814fdd168c5f5706fe4642bf6cdf14b4bae20a4f13deeb9933bcfc89f0d::cetable::CETABLE",
     AF_LP_USDC_BUCK: "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
     AF_LP_SUI_BUCK: "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
     BUCK: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK",
@@ -40,6 +41,7 @@ exports.COIN_DECIMALS = {
     USDCpol: 6,
     USDCsol: 6,
     USDCbnb: 8,
+    Cetable: 6,
     BUCKETUS: 9,
 };
 exports.PSM_POOL_IDS = {
@@ -50,6 +52,7 @@ exports.PSM_POOL_IDS = {
     USDCsol: "0x596d696153f405cdee285a0da122c8c9a4cf6c883298aaf9bec1149e0909e168",
     USDCpol: "0x741ec9190953ee9eaa1b92b2285f15a0c7068bac2e591bfa5f7f596a75ada351",
     USDCarb: "0x10970069e17f31aee9cb55c53237d3a62584582e05f3c2030f92ce9fc6365c90",
+    Cetable: "0x6e94fe6910747a30e52addf446f2d7e844f69bf39eced6bed03441e01fa66acd",
 };
 exports.SUPRA_PRICE_FEEDS = {
     usdc_usd: "0x1c400c096e8b52a22c43c080fea4aa22661c9a35b469493dfac5332aecb4789c",

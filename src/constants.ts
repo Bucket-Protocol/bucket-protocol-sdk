@@ -3,7 +3,7 @@
 import { Inputs } from "@mysten/sui.js/transactions"
 
 export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT"
-  | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb" | "BUCKETUS";
+  | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb" | "BUCKETUS" | "Cetable";
 
 export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
 
@@ -30,6 +30,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   USDCsol: "0xb231fcda8bbddb31f2ef02e6161444aec64a514e2c89279584ac9806ce9cf037::coin::COIN",
   USDCpol: "0xcf72ec52c0f8ddead746252481fb44ff6e8485a39b803825bde6b00d77cdb0bb::coin::COIN",
   USDCarb: "0xe32d3ebafa42e6011b87ef1087bbc6053b499bf6f095807b9013aff5a6ecd7bb::coin::COIN",
+  Cetable: "0x072f3814fdd168c5f5706fe4642bf6cdf14b4bae20a4f13deeb9933bcfc89f0d::cetable::CETABLE",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -57,6 +58,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   USDCpol: 6,
   USDCsol: 6,
   USDCbnb: 8,
+  Cetable: 6,
   BUCKETUS: 9,
 };
 
@@ -68,6 +70,7 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   USDCsol: "0x596d696153f405cdee285a0da122c8c9a4cf6c883298aaf9bec1149e0909e168",
   USDCpol: "0x741ec9190953ee9eaa1b92b2285f15a0c7068bac2e591bfa5f7f596a75ada351",
   USDCarb: "0x10970069e17f31aee9cb55c53237d3a62584582e05f3c2030f92ce9fc6365c90",
+  Cetable: "0x6e94fe6910747a30e52addf446f2d7e844f69bf39eced6bed03441e01fa66acd",
 };
 
 export const SUPRA_PRICE_FEEDS = {

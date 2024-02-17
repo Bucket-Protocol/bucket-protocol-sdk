@@ -1104,7 +1104,7 @@ export class BucketClient {
                 tx.sharedObjectRef(ORACLE_OBJECT),
                 tx.sharedObjectRef(CLOCK_OBJECT),
                 buckCoinInput,
-                tx.pure(insertionPlace ? [] : [insertionPlace]),
+                tx.pure(insertionPlace ? [insertionPlace] : []),
             ],
         });
         return tx;
