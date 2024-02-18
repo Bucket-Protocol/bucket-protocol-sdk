@@ -1,5 +1,4 @@
-export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT" | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb" | "BUCKETUS" | "Cetable";
-export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
+import { COIN } from "./types";
 export declare const BUCKET_OPERATIONS_PACKAGE_ID: string;
 export declare const PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export declare const CONTRIBUTOR_TOKEN_ID = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";

@@ -1,11 +1,6 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { Inputs } from "@mysten/sui.js/transactions"
-
-export type COIN = "SUI" | "USDC" | "USDT" | "afSUI" | "haSUI" | "vSUI" | "AF_LP_USDC_BUCK" | "AF_LP_SUI_BUCK" | "WETH" | "BUCK" | "BKT"
-  | "USDCbnb" | "USDCsol" | "USDCpol" | "USDCarb" | "BUCKETUS" | "Cetable";
-
-export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
+import { COIN } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
   "0xb59c19de88addb7b3e721066c6c99987d09ad22fa829c69dbf0f0c1c0be20625";

@@ -1,4 +1,5 @@
 // Copyright Andrei <andreid.dev@gmail.com>
+import { SuiClient, getFullnodeUrl } from "@mysten/sui.js/client";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
@@ -8,16 +9,28 @@ import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObje
 import { objectToFountain } from "./utils/convert";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 export class BucketClient {
+    network;
     owner;
     /**
      * @description a TS wrapper over Bucket Protocol Move packages.
-     * @param client connection to fullnode
+     * @param network connection to fullnode: 'mainnet' | 'testnet' | 'devnet' | 'localnet' | string
      * @param owner (optional) address of the current user (default: DUMMY_ADDRESS)
      */
     client;
-    constructor(client, owner = DUMMY_ADDRESS) {
+    constructor(network = 'mainnet', owner = DUMMY_ADDRESS) {
+        this.network = network;
         this.owner = owner;
-        this.client = client;
+        let url = "";
+        if (network == 'mainnet'
+            || network == 'testnet'
+            || network == 'devnet'
+            || network == 'localnet') {
+            url = getFullnodeUrl(network);
+        }
+        else {
+            url = network;
+        }
+        this.client = new SuiClient({ url });
     }
     depositToTank(tx, assetBuck, assetType, tankId, depositAmount) {
         /**

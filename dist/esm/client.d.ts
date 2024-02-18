@@ -1,15 +1,16 @@
-import { SuiClient, SuiObjectResponse } from "@mysten/sui.js/client";
+import { SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
 import { BucketConstants, PaginatedBottleSummary, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, TvlList, FountainInfo } from "./types";
 export declare class BucketClient {
+    network: string;
     owner: string;
     /**
      * @description a TS wrapper over Bucket Protocol Move packages.
-     * @param client connection to fullnode
+     * @param network connection to fullnode: 'mainnet' | 'testnet' | 'devnet' | 'localnet' | string
      * @param owner (optional) address of the current user (default: DUMMY_ADDRESS)
      */
     private client;
-    constructor(client: SuiClient, owner?: string);
+    constructor(network?: string, owner?: string);
     depositToTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, depositAmount: string): TransactionResult;
     withdrawFromTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
     claimFromTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;

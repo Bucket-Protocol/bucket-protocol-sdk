@@ -2,6 +2,7 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BucketClient = void 0;
+const client_1 = require("@mysten/sui.js/client");
 const transactions_1 = require("@mysten/sui.js/transactions");
 const utils_1 = require("@mysten/sui.js/utils");
 const bcs_1 = require("@mysten/bcs");
@@ -11,16 +12,28 @@ const utils_2 = require("./utils");
 const convert_1 = require("./utils/convert");
 const DUMMY_ADDRESS = (0, utils_1.normalizeSuiAddress)("0x0");
 class BucketClient {
+    network;
     owner;
     /**
      * @description a TS wrapper over Bucket Protocol Move packages.
-     * @param client connection to fullnode
+     * @param network connection to fullnode: 'mainnet' | 'testnet' | 'devnet' | 'localnet' | string
      * @param owner (optional) address of the current user (default: DUMMY_ADDRESS)
      */
     client;
-    constructor(client, owner = DUMMY_ADDRESS) {
+    constructor(network = 'mainnet', owner = DUMMY_ADDRESS) {
+        this.network = network;
         this.owner = owner;
-        this.client = client;
+        let url = "";
+        if (network == 'mainnet'
+            || network == 'testnet'
+            || network == 'devnet'
+            || network == 'localnet') {
+            url = (0, client_1.getFullnodeUrl)(network);
+        }
+        else {
+            url = network;
+        }
+        this.client = new client_1.SuiClient({ url });
     }
     depositToTank(tx, assetBuck, assetType, tankId, depositAmount) {
         /**

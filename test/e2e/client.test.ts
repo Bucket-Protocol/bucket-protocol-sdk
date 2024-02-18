@@ -1,16 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
 import { BucketClient } from '../../src';
 
 describe('Interacting with Bucket Client on mainnet', () => {
 
-    // Instantiate SuiClient connected to mainnet
-    const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
-
     // Instantiate BucketClient
-    const buck = new BucketClient(client);
+    const buck = new BucketClient("mainnet");
 
-    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -49,11 +44,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
         expect(buckets).toBeDefined()
     });
 
-    it('tests getAPYs() function', async () => {
-        const apys = await buck.getAPYs();
-        expect(apys).toBeDefined()
-    });
-
     it('tests getPrices() function', async () => {
         const prices = await buck.getPrices();
         expect(prices).toBeDefined()
@@ -71,7 +61,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 1000 * 60
     });
-    
+
     it('tests getUserBottle() function', async () => {
         const bottles = await buck.getUserBottles("");
         console.log(bottles)
@@ -104,6 +94,4 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 60 * 1000
     });
-    */
-
 });
