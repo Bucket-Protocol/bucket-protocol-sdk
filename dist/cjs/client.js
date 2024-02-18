@@ -8,6 +8,7 @@ const bcs_1 = require("@mysten/bcs");
 const objectTypes_1 = require("./objects/objectTypes");
 const constants_1 = require("./constants");
 const utils_2 = require("./utils");
+const convert_1 = require("./utils/convert");
 const DUMMY_ADDRESS = (0, utils_1.normalizeSuiAddress)("0x0");
 class BucketClient {
     owner;
@@ -548,22 +549,24 @@ class BucketClient {
         });
         const fountains = {};
         fountainResults.map((res) => {
-            const id = res.data?.objectId ?? "";
-            const isKriya = id == constants_1.KRIYA_SUI_BUCK_LP_REGISTRY_ID || id == constants_1.KRIYA_USDC_BUCK_LP_REGISTRY_ID;
-            const fields = (0, objectTypes_1.getObjectFields)(res);
-            fountains[id] = {
-                id: res.data?.objectId ?? "",
-                flowAmount: Number(fields?.flow_amount ?? 0),
-                flowInterval: Number(fields?.flow_interval ?? 1),
-                sourceBalance: Number(fields?.source ?? 0),
-                poolBalance: Number(fields?.pool ?? 0),
-                stakedBalance: isKriya ? Number(fields?.staked?.fields?.lsp.fields?.balance ?? 0) : Number(fields?.staked ?? 0),
-                totalWeight: Number(fields?.total_weight ?? 0),
-                cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
-                latestReleaseTime: Number(fields?.latest_release_time ?? 0),
-            };
+            const fountain = (0, convert_1.objectToFountain)(res);
+            fountains[fountain.id] = fountain;
         });
         return fountains;
+    }
+    async getFountain(lpRegistryId) {
+        /**
+         * @description Get all fountains from KRIYA, CETUS, AFTERMATHs
+         * @param lpRegistryId Fountain lp registry id
+         * @returns Promise<FountainList>
+         */
+        const res = await this.client.getObject({
+            id: lpRegistryId,
+            options: {
+                showContent: true,
+            }
+        });
+        return (0, convert_1.objectToFountain)(res);
     }
     async getPsmTVL() {
         /**
