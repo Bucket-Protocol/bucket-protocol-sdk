@@ -382,16 +382,55 @@ export class BucketClient {
      * @param assetType Asset , e.g "0x2::sui::SUI"
      */
 
-    tx.moveCall({
-      target: SUPRA_UPDATE_TARGET,
-      typeArguments: [COINS_TYPE_LIST[token]],
-      arguments: [
-        tx.sharedObjectRef(ORACLE_OBJECT),
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.object(SUPRA_HANDLER_OBJECT),
-        tx.pure(SUPRA_ID[token] ?? "", "u32"),
-      ],
-    });
+    if (token === "afSUI" || token === "AF_LP_SUI_SUI") {
+      tx.moveCall({
+        target: SUPRA_UPDATE_TARGET,
+        typeArguments: [COINS_TYPE_LIST['SUI']],
+        arguments: [
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.object(SUPRA_HANDLER_OBJECT),
+          tx.pure(SUPRA_ID['SUI'] ?? "", "u32"),
+        ],
+      });
+      // update afSUI price
+      tx.moveCall({
+        target: "0x2480d9a3ff2c821061df22c4365316f894c6fa686fbd03ba828fe7c5bef9ad22::afsui_rule::update_price",
+        arguments: [
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.object("0x2f8f6d5da7f13ea37daa397724280483ed062769813b6f31e9788e59cc88994d"),
+          tx.object("0xeb685899830dd5837b47007809c76d91a098d52aabbf61e8ac467c59e5cc4610"),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+        ],
+      });
+      if (token === "AF_LP_SUI_SUI") {
+        // update afSUI/SUI LP price using afSUI and SUI price
+        tx.moveCall({
+          target: "0x928ff0be132d9bad7926008780d2a5adfefa1a24559a567dafbfd267d1b1b294::af_lp_rule::update_price",
+          typeArguments: [
+            "0x42d0b3476bc10d18732141a471d7ad3aa588a6fb4ba8e1a6608a4a7b78e171bf::af_lp::AF_LP",
+            COINS_TYPE_LIST.SUI,
+            COINS_TYPE_LIST.afSUI,
+          ],
+          arguments: [
+            tx.sharedObjectRef(ORACLE_OBJECT),
+            tx.object("0x97aae7a80abb29c9feabbe7075028550230401ffe7fb745757d3c28a30437408"),
+            tx.sharedObjectRef(CLOCK_OBJECT),
+          ],
+        });
+      }
+    } else {
+      tx.moveCall({
+        target: SUPRA_UPDATE_TARGET,
+        typeArguments: [COINS_TYPE_LIST[token]],
+        arguments: [
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.object(SUPRA_HANDLER_OBJECT),
+          tx.pure(SUPRA_ID[token] ?? "", "u32"),
+        ],
+      });
+    }
   }
 
   private async encodedBucketConstants(): Promise<DevInspectResults> {
