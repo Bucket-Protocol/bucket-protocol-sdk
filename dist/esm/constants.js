@@ -16,11 +16,12 @@ export const COINS_TYPE_LIST = {
     USDCpol: "0xcf72ec52c0f8ddead746252481fb44ff6e8485a39b803825bde6b00d77cdb0bb::coin::COIN",
     USDCarb: "0xe32d3ebafa42e6011b87ef1087bbc6053b499bf6f095807b9013aff5a6ecd7bb::coin::COIN",
     Cetable: "0x072f3814fdd168c5f5706fe4642bf6cdf14b4bae20a4f13deeb9933bcfc89f0d::cetable::CETABLE",
-    AF_LP_USDC_BUCK: "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
-    AF_LP_SUI_BUCK: "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
     BUCK: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK",
     BKT: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::bkt::BKT",
     BUCKETUS: "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS",
+    AF_LP_USDC_BUCK: "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
+    AF_LP_SUI_BUCK: "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
+    AF_LP_SUI_SUI: "0x42d0b3476bc10d18732141a471d7ad3aa588a6fb4ba8e1a6608a4a7b78e171bf::af_lp::AF_LP",
 };
 export const COIN_DECIMALS = {
     SUI: 9,
@@ -34,6 +35,7 @@ export const COIN_DECIMALS = {
     BKT: 9,
     AF_LP_USDC_BUCK: 9,
     AF_LP_SUI_BUCK: 9,
+    AF_LP_SUI_SUI: 9,
     USDCarb: 6,
     USDCpol: 6,
     USDCsol: 6,

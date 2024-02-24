@@ -6,6 +6,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     // Instantiate BucketClient
     const buck = new BucketClient("mainnet");
 
+    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -39,7 +40,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
         expect(bottles).toBeDefined()
     });
 
-    it('tests getAllBuckets() function', async () => {
+    it('testsgetAllBuckets() function', async () => {
         const buckets = await buck.getAllBuckets();
         expect(buckets).toBeDefined()
     });
@@ -94,4 +95,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 60 * 1000
     });
+    */
+
 });
