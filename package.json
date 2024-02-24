@@ -1,7 +1,7 @@
 {
   "name": "bucket-protocol-sdk",
   "author": "Andrei <andreid.dev@gmail.com>",
-  "version": "0.7.3-beta",
+  "version": "0.7.4-beta",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
   "files": [
@@ -22,7 +22,7 @@
     "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
   },
   "dependencies": {
-    "@mysten/bcs": "^0.10.1",
+    "@mysten/bcs": "^0.11.1",
     "@mysten/sui.js": "^0.50.1",
     "superstruct": "^1.0.3"
   },
