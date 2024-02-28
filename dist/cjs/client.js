@@ -972,15 +972,15 @@ class BucketClient {
             },
         });
         const prices = {
-            WETH: 0,
-            SUI: 0,
-            vSUI: 0,
-            afSUI: 0,
-            haSUI: 0,
+            WETH: 1,
+            SUI: 1,
+            vSUI: 1,
+            afSUI: 1,
+            haSUI: 1,
             USDC: 1,
             USDT: 1,
             BUCK: 1,
-            Cetable: 1,
+            CETABLE: 1,
         };
         priceObjects.map((res, index) => {
             const priceFeed = (0, objectTypes_1.getObjectFields)(res);
