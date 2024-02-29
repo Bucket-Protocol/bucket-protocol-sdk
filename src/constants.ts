@@ -9,7 +9,7 @@ export const PROTOCOL_ID =
 export const CONTRIBUTOR_TOKEN_ID =
   "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
 export const CORE_PACKAGE_ID =
-  "0xe8a8ef9ecfe6422f97d39d619e030ac262845a4b6db49723492230bd4ec910e2";
+  "0x2545d6a3da56cfd79a0394710f42d038baf87bcf6cfd7f5bb14906dcd7f4e8b3";
 
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {

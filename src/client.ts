@@ -1332,8 +1332,6 @@ export class BucketClient {
       return tx;
     }
 
-    console.log(repayAmount)
-
     let buckCoinInput;
     if (repayAmount > 0) {
       [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
