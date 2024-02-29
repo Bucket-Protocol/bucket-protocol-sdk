@@ -39,7 +39,7 @@ export declare const PROTOCOL_OBJECT: {
     mutable: boolean;
     initialSharedVersion: number;
 };
-export declare const FOUNTAIN_PERIHERY_PACKAGE_ID = "0x8c51a9c8d235413e5dd4ff922191d5fc1f79b5b0c4d70620f00415a411f1040d";
+export declare const FOUNTAIN_PERIHERY_PACKAGE_ID = "0xba3e34a587ea2b994069998a21e2d9bfcb8de2168ade2717e0f400dc45e51225";
 export declare const CETUS_SUI_BUCK_LP_REGISTRY_ID = "0x7778d68f02810b2c002b6f40084c5f3fe0b1bcc7d7a7c64d72ba40ff9a815bac";
 export declare const CETUS_SUI_BUCK_LP_REGISTRY: {
     objectId: string;
