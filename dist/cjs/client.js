@@ -129,13 +129,14 @@ class BucketClient {
          * @returns TransactionResult
          */
         tx.moveCall({
-            target: `${constants_1.CORE_PACKAGE_ID}::buck::top_up`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::top_up_coll`,
             typeArguments: [collateralType],
             arguments: [
                 tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                 collateralInput,
                 tx.pure(forAddress, "address"),
                 tx.pure(insertionPlace ? [insertionPlace] : []),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
             ],
         });
     }
@@ -167,11 +168,12 @@ class BucketClient {
          * @returns TransactionResult
          */
         return tx.moveCall({
-            target: `${constants_1.CORE_PACKAGE_ID}::buck::repay`,
+            target: `${constants_1.CORE_PACKAGE_ID}::buck::repay_debt`,
             typeArguments: [assetType],
             arguments: [
                 tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                 buckInput,
+                tx.pure(constants_1.CLOCK_OBJECT),
             ],
         });
     }
@@ -979,6 +981,7 @@ class BucketClient {
             haSUI: 1,
             USDC: 1,
             USDT: 1,
+            USDY: 1,
             BUCK: 1,
             CETABLE: 1,
         };
@@ -1060,7 +1063,14 @@ class BucketClient {
         if (!token) {
             return tx;
         }
-        const [buckCoinInput] = await (0, utils_2.getInputCoins)(tx, this.client, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, repayAmount);
+        console.log(repayAmount);
+        let buckCoinInput;
+        if (repayAmount > 0) {
+            [buckCoinInput] = await (0, utils_2.getInputCoins)(tx, this.client, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, repayAmount);
+        }
+        else {
+            buckCoinInput = await (0, utils_2.getMainCoin)(tx, this.client, walletAddress, constants_1.COINS_TYPE_LIST.BUCK);
+        }
         if (!buckCoinInput)
             return tx;
         this.updateSupraOracle(tx, token);

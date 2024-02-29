@@ -49,3 +49,26 @@ export async function getInputCoins(
         return tx.splitCoins(mainCoin, amounts.map(amount => tx.pure(amount, "u64")));
     }
 };
+
+export async function getMainCoin(
+    tx: TransactionBlock,
+    client: SuiClient,
+    owner: string,
+    coinType: string,
+) {
+    if (coinType === COINS_TYPE_LIST.SUI) {
+        return undefined;
+    }
+
+    const { data: userCoins } = await client.getCoins({ owner, coinType });
+    const [mainCoin, ...otherCoins] = userCoins.map((coin) =>
+        tx.objectRef({
+            objectId: coin.coinObjectId,
+            version: coin.version,
+            digest: coin.digest,
+        })
+    );
+
+    if (otherCoins.length > 0) tx.mergeCoins(mainCoin, otherCoins);
+    return mainCoin;
+};

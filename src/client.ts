@@ -8,7 +8,7 @@ import { getObjectFields } from "./objects/objectTypes";
 
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT, CETUS_OBJS, CETUS_USDC_BUCK_LP_REGISTRY_ID, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, CETUS_USDC_BUCK_LP_REGISTRY, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS } from "./constants";
 import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, TvlList, FountainInfo, COIN } from "./types";
-import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance } from "./utils";
+import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
 import { objectToFountain } from "./utils/convert";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -181,13 +181,14 @@ export class BucketClient {
      */
 
     tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::top_up`,
+      target: `${CORE_PACKAGE_ID}::buck::top_up_coll`,
       typeArguments: [collateralType],
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
         collateralInput,
         tx.pure(forAddress, "address"),
         tx.pure(insertionPlace ? [insertionPlace] : []),
+        tx.sharedObjectRef(CLOCK_OBJECT),
       ],
     });
   }
@@ -232,11 +233,12 @@ export class BucketClient {
      */
 
     return tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::repay`,
+      target: `${CORE_PACKAGE_ID}::buck::repay_debt`,
       typeArguments: [assetType],
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
         buckInput,
+        tx.pure(CLOCK_OBJECT),
       ],
     });
   }
@@ -1209,7 +1211,9 @@ export class BucketClient {
       },
     });
 
-    const prices: { [key: string]: number } = {
+    const prices: {
+      [key: string]: number
+    } = {
       WETH: 1,
       SUI: 1,
       vSUI: 1,
@@ -1217,6 +1221,7 @@ export class BucketClient {
       haSUI: 1,
       USDC: 1,
       USDT: 1,
+      USDY: 1,
       BUCK: 1,
       CETABLE: 1,
     };
@@ -1327,7 +1332,16 @@ export class BucketClient {
       return tx;
     }
 
-    const [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
+    console.log(repayAmount)
+
+    let buckCoinInput;
+    if (repayAmount > 0) {
+      [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
+    }
+    else {
+      buckCoinInput = await getMainCoin(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK);
+    }
+
     if (!buckCoinInput) return tx;
 
     this.updateSupraOracle(tx, token);

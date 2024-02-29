@@ -3,13 +3,13 @@
 import { COIN } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
-  "0xb59c19de88addb7b3e721066c6c99987d09ad22fa829c69dbf0f0c1c0be20625";
+  "0x62e2aa7b8575e29d0fab1cc3116b4d6cf372017f3e5c65cc444371f46718a357";
 export const PROTOCOL_ID =
   "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export const CONTRIBUTOR_TOKEN_ID =
   "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
 export const CORE_PACKAGE_ID =
-  "0x275b6c59f68837f7c8d7076254373a5bb16e20e6435967defdd86f943e70a2db";
+  "0xe8a8ef9ecfe6422f97d39d619e030ac262845a4b6db49723492230bd4ec910e2";
 
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
@@ -30,6 +30,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   BKT: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::bkt::BKT",
   BUCKETUS: "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS",
   CETABLE: "0x072f3814fdd168c5f5706fe4642bf6cdf14b4bae20a4f13deeb9933bcfc89f0d::cetable::CETABLE",
+  USDY: "0x960b531667636f39e85867775f52f6b1f220a058c4de786905bdf761e06a56bb::usdy::USDY",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -52,6 +53,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   BKT: 9,
   CETABLE: 6,
   BUCKETUS: 9,
+  USDY: 6,
   
   AF_LP_USDC_BUCK: 9,
   AF_LP_SUI_BUCK: 9,
@@ -93,6 +95,7 @@ export const SUPRA_ID: Record<string, string> = {
   afSUI: "90",
   haSUI: "90",
   vSUI: "90",
+  USDY: "185",
 };
 
 

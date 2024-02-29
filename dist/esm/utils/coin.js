@@ -30,4 +30,19 @@ export async function getInputCoins(tx, client, owner, coinType, ...amounts) {
     }
 }
 ;
+export async function getMainCoin(tx, client, owner, coinType) {
+    if (coinType === COINS_TYPE_LIST.SUI) {
+        return undefined;
+    }
+    const { data: userCoins } = await client.getCoins({ owner, coinType });
+    const [mainCoin, ...otherCoins] = userCoins.map((coin) => tx.objectRef({
+        objectId: coin.coinObjectId,
+        version: coin.version,
+        digest: coin.digest,
+    }));
+    if (otherCoins.length > 0)
+        tx.mergeCoins(mainCoin, otherCoins);
+    return mainCoin;
+}
+;
 //# sourceMappingURL=coin.js.map
