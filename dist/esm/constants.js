@@ -1,5 +1,5 @@
 // Copyright Andrei <andreid.dev@gmail.com>
-export const BUCKET_OPERATIONS_PACKAGE_ID = "0x62e2aa7b8575e29d0fab1cc3116b4d6cf372017f3e5c65cc444371f46718a357";
+export const BUCKET_OPERATIONS_PACKAGE_ID = "0x378137469c4833d73cd352a49bdcc94bf59ef645ff4d5cf8efdee7054d0ea296";
 export const PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export const CONTRIBUTOR_TOKEN_ID = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
 export const CORE_PACKAGE_ID = "0x2545d6a3da56cfd79a0394710f42d038baf87bcf6cfd7f5bb14906dcd7f4e8b3";

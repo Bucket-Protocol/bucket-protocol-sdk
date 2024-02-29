@@ -3,7 +3,7 @@
 import { COIN } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
-  "0x62e2aa7b8575e29d0fab1cc3116b4d6cf372017f3e5c65cc444371f46718a357";
+  "0x378137469c4833d73cd352a49bdcc94bf59ef645ff4d5cf8efdee7054d0ea296";
 export const PROTOCOL_ID =
   "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export const CONTRIBUTOR_TOKEN_ID =
