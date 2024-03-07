@@ -663,7 +663,7 @@ class BucketClient {
             constants_1.AF_SUI_BUCK_LP_REGISTRY_ID,
             constants_1.AF_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.CETUS_SUI_BUCK_LP_REGISTRY_ID,
-            constants_1.CETUS_USDC_BUCK_25_LP_REGISTRY_ID,
+            constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID,
         ];
         const fountainResults = await this.client.multiGetObjects({
             ids: objectIds,
@@ -987,7 +987,7 @@ class BucketClient {
         const lpRegistryIds = [
             constants_1.AF_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.AF_SUI_BUCK_LP_REGISTRY_ID,
-            constants_1.CETUS_USDC_BUCK_25_LP_REGISTRY_ID,
+            constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.CETUS_SUI_BUCK_LP_REGISTRY_ID,
             constants_1.KRIYA_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.KRIYA_SUI_BUCK_LP_REGISTRY_ID,
@@ -1392,7 +1392,7 @@ class BucketClient {
                 typeArguments: [constants_1.COINS_TYPE_LIST.USDC],
                 arguments: [
                     tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
-                    tx.sharedObjectRef(constants_1.CETUS_USDC_BUCK_25_LP_REGISTRY),
+                    tx.sharedObjectRef(constants_1.CETUS_USDC_BUCK_LP_REGISTRY),
                     tx.sharedObjectRef(constants_1.BUCKETUS_TREASURY),
                     tx.sharedObjectRef(constants_1.BUCKETUS_LP_VAULT),
                     tx.object(constants_1.CETUS_OBJS.globalConfig),

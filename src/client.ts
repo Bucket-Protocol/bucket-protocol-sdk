@@ -6,7 +6,7 @@ import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
-import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_25_LP_REGISTRY_ID, CETUS_USDC_BUCK_25_LP_REGISTRY } from "./constants";
+import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY } from "./constants";
 import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, TvlList, FountainInfo, COIN } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
 import { objectToFountain } from "./utils/convert";
@@ -831,7 +831,7 @@ export class BucketClient {
       AF_SUI_BUCK_LP_REGISTRY_ID,
       AF_USDC_BUCK_LP_REGISTRY_ID,
       CETUS_SUI_BUCK_LP_REGISTRY_ID,
-      CETUS_USDC_BUCK_25_LP_REGISTRY_ID,
+      CETUS_USDC_BUCK_LP_REGISTRY_ID,
     ];
 
     const fountainResults = await this.client.multiGetObjects({
@@ -1219,7 +1219,7 @@ export class BucketClient {
     const lpRegistryIds = [
       AF_USDC_BUCK_LP_REGISTRY_ID,
       AF_SUI_BUCK_LP_REGISTRY_ID,
-      CETUS_USDC_BUCK_25_LP_REGISTRY_ID,
+      CETUS_USDC_BUCK_LP_REGISTRY_ID,
       CETUS_SUI_BUCK_LP_REGISTRY_ID,
       KRIYA_USDC_BUCK_LP_REGISTRY_ID,
       KRIYA_SUI_BUCK_LP_REGISTRY_ID,
@@ -1726,7 +1726,7 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST.USDC],
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
-          tx.sharedObjectRef(CETUS_USDC_BUCK_25_LP_REGISTRY),
+          tx.sharedObjectRef(CETUS_USDC_BUCK_LP_REGISTRY),
           tx.sharedObjectRef(BUCKETUS_TREASURY),
           tx.sharedObjectRef(BUCKETUS_LP_VAULT),
           tx.object(CETUS_OBJS.globalConfig),
