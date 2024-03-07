@@ -1,7 +1,7 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
 import { DevInspectResults, SuiClient, SuiObjectResponse, getFullnodeUrl } from "@mysten/sui.js/client";
-import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
+import { TransactionArgument, TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
@@ -138,6 +138,7 @@ export class BucketClient {
     collateralInput: TransactionResult,
     bucketOutputAmount: number,
     insertionPlace?: string,
+    strapId?: string | "new",
   ): TransactionResult {
     /**
      * @description Borrow
@@ -149,18 +150,55 @@ export class BucketClient {
      * @returns TransactionResult
      */
 
-    return tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::borrow`,
-      typeArguments: [collateralType],
-      arguments: [
-        tx.sharedObjectRef(PROTOCOL_OBJECT),
-        tx.sharedObjectRef(ORACLE_OBJECT),
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        collateralInput,
-        tx.pure(bucketOutputAmount, "u64"),
-        tx.pure(insertionPlace ? [insertionPlace] : []),
-      ],
-    });
+    if (strapId) {
+      if (strapId === "new") {
+        const [strap] = tx.moveCall({
+          target: `${CORE_PACKAGE_ID}::strap::new`,
+          typeArguments: [collateralType],
+        });
+        const [buckOut] = tx.moveCall({
+          target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
+          typeArguments: [collateralType],
+          arguments: [
+              tx.sharedObjectRef(PROTOCOL_OBJECT),
+              tx.sharedObjectRef(ORACLE_OBJECT),
+              tx.object(strapId),
+              tx.sharedObjectRef(CLOCK_OBJECT),
+              collateralInput,
+              tx.pure(bucketOutputAmount, "u64"),
+              tx.pure(insertionPlace ? [insertionPlace] : []),
+            ],
+        });
+        return [strap, buckOut] as TransactionResult;
+      } else {
+        return tx.moveCall({
+          target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
+          typeArguments: [collateralType],
+          arguments: [
+              tx.sharedObjectRef(PROTOCOL_OBJECT),
+              tx.sharedObjectRef(ORACLE_OBJECT),
+              tx.object(strapId),
+              tx.sharedObjectRef(CLOCK_OBJECT),
+              collateralInput,
+              tx.pure(bucketOutputAmount, "u64"),
+              tx.pure(insertionPlace ? [insertionPlace] : []),
+            ],
+        });
+      }
+    } else {
+      return tx.moveCall({
+        target: `${CORE_PACKAGE_ID}::buck::borrow`,
+        typeArguments: [collateralType],
+        arguments: [
+          tx.sharedObjectRef(PROTOCOL_OBJECT),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          collateralInput,
+          tx.pure(bucketOutputAmount, "u64"),
+          tx.pure(insertionPlace ? [insertionPlace] : []),
+        ],
+      });
+    }
   }
 
   topUp(
@@ -198,6 +236,7 @@ export class BucketClient {
     assetType: string,
     collateralAmount: string,
     insertionPlace?: string,
+    strapId?: string,
   ): TransactionResult {
     /**
      * @description withdraw
@@ -207,23 +246,39 @@ export class BucketClient {
      * @returns TransactionResult
      */
 
-    return tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::withdraw`,
-      typeArguments: [assetType],
-      arguments: [
-        tx.sharedObjectRef(PROTOCOL_OBJECT),
-        tx.sharedObjectRef(ORACLE_OBJECT),
-        tx.pure(CLOCK_OBJECT),
-        tx.pure(collateralAmount, "u64"),
-        tx.pure(insertionPlace ? [insertionPlace] : []),
-      ],
-    });
+    if (strapId) {
+      return tx.moveCall({
+        target: `${CORE_PACKAGE_ID}::buck::withdraw_with_strap`,
+        typeArguments: [assetType],
+        arguments: [
+          tx.sharedObjectRef(PROTOCOL_OBJECT),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.object(strapId),
+          tx.pure(CLOCK_OBJECT),
+          tx.pure(collateralAmount, "u64"),
+          tx.pure(insertionPlace ? [insertionPlace] : []),
+        ],
+      });
+    } else {
+      return tx.moveCall({
+        target: `${CORE_PACKAGE_ID}::buck::withdraw`,
+        typeArguments: [assetType],
+        arguments: [
+          tx.sharedObjectRef(PROTOCOL_OBJECT),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.pure(CLOCK_OBJECT),
+          tx.pure(collateralAmount, "u64"),
+          tx.pure(insertionPlace ? [insertionPlace] : []),
+        ],
+      });
+    }
   }
 
   repay(
     tx: TransactionBlock,
     assetType: string,
     buckInput: TransactionResult,
+    strapId?: string,
   ): TransactionResult {
     /**
      * @description Repay borrowed amount
@@ -232,15 +287,28 @@ export class BucketClient {
      * @returns TransactionResult
      */
 
-    return tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::repay_debt`,
-      typeArguments: [assetType],
-      arguments: [
-        tx.sharedObjectRef(PROTOCOL_OBJECT),
-        buckInput,
-        tx.pure(CLOCK_OBJECT),
-      ],
-    });
+    if (strapId) {
+      return tx.moveCall({
+        target: `${CORE_PACKAGE_ID}::buck::repay_with_strap`,
+        typeArguments: [assetType],
+        arguments: [
+          tx.sharedObjectRef(PROTOCOL_OBJECT),
+          tx.object(strapId),
+          buckInput,
+          tx.pure(CLOCK_OBJECT),
+        ],
+      });
+    } else {
+      return tx.moveCall({
+        target: `${CORE_PACKAGE_ID}::buck::repay_debt`,
+        typeArguments: [assetType],
+        arguments: [
+          tx.sharedObjectRef(PROTOCOL_OBJECT),
+          buckInput,
+          tx.pure(CLOCK_OBJECT),
+        ],
+      });
+    }
   }
 
   redeem(
