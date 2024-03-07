@@ -54,7 +54,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   CETABLE: 6,
   BUCKETUS: 9,
   USDY: 6,
-  
+
   AF_LP_USDC_BUCK: 9,
   AF_LP_SUI_BUCK: 9,
   AF_LP_SUI_SUI: 9,
@@ -147,23 +147,33 @@ export const CETUS_SUI_BUCK_LP_REGISTRY = {
   initialSharedVersion: 7598161,
 };
 
-export const CETUS_USDC_BUCK_LP_REGISTRY_ID =
+export const CETUS_USDC_BUCK_25_LP_REGISTRY_ID =
   "0xb9d46d57d933fabaf9c81f4fc6f54f9c1570d3ef49785c6b7200cad6fe302909";
 
-export const CETUS_USDC_BUCK_LP_REGISTRY = {
-  objectId: CETUS_USDC_BUCK_LP_REGISTRY_ID,
+export const CETUS_USDC_BUCK_25_LP_REGISTRY = {
+  objectId: CETUS_USDC_BUCK_25_LP_REGISTRY_ID,
   mutable: true,
   initialSharedVersion: 61717743,
 };
 
-export const CETUS_USDC_BUCK_LP_REGISTRY_2_ID =
+export const CETUS_USDC_BUCK_01_LP_REGISTRY_ID =
   "0x504799d041ea541d252b4742ba9388ff602a9e91b23ccb239d4abc499761f42f";
 
-export const CETUS_USDC_BUCK_LP_REGISTRY_2 = {
-  objectId: CETUS_USDC_BUCK_LP_REGISTRY_2_ID,
+export const CETUS_USDC_BUCK_01_LP_REGISTRY = {
+  objectId: CETUS_USDC_BUCK_01_LP_REGISTRY_ID,
   mutable: true,
   initialSharedVersion: 63666426,
 };
+
+export const CETUS_USDC_BUCK_05_LP_REGISTRY_ID =
+  "0x81fe26939ed676dd766358a60445341a06cea407ca6f3671ef30f162c84126d5";
+
+export const CETUS_USDC_BUCK_05_LP_REGISTRY = {
+  objectId: CETUS_USDC_BUCK_05_LP_REGISTRY_ID,
+  mutable: true,
+  initialSharedVersion: 74445428,
+};
+
 
 export const KRIYA_SUI_BUCK_LP_REGISTRY_ID =
   "0xcc39bcc2c438a79beb2656ff043714a60baf89ba37592bef2e14ee8bca0cf007";

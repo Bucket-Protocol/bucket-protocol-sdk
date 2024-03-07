@@ -95,7 +95,7 @@ class BucketClient {
             arguments: [tx.object(tankId), tx.pure(contributorToken)],
         });
     }
-    borrow(tx, collateralType, collateralInput, bucketOutputAmount, insertionPlace) {
+    borrow(tx, collateralType, collateralInput, bucketOutputAmount, insertionPlace, strapId) {
         /**
          * @description Borrow
          * @param tx
@@ -105,18 +105,57 @@ class BucketClient {
          * @param insertionPlace optional
          * @returns TransactionResult
          */
-        return tx.moveCall({
-            target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow`,
-            typeArguments: [collateralType],
-            arguments: [
-                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
-                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
-                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
-                collateralInput,
-                tx.pure(bucketOutputAmount, "u64"),
-                tx.pure(insertionPlace ? [insertionPlace] : []),
-            ],
-        });
+        if (strapId) {
+            if (strapId === "new") {
+                const [strap] = tx.moveCall({
+                    target: `${constants_1.CORE_PACKAGE_ID}::strap::new`,
+                    typeArguments: [collateralType],
+                });
+                const [buckOut] = tx.moveCall({
+                    target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow_with_strap`,
+                    typeArguments: [collateralType],
+                    arguments: [
+                        tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                        tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                        tx.object(strapId),
+                        tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
+                        collateralInput,
+                        tx.pure(bucketOutputAmount, "u64"),
+                        tx.pure(insertionPlace ? [insertionPlace] : []),
+                    ],
+                });
+                return [strap, buckOut];
+            }
+            else {
+                return tx.moveCall({
+                    target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow_with_strap`,
+                    typeArguments: [collateralType],
+                    arguments: [
+                        tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                        tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                        tx.object(strapId),
+                        tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
+                        collateralInput,
+                        tx.pure(bucketOutputAmount, "u64"),
+                        tx.pure(insertionPlace ? [insertionPlace] : []),
+                    ],
+                });
+            }
+        }
+        else {
+            return tx.moveCall({
+                target: `${constants_1.CORE_PACKAGE_ID}::buck::borrow`,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                    tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
+                    collateralInput,
+                    tx.pure(bucketOutputAmount, "u64"),
+                    tx.pure(insertionPlace ? [insertionPlace] : []),
+                ],
+            });
+        }
     }
     topUp(tx, collateralType, collateralInput, forAddress, insertionPlace) {
         /**
@@ -140,7 +179,7 @@ class BucketClient {
             ],
         });
     }
-    withdraw(tx, assetType, collateralAmount, insertionPlace) {
+    withdraw(tx, assetType, collateralAmount, insertionPlace, strapId) {
         /**
          * @description withdraw
          * @param assetType Asset , e.g "0x2::sui::SUI"
@@ -148,34 +187,64 @@ class BucketClient {
          * @param insertionPlace
          * @returns TransactionResult
          */
-        return tx.moveCall({
-            target: `${constants_1.CORE_PACKAGE_ID}::buck::withdraw`,
-            typeArguments: [assetType],
-            arguments: [
-                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
-                tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
-                tx.pure(constants_1.CLOCK_OBJECT),
-                tx.pure(collateralAmount, "u64"),
-                tx.pure(insertionPlace ? [insertionPlace] : []),
-            ],
-        });
+        if (strapId) {
+            return tx.moveCall({
+                target: `${constants_1.CORE_PACKAGE_ID}::buck::withdraw_with_strap`,
+                typeArguments: [assetType],
+                arguments: [
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                    tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                    tx.object(strapId),
+                    tx.pure(constants_1.CLOCK_OBJECT),
+                    tx.pure(collateralAmount, "u64"),
+                    tx.pure(insertionPlace ? [insertionPlace] : []),
+                ],
+            });
+        }
+        else {
+            return tx.moveCall({
+                target: `${constants_1.CORE_PACKAGE_ID}::buck::withdraw`,
+                typeArguments: [assetType],
+                arguments: [
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                    tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                    tx.pure(constants_1.CLOCK_OBJECT),
+                    tx.pure(collateralAmount, "u64"),
+                    tx.pure(insertionPlace ? [insertionPlace] : []),
+                ],
+            });
+        }
     }
-    repay(tx, assetType, buckInput) {
+    repay(tx, assetType, buckInput, strapId) {
         /**
          * @description Repay borrowed amount
          * @param assetType Asset , e.g "0x2::sui::SUI"
          * @param buckInput Amount to be repaid
          * @returns TransactionResult
          */
-        return tx.moveCall({
-            target: `${constants_1.CORE_PACKAGE_ID}::buck::repay_debt`,
-            typeArguments: [assetType],
-            arguments: [
-                tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
-                buckInput,
-                tx.pure(constants_1.CLOCK_OBJECT),
-            ],
-        });
+        if (strapId) {
+            return tx.moveCall({
+                target: `${constants_1.CORE_PACKAGE_ID}::buck::repay_with_strap`,
+                typeArguments: [assetType],
+                arguments: [
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                    tx.object(strapId),
+                    buckInput,
+                    tx.pure(constants_1.CLOCK_OBJECT),
+                ],
+            });
+        }
+        else {
+            return tx.moveCall({
+                target: `${constants_1.CORE_PACKAGE_ID}::buck::repay_debt`,
+                typeArguments: [assetType],
+                arguments: [
+                    tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
+                    buckInput,
+                    tx.pure(constants_1.CLOCK_OBJECT),
+                ],
+            });
+        }
     }
     redeem(tx, assetType, buckInput, insertionPlace) {
         /**
@@ -594,7 +663,7 @@ class BucketClient {
             constants_1.AF_SUI_BUCK_LP_REGISTRY_ID,
             constants_1.AF_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.CETUS_SUI_BUCK_LP_REGISTRY_ID,
-            constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID,
+            constants_1.CETUS_USDC_BUCK_25_LP_REGISTRY_ID,
         ];
         const fountainResults = await this.client.multiGetObjects({
             ids: objectIds,
@@ -918,7 +987,7 @@ class BucketClient {
         const lpRegistryIds = [
             constants_1.AF_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.AF_SUI_BUCK_LP_REGISTRY_ID,
-            constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID,
+            constants_1.CETUS_USDC_BUCK_25_LP_REGISTRY_ID,
             constants_1.CETUS_SUI_BUCK_LP_REGISTRY_ID,
             constants_1.KRIYA_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.KRIYA_SUI_BUCK_LP_REGISTRY_ID,
@@ -1323,7 +1392,7 @@ class BucketClient {
                 typeArguments: [constants_1.COINS_TYPE_LIST.USDC],
                 arguments: [
                     tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
-                    tx.sharedObjectRef(constants_1.CETUS_USDC_BUCK_LP_REGISTRY),
+                    tx.sharedObjectRef(constants_1.CETUS_USDC_BUCK_25_LP_REGISTRY),
                     tx.sharedObjectRef(constants_1.BUCKETUS_TREASURY),
                     tx.sharedObjectRef(constants_1.BUCKETUS_LP_VAULT),
                     tx.object(constants_1.CETUS_OBJS.globalConfig),

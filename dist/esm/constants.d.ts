@@ -46,14 +46,20 @@ export declare const CETUS_SUI_BUCK_LP_REGISTRY: {
     mutable: boolean;
     initialSharedVersion: number;
 };
-export declare const CETUS_USDC_BUCK_LP_REGISTRY_ID = "0xb9d46d57d933fabaf9c81f4fc6f54f9c1570d3ef49785c6b7200cad6fe302909";
-export declare const CETUS_USDC_BUCK_LP_REGISTRY: {
+export declare const CETUS_USDC_BUCK_25_LP_REGISTRY_ID = "0xb9d46d57d933fabaf9c81f4fc6f54f9c1570d3ef49785c6b7200cad6fe302909";
+export declare const CETUS_USDC_BUCK_25_LP_REGISTRY: {
     objectId: string;
     mutable: boolean;
     initialSharedVersion: number;
 };
-export declare const CETUS_USDC_BUCK_LP_REGISTRY_2_ID = "0x504799d041ea541d252b4742ba9388ff602a9e91b23ccb239d4abc499761f42f";
-export declare const CETUS_USDC_BUCK_LP_REGISTRY_2: {
+export declare const CETUS_USDC_BUCK_01_LP_REGISTRY_ID = "0x504799d041ea541d252b4742ba9388ff602a9e91b23ccb239d4abc499761f42f";
+export declare const CETUS_USDC_BUCK_01_LP_REGISTRY: {
+    objectId: string;
+    mutable: boolean;
+    initialSharedVersion: number;
+};
+export declare const CETUS_USDC_BUCK_05_LP_REGISTRY_ID = "0x81fe26939ed676dd766358a60445341a06cea407ca6f3671ef30f162c84126d5";
+export declare const CETUS_USDC_BUCK_05_LP_REGISTRY: {
     objectId: string;
     mutable: boolean;
     initialSharedVersion: number;

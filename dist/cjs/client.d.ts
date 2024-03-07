@@ -15,10 +15,10 @@ export declare class BucketClient {
     withdrawFromTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
     claimFromTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
     claimBkt(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
-    borrow(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, bucketOutputAmount: number, insertionPlace?: string): TransactionResult;
+    borrow(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, bucketOutputAmount: number, insertionPlace?: string, strapId?: string | "new"): TransactionResult;
     topUp(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, forAddress: string, insertionPlace?: string): void;
-    withdraw(tx: TransactionBlock, assetType: string, collateralAmount: string, insertionPlace?: string): TransactionResult;
-    repay(tx: TransactionBlock, assetType: string, buckInput: TransactionResult): TransactionResult;
+    withdraw(tx: TransactionBlock, assetType: string, collateralAmount: string, insertionPlace?: string, strapId?: string): TransactionResult;
+    repay(tx: TransactionBlock, assetType: string, buckInput: TransactionResult, strapId?: string): TransactionResult;
     redeem(tx: TransactionBlock, assetType: string, buckInput: TransactionResult, insertionPlace?: string): TransactionResult;
     stake(tx: TransactionBlock, assetType: string, well: string, bktInput: string, lockTime: string): TransactionResult;
     unstake(tx: TransactionBlock, assetType: string, well: string, stakedBkt: string): TransactionResult;
