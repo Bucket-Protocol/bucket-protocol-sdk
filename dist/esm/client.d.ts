@@ -44,20 +44,20 @@ export declare class BucketClient {
     getPrices(): Promise<{
         [key: string]: number;
     }>;
-    getBorrowTx(collateralType: string, collateralAmount: number, borrowAmount: number, recipient: string, isNewBottle: boolean, isUpdateOracle: boolean, insertionPlace?: string): Promise<TransactionBlock>;
-    getRepayTx(collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
-    getSurplusWithdrawTx(collateralType: string, walletAddress: string): Promise<TransactionBlock>;
-    getPsmTx(psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<TransactionBlock>;
-    getRedeemTx(collateralType: string, redeemAmount: number, walletAddress: string, insertionPlace?: string): Promise<TransactionBlock>;
-    getTankDepositTx(tankType: string, depositAmount: number, walletAddress: string): Promise<TransactionBlock>;
-    getTankWithdrawTx(tankType: string, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
-    getTankClaimTx(tankType: string, walletAddress: string): Promise<TransactionBlock>;
-    getStakeUsdcTx(isAf: boolean, stakeAmount: number, walletAddress: string): Promise<TransactionBlock>;
-    getAfUnstakeTx(fountainId: string, lpProof: UserLpProof, recipient: string): Promise<TransactionBlock>;
-    getKriyaUnstakeTx(fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
-    getCetusUnstakeTx(fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
-    getAfClaimTx(fountainId: string, lpProofs: UserLpProof[]): Promise<TransactionBlock>;
-    getCetusClaimTx(fountainId: string, lpProofs: UserLpProof[], walletAddress: string): Promise<TransactionBlock>;
-    getKriyaClaimTx(fountainId: string, lpProofs: UserLpProof[]): Promise<TransactionBlock>;
+    getBorrowTx(tx: TransactionBlock, collateralType: string, collateralAmount: number, borrowAmount: number, recipient: string, isNewBottle: boolean, isUpdateOracle: boolean, insertionPlace?: string, strapId?: string): Promise<TransactionBlock>;
+    getRepayTx(tx: TransactionBlock, collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getSurplusWithdrawTx(tx: TransactionBlock, collateralType: string, walletAddress: string): Promise<TransactionBlock>;
+    getPsmTx(tx: TransactionBlock, psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<TransactionBlock>;
+    getRedeemTx(tx: TransactionBlock, collateralType: string, redeemAmount: number, walletAddress: string, insertionPlace?: string): Promise<TransactionBlock>;
+    getTankDepositTx(tx: TransactionBlock, tankType: string, depositAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getTankWithdrawTx(tx: TransactionBlock, tankType: string, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getTankClaimTx(tx: TransactionBlock, tankType: string, walletAddress: string): Promise<TransactionBlock>;
+    getStakeUsdcTx(tx: TransactionBlock, isAf: boolean, stakeAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getAfUnstakeTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof, recipient: string): Promise<TransactionBlock>;
+    getKriyaUnstakeTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof): Promise<TransactionBlock>;
+    getCetusUnstakeTx(tx: TransactionBlock, fountainId: string, lpProof: UserLpProof, walletAddress: string): Promise<TransactionBlock>;
+    getAfClaimTx(tx: TransactionBlock, fountainId: string, lpProofs: UserLpProof[]): Promise<TransactionBlock>;
+    getCetusClaimTx(tx: TransactionBlock, fountainId: string, lpProofs: UserLpProof[], walletAddress: string): Promise<TransactionBlock>;
+    getKriyaClaimTx(tx: TransactionBlock, fountainId: string, lpProofs: UserLpProof[]): Promise<TransactionBlock>;
 }
 //# sourceMappingURL=client.d.ts.map
