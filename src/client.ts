@@ -1310,7 +1310,7 @@ export class BucketClient {
         prices['USDT'] = price;
       }
       else if (objectNameList[index] == 'navx_usd') {
-        prices['NAVI'] = price;
+        prices['NAVX'] = price;
       }
       else if (objectNameList[index] == 'eth_usdt') {
         prices['WETH'] = prices['USDT'] * price;
