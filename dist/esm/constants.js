@@ -20,6 +20,7 @@ export const COINS_TYPE_LIST = {
     BUCKETUS: "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS",
     CETABLE: "0x072f3814fdd168c5f5706fe4642bf6cdf14b4bae20a4f13deeb9933bcfc89f0d::cetable::CETABLE",
     USDY: "0x960b531667636f39e85867775f52f6b1f220a058c4de786905bdf761e06a56bb::usdy::USDY",
+    NAVX: "0xa99b8952d4f7d947ea77fe0ecdcc9e5fc0bcab2841d6e2a5aa00c3044e5544b5::navx::NAVX",
     AF_LP_USDC_BUCK: "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
     AF_LP_SUI_BUCK: "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
     AF_LP_SUI_SUI: "0x42d0b3476bc10d18732141a471d7ad3aa588a6fb4ba8e1a6608a4a7b78e171bf::af_lp::AF_LP",
@@ -37,6 +38,7 @@ export const COIN_DECIMALS = {
     CETABLE: 6,
     BUCKETUS: 9,
     USDY: 6,
+    NAVX: 9,
     AF_LP_USDC_BUCK: 9,
     AF_LP_SUI_BUCK: 9,
     AF_LP_SUI_SUI: 9,
@@ -63,6 +65,7 @@ export const SUPRA_PRICE_FEEDS = {
     hasui_sui: "0xd741ca15eb5e19f2d138b9e9cb95d70dc90667370dee7cbad184acfbb35063cf",
     vsui_sui: "0xd291ea0aebb1a9314cd60d5142755267f9badbeccd30b91e92b54bef29864f33",
     afsui_sui: "0xbe4289cf638a9ad1f085bd8a3e0aeaed814078e3961b77fb08cc7550ee5d8c00",
+    navx_usd: "0x996cfab93ecd365cea4e2ea5bb6d29160192513eec5e08521d0edad3796f667c",
 };
 export const SUPRA_ID = {
     USDT: "48",
@@ -74,6 +77,7 @@ export const SUPRA_ID = {
     haSUI: "90",
     vSUI: "90",
     USDY: "185",
+    NAVX: "408",
 };
 export const SWITCHBOARD_UPDATE_TARGET = "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_switchboard";
 export const SUPRA_HANDLER_OBJECT = "0xaa0315f0748c1f24ddb2b45f7939cff40f7a8104af5ccbc4a1d32f870c0b4105";

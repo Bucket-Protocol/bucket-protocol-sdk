@@ -139,7 +139,7 @@ export class BucketClient {
     bucketOutputAmount: number,
     insertionPlace?: string,
     strapId?: string | "new",
-  ): TransactionResult {
+  ): TransactionResult | undefined {
     /**
      * @description Borrow
      * @param tx
@@ -156,20 +156,22 @@ export class BucketClient {
           target: `${CORE_PACKAGE_ID}::strap::new`,
           typeArguments: [collateralType],
         });
-        const [buckOut] = tx.moveCall({
-          target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
-          typeArguments: [collateralType],
-          arguments: [
-            tx.sharedObjectRef(PROTOCOL_OBJECT),
-            tx.sharedObjectRef(ORACLE_OBJECT),
-            tx.object(strapId),
-            tx.sharedObjectRef(CLOCK_OBJECT),
-            collateralInput,
-            tx.pure(bucketOutputAmount, "u64"),
-            tx.pure(insertionPlace ? [insertionPlace] : []),
-          ],
-        });
-        return [strap, buckOut] as TransactionResult;
+        if (strap) {
+          const [buckOut] = tx.moveCall({
+            target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
+            typeArguments: [collateralType],
+            arguments: [
+              tx.sharedObjectRef(PROTOCOL_OBJECT),
+              tx.sharedObjectRef(ORACLE_OBJECT),
+              tx.object(strap),
+              tx.sharedObjectRef(CLOCK_OBJECT),
+              collateralInput,
+              tx.pure(bucketOutputAmount, "u64"),
+              tx.pure(insertionPlace ? [insertionPlace] : []),
+            ],
+          });
+          return [strap, buckOut] as TransactionResult;
+        }
       } else {
         return tx.moveCall({
           target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
@@ -1307,6 +1309,9 @@ export class BucketClient {
       else if (objectNameList[index] == 'usdt_usd') {
         prices['USDT'] = price;
       }
+      else if (objectNameList[index] == 'navx_usd') {
+        prices['NAVI'] = price;
+      }
       else if (objectNameList[index] == 'eth_usdt') {
         prices['WETH'] = prices['USDT'] * price;
       }
@@ -1367,7 +1372,7 @@ export class BucketClient {
         this.updateSupraOracle(tx, token);
       }
 
-      const buckBalance = this.borrow(
+      const borrowRet = this.borrow(
         tx,
         collateralType,
         collateralBalance,
@@ -1375,8 +1380,20 @@ export class BucketClient {
         isNewBottle ? insertionPlace : recipient,
         strapId,
       );
-      const buckCoinBalance = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance);
-      tx.transferObjects([buckCoinBalance], tx.pure(recipient, "address"));
+      if (borrowRet) {
+        if (strapId == 'new') {
+          const [strap, buckOut] = borrowRet;
+          if (strap && buckOut) {
+            const buckCoinBalance = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckOut);
+            tx.transferObjects([buckCoinBalance], tx.pure(recipient, "address"));
+            tx.transferObjects([strap], tx.pure(recipient, "address"));
+          }
+        }
+        else {
+          const buckCoinBalance = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, borrowRet);
+          tx.transferObjects([buckCoinBalance], tx.pure(recipient, "address"));
+        }
+      }
     };
 
     return tx;

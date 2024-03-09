@@ -14,6 +14,7 @@ export declare const SUPRA_PRICE_FEEDS: {
     hasui_sui: string;
     vsui_sui: string;
     afsui_sui: string;
+    navx_usd: string;
 };
 export declare const SUPRA_ID: Record<string, string>;
 export declare const SWITCHBOARD_UPDATE_TARGET = "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_switchboard";

@@ -97,4 +97,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
     });
     */
 
+    it('tests getPrices() function', async () => {
+        const prices = await buck.getPrices();
+        console.log(prices);
+        expect(prices).toBeDefined()
+    });
 });
