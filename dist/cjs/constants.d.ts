@@ -53,12 +53,6 @@ export declare const CETUS_USDC_BUCK_LP_REGISTRY: {
     mutable: boolean;
     initialSharedVersion: number;
 };
-export declare const CETUS_USDC_BUCK_01_LP_REGISTRY_ID = "0x504799d041ea541d252b4742ba9388ff602a9e91b23ccb239d4abc499761f42f";
-export declare const CETUS_USDC_BUCK_01_LP_REGISTRY: {
-    objectId: string;
-    mutable: boolean;
-    initialSharedVersion: number;
-};
 export declare const KRIYA_SUI_BUCK_LP_REGISTRY_ID = "0xcc39bcc2c438a79beb2656ff043714a60baf89ba37592bef2e14ee8bca0cf007";
 export declare const KRIYA_SUI_BUCK_LP_REGISTRY: {
     objectId: string;
@@ -84,9 +78,9 @@ export declare const AF_USDC_BUCK_LP_REGISTRY: {
     mutable: boolean;
 };
 export declare const CETUS_SUI_BUCK_POOL_ID = "0x9379d2d3f221dcea70f7f7d4a7bf30bab0128bcfda0d13a85267e51f7e6e15c0";
-export declare const CETUS_BUCK_USDC_POOL_ID = "0x6ecf6d01120f5f055f9a605b56fd661412a81ec7c8b035255e333c664a0c12e7";
 export declare const CETUS_BUCK_USDC_POOL_01_ID = "0xd4573bdd25c629127d54c5671d72a0754ef47767e6c01758d6dc651f57951e7d";
 export declare const CETUS_BUCK_USDC_POOL_05_ID = "0x81fe26939ed676dd766358a60445341a06cea407ca6f3671ef30f162c84126d5";
+export declare const CETUS_BUCK_USDC_POOL_25_ID = "0x6ecf6d01120f5f055f9a605b56fd661412a81ec7c8b035255e333c664a0c12e7";
 export declare const KRIYA_SUI_BUCK_POOL_ID = "0x3c334f9d1b969767007d26bc886786f9f197ffb14771f7903cd8772c46d08dea";
 export declare const KRIYA_BUCK_USDC_POOL_ID = "0xbb4a712b3353176092cdfe3dd2d1251b725f9372e954248e5dd2eb2ab6a5f21a";
 export declare const AF_SUI_BUCK_POOL_ID = "0xdeacf7ab460385d4bcb567f183f916367f7d43666a2c72323013822eb3c57026";
@@ -100,15 +94,20 @@ export declare const AF_OBJS: {
     referralVault: string;
 };
 export declare const CETUS_OBJS: {
-    poolBuckUsdc: string;
     globalConfig: string;
+    buckUsdcPool: string;
 };
 export declare const BUCKETUS_TREASURY: {
     objectId: string;
     initialSharedVersion: number;
     mutable: boolean;
 };
-export declare const BUCKETUS_LP_VAULT: {
+export declare const BUCKETUS_LP_VAULT_25: {
+    objectId: string;
+    initialSharedVersion: number;
+    mutable: boolean;
+};
+export declare const BUCKETUS_LP_VAULT_05: {
     objectId: string;
     initialSharedVersion: number;
     mutable: boolean;

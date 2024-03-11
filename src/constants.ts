@@ -160,15 +160,6 @@ export const CETUS_USDC_BUCK_LP_REGISTRY = {
   initialSharedVersion: 61717743,
 };
 
-export const CETUS_USDC_BUCK_01_LP_REGISTRY_ID =
-  "0x504799d041ea541d252b4742ba9388ff602a9e91b23ccb239d4abc499761f42f";
-
-export const CETUS_USDC_BUCK_01_LP_REGISTRY = {
-  objectId: CETUS_USDC_BUCK_01_LP_REGISTRY_ID,
-  mutable: true,
-  initialSharedVersion: 63666426,
-};
-
 
 export const KRIYA_SUI_BUCK_LP_REGISTRY_ID =
   "0xcc39bcc2c438a79beb2656ff043714a60baf89ba37592bef2e14ee8bca0cf007";
@@ -208,9 +199,9 @@ export const AF_USDC_BUCK_LP_REGISTRY = {
 
 
 export const CETUS_SUI_BUCK_POOL_ID = "0x9379d2d3f221dcea70f7f7d4a7bf30bab0128bcfda0d13a85267e51f7e6e15c0";
-export const CETUS_BUCK_USDC_POOL_ID = "0x6ecf6d01120f5f055f9a605b56fd661412a81ec7c8b035255e333c664a0c12e7";
 export const CETUS_BUCK_USDC_POOL_01_ID = "0xd4573bdd25c629127d54c5671d72a0754ef47767e6c01758d6dc651f57951e7d";
 export const CETUS_BUCK_USDC_POOL_05_ID = "0x81fe26939ed676dd766358a60445341a06cea407ca6f3671ef30f162c84126d5";
+export const CETUS_BUCK_USDC_POOL_25_ID = "0x6ecf6d01120f5f055f9a605b56fd661412a81ec7c8b035255e333c664a0c12e7";
 
 
 export const KRIYA_SUI_BUCK_POOL_ID = "0x3c334f9d1b969767007d26bc886786f9f197ffb14771f7903cd8772c46d08dea";
@@ -231,8 +222,8 @@ export const AF_OBJS = {
 };
 
 export const CETUS_OBJS = {
-  poolBuckUsdc: "0x6ecf6d01120f5f055f9a605b56fd661412a81ec7c8b035255e333c664a0c12e7",
-  globalConfig: "0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f"
+  globalConfig: "0xdaa46292632c3c4d8f31f23ea0f9b36a28ff3677e9684980e4438403a67a3d8f",
+  buckUsdcPool: CETUS_BUCK_USDC_POOL_05_ID
 };
 
 export const BUCKETUS_TREASURY = {
@@ -241,9 +232,14 @@ export const BUCKETUS_TREASURY = {
   mutable: true
 };
 
-export const BUCKETUS_LP_VAULT = {
+export const BUCKETUS_LP_VAULT_25 = {
   objectId: "0x1a0b93fd2965ce3ceb4039c90b232ddee7b0e79015cab0ca10528bb5f4285188",
   initialSharedVersion: 61717741,
+  mutable: true,
+};
+export const BUCKETUS_LP_VAULT_05 = {
+  objectId: "0x6edfc992f6e775fe926a5e850661c151ad01e6149e9b34792a2102e1721065fc",
+  initialSharedVersion: 75359688,
   mutable: true,
 };
 
