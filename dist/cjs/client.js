@@ -1071,6 +1071,9 @@ class BucketClient {
             else if (objectNameList[index] == 'navx_usd') {
                 prices['NAVX'] = price;
             }
+            else if (objectNameList[index] == 'cetus_usd') {
+                prices['CETUS'] = price;
+            }
             else if (objectNameList[index] == 'eth_usdt') {
                 prices['WETH'] = prices['USDT'] * price;
             }
