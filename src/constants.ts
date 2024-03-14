@@ -56,7 +56,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   BKT: 9,
   CETABLE: 6,
   BUCKETUS: 9,
-  STAPEARL: 9,
+  STAPEARL: 6,
   USDY: 6,
   NAVX: 9,
   CETUS: 9,
