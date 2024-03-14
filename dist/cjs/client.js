@@ -1056,6 +1056,7 @@ class BucketClient {
             BUCK: 1,
             BUCKETUS: 1,
             CETABLE: 1,
+            STAPEARL: 1,
         };
         priceObjects.map((res, index) => {
             const priceFeed = (0, objectTypes_1.getObjectFields)(res);
