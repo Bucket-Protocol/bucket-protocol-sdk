@@ -760,47 +760,71 @@ class BucketClient {
                 });
             });
             const userBottles = [];
+            // Get strapIds for user address
+            const { data: strapObjects } = await this.client.getOwnedObjects({
+                owner: address,
+                filter: {
+                    StructType: constants_1.STRAP_ID,
+                },
+                options: {
+                    showContent: true,
+                    showType: true,
+                }
+            });
+            let strapIds = strapObjects.map(strapObj => {
+                let obj = (0, objectTypes_1.getObjectFields)(strapObj);
+                return {
+                    id: obj?.id.id,
+                    type: strapObj.data?.type,
+                };
+            });
+            // Loop bottles
             for (const bottle of bottleIdList) {
                 const token = bottle.name ?? "";
-                await this.client
-                    .getDynamicFieldObject({
-                    parentId: bottle.id ?? "",
-                    name: {
-                        type: "address",
-                        value: address,
-                    },
-                })
-                    .then(async (bottleInfo) => {
-                    const bottleInfoFields = (0, objectTypes_1.getObjectFields)(bottleInfo);
-                    if (bottleInfoFields) {
-                        userBottles.push({
-                            token,
-                            collateralAmount: bottleInfoFields.value.fields.value.fields.collateral_amount,
-                            buckAmount: bottleInfoFields.value.fields.value.fields.buck_amount,
-                        });
-                    }
-                    else {
-                        const surplusBottleInfo = await this.client.getDynamicFieldObject({
-                            parentId: bottle.surplus_id,
-                            name: {
-                                type: "address",
-                                value: address,
-                            }
-                        });
-                        const surplusBottleFields = (0, objectTypes_1.getObjectFields)(surplusBottleInfo);
-                        const collateralAmount = surplusBottleFields?.value.fields.collateral_amount ?? 0;
-                        if (collateralAmount) {
+                const addresses = [address, ...strapIds.filter(t => t.type?.includes(constants_1.COINS_TYPE_LIST[token])).map(t => t.id)];
+                for (const _address of addresses) {
+                    await this.client
+                        .getDynamicFieldObject({
+                        parentId: bottle.id ?? "",
+                        name: {
+                            type: "address",
+                            value: _address,
+                        },
+                    })
+                        .then(async (bottleInfo) => {
+                        const bottleInfoFields = (0, objectTypes_1.getObjectFields)(bottleInfo);
+                        if (bottleInfoFields) {
                             userBottles.push({
                                 token,
-                                collateralAmount,
-                                buckAmount: 0,
+                                collateralAmount: bottleInfoFields.value.fields.value.fields.collateral_amount,
+                                buckAmount: bottleInfoFields.value.fields.value.fields.buck_amount,
+                                strapId: address != _address ? _address : undefined,
                             });
                         }
-                    }
-                })
-                    .catch((error) => {
-                    console.log("error", error);
-                });
+                        else {
+                            const surplusBottleInfo = await this.client.getDynamicFieldObject({
+                                parentId: bottle.surplus_id,
+                                name: {
+                                    type: "address",
+                                    value: address,
+                                }
+                            });
+                            const surplusBottleFields = (0, objectTypes_1.getObjectFields)(surplusBottleInfo);
+                            const collateralAmount = surplusBottleFields?.value.fields.collateral_amount ?? 0;
+                            if (collateralAmount) {
+                                userBottles.push({
+                                    token,
+                                    collateralAmount,
+                                    buckAmount: 0,
+                                    strapId: address != _address ? address : undefined,
+                                });
+                            }
+                        }
+                    })
+                        .catch((error) => {
+                        console.log("error", error);
+                    });
+                }
             }
             return userBottles;
         }
@@ -1093,7 +1117,7 @@ class BucketClient {
         });
         return prices;
     }
-    async getBorrowTx(tx, collateralType, collateralAmount, borrowAmount, recipient, isNewBottle, isUpdateOracle, insertionPlace, strapId) {
+    async getBorrowTx(tx, collateralType, collateralAmount, borrowAmount, recipient, isUpdateOracle, insertionPlace, strapId) {
         /**
          * @description Borrow
          * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -1114,13 +1138,13 @@ class BucketClient {
             return tx;
         const collateralBalance = (0, utils_2.coinIntoBalance)(tx, collateralType, collateralInput);
         if (borrowAmount == 0) {
-            this.topUp(tx, collateralType, collateralBalance, recipient, isNewBottle ? insertionPlace : recipient);
+            this.topUp(tx, collateralType, collateralBalance, recipient, insertionPlace ? insertionPlace : recipient);
         }
         else {
             if (isUpdateOracle) {
                 this.updateSupraOracle(tx, token);
             }
-            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, isNewBottle ? insertionPlace : recipient, strapId);
+            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, insertionPlace ? insertionPlace : recipient, strapId);
             if (borrowRet) {
                 if (strapId == 'new') {
                     const [strap, buckOut] = borrowRet;
@@ -1139,7 +1163,7 @@ class BucketClient {
         ;
         return tx;
     }
-    async getRepayTx(tx, collateralType, repayAmount, withdrawAmount, walletAddress) {
+    async getRepayTx(tx, collateralType, repayAmount, withdrawAmount, walletAddress, strapId) {
         /**
          * @description Repay
          * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -1148,6 +1172,7 @@ class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
+        console.log(repayAmount, withdrawAmount);
         const token = (0, utils_2.getCoinSymbol)(collateralType);
         if (!token) {
             return tx;

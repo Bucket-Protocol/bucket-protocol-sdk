@@ -6,8 +6,8 @@ import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { getObjectFields } from "./objects/objectTypes";
 
-import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, CETUS_BUCK_USDC_POOL_05_ID } from "./constants";
-import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, TvlList, FountainInfo, COIN } from "./types";
+import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, CETUS_BUCK_USDC_POOL_05_ID, STRAP_ID } from "./constants";
+import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, TvlList, FountainInfo, COIN, UserBottleInfo } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
 import { objectToFountain } from "./utils/convert";
 
@@ -900,7 +900,7 @@ export class BucketClient {
     return tvlList;
   };
 
-  async getUserBottles(address: string): Promise<BottleInfo[]> {
+  async getUserBottles(address: string): Promise<UserBottleInfo[]> {
     /**
      * @description Get positions array for input address
      * @address User address that belong to bottle
@@ -949,56 +949,82 @@ export class BucketClient {
         });
       });
 
-      const userBottles: BottleInfo[] = [];
+      const userBottles: UserBottleInfo[] = [];
 
+      // Get strapIds for user address
+      const { data: strapObjects } = await this.client.getOwnedObjects({
+        owner: address,
+        filter: {
+          StructType: STRAP_ID,
+        },
+        options: {
+          showContent: true,
+          showType: true,
+        }
+      });
+      let strapIds = strapObjects.map(strapObj => {
+        let obj = getObjectFields(strapObj);
+        return {
+          id: obj?.id.id,
+          type: strapObj.data?.type,
+        }
+      });
+
+      // Loop bottles
       for (const bottle of bottleIdList) {
         const token = bottle.name ?? "";
+        const addresses = [address, ...strapIds.filter(t => t.type?.includes(COINS_TYPE_LIST[token])).map(t => t.id)];
 
-        await this.client
-          .getDynamicFieldObject({
-            parentId: bottle.id ?? "",
-            name: {
-              type: "address",
-              value: address,
-            },
-          })
-          .then(async (bottleInfo) => {
-            const bottleInfoFields = getObjectFields(
-              bottleInfo
-            ) as BottleInfoResponse;
+        for (const _address of addresses) {
+          await this.client
+            .getDynamicFieldObject({
+              parentId: bottle.id ?? "",
+              name: {
+                type: "address",
+                value: _address,
+              },
+            })
+            .then(async (bottleInfo) => {
+              const bottleInfoFields = getObjectFields(
+                bottleInfo
+              ) as BottleInfoResponse;
 
-            if (bottleInfoFields) {
-              userBottles.push({
-                token,
-                collateralAmount:
-                  bottleInfoFields.value.fields.value.fields.collateral_amount,
-                buckAmount:
-                  bottleInfoFields.value.fields.value.fields.buck_amount,
-              });
-            }
-            else {
-              const surplusBottleInfo = await this.client.getDynamicFieldObject({
-                parentId: bottle.surplus_id,
-                name: {
-                  type: "address",
-                  value: address,
-                }
-              });
-
-              const surplusBottleFields = getObjectFields(surplusBottleInfo);
-              const collateralAmount = surplusBottleFields?.value.fields.collateral_amount ?? 0;
-              if (collateralAmount) {
+              if (bottleInfoFields) {
                 userBottles.push({
                   token,
-                  collateralAmount,
-                  buckAmount: 0,
+                  collateralAmount:
+                    bottleInfoFields.value.fields.value.fields.collateral_amount,
+                  buckAmount:
+                    bottleInfoFields.value.fields.value.fields.buck_amount,
+                  strapId: address != _address ? _address : undefined,
                 });
               }
-            }
-          })
-          .catch((error) => {
-            console.log("error", error);
-          });
+              else {
+                const surplusBottleInfo = await this.client.getDynamicFieldObject({
+                  parentId: bottle.surplus_id,
+                  name: {
+                    type: "address",
+                    value: address,
+                  }
+                });
+
+                const surplusBottleFields = getObjectFields(surplusBottleInfo);
+                const collateralAmount = surplusBottleFields?.value.fields.collateral_amount ?? 0;
+                if (collateralAmount) {
+                  userBottles.push({
+                    token,
+                    collateralAmount,
+                    buckAmount: 0,
+                    strapId: address != _address ? address : undefined,
+                  });
+                }
+              }
+            })
+            .catch((error) => {
+              console.log("error", error);
+            });
+        }
+
       }
 
       return userBottles;
@@ -1342,7 +1368,6 @@ export class BucketClient {
     collateralAmount: number,
     borrowAmount: number,
     recipient: string,
-    isNewBottle: boolean,
     isUpdateOracle: boolean,
     insertionPlace?: string,
     strapId?: string,
@@ -1370,7 +1395,7 @@ export class BucketClient {
     const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
 
     if (borrowAmount == 0) {
-      this.topUp(tx, collateralType, collateralBalance, recipient, isNewBottle ? insertionPlace : recipient);
+      this.topUp(tx, collateralType, collateralBalance, recipient, insertionPlace ? insertionPlace : recipient);
     } else {
       if (isUpdateOracle) {
         this.updateSupraOracle(tx, token);
@@ -1381,7 +1406,7 @@ export class BucketClient {
         collateralType,
         collateralBalance,
         borrowAmount,
-        isNewBottle ? insertionPlace : recipient,
+        insertionPlace ? insertionPlace : recipient,
         strapId,
       );
       if (borrowRet) {
@@ -1409,6 +1434,7 @@ export class BucketClient {
     repayAmount: number,
     withdrawAmount: number,
     walletAddress: string,
+    strapId: string | undefined
   ): Promise<TransactionBlock> {
     /**
      * @description Repay
@@ -1418,6 +1444,7 @@ export class BucketClient {
      * @param walletAddress
      * @returns Promise<TransactionBlock>
      */
+    console.log(repayAmount, withdrawAmount);
 
     const token = getCoinSymbol(collateralType);
     if (!token) {

@@ -1,6 +1,6 @@
 import { SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
-import { BucketConstants, PaginatedBottleSummary, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, TvlList, FountainInfo } from "./types";
+import { BucketConstants, PaginatedBottleSummary, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, TvlList, FountainInfo, UserBottleInfo } from "./types";
 export declare class BucketClient {
     network: string;
     owner: string;
@@ -36,7 +36,7 @@ export declare class BucketClient {
     getAllFountains(): Promise<FountainList>;
     getFountain(lpRegistryId: string): Promise<FountainInfo>;
     getPsmTVL(): Promise<TvlList>;
-    getUserBottles(address: string): Promise<BottleInfo[]>;
+    getUserBottles(address: string): Promise<UserBottleInfo[]>;
     getUserTanks(address: string): Promise<UserTankList>;
     getUserTankBUCK(tankType: string, tokens: SuiObjectResponse[]): Promise<number>;
     getUserTankEarn(tankType: string, tokens: SuiObjectResponse[]): Promise<number>;
@@ -44,8 +44,8 @@ export declare class BucketClient {
     getPrices(): Promise<{
         [key: string]: number;
     }>;
-    getBorrowTx(tx: TransactionBlock, collateralType: string, collateralAmount: number, borrowAmount: number, recipient: string, isNewBottle: boolean, isUpdateOracle: boolean, insertionPlace?: string, strapId?: string): Promise<TransactionBlock>;
-    getRepayTx(tx: TransactionBlock, collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string): Promise<TransactionBlock>;
+    getBorrowTx(tx: TransactionBlock, collateralType: string, collateralAmount: number, borrowAmount: number, recipient: string, isUpdateOracle: boolean, insertionPlace?: string, strapId?: string): Promise<TransactionBlock>;
+    getRepayTx(tx: TransactionBlock, collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string, strapId: string | undefined): Promise<TransactionBlock>;
     getSurplusWithdrawTx(tx: TransactionBlock, collateralType: string, walletAddress: string): Promise<TransactionBlock>;
     getPsmTx(tx: TransactionBlock, psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<TransactionBlock>;
     getRedeemTx(tx: TransactionBlock, collateralType: string, redeemAmount: number, walletAddress: string, insertionPlace?: string): Promise<TransactionBlock>;

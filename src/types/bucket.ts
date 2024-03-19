@@ -27,6 +27,10 @@ export type BottleInfo = {
   buckAmount: number;
 };
 
+export type UserBottleInfo = {
+  strapId: string | undefined;
+} & BottleInfo;
+
 export interface BucketConstants {
   feePrecision: string,
   liquidationRebate: string,

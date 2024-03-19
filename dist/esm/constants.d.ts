@@ -115,4 +115,5 @@ export declare const BUCKETUS_LP_VAULT_05: {
 };
 export declare const FOUNTAIN_PACKAGE_ID = "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";
 export declare const KRIYA_FOUNTAIN_PACKAGE_ID = "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
+export declare const STRAP_ID = "0xd9162764da404339384fe40487499dc867c3f1fa3eb870381c41a8b41458b0e5::strap::BottleStrap";
 //# sourceMappingURL=constants.d.ts.map

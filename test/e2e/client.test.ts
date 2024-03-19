@@ -97,9 +97,11 @@ describe('Interacting with Bucket Client on mainnet', () => {
     });
     */
 
-    it('tests getPrices() function', async () => {
-        const prices = await buck.getPrices();
-        console.log(prices);
-        expect(prices).toBeDefined()
+    it('tests getUserBottle() function', async () => {
+        const bottles = await buck.getUserBottles("0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc");
+        console.log(bottles)
+        expect(bottles).toBeDefined()
+    }, {
+        timeout: 60_000
     });
 });
