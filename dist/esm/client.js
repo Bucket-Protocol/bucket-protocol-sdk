@@ -1141,7 +1141,7 @@ export class BucketClient {
             if (isUpdateOracle) {
                 this.updateSupraOracle(tx, token);
             }
-            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, insertionPlace ? insertionPlace : recipient, strapId);
+            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, insertionPlace ? insertionPlace : undefined, strapId);
             if (borrowRet) {
                 if (strapId == 'new') {
                     const [strap, buckOut] = borrowRet;
@@ -1169,7 +1169,6 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<TransactionBlock>
          */
-        console.log(repayAmount, withdrawAmount);
         const token = getCoinSymbol(collateralType);
         if (!token) {
             return tx;
@@ -1184,18 +1183,63 @@ export class BucketClient {
         if (!buckCoinInput)
             return tx;
         this.updateSupraOracle(tx, token);
-        tx.moveCall({
-            target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::repay_and_withdraw`,
-            typeArguments: [collateralType],
-            arguments: [
-                tx.sharedObjectRef(PROTOCOL_OBJECT),
-                tx.sharedObjectRef(ORACLE_OBJECT),
-                tx.sharedObjectRef(CLOCK_OBJECT),
-                buckCoinInput,
-                tx.pure(withdrawAmount, "u64"),
-                tx.pure([walletAddress]),
-            ],
-        });
+        // Fully repay
+        if (repayAmount == 0) {
+            if (strapId) {
+                tx.moveCall({
+                    target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::fully_repay_with_strap`,
+                    typeArguments: [collateralType],
+                    arguments: [
+                        tx.sharedObjectRef(PROTOCOL_OBJECT),
+                        tx.object(strapId),
+                        buckCoinInput,
+                        tx.sharedObjectRef(CLOCK_OBJECT),
+                    ],
+                });
+            }
+            else {
+                tx.moveCall({
+                    target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::fully_repay`,
+                    typeArguments: [collateralType],
+                    arguments: [
+                        tx.sharedObjectRef(PROTOCOL_OBJECT),
+                        buckCoinInput,
+                        tx.sharedObjectRef(CLOCK_OBJECT),
+                    ],
+                });
+            }
+        }
+        else {
+            if (strapId) {
+                tx.moveCall({
+                    target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::repay_and_withdraw_with_strap`,
+                    typeArguments: [collateralType],
+                    arguments: [
+                        tx.sharedObjectRef(PROTOCOL_OBJECT),
+                        tx.sharedObjectRef(ORACLE_OBJECT),
+                        tx.object(strapId),
+                        tx.sharedObjectRef(CLOCK_OBJECT),
+                        buckCoinInput,
+                        tx.pure(withdrawAmount, "u64"),
+                        tx.pure([walletAddress]),
+                    ],
+                });
+            }
+            else {
+                tx.moveCall({
+                    target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::repay_and_withdraw`,
+                    typeArguments: [collateralType],
+                    arguments: [
+                        tx.sharedObjectRef(PROTOCOL_OBJECT),
+                        tx.sharedObjectRef(ORACLE_OBJECT),
+                        tx.sharedObjectRef(CLOCK_OBJECT),
+                        buckCoinInput,
+                        tx.pure(withdrawAmount, "u64"),
+                        tx.pure([walletAddress]),
+                    ],
+                });
+            }
+        }
         return tx;
     }
     async getSurplusWithdrawTx(tx, collateralType, walletAddress) {
