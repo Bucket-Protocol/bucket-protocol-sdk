@@ -126,13 +126,14 @@ export class BucketClient {
                 }
             }
             else {
+                console.log(strapId, insertionPlace);
                 return tx.moveCall({
                     target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
                     typeArguments: [collateralType],
                     arguments: [
                         tx.sharedObjectRef(PROTOCOL_OBJECT),
                         tx.sharedObjectRef(ORACLE_OBJECT),
-                        tx.object(strapId),
+                        tx.pure(strapId),
                         tx.sharedObjectRef(CLOCK_OBJECT),
                         collateralInput,
                         tx.pure(bucketOutputAmount, "u64"),
@@ -193,7 +194,7 @@ export class BucketClient {
                 arguments: [
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
                     tx.sharedObjectRef(ORACLE_OBJECT),
-                    tx.object(strapId),
+                    tx.pure(strapId),
                     tx.pure(CLOCK_OBJECT),
                     tx.pure(collateralAmount, "u64"),
                     tx.pure(insertionPlace ? [insertionPlace] : []),
@@ -227,7 +228,7 @@ export class BucketClient {
                 typeArguments: [assetType],
                 arguments: [
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
-                    tx.object(strapId),
+                    tx.pure(strapId),
                     buckInput,
                     tx.pure(CLOCK_OBJECT),
                 ],
@@ -1135,13 +1136,13 @@ export class BucketClient {
             return tx;
         const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
         if (borrowAmount == 0) {
-            this.topUp(tx, collateralType, collateralBalance, recipient, insertionPlace ? insertionPlace : recipient);
+            this.topUp(tx, collateralType, collateralBalance, strapId ? strapId : recipient, insertionPlace ? insertionPlace : recipient);
         }
         else {
             if (isUpdateOracle) {
                 this.updateSupraOracle(tx, token);
             }
-            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, insertionPlace ? insertionPlace : undefined, strapId);
+            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, insertionPlace ? insertionPlace : (strapId ? strapId : recipient), strapId);
             if (borrowRet) {
                 if (strapId == 'new') {
                     const [strap, buckOut] = borrowRet;
@@ -1160,7 +1161,7 @@ export class BucketClient {
         ;
         return tx;
     }
-    async getRepayTx(tx, collateralType, repayAmount, withdrawAmount, walletAddress, strapId) {
+    async getRepayTx(tx, collateralType, repayAmount, withdrawAmount, walletAddress, insertionPlace, strapId) {
         /**
          * @description Repay
          * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -1191,7 +1192,7 @@ export class BucketClient {
                     typeArguments: [collateralType],
                     arguments: [
                         tx.sharedObjectRef(PROTOCOL_OBJECT),
-                        tx.object(strapId),
+                        tx.pure(strapId),
                         buckCoinInput,
                         tx.sharedObjectRef(CLOCK_OBJECT),
                     ],
@@ -1217,11 +1218,11 @@ export class BucketClient {
                     arguments: [
                         tx.sharedObjectRef(PROTOCOL_OBJECT),
                         tx.sharedObjectRef(ORACLE_OBJECT),
-                        tx.object(strapId),
+                        tx.pure(strapId),
                         tx.sharedObjectRef(CLOCK_OBJECT),
                         buckCoinInput,
                         tx.pure(withdrawAmount, "u64"),
-                        tx.pure([walletAddress]),
+                        tx.pure([insertionPlace ? insertionPlace : strapId]),
                     ],
                 });
             }
@@ -1235,7 +1236,7 @@ export class BucketClient {
                         tx.sharedObjectRef(CLOCK_OBJECT),
                         buckCoinInput,
                         tx.pure(withdrawAmount, "u64"),
-                        tx.pure([walletAddress]),
+                        tx.pure([insertionPlace ? insertionPlace : walletAddress]),
                     ],
                 });
             }

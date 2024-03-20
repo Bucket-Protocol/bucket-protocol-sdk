@@ -173,13 +173,14 @@ export class BucketClient {
           return [strap, buckOut] as TransactionResult;
         }
       } else {
+        console.log(strapId, insertionPlace);
         return tx.moveCall({
           target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
           typeArguments: [collateralType],
           arguments: [
             tx.sharedObjectRef(PROTOCOL_OBJECT),
             tx.sharedObjectRef(ORACLE_OBJECT),
-            tx.object(strapId),
+            tx.pure(strapId),
             tx.sharedObjectRef(CLOCK_OBJECT),
             collateralInput,
             tx.pure(bucketOutputAmount, "u64"),
@@ -255,7 +256,7 @@ export class BucketClient {
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
           tx.sharedObjectRef(ORACLE_OBJECT),
-          tx.object(strapId),
+          tx.pure(strapId),
           tx.pure(CLOCK_OBJECT),
           tx.pure(collateralAmount, "u64"),
           tx.pure(insertionPlace ? [insertionPlace] : []),
@@ -295,7 +296,7 @@ export class BucketClient {
         typeArguments: [assetType],
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
-          tx.object(strapId),
+          tx.pure(strapId),
           buckInput,
           tx.pure(CLOCK_OBJECT),
         ],
@@ -1395,7 +1396,7 @@ export class BucketClient {
     const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
 
     if (borrowAmount == 0) {
-      this.topUp(tx, collateralType, collateralBalance, recipient, insertionPlace ? insertionPlace : recipient);
+      this.topUp(tx, collateralType, collateralBalance, strapId ? strapId : recipient, insertionPlace ? insertionPlace : recipient);
     } else {
       if (isUpdateOracle) {
         this.updateSupraOracle(tx, token);
@@ -1406,7 +1407,7 @@ export class BucketClient {
         collateralType,
         collateralBalance,
         borrowAmount,
-        insertionPlace ? insertionPlace : undefined,
+        insertionPlace ? insertionPlace : (strapId ? strapId : recipient),
         strapId,
       );
       if (borrowRet) {
@@ -1434,7 +1435,8 @@ export class BucketClient {
     repayAmount: number,
     withdrawAmount: number,
     walletAddress: string,
-    strapId: string | undefined
+    insertionPlace?: string,
+    strapId?: string,
   ): Promise<TransactionBlock> {
     /**
      * @description Repay
@@ -1470,7 +1472,7 @@ export class BucketClient {
           typeArguments: [collateralType],
           arguments: [
             tx.sharedObjectRef(PROTOCOL_OBJECT),
-            tx.object(strapId),
+            tx.pure(strapId),
             buckCoinInput,
             tx.sharedObjectRef(CLOCK_OBJECT),
           ],
@@ -1496,11 +1498,11 @@ export class BucketClient {
           arguments: [
             tx.sharedObjectRef(PROTOCOL_OBJECT),
             tx.sharedObjectRef(ORACLE_OBJECT),
-            tx.object(strapId),
+            tx.pure(strapId),
             tx.sharedObjectRef(CLOCK_OBJECT),
             buckCoinInput,
             tx.pure(withdrawAmount, "u64"),
-            tx.pure([walletAddress]),
+            tx.pure([insertionPlace ? insertionPlace : strapId]),
           ],
         });
       }
@@ -1514,7 +1516,7 @@ export class BucketClient {
             tx.sharedObjectRef(CLOCK_OBJECT),
             buckCoinInput,
             tx.pure(withdrawAmount, "u64"),
-            tx.pure([walletAddress]),
+            tx.pure([insertionPlace ? insertionPlace : walletAddress]),
           ],
         });
       }
