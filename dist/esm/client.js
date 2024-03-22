@@ -266,6 +266,20 @@ export class BucketClient {
             ],
         });
     }
+    collectInterest(tx, assetType) {
+        /**
+         * @description collect interest
+         * @param assetType Asset , e.g "0x2::sui::SUI"
+         * @returns TransactionResult
+         */
+        return tx.moveCall({
+            target: `${CORE_PACKAGE_ID}::buck::collect_interests`,
+            typeArguments: [assetType],
+            arguments: [
+                tx.sharedObjectRef(PROTOCOL_OBJECT)
+            ],
+        });
+    }
     stake(tx, assetType, well, bktInput, lockTime) {
         /**
          * @description stake to well
@@ -1124,16 +1138,17 @@ export class BucketClient {
          * @param recipient
          * @param isNewBottle
          * @param isUpdateOracle
-         * @param insertionPlace Optional
-         * @returns Promise<TransactionBlock>
+         * @param insertionPlace  Optional
+         * @param strapId  Optional
+         * @returns isSuccessed
          */
         const token = getCoinSymbol(collateralType);
         if (!token) {
-            return tx;
+            return false;
         }
         const [collateralInput] = await getInputCoins(tx, this.client, recipient, collateralType, collateralAmount);
         if (!collateralInput)
-            return tx;
+            return false;
         const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
         if (borrowAmount == 0) {
             this.topUp(tx, collateralType, collateralBalance, strapId ? strapId : recipient, insertionPlace ? insertionPlace : recipient);
@@ -1159,7 +1174,8 @@ export class BucketClient {
             }
         }
         ;
-        return tx;
+        this.collectInterest(tx, collateralType);
+        return true;
     }
     async getRepayTx(tx, collateralType, repayAmount, withdrawAmount, walletAddress, insertionPlace, strapId) {
         /**
@@ -1168,24 +1184,27 @@ export class BucketClient {
          * @param repayAmount
          * @param withdrawAmount
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @param insertionPlace  Optional
+         * @param strapId         Optional
+         * @returns isSuccessed
          */
         const token = getCoinSymbol(collateralType);
         if (!token) {
-            return tx;
+            return false;
         }
+        let isFullyRepay = repayAmount == 0 && withdrawAmount == 0;
         let buckCoinInput;
-        if (repayAmount > 0) {
-            [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
-        }
-        else {
+        if (isFullyRepay) {
             buckCoinInput = await getMainCoin(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK);
         }
+        else {
+            [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
+        }
         if (!buckCoinInput)
-            return tx;
+            return false;
         this.updateSupraOracle(tx, token);
         // Fully repay
-        if (repayAmount == 0) {
+        if (isFullyRepay) {
             if (strapId) {
                 tx.moveCall({
                     target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::fully_repay_with_strap`,
@@ -1227,6 +1246,7 @@ export class BucketClient {
                 });
             }
             else {
+                console.log(buckCoinInput, withdrawAmount);
                 tx.moveCall({
                     target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::repay_and_withdraw`,
                     typeArguments: [collateralType],
@@ -1241,7 +1261,8 @@ export class BucketClient {
                 });
             }
         }
-        return tx;
+        this.collectInterest(tx, collateralType);
+        return true;
     }
     async getSurplusWithdrawTx(tx, collateralType, walletAddress) {
         /**
@@ -1252,7 +1273,7 @@ export class BucketClient {
          */
         const token = getCoinSymbol(collateralType);
         if (!token) {
-            return tx;
+            return false;
         }
         const surplusCollateral = tx.moveCall({
             target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_collateral`,
@@ -1263,7 +1284,8 @@ export class BucketClient {
         });
         const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
         tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
-        return tx;
+        this.collectInterest(tx, collateralType);
+        return true;
     }
     async getPsmTx(tx, psmCoin, psmAmount, psmSwith, walletAddress) {
         /**
@@ -1272,7 +1294,7 @@ export class BucketClient {
          * @param psmAmount
          * @param psmSwith stable coin -> BUCK or not
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         const inputCoinType = psmSwith ? COINS_TYPE_LIST.BUCK : COINS_TYPE_LIST[psmCoin];
         const [inputCoin] = await getInputCoins(tx, this.client, walletAddress, inputCoinType, psmAmount);
@@ -1302,7 +1324,7 @@ export class BucketClient {
             const coinOut = coinFromBalance(tx, outCoinType, outBalance);
             tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
         }
-        return tx;
+        return true;
     }
     async getRedeemTx(tx, collateralType, redeemAmount, walletAddress, insertionPlace) {
         /**
@@ -1311,12 +1333,12 @@ export class BucketClient {
          * @param redeemAmount
          * @param walletAddress
          * @param insertionPlace  Optional
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         const token = getCoinSymbol(collateralType) ?? "";
         const [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, redeemAmount);
         if (!buckCoinInput)
-            return tx;
+            return false;
         this.updateSupraOracle(tx, token);
         tx.moveCall({
             target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::redeem`,
@@ -1329,7 +1351,8 @@ export class BucketClient {
                 tx.pure(insertionPlace ? [insertionPlace] : []),
             ],
         });
-        return tx;
+        this.collectInterest(tx, collateralType);
+        return true;
     }
     async getTankDepositTx(tx, tankType, depositAmount, walletAddress) {
         /**
@@ -1337,11 +1360,11 @@ export class BucketClient {
          * @param tankType Asset , e.g "0x2::sui::SUI"
          * @param depositAmount
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         const [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, depositAmount);
         if (!buckCoinInput)
-            return tx;
+            return false;
         tx.moveCall({
             target: `${BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::deposit`,
             typeArguments: [tankType],
@@ -1350,7 +1373,8 @@ export class BucketClient {
                 buckCoinInput
             ],
         });
-        return tx;
+        this.collectInterest(tx, tankType);
+        return true;
     }
     async getTankWithdrawTx(tx, tankType, withdrawAmount, walletAddress) {
         /**
@@ -1358,11 +1382,11 @@ export class BucketClient {
          * @param tankType Asset , e.g "0x2::sui::SUI"
          * @param withdrawAmount
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         const token = getCoinSymbol(tankType);
         if (!token) {
-            return tx;
+            return false;
         }
         const { data: contributorTokens } = await this.client.getOwnedObjects({
             owner: walletAddress,
@@ -1394,18 +1418,19 @@ export class BucketClient {
                 tx.pure(parseBigInt(`${withdrawAmount ?? 0}`, 9), "u64"),
             ],
         });
-        return tx;
+        this.collectInterest(tx, tankType);
+        return true;
     }
     async getTankClaimTx(tx, tankType, walletAddress) {
         /**
          * @description Get transaction for claim token from tank
          * @param tankType Asset , e.g "0x2::sui::SUI"
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         const token = getCoinSymbol(tankType);
         if (!token) {
-            return tx;
+            return false;
         }
         const { data: contributorTokens } = await this.client.getOwnedObjects({
             owner: walletAddress,
@@ -1422,7 +1447,7 @@ export class BucketClient {
             version: token.data?.version ?? "",
         }));
         if (!tokens || tokens.length === 0)
-            return tx;
+            return false;
         for (const token of tokens) {
             tx.moveCall({
                 target: `${BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::claim`,
@@ -1434,7 +1459,8 @@ export class BucketClient {
                 ],
             });
         }
-        return tx;
+        this.collectInterest(tx, tankType);
+        return true;
     }
     async getStakeUsdcTx(tx, isAf, stakeAmount, walletAddress) {
         /**
@@ -1442,11 +1468,11 @@ export class BucketClient {
          * @param isAf Boolean value for Aftermath or not
          * @param stakeAmount
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         const [stakeCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.USDC, stakeAmount);
         if (!stakeCoinInput)
-            return tx;
+            return false;
         if (isAf) {
             tx.moveCall({
                 target: `${FOUNTAIN_PERIHERY_PACKAGE_ID}::aftermath_fountain::stake`,
@@ -1483,7 +1509,7 @@ export class BucketClient {
                 ]
             });
         }
-        return tx;
+        return true;
     }
     async getAfUnstakeTx(tx, fountainId, lpProof, recipient) {
         /**
@@ -1491,7 +1517,7 @@ export class BucketClient {
          * @param fountainId
          * @param lpProof UserLpProof object
          * @param recipient Recipient address
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
         const [afLpBalance, rewardBalance] = tx.moveCall({
@@ -1519,7 +1545,7 @@ export class BucketClient {
             ],
         });
         tx.transferObjects([buckCoin, usdcCoin, rewardCoin], tx.pure(recipient, "address"));
-        return tx;
+        return true;
     }
     async getKriyaUnstakeTx(tx, fountainId, lpProof) {
         /**
@@ -1537,7 +1563,7 @@ export class BucketClient {
                 tx.objectRef(lpProofToObject(lpProof)),
             ]
         });
-        return tx;
+        return true;
     }
     async getCetusUnstakeTx(tx, fountainId, lpProof, walletAddress) {
         /**
@@ -1545,7 +1571,7 @@ export class BucketClient {
          * @param fountainId
          * @param lpProof UserLpProof object
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         const [bucketusOut, suiReward] = tx.moveCall({
             target: "0x02139a2e2ccb61caf776b76fbcef883bdfa6d2cbe0c2f1115a16cb8422b44da2::fountain_core::force_unstake",
@@ -1571,14 +1597,14 @@ export class BucketClient {
             ],
         });
         tx.transferObjects([buckCoin, usdcCoin, suiCoin], tx.pure(walletAddress, "address"));
-        return tx;
+        return true;
     }
     async getAfClaimTx(tx, fountainId, lpProofs) {
         /**
          * @description Get transaction for claim token from AF pool
          * @param fountainId
          * @param lpProof UserLpProof object
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         for (const lpProof of lpProofs) {
             const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
@@ -1592,7 +1618,7 @@ export class BucketClient {
                 ]
             });
         }
-        return tx;
+        return true;
     }
     async getCetusClaimTx(tx, fountainId, lpProofs, walletAddress) {
         /**
@@ -1600,7 +1626,7 @@ export class BucketClient {
          * @param fountainId
          * @param lpProofs UserLpProof objects array
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         for (const lpProof of lpProofs) {
             tx.moveCall({
@@ -1613,7 +1639,7 @@ export class BucketClient {
                 ],
             });
         }
-        return tx;
+        return true;
     }
     async getKriyaClaimTx(tx, fountainId, lpProofs) {
         /**
@@ -1621,7 +1647,7 @@ export class BucketClient {
          * @param fountainId
          * @param lpProofs UserLpProof object array
          * @param walletAddress
-         * @returns Promise<TransactionBlock>
+         * @returns isSuccessed
          */
         for (const lpProof of lpProofs) {
             tx.moveCall({
@@ -1634,7 +1660,7 @@ export class BucketClient {
                 ],
             });
         }
-        return tx;
+        return true;
     }
 }
 //# sourceMappingURL=client.js.map
