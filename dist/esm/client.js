@@ -4,9 +4,9 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, STRAP_ID } from "./constants";
+import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS } from "./constants";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
-import { objectToFountain } from "./utils/convert";
+import { objectToFountain, objectToStakeProofFountain } from "./utils/convert";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 export class BucketClient {
     network;
@@ -591,8 +591,8 @@ export class BucketClient {
                 let token = "";
                 const objectType = res.data?.type;
                 if (objectType) {
-                    const assetType = objectType.split(",")[1].trim().split(">")[0].trim();
-                    token = getCoinSymbol(assetType) ?? "";
+                    const assetType = objectType.split(",")?.[1]?.trim().split(">")?.[0]?.trim();
+                    token = getCoinSymbol(assetType ?? "") ?? "";
                 }
                 const tankInfo = {
                     buckReserve: fields?.reserve || "0",
@@ -678,9 +678,9 @@ export class BucketClient {
     }
     async getFountain(lpRegistryId) {
         /**
-         * @description Get all fountains from KRIYA, CETUS, AFTERMATHs
+         * @description Get fountain information from id
          * @param lpRegistryId Fountain lp registry id
-         * @returns Promise<FountainList>
+         * @returns Promise<FountainInfo>
          */
         const res = await this.client.getObject({
             id: lpRegistryId,
@@ -720,6 +720,40 @@ export class BucketClient {
         return tvlList;
     }
     ;
+    async getAllStakeProofFountains() {
+        /**
+         * @description Get all stake proof list from afSUI, haSUI, vSUI fountains
+         * @returns Promise<StakeProofFountainInfo>
+         */
+        const objectIdList = Object.values(STRAP_FOUNTAIN_IDS).map(t => t.objectId);
+        const response = await this.client.multiGetObjects({
+            ids: objectIdList,
+            options: {
+                showContent: true,
+                showType: true, //Check could we get type from response later
+            },
+        });
+        const fountains = {};
+        response.map((res) => {
+            const fountain = objectToStakeProofFountain(res);
+            fountains[fountain.id] = fountain;
+        });
+        return fountains;
+    }
+    async getStakeProofFountain(fountainId) {
+        /**
+         * @description Get fountain information from id
+         * @param lpRegistryId Fountain lp registry id
+         * @returns Promise<StakeProofFountainInfo>
+         */
+        const res = await this.client.getObject({
+            id: fountainId,
+            options: {
+                showContent: true,
+            }
+        });
+        return objectToStakeProofFountain(res);
+    }
     async getUserBottles(address) {
         /**
          * @description Get positions array for input address
@@ -772,12 +806,33 @@ export class BucketClient {
                 return {
                     id: obj?.id.id,
                     type: strapObj.data?.type,
+                    strap_address: obj?.id.id,
                 };
             });
+            // Get stakeProofIds for user address
+            const { data: stakeProofs } = await this.client.getOwnedObjects({
+                owner: address,
+                filter: {
+                    StructType: STAKE_PROOF_ID,
+                },
+                options: {
+                    showContent: true,
+                    showType: true,
+                }
+            });
+            strapIds = strapIds.concat(stakeProofs.map(strapObj => {
+                let obj = getObjectFields(strapObj);
+                return {
+                    id: obj?.id.id,
+                    type: strapObj.data?.type,
+                    strap_address: obj?.strap_address,
+                };
+            }));
             // Loop bottles
             for (const bottle of bottleIdList) {
                 const token = bottle.name ?? "";
-                const addresses = [address, ...strapIds.filter(t => t.type?.includes(COINS_TYPE_LIST[token])).map(t => t.id)];
+                const bottleStrapIds = strapIds.filter(t => t.type?.includes(`<${COINS_TYPE_LIST[token]}`));
+                const addresses = [address, ...bottleStrapIds.map(t => t.strap_address)];
                 for (const _address of addresses) {
                     await this.client
                         .getDynamicFieldObject({
@@ -794,7 +849,7 @@ export class BucketClient {
                                 token,
                                 collateralAmount: bottleInfoFields.value.fields.value.fields.collateral_amount,
                                 buckAmount: bottleInfoFields.value.fields.value.fields.buck_amount,
-                                strapId: address != _address ? _address : undefined,
+                                strapId: bottleStrapIds.find(t => t.strap_address == _address)?.id,
                             });
                         }
                         else {
@@ -802,7 +857,7 @@ export class BucketClient {
                                 parentId: bottle.surplus_id,
                                 name: {
                                     type: "address",
-                                    value: address,
+                                    value: _address,
                                 }
                             });
                             const surplusBottleFields = getObjectFields(surplusBottleInfo);
@@ -812,7 +867,7 @@ export class BucketClient {
                                     token,
                                     collateralAmount,
                                     buckAmount: 0,
-                                    strapId: address != _address ? address : undefined,
+                                    strapId: bottleStrapIds.find(t => t.strap_address == _address)?.id,
                                 });
                             }
                         }
@@ -1096,19 +1151,19 @@ export class BucketClient {
                 prices['CETUS'] = price;
             }
             else if (objectNameList[index] == 'eth_usdt') {
-                prices['WETH'] = prices['USDT'] * price;
+                prices['WETH'] = (prices['USDT'] ?? 1) * price;
             }
             else if (objectNameList[index] == 'sui_usdt') {
-                prices['SUI'] = prices['USDT'] * price;
+                prices['SUI'] = (prices['USDT'] ?? 1) * price;
             }
             else if (objectNameList[index] == 'vsui_sui') {
-                prices['vSUI'] = prices['SUI'] * price;
+                prices['vSUI'] = (prices['SUI'] ?? 1) * price;
             }
             else if (objectNameList[index] == 'hasui_sui') {
-                prices['haSUI'] = prices['SUI'] * price;
+                prices['haSUI'] = (prices['SUI'] ?? 1) * price;
             }
             else if (objectNameList[index] == 'afsui_sui') {
-                prices['afSUI'] = prices['SUI'] * price;
+                prices['afSUI'] = (prices['SUI'] ?? 1) * price;
             }
         });
         return prices;
@@ -1140,9 +1195,9 @@ export class BucketClient {
             if (isUpdateOracle) {
                 this.updateSupraOracle(tx, token);
             }
-            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, insertionPlace ? insertionPlace : (strapId ? strapId : recipient), strapId);
+            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, insertionPlace ? insertionPlace : (strapId ? (strapId === "new" ? undefined : strapId) : recipient), strapId);
             if (borrowRet) {
-                if (strapId == 'new') {
+                if (strapId === 'new') {
                     const [strap, buckOut] = borrowRet;
                     if (strap && buckOut) {
                         const buckCoinBalance = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckOut);

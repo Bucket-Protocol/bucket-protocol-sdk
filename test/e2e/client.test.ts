@@ -97,8 +97,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
     });
     */
 
-    it('tests getUserBottle() function', async () => {
-        const bottles = await buck.getUserBottles("0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc");
+    it('tests getFountain() function', async () => {
+        const bottles = await buck.getAllStakeProofFountains();
         console.log(bottles)
         expect(bottles).toBeDefined()
     }, {

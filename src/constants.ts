@@ -1,5 +1,6 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
+import { ObjectType, SharedObjectRef } from "./objects/objectTypes";
 import { COIN } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
@@ -257,3 +258,26 @@ export const KRIYA_FOUNTAIN_PACKAGE_ID =
   "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
 
 export const STRAP_ID = `0xd9162764da404339384fe40487499dc867c3f1fa3eb870381c41a8b41458b0e5::strap::BottleStrap`;
+
+
+export const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef>> = {
+  afSUI: {
+    objectId: "0xcfc2678c5ba0d8f57dc4984b6875988a92d34c55a3bdc47c593710931d128e68",
+    initialSharedVersion: 77035444,
+    mutable: true,
+  },
+  vSUI: {
+    objectId: "0x1f7cc70940fa415fb1af862642ff9791d4376453496d28b95eea01604dc5291f",
+    initialSharedVersion: 77035445,
+    mutable: true,
+  },
+  haSUI: {
+    objectId: "0x07df6066e0a92bfb61f54f0a65f765030c8624849916eed9afbd634840082f5e",
+    initialSharedVersion: 77035446,
+    mutable: true,
+  }
+};
+
+export const STRAP_FOUNTAIN_PACKAGE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
+
+export const STAKE_PROOF_ID = `0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59::fountain::StakeProof`;

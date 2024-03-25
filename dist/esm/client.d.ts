@@ -1,6 +1,6 @@
 import { SuiObjectResponse } from "@mysten/sui.js/client";
 import { TransactionArgument, TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
-import { BucketConstants, PaginatedBottleSummary, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, TvlList, FountainInfo, UserBottleInfo } from "./types";
+import { BucketConstants, PaginatedBottleSummary, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, TvlList, FountainInfo, UserBottleInfo, StakeProofFountainInfo, StakeProofFountainList } from "./types";
 export declare class BucketClient {
     network: string;
     owner: string;
@@ -15,7 +15,7 @@ export declare class BucketClient {
     withdrawFromTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
     claimFromTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
     claimBkt(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
-    borrow(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, bucketOutputAmount: number, insertionPlace?: string, strapId?: string | "new" | TransactionArgument): TransactionResult;
+    borrow(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, bucketOutputAmount: number, insertionPlace?: string, strapId?: string | TransactionArgument): TransactionResult;
     topUp(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, forAddress: string, insertionPlace?: string): void;
     withdraw(tx: TransactionBlock, assetType: string, collateralAmount: string, insertionPlace?: string, strapId?: string | TransactionArgument): TransactionResult;
     repay(tx: TransactionBlock, assetType: string, buckInput: TransactionResult, strapId?: string | TransactionArgument): TransactionResult;
@@ -36,6 +36,8 @@ export declare class BucketClient {
     getAllFountains(): Promise<FountainList>;
     getFountain(lpRegistryId: string): Promise<FountainInfo>;
     getPsmTVL(): Promise<TvlList>;
+    getAllStakeProofFountains(): Promise<StakeProofFountainList>;
+    getStakeProofFountain(fountainId: string): Promise<StakeProofFountainInfo>;
     getUserBottles(address: string): Promise<UserBottleInfo[]>;
     getUserTanks(address: string): Promise<UserTankList>;
     getUserTankBUCK(tankType: string, tokens: SuiObjectResponse[]): Promise<number>;

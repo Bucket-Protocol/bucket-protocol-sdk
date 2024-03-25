@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.objectToFountain = void 0;
+exports.objectToStakeProofFountain = exports.objectToFountain = void 0;
 const constants_1 = require("../constants");
 const objectTypes_1 = require("../objects/objectTypes");
 function objectToFountain(res) {
@@ -20,4 +20,18 @@ function objectToFountain(res) {
     };
 }
 exports.objectToFountain = objectToFountain;
+function objectToStakeProofFountain(res) {
+    const fields = (0, objectTypes_1.getObjectFields)(res);
+    return {
+        id: res.data?.objectId ?? "",
+        flowAmount: Number(fields?.flow_amount ?? 0),
+        flowInterval: Number(fields?.flow_interval ?? 1),
+        sourceBalance: Number(fields?.source ?? 0),
+        poolBalance: Number(fields?.pool ?? 0),
+        totalDebtAmount: Number(fields?.total_debt_amount ?? 0),
+        cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
+        latestReleaseTime: Number(fields?.latest_release_time ?? 0),
+    };
+}
+exports.objectToStakeProofFountain = objectToStakeProofFountain;
 //# sourceMappingURL=convert.js.map

@@ -16,4 +16,17 @@ export function objectToFountain(res) {
         latestReleaseTime: Number(fields?.latest_release_time ?? 0),
     };
 }
+export function objectToStakeProofFountain(res) {
+    const fields = getObjectFields(res);
+    return {
+        id: res.data?.objectId ?? "",
+        flowAmount: Number(fields?.flow_amount ?? 0),
+        flowInterval: Number(fields?.flow_interval ?? 1),
+        sourceBalance: Number(fields?.source ?? 0),
+        poolBalance: Number(fields?.pool ?? 0),
+        totalDebtAmount: Number(fields?.total_debt_amount ?? 0),
+        cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
+        latestReleaseTime: Number(fields?.latest_release_time ?? 0),
+    };
+}
 //# sourceMappingURL=convert.js.map

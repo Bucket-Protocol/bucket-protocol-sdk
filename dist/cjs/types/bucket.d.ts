@@ -54,6 +54,17 @@ export type FountainInfo = {
     latestReleaseTime: number;
 };
 export type FountainList = Record<string, FountainInfo>;
+export type StakeProofFountainInfo = {
+    id: string;
+    sourceBalance: number;
+    flowAmount: number;
+    flowInterval: number;
+    poolBalance: number;
+    totalDebtAmount: number;
+    cumulativeUnit: number;
+    latestReleaseTime: number;
+};
+export type StakeProofFountainList = Record<string, StakeProofFountainInfo>;
 export type TvlList = Record<string, number>;
 export type ContributorToken = {
     data: {
