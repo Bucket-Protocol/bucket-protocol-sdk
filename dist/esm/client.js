@@ -4,7 +4,7 @@ import { TransactionBlock } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
-import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS } from "./constants";
+import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID } from "./constants";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
 import { objectToFountain, objectToStakeProofFountain } from "./utils/convert";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -725,6 +725,7 @@ export class BucketClient {
          * @description Get all stake proof list from afSUI, haSUI, vSUI fountains
          * @returns Promise<StakeProofFountainInfo>
          */
+        const fountainIds = Object.keys(STRAP_FOUNTAIN_IDS);
         const objectIdList = Object.values(STRAP_FOUNTAIN_IDS).map(t => t.objectId);
         const response = await this.client.multiGetObjects({
             ids: objectIdList,
@@ -734,10 +735,11 @@ export class BucketClient {
             },
         });
         const fountains = {};
-        response.map((res) => {
-            const fountain = objectToStakeProofFountain(res);
-            fountains[fountain.id] = fountain;
-        });
+        for (const id in response) {
+            const fountain = objectToStakeProofFountain(response[id]);
+            const coin = fountainIds[id];
+            fountains[coin] = fountain;
+        }
         return fountains;
     }
     async getStakeProofFountain(fountainId) {
@@ -1687,6 +1689,67 @@ export class BucketClient {
                 ],
             });
         }
+        return true;
+    }
+    async getStrapStakeTx(tx, collateralType, strapId, address) {
+        /**
+         * @description Get transaction for stake token to strap fountain
+         * @param collateralType
+         * @param strapId
+         * @param address
+         * @returns Promise<boolean>
+         */
+        const proof = tx.moveCall({
+            target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::stake”`,
+            typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
+            arguments: [
+                tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
+                tx.sharedObjectRef(PROTOCOL_OBJECT),
+                tx.sharedObjectRef(CLOCK_OBJECT),
+                tx.object(strapId),
+            ]
+        });
+        tx.transferObjects([proof], tx.pure.address(address));
+        return true;
+    }
+    async getStrapUnstakeTx(tx, collateralType, strapId, address) {
+        /**
+         * @description Get transaction for unstake token from strap fountain
+         * @param collateralType
+         * @param strapId
+         * @param address
+         * @returns Promise<boolean>
+         */
+        const proof = tx.moveCall({
+            target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::unstake”`,
+            typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
+            arguments: [
+                tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
+                tx.sharedObjectRef(CLOCK_OBJECT),
+                tx.object(strapId),
+            ]
+        });
+        tx.transferObjects([proof], tx.pure.address(address));
+        return true;
+    }
+    async getStrapClaimTx(tx, collateralType, strapId, address) {
+        /**
+         * @description Get transaction for claim token from strap fountain
+         * @param collateralType
+         * @param strapId
+         * @param address
+         * @returns Promise<boolean>
+         */
+        const reward = tx.moveCall({
+            target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::claim`,
+            typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
+            arguments: [
+                tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
+                tx.sharedObjectRef(CLOCK_OBJECT),
+                tx.object(strapId),
+            ]
+        });
+        tx.transferObjects([reward], tx.pure.address(address));
         return true;
     }
 }

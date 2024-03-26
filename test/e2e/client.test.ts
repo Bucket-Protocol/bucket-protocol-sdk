@@ -99,6 +99,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     it('tests getFountain() function', async () => {
         const stakeProofFountains = await buck.getAllStakeProofFountains();
+        console.log(stakeProofFountains);
         expect(stakeProofFountains).toBeDefined()
     }, {
         timeout: 60_000

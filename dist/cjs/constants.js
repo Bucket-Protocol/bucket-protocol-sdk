@@ -205,5 +205,5 @@ exports.STRAP_FOUNTAIN_IDS = {
     }
 };
 exports.STRAP_FOUNTAIN_PACKAGE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
-exports.STAKE_PROOF_ID = `0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59::fountain::StakeProof`;
+exports.STAKE_PROOF_ID = `${exports.STRAP_FOUNTAIN_PACKAGE_ID}::fountain::StakeProof`;
 //# sourceMappingURL=constants.js.map
