@@ -1700,13 +1700,13 @@ export class BucketClient {
          * @returns Promise<boolean>
          */
         const proof = tx.moveCall({
-            target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::stake”`,
+            target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::stake`,
             typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
             arguments: [
                 tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
                 tx.sharedObjectRef(PROTOCOL_OBJECT),
                 tx.sharedObjectRef(CLOCK_OBJECT),
-                tx.object(strapId),
+                typeof strapId === "string" ? tx.object(strapId) : strapId,
             ]
         });
         tx.transferObjects([proof], tx.pure.address(address));
@@ -1721,12 +1721,12 @@ export class BucketClient {
          * @returns Promise<boolean>
          */
         const proof = tx.moveCall({
-            target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::unstake”`,
+            target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::unstake`,
             typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
             arguments: [
                 tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
                 tx.sharedObjectRef(CLOCK_OBJECT),
-                tx.object(strapId),
+                typeof strapId === "string" ? tx.object(strapId) : strapId,
             ]
         });
         tx.transferObjects([proof], tx.pure.address(address));
@@ -1746,7 +1746,7 @@ export class BucketClient {
             arguments: [
                 tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
                 tx.sharedObjectRef(CLOCK_OBJECT),
-                tx.object(strapId),
+                typeof strapId === "string" ? tx.object(strapId) : strapId,
             ]
         });
         tx.transferObjects([reward], tx.pure.address(address));

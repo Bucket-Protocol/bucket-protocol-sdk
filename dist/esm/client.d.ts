@@ -61,8 +61,8 @@ export declare class BucketClient {
     getAfClaimTx(tx: TransactionBlock, fountainId: string, lpProofs: UserLpProof[]): Promise<boolean>;
     getCetusClaimTx(tx: TransactionBlock, fountainId: string, lpProofs: UserLpProof[], walletAddress: string): Promise<boolean>;
     getKriyaClaimTx(tx: TransactionBlock, fountainId: string, lpProofs: UserLpProof[]): Promise<boolean>;
-    getStrapStakeTx(tx: TransactionBlock, collateralType: string, strapId: string, address: string): Promise<boolean>;
-    getStrapUnstakeTx(tx: TransactionBlock, collateralType: string, strapId: string, address: string): Promise<boolean>;
-    getStrapClaimTx(tx: TransactionBlock, collateralType: string, strapId: string, address: string): Promise<boolean>;
+    getStrapStakeTx(tx: TransactionBlock, collateralType: string, strapId: string | TransactionArgument, address: string): Promise<boolean>;
+    getStrapUnstakeTx(tx: TransactionBlock, collateralType: string, strapId: string | TransactionArgument, address: string): Promise<boolean>;
+    getStrapClaimTx(tx: TransactionBlock, collateralType: string, strapId: string | TransactionArgument, address: string): Promise<boolean>;
 }
 //# sourceMappingURL=client.d.ts.map
