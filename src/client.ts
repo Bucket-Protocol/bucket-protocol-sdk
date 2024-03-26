@@ -2113,12 +2113,16 @@ export class BucketClient {
      * @param address
      * @returns Promise<boolean>
      */
+    const coin = getCoinSymbol(collateralType);
+    if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+      return false;
+    }
 
     const proof = tx.moveCall({
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::stake`,
       typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
+        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin]),
         tx.sharedObjectRef(PROTOCOL_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
@@ -2142,12 +2146,16 @@ export class BucketClient {
      * @param address
      * @returns Promise<boolean>
      */
+    const coin = getCoinSymbol(collateralType);
+    if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+      return false;
+    }
 
     const proof = tx.moveCall({
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::unstake`,
       typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
+        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin]),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ]
@@ -2170,12 +2178,16 @@ export class BucketClient {
      * @param address
      * @returns Promise<boolean>
      */
+    const coin = getCoinSymbol(collateralType);
+    if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+      return false;
+    }
 
     const reward = tx.moveCall({
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::claim`,
       typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[collateralType]),
+        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin]),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ]

@@ -1702,11 +1702,15 @@ class BucketClient {
          * @param address
          * @returns Promise<boolean>
          */
+        const coin = (0, utils_2.getCoinSymbol)(collateralType);
+        if (!coin || constants_1.STRAP_FOUNTAIN_IDS[coin]) {
+            return false;
+        }
         const proof = tx.moveCall({
             target: `${constants_1.STRAP_FOUNTAIN_PACKAGE_ID}::fountain::stake`,
             typeArguments: [collateralType, constants_1.COINS_TYPE_LIST.SUI],
             arguments: [
-                tx.sharedObjectRef(constants_1.STRAP_FOUNTAIN_IDS[collateralType]),
+                tx.sharedObjectRef(constants_1.STRAP_FOUNTAIN_IDS[coin]),
                 tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                 tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 typeof strapId === "string" ? tx.object(strapId) : strapId,
@@ -1723,11 +1727,15 @@ class BucketClient {
          * @param address
          * @returns Promise<boolean>
          */
+        const coin = (0, utils_2.getCoinSymbol)(collateralType);
+        if (!coin || constants_1.STRAP_FOUNTAIN_IDS[coin]) {
+            return false;
+        }
         const proof = tx.moveCall({
             target: `${constants_1.STRAP_FOUNTAIN_PACKAGE_ID}::fountain::unstake`,
             typeArguments: [collateralType, constants_1.COINS_TYPE_LIST.SUI],
             arguments: [
-                tx.sharedObjectRef(constants_1.STRAP_FOUNTAIN_IDS[collateralType]),
+                tx.sharedObjectRef(constants_1.STRAP_FOUNTAIN_IDS[coin]),
                 tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 typeof strapId === "string" ? tx.object(strapId) : strapId,
             ]
@@ -1743,11 +1751,15 @@ class BucketClient {
          * @param address
          * @returns Promise<boolean>
          */
+        const coin = (0, utils_2.getCoinSymbol)(collateralType);
+        if (!coin || constants_1.STRAP_FOUNTAIN_IDS[coin]) {
+            return false;
+        }
         const reward = tx.moveCall({
             target: `${constants_1.STRAP_FOUNTAIN_PACKAGE_ID}::fountain::claim`,
             typeArguments: [collateralType, constants_1.COINS_TYPE_LIST.SUI],
             arguments: [
-                tx.sharedObjectRef(constants_1.STRAP_FOUNTAIN_IDS[collateralType]),
+                tx.sharedObjectRef(constants_1.STRAP_FOUNTAIN_IDS[coin]),
                 tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 typeof strapId === "string" ? tx.object(strapId) : strapId,
             ]
