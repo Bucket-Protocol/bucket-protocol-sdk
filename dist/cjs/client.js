@@ -196,7 +196,7 @@ class BucketClient {
                     tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                     tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
                     typeof strapId === "string" ? tx.pure(strapId) : strapId,
-                    tx.pure(constants_1.CLOCK_OBJECT),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                     tx.pure(collateralAmount, "u64"),
                     tx.pure(insertionPlace ? [insertionPlace] : []),
                 ],
@@ -209,7 +209,7 @@ class BucketClient {
                 arguments: [
                     tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                     tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
-                    tx.pure(constants_1.CLOCK_OBJECT),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                     tx.pure(collateralAmount, "u64"),
                     tx.pure(insertionPlace ? [insertionPlace] : []),
                 ],
@@ -231,7 +231,7 @@ class BucketClient {
                     tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                     typeof strapId === "string" ? tx.object(strapId) : strapId,
                     buckInput,
-                    tx.pure(constants_1.CLOCK_OBJECT),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 ],
             });
         }
@@ -242,7 +242,7 @@ class BucketClient {
                 arguments: [
                     tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                     buckInput,
-                    tx.pure(constants_1.CLOCK_OBJECT),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 ],
             });
         }
@@ -261,7 +261,7 @@ class BucketClient {
             arguments: [
                 tx.sharedObjectRef(constants_1.PROTOCOL_OBJECT),
                 tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
-                tx.pure(constants_1.CLOCK_OBJECT),
+                tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                 buckInput,
                 tx.pure(insertionPlace ? [insertionPlace] : []),
             ],
@@ -835,7 +835,7 @@ class BucketClient {
             }));
             // Loop bottles
             for (const bottle of bottleIdList) {
-                const token = bottle.name ?? "";
+                const token = bottle.name;
                 const bottleStrapIds = strapIds.filter(t => t.type?.includes(`<${constants_1.COINS_TYPE_LIST[token]}`));
                 const addresses = [address, ...bottleStrapIds.map(t => t.strap_address)];
                 for (const _address of addresses) {

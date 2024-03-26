@@ -193,7 +193,7 @@ export class BucketClient {
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
                     tx.sharedObjectRef(ORACLE_OBJECT),
                     typeof strapId === "string" ? tx.pure(strapId) : strapId,
-                    tx.pure(CLOCK_OBJECT),
+                    tx.sharedObjectRef(CLOCK_OBJECT),
                     tx.pure(collateralAmount, "u64"),
                     tx.pure(insertionPlace ? [insertionPlace] : []),
                 ],
@@ -206,7 +206,7 @@ export class BucketClient {
                 arguments: [
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
                     tx.sharedObjectRef(ORACLE_OBJECT),
-                    tx.pure(CLOCK_OBJECT),
+                    tx.sharedObjectRef(CLOCK_OBJECT),
                     tx.pure(collateralAmount, "u64"),
                     tx.pure(insertionPlace ? [insertionPlace] : []),
                 ],
@@ -228,7 +228,7 @@ export class BucketClient {
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
                     typeof strapId === "string" ? tx.object(strapId) : strapId,
                     buckInput,
-                    tx.pure(CLOCK_OBJECT),
+                    tx.sharedObjectRef(CLOCK_OBJECT),
                 ],
             });
         }
@@ -239,7 +239,7 @@ export class BucketClient {
                 arguments: [
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
                     buckInput,
-                    tx.pure(CLOCK_OBJECT),
+                    tx.sharedObjectRef(CLOCK_OBJECT),
                 ],
             });
         }
@@ -258,7 +258,7 @@ export class BucketClient {
             arguments: [
                 tx.sharedObjectRef(PROTOCOL_OBJECT),
                 tx.sharedObjectRef(ORACLE_OBJECT),
-                tx.pure(CLOCK_OBJECT),
+                tx.sharedObjectRef(CLOCK_OBJECT),
                 buckInput,
                 tx.pure(insertionPlace ? [insertionPlace] : []),
             ],
@@ -832,7 +832,7 @@ export class BucketClient {
             }));
             // Loop bottles
             for (const bottle of bottleIdList) {
-                const token = bottle.name ?? "";
+                const token = bottle.name;
                 const bottleStrapIds = strapIds.filter(t => t.type?.includes(`<${COINS_TYPE_LIST[token]}`));
                 const addresses = [address, ...bottleStrapIds.map(t => t.strap_address)];
                 for (const _address of addresses) {

@@ -22,7 +22,7 @@ export type BucketInfo = {
 export type BucketList = Partial<Record<COIN, BucketInfo>>;
 
 export type BottleInfo = {
-  token: string;
+  token: COIN;
   collateralAmount: number;
   buckAmount: number;
 };
