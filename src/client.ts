@@ -1430,7 +1430,7 @@ export class BucketClient {
     isUpdateOracle: boolean,
     insertionPlace?: string,
     strapId?: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Borrow
      * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -1440,16 +1440,16 @@ export class BucketClient {
      * @param isNewBottle
      * @param isUpdateOracle
      * @param insertionPlace Optional
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const token = getCoinSymbol(collateralType);
     if (!token) {
-      return tx;
+      return false;
     }
 
     const [collateralInput] = await getInputCoins(tx, this.client, recipient, collateralType, collateralAmount);
-    if (!collateralInput) return tx;
+    if (!collateralInput) return false;
 
     const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
 
@@ -1484,7 +1484,7 @@ export class BucketClient {
       }
     };
 
-    return tx;
+    return true;
   }
 
   async getRepayTx(
@@ -1495,19 +1495,19 @@ export class BucketClient {
     walletAddress: string,
     insertionPlace?: string,
     strapId?: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Repay
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param repayAmount
      * @param withdrawAmount
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const token = getCoinSymbol(collateralType);
     if (!token) {
-      return tx;
+      return false;
     }
 
     let buckCoinInput;
@@ -1518,7 +1518,7 @@ export class BucketClient {
       buckCoinInput = await getMainCoin(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK);
     }
 
-    if (!buckCoinInput) return tx;
+    if (!buckCoinInput) return false;
 
     this.updateSupraOracle(tx, token);
 
@@ -1580,24 +1580,24 @@ export class BucketClient {
       }
     }
 
-    return tx;
+    return true;
   }
 
   async getSurplusWithdrawTx(
     tx: TransactionBlock,
     collateralType: string,
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Withdraw
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const token = getCoinSymbol(collateralType);
     if (!token) {
-      return tx;
+      return false;
     }
 
     const surplusCollateral = tx.moveCall({
@@ -1611,7 +1611,7 @@ export class BucketClient {
     const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
     tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
 
-    return tx;
+    return true;
   }
 
   async getPsmTx(
@@ -1620,14 +1620,14 @@ export class BucketClient {
     psmAmount: number,
     psmSwith: boolean,
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for PSM
      * @param psmCoin Asset , e.g "0x2::sui::SUI"
      * @param psmAmount
      * @param psmSwith stable coin -> BUCK or not
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const inputCoinType = psmSwith ? COINS_TYPE_LIST.BUCK : COINS_TYPE_LIST[psmCoin as COIN];
@@ -1663,7 +1663,7 @@ export class BucketClient {
       tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
     }
 
-    return tx;
+    return true;
   }
 
   async getRedeemTx(
@@ -1672,19 +1672,19 @@ export class BucketClient {
     redeemAmount: number,
     walletAddress: string,
     insertionPlace?: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for Redeem
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param redeemAmount
      * @param walletAddress
      * @param insertionPlace  Optional
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const token = getCoinSymbol(collateralType) ?? "";
     const [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, redeemAmount);
-    if (!buckCoinInput) return tx;
+    if (!buckCoinInput) return false;
 
     this.updateSupraOracle(tx, token);
 
@@ -1700,7 +1700,7 @@ export class BucketClient {
       ],
     });
 
-    return tx;
+    return true;
   }
 
   async getTankDepositTx(
@@ -1708,17 +1708,17 @@ export class BucketClient {
     tankType: string,
     depositAmount: number,
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for deposit token to tank
      * @param tankType Asset , e.g "0x2::sui::SUI"
      * @param depositAmount
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, depositAmount);
-    if (!buckCoinInput) return tx;
+    if (!buckCoinInput) return false;
 
     tx.moveCall({
       target: `${BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::deposit`,
@@ -1729,7 +1729,7 @@ export class BucketClient {
       ],
     });
 
-    return tx;
+    return true;
   }
 
   async getTankWithdrawTx(
@@ -1737,18 +1737,18 @@ export class BucketClient {
     tankType: string,
     withdrawAmount: number,
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for withdraw token from tank
      * @param tankType Asset , e.g "0x2::sui::SUI"
      * @param withdrawAmount
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const token = getCoinSymbol(tankType);
     if (!token) {
-      return tx;
+      return false;
     }
 
     const { data: contributorTokens } = await this.client.getOwnedObjects({
@@ -1786,24 +1786,24 @@ export class BucketClient {
       ],
     });
 
-    return tx;
+    return true;
   }
 
   async getTankClaimTx(
     tx: TransactionBlock,
     tankType: string,
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for claim token from tank
      * @param tankType Asset , e.g "0x2::sui::SUI"
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const token = getCoinSymbol(tankType);
     if (!token) {
-      return tx;
+      return false;
     }
 
     const { data: contributorTokens } = await this.client.getOwnedObjects({
@@ -1822,7 +1822,7 @@ export class BucketClient {
         version: token.data?.version ?? "",
       })
     );
-    if (!tokens || tokens.length === 0) return tx;
+    if (!tokens || tokens.length === 0) return false;
 
     for (const token of tokens) {
       tx.moveCall({
@@ -1836,7 +1836,7 @@ export class BucketClient {
       });
     }
 
-    return tx;
+    return true;
   }
 
   async getStakeUsdcTx(
@@ -1844,17 +1844,17 @@ export class BucketClient {
     isAf: boolean,
     stakeAmount: number,
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for stake token to pool
      * @param isAf Boolean value for Aftermath or not
      * @param stakeAmount
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const [stakeCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.USDC, stakeAmount);
-    if (!stakeCoinInput) return tx;
+    if (!stakeCoinInput) return false;
 
     if (isAf) {
       tx.moveCall({
@@ -1893,7 +1893,7 @@ export class BucketClient {
       });
     }
 
-    return tx;
+    return true;
   }
 
   async getAfUnstakeTx(
@@ -1901,13 +1901,13 @@ export class BucketClient {
     fountainId: string,
     lpProof: UserLpProof,
     recipient: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for unstake token from AF pool
      * @param fountainId
      * @param lpProof UserLpProof object
      * @param recipient Recipient address
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
@@ -1939,19 +1939,19 @@ export class BucketClient {
 
     tx.transferObjects([buckCoin, usdcCoin, rewardCoin], tx.pure(recipient, "address"));
 
-    return tx;
+    return true;
   }
 
   async getKriyaUnstakeTx(
     tx: TransactionBlock,
     fountainId: string,
     lpProof: UserLpProof,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for unstake token from Kriya pool
      * @param fountainId
      * @param lpProof UserLpProof object
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     tx.moveCall({
@@ -1964,7 +1964,7 @@ export class BucketClient {
       ]
     });
 
-    return tx;
+    return true;
   }
 
   async getCetusUnstakeTx(
@@ -1972,13 +1972,13 @@ export class BucketClient {
     fountainId: string,
     lpProof: UserLpProof,
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for unstake token from Cetus pool
      * @param fountainId
      * @param lpProof UserLpProof object
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     const [bucketusOut, suiReward] = tx.moveCall({
@@ -2009,19 +2009,19 @@ export class BucketClient {
 
     tx.transferObjects([buckCoin, usdcCoin, suiCoin], tx.pure(walletAddress, "address"));
 
-    return tx;
+    return true;
   }
 
   async getAfClaimTx(
     tx: TransactionBlock,
     fountainId: string,
     lpProofs: UserLpProof[],
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for claim token from AF pool
      * @param fountainId
      * @param lpProof UserLpProof object
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     for (const lpProof of lpProofs) {
@@ -2038,7 +2038,7 @@ export class BucketClient {
       });
     }
 
-    return tx;
+    return true;
   }
 
   async getCetusClaimTx(
@@ -2046,13 +2046,13 @@ export class BucketClient {
     fountainId: string,
     lpProofs: UserLpProof[],
     walletAddress: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for claim token from Cetus pool
      * @param fountainId
      * @param lpProofs UserLpProof objects array
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     for (const lpProof of lpProofs) {
@@ -2067,20 +2067,20 @@ export class BucketClient {
       });
     }
 
-    return tx;
+    return true;
   }
 
   async getKriyaClaimTx(
     tx: TransactionBlock,
     fountainId: string,
     lpProofs: UserLpProof[],
-  ): Promise<TransactionBlock> {
+  ): Promise<boolean> {
     /**
      * @description Get transaction for claim token from Kriya pool
      * @param fountainId
      * @param lpProofs UserLpProof object array
      * @param walletAddress
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<boolean>
      */
 
     for (const lpProof of lpProofs) {
@@ -2095,7 +2095,7 @@ export class BucketClient {
       });
     }
 
-    return tx;
+    return true;
   }
 
 }
