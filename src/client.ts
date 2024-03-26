@@ -2114,7 +2114,7 @@ export class BucketClient {
      * @returns Promise<boolean>
      */
     const coin = getCoinSymbol(collateralType);
-    if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+    if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
       return false;
     }
 
@@ -2147,7 +2147,7 @@ export class BucketClient {
      * @returns Promise<boolean>
      */
     const coin = getCoinSymbol(collateralType);
-    if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+    if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
       return false;
     }
 
@@ -2179,7 +2179,7 @@ export class BucketClient {
      * @returns Promise<boolean>
      */
     const coin = getCoinSymbol(collateralType);
-    if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+    if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
       return false;
     }
 

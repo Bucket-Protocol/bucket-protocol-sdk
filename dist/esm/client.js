@@ -1700,7 +1700,7 @@ export class BucketClient {
          * @returns Promise<boolean>
          */
         const coin = getCoinSymbol(collateralType);
-        if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+        if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
             return false;
         }
         const proof = tx.moveCall({
@@ -1725,7 +1725,7 @@ export class BucketClient {
          * @returns Promise<boolean>
          */
         const coin = getCoinSymbol(collateralType);
-        if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+        if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
             return false;
         }
         const proof = tx.moveCall({
@@ -1749,7 +1749,7 @@ export class BucketClient {
          * @returns Promise<boolean>
          */
         const coin = getCoinSymbol(collateralType);
-        if (!coin || STRAP_FOUNTAIN_IDS[coin]) {
+        if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
             return false;
         }
         const reward = tx.moveCall({
