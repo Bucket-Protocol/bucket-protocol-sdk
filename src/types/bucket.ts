@@ -65,7 +65,7 @@ export type FountainInfo = {
 
 export type FountainList = Record<string, FountainInfo>;
 
-export type StakeProofFountainInfo = {
+export type StrapFountainInfo = {
   id: string;
   sourceBalance: number;
   flowAmount: number;
@@ -76,7 +76,7 @@ export type StakeProofFountainInfo = {
   latestReleaseTime: number;
 };
 
-export type StakeProofFountainList = Record<string, StakeProofFountainInfo>;
+export type StrapFountainList = Record<string, StrapFountainInfo>;
 
 export type TvlList = Record<string, number>;
 

@@ -6,7 +6,7 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs";
 import { getObjectFields } from "./objects/objectTypes";
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID } from "./constants";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
-import { objectToFountain, objectToStakeProofFountain } from "./utils/convert";
+import { objectToFountain, objectToStrapFountain } from "./utils/convert";
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 export class BucketClient {
     network;
@@ -720,10 +720,10 @@ export class BucketClient {
         return tvlList;
     }
     ;
-    async getAllStakeProofFountains() {
+    async getAllStrapFountains() {
         /**
          * @description Get all stake proof list from afSUI, haSUI, vSUI fountains
-         * @returns Promise<StakeProofFountainInfo>
+         * @returns Promise<StrapFountainList>
          */
         const fountainIds = Object.keys(STRAP_FOUNTAIN_IDS);
         const objectIdList = Object.values(STRAP_FOUNTAIN_IDS).map(t => t.objectId);
@@ -736,7 +736,7 @@ export class BucketClient {
         });
         const fountains = {};
         for (const id in response) {
-            const fountain = objectToStakeProofFountain(response[id]);
+            const fountain = objectToStrapFountain(response[id]);
             const coin = fountainIds[id];
             fountains[coin] = fountain;
         }
@@ -746,7 +746,7 @@ export class BucketClient {
         /**
          * @description Get fountain information from id
          * @param lpRegistryId Fountain lp registry id
-         * @returns Promise<StakeProofFountainInfo>
+         * @returns Promise<StrapFountainInfo>
          */
         const res = await this.client.getObject({
             id: fountainId,
@@ -754,7 +754,7 @@ export class BucketClient {
                 showContent: true,
             }
         });
-        return objectToStakeProofFountain(res);
+        return objectToStrapFountain(res);
     }
     async getUserBottles(address) {
         /**

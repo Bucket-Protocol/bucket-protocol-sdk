@@ -1,4 +1,4 @@
-import { FountainInfo, StakeProofFountainInfo } from "src/types";
+import { FountainInfo, StrapFountainInfo } from "src/types";
 import { KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID } from "../constants";
 import { SuiObjectResponse, getObjectFields } from "../objects/objectTypes";
 
@@ -20,7 +20,7 @@ export function objectToFountain(res: SuiObjectResponse): FountainInfo {
     }
 }
 
-export function objectToStakeProofFountain(res: SuiObjectResponse): StakeProofFountainInfo {
+export function objectToStrapFountain(res: SuiObjectResponse): StrapFountainInfo {
     const fields = getObjectFields(res);
 
     return {

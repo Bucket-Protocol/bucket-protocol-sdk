@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.objectToStakeProofFountain = exports.objectToFountain = void 0;
+exports.objectToStrapFountain = exports.objectToFountain = void 0;
 const constants_1 = require("../constants");
 const objectTypes_1 = require("../objects/objectTypes");
 function objectToFountain(res) {
@@ -20,7 +20,7 @@ function objectToFountain(res) {
     };
 }
 exports.objectToFountain = objectToFountain;
-function objectToStakeProofFountain(res) {
+function objectToStrapFountain(res) {
     const fields = (0, objectTypes_1.getObjectFields)(res);
     return {
         id: res.data?.objectId ?? "",
@@ -33,5 +33,5 @@ function objectToStakeProofFountain(res) {
         latestReleaseTime: Number(fields?.latest_release_time ?? 0),
     };
 }
-exports.objectToStakeProofFountain = objectToStakeProofFountain;
+exports.objectToStrapFountain = objectToStrapFountain;
 //# sourceMappingURL=convert.js.map

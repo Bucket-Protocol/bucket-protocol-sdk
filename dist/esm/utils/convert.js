@@ -16,7 +16,7 @@ export function objectToFountain(res) {
         latestReleaseTime: Number(fields?.latest_release_time ?? 0),
     };
 }
-export function objectToStakeProofFountain(res) {
+export function objectToStrapFountain(res) {
     const fields = getObjectFields(res);
     return {
         id: res.data?.objectId ?? "",

@@ -723,10 +723,10 @@ class BucketClient {
         return tvlList;
     }
     ;
-    async getAllStakeProofFountains() {
+    async getAllStrapFountains() {
         /**
          * @description Get all stake proof list from afSUI, haSUI, vSUI fountains
-         * @returns Promise<StakeProofFountainInfo>
+         * @returns Promise<StrapFountainList>
          */
         const fountainIds = Object.keys(constants_1.STRAP_FOUNTAIN_IDS);
         const objectIdList = Object.values(constants_1.STRAP_FOUNTAIN_IDS).map(t => t.objectId);
@@ -739,7 +739,7 @@ class BucketClient {
         });
         const fountains = {};
         for (const id in response) {
-            const fountain = (0, convert_1.objectToStakeProofFountain)(response[id]);
+            const fountain = (0, convert_1.objectToStrapFountain)(response[id]);
             const coin = fountainIds[id];
             fountains[coin] = fountain;
         }
@@ -749,7 +749,7 @@ class BucketClient {
         /**
          * @description Get fountain information from id
          * @param lpRegistryId Fountain lp registry id
-         * @returns Promise<StakeProofFountainInfo>
+         * @returns Promise<StrapFountainInfo>
          */
         const res = await this.client.getObject({
             id: fountainId,
@@ -757,7 +757,7 @@ class BucketClient {
                 showContent: true,
             }
         });
-        return (0, convert_1.objectToStakeProofFountain)(res);
+        return (0, convert_1.objectToStrapFountain)(res);
     }
     async getUserBottles(address) {
         /**
