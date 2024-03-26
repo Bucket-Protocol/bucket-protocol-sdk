@@ -28,7 +28,9 @@ export type BottleInfo = {
 };
 
 export type UserBottleInfo = {
-  strapId: string | undefined;
+  strapId?: string;
+  debtAmount?: number;
+  startUnit?: number;
 } & BottleInfo;
 
 export interface BucketConstants {
@@ -67,6 +69,7 @@ export type FountainList = Record<string, FountainInfo>;
 
 export type StrapFountainInfo = {
   id: string;
+  strapId: string;
   sourceBalance: number;
   flowAmount: number;
   flowInterval: number;

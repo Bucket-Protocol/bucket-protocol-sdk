@@ -27,6 +27,7 @@ export function objectToStrapFountain(res) {
         totalDebtAmount: Number(fields?.total_debt_amount ?? 0),
         cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
         latestReleaseTime: Number(fields?.latest_release_time ?? 0),
+        strapId: fields?.strap_table.fields.id.id,
     };
 }
 //# sourceMappingURL=convert.js.map

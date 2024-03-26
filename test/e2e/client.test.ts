@@ -76,14 +76,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
         expect(tvl).toBeDefined;
     });
 
-    it('tests getUserTanks() function', async () => {
-        const tanks = await buck.getUserTanks("0x86050d85ebdafe3bda92c36c8489d46a233f57f103672647062f72f3fe37a46d");
-        console.log(tanks);
-        expect(tanks).toBeDefined()
-    }, {
-        timeout: 1000 * 60
-    });
-
     it('tests findInsertionPlace() function', async () => {
         const owner = await buck.findInsertionPlace(
             `0x44529d74a43073c40963fe42c8d2e51d8a441d480ee105ea0c27f3847433ae21`,
@@ -95,12 +87,20 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 60 * 1000
     });
-    */
 
     it('tests getAllStrapFountains() function', async () => {
         const strapFountains = await buck.getAllStrapFountains();
         console.log(strapFountains);
         expect(strapFountains).toBeDefined()
+    }, {
+        timeout: 60_000
+    });
+    */
+
+    it('tests getUserBottle() function', async () => {
+        const bottles = await buck.getUserBottles("0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc");
+        console.log(bottles)
+        expect(bottles).toBeDefined()
     }, {
         timeout: 60_000
     });

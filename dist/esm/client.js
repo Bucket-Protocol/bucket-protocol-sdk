@@ -835,6 +835,31 @@ export class BucketClient {
                 const token = bottle.name;
                 const bottleStrapIds = strapIds.filter(t => t.type?.includes(`<${COINS_TYPE_LIST[token]}`));
                 const addresses = [address, ...bottleStrapIds.map(t => t.strap_address)];
+                let startUnit = 0;
+                let debtAmount = 0;
+                if (bottleStrapIds.length > 0) {
+                    if ((token == "afSUI"
+                        || token == "vSUI"
+                        || token == "haSUI")
+                        && STRAP_FOUNTAIN_IDS[token]) {
+                        try {
+                            let lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId);
+                            const data = await this.client
+                                .getDynamicFieldObject({
+                                parentId: lstFountain.strapId,
+                                name: {
+                                    type: "address",
+                                    value: bottleStrapIds[0].strap_address,
+                                },
+                            });
+                            const ret = getObjectFields(data);
+                            debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
+                            startUnit = Number(ret?.value.fields.start_unit ?? 0);
+                        }
+                        catch {
+                        }
+                    }
+                }
                 for (const _address of addresses) {
                     await this.client
                         .getDynamicFieldObject({
@@ -852,6 +877,8 @@ export class BucketClient {
                                 collateralAmount: bottleInfoFields.value.fields.value.fields.collateral_amount,
                                 buckAmount: bottleInfoFields.value.fields.value.fields.buck_amount,
                                 strapId: bottleStrapIds.find(t => t.strap_address == _address)?.id,
+                                startUnit,
+                                debtAmount,
                             });
                         }
                         else {

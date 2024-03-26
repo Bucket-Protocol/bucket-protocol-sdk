@@ -23,7 +23,9 @@ export type BottleInfo = {
     buckAmount: number;
 };
 export type UserBottleInfo = {
-    strapId: string | undefined;
+    strapId?: string;
+    debtAmount?: number;
+    startUnit?: number;
 } & BottleInfo;
 export interface BucketConstants {
     feePrecision: string;
@@ -56,6 +58,7 @@ export type FountainInfo = {
 export type FountainList = Record<string, FountainInfo>;
 export type StrapFountainInfo = {
     id: string;
+    strapId: string;
     sourceBalance: number;
     flowAmount: number;
     flowInterval: number;
