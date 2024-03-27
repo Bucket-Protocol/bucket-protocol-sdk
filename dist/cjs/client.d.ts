@@ -48,7 +48,7 @@ export declare class BucketClient {
     }>;
     getBorrowTx(tx: TransactionBlock, collateralType: string, collateralAmount: number, borrowAmount: number, recipient: string, isUpdateOracle: boolean, insertionPlace?: string, strapId?: string): Promise<boolean>;
     getRepayTx(tx: TransactionBlock, collateralType: string, repayAmount: number, withdrawAmount: number, walletAddress: string, insertionPlace?: string, strapId?: string): Promise<boolean>;
-    getSurplusWithdrawTx(tx: TransactionBlock, collateralType: string, walletAddress: string): Promise<boolean>;
+    getSurplusWithdrawTx(tx: TransactionBlock, collateralType: string, walletAddress: string, strapId?: string): Promise<TransactionBlock>;
     getPsmTx(tx: TransactionBlock, psmCoin: string, psmAmount: number, psmSwith: boolean, walletAddress: string): Promise<boolean>;
     getRedeemTx(tx: TransactionBlock, collateralType: string, redeemAmount: number, walletAddress: string, insertionPlace?: string): Promise<boolean>;
     getTankDepositTx(tx: TransactionBlock, tankType: string, depositAmount: number, walletAddress: string): Promise<boolean>;

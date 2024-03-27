@@ -1053,7 +1053,7 @@ export class BucketClient {
                   parentId: lstFountain.strapId,
                   name: {
                     type: "address",
-                    value: bottleStrapIds[0].strap_address,
+                    value: bottleStrapIds[0]?.strap_address,
                   },
                 });
               const ret = getObjectFields(data);
@@ -1615,36 +1615,46 @@ export class BucketClient {
 
     return true;
   }
-
   async getSurplusWithdrawTx(
     tx: TransactionBlock,
     collateralType: string,
     walletAddress: string,
-  ): Promise<boolean> {
+    strapId?: string,
+  ): Promise<TransactionBlock> {
     /**
      * @description Withdraw
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param walletAddress
-     * @returns Promise<boolean>
+     * @param strapId Optional
+     * @returns Promise<TransactionBlock>
      */
 
     const token = getCoinSymbol(collateralType);
     if (!token) {
-      return false;
+      return tx;
     }
 
-    const surplusCollateral = tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_collateral`,
-      typeArguments: [collateralType],
-      arguments: [
-        tx.sharedObjectRef(PROTOCOL_OBJECT),
-      ],
-    });
+    const surplusCollateral = strapId ?
+      tx.moveCall({
+        target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_with_strap`,
+        typeArguments: [collateralType],
+        arguments: [
+          tx.sharedObjectRef(PROTOCOL_OBJECT),
+          tx.object(strapId),
+        ],
+      }) :
+      tx.moveCall({
+        target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_collateral`,
+        typeArguments: [collateralType],
+        arguments: [
+          tx.sharedObjectRef(PROTOCOL_OBJECT),
+        ],
+      });
 
     const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
     tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
 
-    return true;
+    return tx;
   }
 
   async getPsmTx(
