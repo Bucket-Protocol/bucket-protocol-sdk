@@ -278,6 +278,8 @@ export const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef>> = {
   }
 };
 
-export const STRAP_FOUNTAIN_PACKAGE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
+export const STRAP_FOUNTAIN_PACKAGE_ID = "0x5a25f201acfa20b966aae192c156c5700b3d91fdabf6da8a13fb33798b656737";
 
-export const STAKE_PROOF_ID = `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::StakeProof`;
+export const STRAP_TYPE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
+
+export const STAKE_PROOF_ID = `${STRAP_TYPE_ID}::fountain::StakeProof`;
