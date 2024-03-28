@@ -15,7 +15,7 @@ export declare class BucketClient {
     withdrawFromTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
     claimFromTank(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
     claimBkt(tx: TransactionBlock, assetBuck: string, assetType: string, tankId: string, contributorToken: string): TransactionResult;
-    borrow(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, bucketOutputAmount: number, insertionPlace?: string, strapId?: string | TransactionArgument): TransactionResult;
+    borrow(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, bucketOutputAmount: TransactionArgument, insertionPlace?: string, strapId?: string | TransactionArgument): TransactionResult;
     topUp(tx: TransactionBlock, collateralType: string, collateralInput: TransactionResult, forAddress: string, insertionPlace?: string): void;
     withdraw(tx: TransactionBlock, assetType: string, collateralAmount: string, insertionPlace?: string, strapId?: string | TransactionArgument): TransactionResult;
     repay(tx: TransactionBlock, assetType: string, buckInput: TransactionResult, strapId?: string | TransactionArgument): TransactionResult;

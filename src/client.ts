@@ -136,7 +136,7 @@ export class BucketClient {
     tx: TransactionBlock,
     collateralType: string,
     collateralInput: TransactionResult,
-    bucketOutputAmount: number,
+    bucketOutputAmount: TransactionArgument,
     insertionPlace?: string,
     strapId?: string | TransactionArgument,
   ): TransactionResult {
@@ -1497,7 +1497,7 @@ export class BucketClient {
         tx,
         collateralType,
         collateralBalance,
-        borrowAmount,
+        tx.pure(borrowAmount, "u64"),
         insertionPlace ? insertionPlace : (strapId ? (strapId === "new" ? undefined : strapId) : recipient),
         strapId,
       );

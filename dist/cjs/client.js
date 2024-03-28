@@ -1227,7 +1227,7 @@ class BucketClient {
             if (isUpdateOracle) {
                 this.updateSupraOracle(tx, token);
             }
-            const borrowRet = this.borrow(tx, collateralType, collateralBalance, borrowAmount, insertionPlace ? insertionPlace : (strapId ? (strapId === "new" ? undefined : strapId) : recipient), strapId);
+            const borrowRet = this.borrow(tx, collateralType, collateralBalance, tx.pure(borrowAmount, "u64"), insertionPlace ? insertionPlace : (strapId ? (strapId === "new" ? undefined : strapId) : recipient), strapId);
             if (borrowRet) {
                 if (strapId === 'new') {
                     const [strap, buckOut] = borrowRet;
