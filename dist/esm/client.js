@@ -92,13 +92,13 @@ export class BucketClient {
             arguments: [tx.object(tankId), tx.pure(contributorToken)],
         });
     }
-    borrow(tx, collateralType, collateralInput, bucketOutputAmount, insertionPlace, strapId) {
+    borrow(tx, collateralType, collateralInput, buckOutput, insertionPlace, strapId) {
         /**
          * @description Borrow
          * @param tx
          * @param collateralType Asset , e.g "0x2::sui::SUI"
          * @param collateralInput collateral input
-         * @param bucketOutputAmount
+         * @param buckOutput
          * @param insertionPlace optional
          * @returns TransactionResult
          */
@@ -117,7 +117,7 @@ export class BucketClient {
                         strap,
                         tx.sharedObjectRef(CLOCK_OBJECT),
                         collateralInput,
-                        tx.pure(bucketOutputAmount, "u64"),
+                        buckOutput,
                         tx.pure(insertionPlace ? [insertionPlace] : []),
                     ],
                 });
@@ -134,7 +134,7 @@ export class BucketClient {
                         typeof strapId === "string" ? tx.pure(strapId) : strapId,
                         tx.sharedObjectRef(CLOCK_OBJECT),
                         collateralInput,
-                        tx.pure(bucketOutputAmount, "u64"),
+                        buckOutput,
                         tx.pure(insertionPlace ? [insertionPlace] : []),
                     ],
                 });
@@ -149,7 +149,7 @@ export class BucketClient {
                     tx.sharedObjectRef(ORACLE_OBJECT),
                     tx.sharedObjectRef(CLOCK_OBJECT),
                     collateralInput,
-                    tx.pure(bucketOutputAmount, "u64"),
+                    buckOutput,
                     tx.pure(insertionPlace ? [insertionPlace] : []),
                 ],
             });

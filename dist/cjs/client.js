@@ -95,13 +95,13 @@ class BucketClient {
             arguments: [tx.object(tankId), tx.pure(contributorToken)],
         });
     }
-    borrow(tx, collateralType, collateralInput, bucketOutputAmount, insertionPlace, strapId) {
+    borrow(tx, collateralType, collateralInput, buckOutput, insertionPlace, strapId) {
         /**
          * @description Borrow
          * @param tx
          * @param collateralType Asset , e.g "0x2::sui::SUI"
          * @param collateralInput collateral input
-         * @param bucketOutputAmount
+         * @param buckOutput
          * @param insertionPlace optional
          * @returns TransactionResult
          */
@@ -120,7 +120,7 @@ class BucketClient {
                         strap,
                         tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                         collateralInput,
-                        tx.pure(bucketOutputAmount, "u64"),
+                        buckOutput,
                         tx.pure(insertionPlace ? [insertionPlace] : []),
                     ],
                 });
@@ -137,7 +137,7 @@ class BucketClient {
                         typeof strapId === "string" ? tx.pure(strapId) : strapId,
                         tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                         collateralInput,
-                        tx.pure(bucketOutputAmount, "u64"),
+                        buckOutput,
                         tx.pure(insertionPlace ? [insertionPlace] : []),
                     ],
                 });
@@ -152,7 +152,7 @@ class BucketClient {
                     tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
                     tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                     collateralInput,
-                    tx.pure(bucketOutputAmount, "u64"),
+                    buckOutput,
                     tx.pure(insertionPlace ? [insertionPlace] : []),
                 ],
             });
