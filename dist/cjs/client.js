@@ -120,7 +120,7 @@ class BucketClient {
                         strap,
                         tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                         collateralInput,
-                        buckOutput,
+                        typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
                         tx.pure(insertionPlace ? [insertionPlace] : []),
                     ],
                 });
@@ -137,7 +137,7 @@ class BucketClient {
                         typeof strapId === "string" ? tx.pure(strapId) : strapId,
                         tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                         collateralInput,
-                        buckOutput,
+                        typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
                         tx.pure(insertionPlace ? [insertionPlace] : []),
                     ],
                 });
@@ -152,7 +152,7 @@ class BucketClient {
                     tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
                     tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
                     collateralInput,
-                    buckOutput,
+                    typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
                     tx.pure(insertionPlace ? [insertionPlace] : []),
                 ],
             });

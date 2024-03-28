@@ -136,7 +136,7 @@ export class BucketClient {
     tx: TransactionBlock,
     collateralType: string,
     collateralInput: TransactionResult,
-    buckOutput: TransactionArgument,
+    buckOutput: number | TransactionArgument,
     insertionPlace?: string,
     strapId?: string | TransactionArgument,
   ): TransactionResult {
@@ -165,7 +165,7 @@ export class BucketClient {
             strap,
             tx.sharedObjectRef(CLOCK_OBJECT),
             collateralInput,
-            buckOutput,
+            typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
             tx.pure(insertionPlace ? [insertionPlace] : []),
           ],
         });
@@ -181,7 +181,7 @@ export class BucketClient {
             typeof strapId === "string" ? tx.pure(strapId) : strapId,
             tx.sharedObjectRef(CLOCK_OBJECT),
             collateralInput,
-            buckOutput,
+            typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
             tx.pure(insertionPlace ? [insertionPlace] : []),
           ],
         });
@@ -195,7 +195,7 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           collateralInput,
-          buckOutput,
+          typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
           tx.pure(insertionPlace ? [insertionPlace] : []),
         ],
       });
