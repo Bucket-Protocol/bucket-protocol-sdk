@@ -1,4 +1,5 @@
 import { UserLpProof } from "src/types";
+import { COIN } from "..";
 export declare function getObjectNames(objectTypes: string[]): string[];
 export declare function U64FromBytes(x: number[]): bigint;
 export declare const formatUnits: (value: bigint, decimals: number) => string;
@@ -10,5 +11,5 @@ export declare const lpProofToObject: (lpProof: UserLpProof) => {
     digest: string;
     version: string;
 };
-export declare const getCoinSymbol: (coinType: string) => string | undefined;
+export declare const getCoinSymbol: (coinType: string) => COIN | undefined;
 //# sourceMappingURL=format.d.ts.map

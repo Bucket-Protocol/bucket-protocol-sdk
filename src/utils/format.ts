@@ -1,5 +1,6 @@
 import { UserLpProof } from "src/types";
 import { COINS_TYPE_LIST } from "../constants";
+import { COIN } from "..";
 
 export function getObjectNames(objectTypes: string[]) {
 
@@ -94,5 +95,8 @@ export const lpProofToObject = (lpProof: UserLpProof) => {
 }
 
 export const getCoinSymbol = (coinType: string) => {
-    return Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key] === coinType);
+    const coin = Object.keys(COINS_TYPE_LIST).find(key => COINS_TYPE_LIST[key as COIN] === coinType);
+    if (coin) {
+        return coin as COIN;
+    }
 }

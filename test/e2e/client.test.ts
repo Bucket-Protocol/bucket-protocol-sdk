@@ -4,7 +4,7 @@ import { BucketClient } from '../../src';
 describe('Interacting with Bucket Client on mainnet', () => {
 
     // Instantiate BucketClient
-    const buck = new BucketClient("mainnet");
+    const buck = new BucketClient("https://sui-mainnet-endpoint.blockvision.org/");
 
     /*
     it('tests getBucketConstants() function', async () => {
@@ -33,11 +33,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     it('tests getDestroyedBottle() function', async () => {
         expect(await buck.getDestroyedBottles()).toBeDefined()
-    });
-
-    it('tests getUserBottle() function', async () => {
-        const bottles = await buck.getUserBottles("");
-        expect(bottles).toBeDefined()
     });
 
     it('testsgetAllBuckets() function', async () => {
@@ -88,6 +83,14 @@ describe('Interacting with Bucket Client on mainnet', () => {
         timeout: 60 * 1000
     });
 
+    it('tests getAllFountains() function', async () => {
+        const fountains = await buck.getAllFountains();
+        console.log(fountains);
+        expect(fountains).toBeDefined()
+    }, {
+        timeout: 60_000
+    });
+
     it('tests getAllStrapFountains() function', async () => {
         const strapFountains = await buck.getAllStrapFountains();
         console.log(strapFountains);
@@ -97,11 +100,11 @@ describe('Interacting with Bucket Client on mainnet', () => {
     });
     */
 
-    it('tests getUserBottle() function', async () => {
-        const bottles = await buck.getUserBottles("0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc");
-        console.log(bottles)
-        expect(bottles).toBeDefined()
+    it('tests getUserTanks() function', async () => {
+        const tanks = await buck.getUserTanks("0x44529d74a43073c40963fe42c8d2e51d8a441d480ee105ea0c27f3847433ae21");
+        console.log(tanks);
+        expect(tanks).toBeDefined()
     }, {
-        timeout: 60_000
+        timeout: 1000 * 60
     });
 });

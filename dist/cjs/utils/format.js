@@ -81,7 +81,10 @@ const lpProofToObject = (lpProof) => {
 };
 exports.lpProofToObject = lpProofToObject;
 const getCoinSymbol = (coinType) => {
-    return Object.keys(constants_1.COINS_TYPE_LIST).find(key => constants_1.COINS_TYPE_LIST[key] === coinType);
+    const coin = Object.keys(constants_1.COINS_TYPE_LIST).find(key => constants_1.COINS_TYPE_LIST[key] === coinType);
+    if (coin) {
+        return coin;
+    }
 };
 exports.getCoinSymbol = getCoinSymbol;
 //# sourceMappingURL=format.js.map

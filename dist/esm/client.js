@@ -131,7 +131,7 @@ export class BucketClient {
                     arguments: [
                         tx.sharedObjectRef(PROTOCOL_OBJECT),
                         tx.sharedObjectRef(ORACLE_OBJECT),
-                        typeof strapId === "string" ? tx.pure(strapId) : strapId,
+                        typeof strapId === "string" ? tx.object(strapId) : strapId,
                         tx.sharedObjectRef(CLOCK_OBJECT),
                         collateralInput,
                         typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
@@ -192,7 +192,7 @@ export class BucketClient {
                 arguments: [
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
                     tx.sharedObjectRef(ORACLE_OBJECT),
-                    typeof strapId === "string" ? tx.pure(strapId) : strapId,
+                    typeof strapId === "string" ? tx.object(strapId) : strapId,
                     tx.sharedObjectRef(CLOCK_OBJECT),
                     tx.pure(collateralAmount, "u64"),
                     tx.pure(insertionPlace ? [insertionPlace] : []),
@@ -830,7 +830,6 @@ export class BucketClient {
                     strap_address: obj?.strap_address,
                 };
             }));
-            console.log(strapIds);
             // Loop bottles
             for (const bottle of bottleIdList) {
                 const token = bottle.name;
@@ -906,7 +905,19 @@ export class BucketClient {
                         console.log("error", error);
                     });
                 }
+                // We can add liquidated positions
+                let liquidatedStraps = bottleStrapIds.filter(t => !userBottles.find(u => u.strapId == t.id));
+                for (const strap of liquidatedStraps) {
+                    userBottles.push({
+                        token,
+                        collateralAmount: 0,
+                        buckAmount: 0,
+                        strapId: strap.id,
+                    });
+                }
             }
+            // Sort liquidated positions to last
+            userBottles.sort((a, b) => b.collateralAmount - a.collateralAmount);
             return userBottles;
         }
         catch (error) {
@@ -1270,15 +1281,24 @@ export class BucketClient {
         // Fully repay
         if (repayAmount == 0) {
             if (strapId) {
+                const strap = tx.object(strapId);
                 tx.moveCall({
                     target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::fully_repay_with_strap`,
                     typeArguments: [collateralType],
                     arguments: [
                         tx.sharedObjectRef(PROTOCOL_OBJECT),
-                        tx.pure(strapId),
+                        strap,
                         buckCoinInput,
                         tx.sharedObjectRef(CLOCK_OBJECT),
                     ],
+                });
+                tx.moveCall({
+                    target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_opertions::destroy_empty_strap`,
+                    typeArguments: [collateralType],
+                    arguments: [
+                        tx.sharedObjectRef(PROTOCOL_OBJECT),
+                        strap,
+                    ]
                 });
             }
             else {
@@ -1301,7 +1321,7 @@ export class BucketClient {
                     arguments: [
                         tx.sharedObjectRef(PROTOCOL_OBJECT),
                         tx.sharedObjectRef(ORACLE_OBJECT),
-                        tx.pure(strapId),
+                        tx.object(strapId),
                         tx.sharedObjectRef(CLOCK_OBJECT),
                         buckCoinInput,
                         tx.pure(withdrawAmount, "u64"),
@@ -1338,24 +1358,38 @@ export class BucketClient {
         if (!token) {
             return tx;
         }
-        const surplusCollateral = strapId ?
-            tx.moveCall({
+        if (strapId) {
+            const strap = tx.object(strapId);
+            const surplusCollateral = tx.moveCall({
                 target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_with_strap`,
                 typeArguments: [collateralType],
                 arguments: [
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
-                    tx.object(strapId),
+                    strap,
                 ],
-            }) :
+            });
             tx.moveCall({
+                target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::destroy_empty_strap`,
+                typeArguments: [collateralType],
+                arguments: [
+                    tx.sharedObjectRef(PROTOCOL_OBJECT),
+                    strap,
+                ]
+            });
+            const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
+            tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
+        }
+        else {
+            const surplusCollateral = tx.moveCall({
                 target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_collateral`,
                 typeArguments: [collateralType],
                 arguments: [
                     tx.sharedObjectRef(PROTOCOL_OBJECT),
                 ],
             });
-        const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
-        tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
+            const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
+            tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
+        }
         return tx;
     }
     async getPsmTx(tx, psmCoin, psmAmount, psmSwith, walletAddress) {
@@ -1729,13 +1763,13 @@ export class BucketClient {
         }
         return true;
     }
-    async getStrapStakeTx(tx, collateralType, strapId, address) {
+    getStrapStakeTx(tx, collateralType, strapId, address) {
         /**
          * @description Get transaction for stake token to strap fountain
          * @param collateralType
          * @param strapId
          * @param address
-         * @returns Promise<boolean>
+         * @returns boolean
          */
         const coin = getCoinSymbol(collateralType);
         if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
@@ -1754,13 +1788,13 @@ export class BucketClient {
         tx.transferObjects([proof], tx.pure.address(address));
         return true;
     }
-    async getStrapUnstakeTx(tx, collateralType, strapId, address) {
+    getStrapUnstakeTx(tx, collateralType, strapId, address) {
         /**
          * @description Get transaction for unstake token from strap fountain
          * @param collateralType
          * @param strapId
          * @param address
-         * @returns Promise<boolean>
+         * @returns boolean
          */
         const coin = getCoinSymbol(collateralType);
         if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
@@ -1778,7 +1812,7 @@ export class BucketClient {
         tx.transferObjects([proof], tx.pure.address(address));
         return true;
     }
-    async getStrapClaimTx(tx, collateralType, strapId, address) {
+    getStrapClaimTx(tx, collateralType, strapId, address) {
         /**
          * @description Get transaction for claim token from strap fountain
          * @param collateralType
@@ -1800,6 +1834,27 @@ export class BucketClient {
             ]
         });
         tx.transferObjects([reward], tx.pure.address(address));
+        return true;
+    }
+    getDestroyPositionTx(tx, collateralType, strapId) {
+        /**
+         * @description Get transaction for destroy position
+         * @param collateralType
+         * @param strapId
+         * @returns boolean
+         */
+        const coin = getCoinSymbol(collateralType);
+        if (!coin) {
+            return false;
+        }
+        tx.moveCall({
+            target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::destroy_empty_strap`,
+            typeArguments: [collateralType],
+            arguments: [
+                tx.sharedObjectRef(PROTOCOL_OBJECT),
+                typeof strapId === "string" ? tx.object(strapId) : strapId,
+            ]
+        });
         return true;
     }
 }

@@ -4,7 +4,7 @@ import { ObjectType, SharedObjectRef } from "./objects/objectTypes";
 import { COIN } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
-  "0x6888bf552ebbaf36e371928bb20b65c1b3fd693e3e1b87cef978bd44a03107d5";
+  "0x2264f400a5afccb753dcbf9c73e80ee629671b0d56e286cd0f95fc5af8099bd5";
 export const PROTOCOL_ID =
   "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export const CONTRIBUTOR_TOKEN_ID =

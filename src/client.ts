@@ -4,7 +4,7 @@ import { DevInspectResults, SuiClient, SuiObjectResponse, getFullnodeUrl } from 
 import { TransactionArgument, TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
-import { getObjectFields } from "./objects/objectTypes";
+import { SharedObjectRef, getObjectFields } from "./objects/objectTypes";
 
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, CETUS_BUCK_USDC_POOL_05_ID, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID } from "./constants";
 import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, TvlList, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList } from "./types";
@@ -178,7 +178,7 @@ export class BucketClient {
           arguments: [
             tx.sharedObjectRef(PROTOCOL_OBJECT),
             tx.sharedObjectRef(ORACLE_OBJECT),
-            typeof strapId === "string" ? tx.pure(strapId) : strapId,
+            typeof strapId === "string" ? tx.object(strapId) : strapId,
             tx.sharedObjectRef(CLOCK_OBJECT),
             collateralInput,
             typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
@@ -254,7 +254,7 @@ export class BucketClient {
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
           tx.sharedObjectRef(ORACLE_OBJECT),
-          typeof strapId === "string" ? tx.pure(strapId) : strapId,
+          typeof strapId === "string" ? tx.object(strapId) : strapId,
           tx.sharedObjectRef(CLOCK_OBJECT),
           tx.pure(collateralAmount, "u64"),
           tx.pure(insertionPlace ? [insertionPlace] : []),
@@ -1031,7 +1031,6 @@ export class BucketClient {
           strap_address: obj?.strap_address,
         }
       }));
-      console.log(strapIds)
 
       // Loop bottles
       for (const bottle of bottleIdList) {
@@ -1119,7 +1118,22 @@ export class BucketClient {
               console.log("error", error);
             });
         }
+
+        // We can add liquidated positions
+        let liquidatedStraps = bottleStrapIds.filter(t => !userBottles.find(u => u.strapId == t.id));
+        for (const strap of liquidatedStraps) {
+          userBottles.push({
+            token,
+            collateralAmount: 0,
+            buckAmount: 0,
+            strapId: strap.id,
+          });
+        }
       }
+
+      // Sort liquidated positions to last
+      userBottles.sort((a, b) => b.collateralAmount - a.collateralAmount);
+
       return userBottles;
     } catch (error) {
       return [];
@@ -1559,15 +1573,24 @@ export class BucketClient {
     // Fully repay
     if (repayAmount == 0) {
       if (strapId) {
+        const strap = tx.object(strapId);
         tx.moveCall({
           target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::fully_repay_with_strap`,
           typeArguments: [collateralType],
           arguments: [
             tx.sharedObjectRef(PROTOCOL_OBJECT),
-            tx.pure(strapId),
+            strap,
             buckCoinInput,
             tx.sharedObjectRef(CLOCK_OBJECT),
           ],
+        });
+        tx.moveCall({
+          target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_opertions::destroy_empty_strap`,
+          typeArguments: [collateralType],
+          arguments: [
+            tx.sharedObjectRef(PROTOCOL_OBJECT),
+            strap,
+          ]
         });
       }
       else {
@@ -1590,7 +1613,7 @@ export class BucketClient {
           arguments: [
             tx.sharedObjectRef(PROTOCOL_OBJECT),
             tx.sharedObjectRef(ORACLE_OBJECT),
-            tx.pure(strapId),
+            tx.object(strapId),
             tx.sharedObjectRef(CLOCK_OBJECT),
             buckCoinInput,
             tx.pure(withdrawAmount, "u64"),
@@ -1635,25 +1658,37 @@ export class BucketClient {
       return tx;
     }
 
-    const surplusCollateral = strapId ?
-      tx.moveCall({
+    if (strapId) {
+      const strap = tx.object(strapId);
+      const surplusCollateral = tx.moveCall({
         target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_with_strap`,
         typeArguments: [collateralType],
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
-          tx.object(strapId),
+          strap,
         ],
-      }) :
+      });
       tx.moveCall({
+        target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::destroy_empty_strap`,
+        typeArguments: [collateralType],
+        arguments: [
+          tx.sharedObjectRef(PROTOCOL_OBJECT),
+          strap,
+        ]
+      });
+      const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
+      tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
+    } else {
+      const surplusCollateral = tx.moveCall({
         target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_collateral`,
         typeArguments: [collateralType],
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
         ],
       });
-
-    const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
-    tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
+      const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
+      tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
+    }
 
     return tx;
   }
@@ -2142,18 +2177,18 @@ export class BucketClient {
     return true;
   }
 
-  async getStrapStakeTx(
+  getStrapStakeTx(
     tx: TransactionBlock,
     collateralType: string,
     strapId: string | TransactionArgument,
     address: string,
-  ): Promise<boolean> {
+  ): boolean {
     /**
      * @description Get transaction for stake token to strap fountain
      * @param collateralType
      * @param strapId
      * @param address
-     * @returns Promise<boolean>
+     * @returns boolean
      */
     const coin = getCoinSymbol(collateralType);
     if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
@@ -2164,7 +2199,7 @@ export class BucketClient {
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::stake`,
       typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin]),
+        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin] as SharedObjectRef),
         tx.sharedObjectRef(PROTOCOL_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
@@ -2175,18 +2210,18 @@ export class BucketClient {
     return true;
   }
 
-  async getStrapUnstakeTx(
+  getStrapUnstakeTx(
     tx: TransactionBlock,
     collateralType: string,
     strapId: string | TransactionArgument,
     address: string,
-  ): Promise<boolean> {
+  ): boolean {
     /**
      * @description Get transaction for unstake token from strap fountain
      * @param collateralType
      * @param strapId
      * @param address
-     * @returns Promise<boolean>
+     * @returns boolean
      */
     const coin = getCoinSymbol(collateralType);
     if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
@@ -2197,7 +2232,7 @@ export class BucketClient {
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::unstake`,
       typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin]),
+        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin] as SharedObjectRef),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ]
@@ -2207,12 +2242,12 @@ export class BucketClient {
     return true;
   }
 
-  async getStrapClaimTx(
+  getStrapClaimTx(
     tx: TransactionBlock,
     collateralType: string,
     strapId: string | TransactionArgument,
     address: string,
-  ): Promise<boolean> {
+  ): boolean {
     /**
      * @description Get transaction for claim token from strap fountain
      * @param collateralType
@@ -2229,12 +2264,40 @@ export class BucketClient {
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::claim`,
       typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin]),
+        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin] as SharedObjectRef),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ]
     });
     tx.transferObjects([reward], tx.pure.address(address));
+
+    return true;
+  }
+
+  getDestroyPositionTx(
+    tx: TransactionBlock,
+    collateralType: string,
+    strapId: string | TransactionArgument,
+  ): boolean {
+    /**
+     * @description Get transaction for destroy position
+     * @param collateralType
+     * @param strapId
+     * @returns boolean
+     */
+    const coin = getCoinSymbol(collateralType);
+    if (!coin) {
+      return false;
+    }
+
+    tx.moveCall({
+      target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::destroy_empty_strap`,
+      typeArguments: [collateralType],
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        typeof strapId === "string" ? tx.object(strapId) : strapId,
+      ]
+    });
 
     return true;
   }
