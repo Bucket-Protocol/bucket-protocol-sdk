@@ -833,6 +833,7 @@ class BucketClient {
                     strap_address: obj?.strap_address,
                 };
             }));
+            console.log(strapIds);
             // Loop bottles
             for (const bottle of bottleIdList) {
                 const token = bottle.name;
