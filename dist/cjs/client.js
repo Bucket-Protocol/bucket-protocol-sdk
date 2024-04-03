@@ -1229,9 +1229,11 @@ class BucketClient {
             return false;
         }
         const [collateralInput] = await (0, utils_2.getInputCoins)(tx, this.client, recipient, collateralType, collateralAmount);
-        if (!collateralInput)
-            return false;
-        const collateralBalance = (0, utils_2.coinIntoBalance)(tx, collateralType, collateralInput);
+        const collateralBalance = collateralInput ? (0, utils_2.coinIntoBalance)(tx, collateralType, collateralInput)
+            : tx.moveCall({
+                target: "0x2::coin::new",
+                typeArguments: [collateralType],
+            });
         if (borrowAmount == 0) {
             this.topUp(tx, collateralType, collateralBalance, strapId ? strapId : recipient, insertionPlace ? insertionPlace : recipient);
         }
