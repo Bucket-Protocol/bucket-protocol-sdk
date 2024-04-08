@@ -105,6 +105,7 @@ class BucketClient {
          * @param insertionPlace optional
          * @returns TransactionResult
          */
+        console.log(collateralInput);
         if (strapId) {
             if (strapId === "new") {
                 const [strap] = tx.moveCall({
@@ -1228,12 +1229,8 @@ class BucketClient {
         if (!token) {
             return false;
         }
-        const [collateralInput] = await (0, utils_2.getInputCoins)(tx, this.client, recipient, collateralType, collateralAmount);
-        const collateralBalance = collateralInput ? (0, utils_2.coinIntoBalance)(tx, collateralType, collateralInput)
-            : tx.moveCall({
-                target: "0x2::coin::new",
-                typeArguments: [collateralType],
-            });
+        let collateralInput = await (0, utils_2.getInputCoins)(tx, this.client, recipient, collateralType, collateralAmount);
+        const collateralBalance = (0, utils_2.coinIntoBalance)(tx, collateralType, collateralInput);
         if (borrowAmount == 0) {
             this.topUp(tx, collateralType, collateralBalance, strapId ? strapId : recipient, insertionPlace ? insertionPlace : recipient);
         }
@@ -1273,15 +1270,17 @@ class BucketClient {
         if (!token) {
             return false;
         }
-        let buckCoinInput;
+        let _buckCoinInput;
         if (repayAmount > 0) {
-            [buckCoinInput] = await (0, utils_2.getInputCoins)(tx, this.client, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, repayAmount);
+            [_buckCoinInput] = await (0, utils_2.getInputCoins)(tx, this.client, walletAddress, constants_1.COINS_TYPE_LIST.BUCK, repayAmount);
         }
         else {
-            buckCoinInput = await (0, utils_2.getMainCoin)(tx, this.client, walletAddress, constants_1.COINS_TYPE_LIST.BUCK);
+            _buckCoinInput = await (0, utils_2.getMainCoin)(tx, this.client, walletAddress, constants_1.COINS_TYPE_LIST.BUCK);
         }
-        if (!buckCoinInput)
-            return false;
+        const buckCoinInput = _buckCoinInput ?? tx.moveCall({
+            target: "0x2::coin::zero",
+            typeArguments: [constants_1.COINS_TYPE_LIST.BUCK],
+        });
         this.updateSupraOracle(tx, token);
         // Fully repay
         if (repayAmount == 0) {

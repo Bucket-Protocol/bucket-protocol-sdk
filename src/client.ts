@@ -149,6 +149,7 @@ export class BucketClient {
      * @param insertionPlace optional
      * @returns TransactionResult
      */
+    console.log(collateralInput);
 
     if (strapId) {
       if (strapId === "new") {
@@ -1496,13 +1497,9 @@ export class BucketClient {
       return false;
     }
 
-    const [collateralInput] = await getInputCoins(tx, this.client, recipient, collateralType, collateralAmount);
+    let collateralInput = await getInputCoins(tx, this.client, recipient, collateralType, collateralAmount);
 
-    const collateralBalance = collateralInput ? coinIntoBalance(tx, collateralType, collateralInput)
-      : tx.moveCall({
-        target: "0x2::coin::new",
-        typeArguments: [collateralType],
-      });
+    const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
 
     if (borrowAmount == 0) {
       this.topUp(tx, collateralType, collateralBalance, strapId ? strapId : recipient, insertionPlace ? insertionPlace : recipient);
@@ -1561,15 +1558,18 @@ export class BucketClient {
       return false;
     }
 
-    let buckCoinInput;
+    let _buckCoinInput;
     if (repayAmount > 0) {
-      [buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
+      [_buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
     }
     else {
-      buckCoinInput = await getMainCoin(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK);
+      _buckCoinInput = await getMainCoin(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK);
     }
 
-    if (!buckCoinInput) return false;
+    const buckCoinInput = _buckCoinInput ?? tx.moveCall({
+      target: "0x2::coin::zero",
+      typeArguments: [COINS_TYPE_LIST.BUCK],
+    });
 
     this.updateSupraOracle(tx, token);
 
