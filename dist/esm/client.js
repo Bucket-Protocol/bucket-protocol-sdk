@@ -1280,7 +1280,7 @@ export class BucketClient {
         });
         this.updateSupraOracle(tx, token);
         // Fully repay
-        if (repayAmount == 0) {
+        if (repayAmount == 0 && withdrawAmount == 0) {
             if (strapId) {
                 const strap = tx.object(strapId);
                 tx.moveCall({
@@ -1294,7 +1294,7 @@ export class BucketClient {
                     ],
                 });
                 tx.moveCall({
-                    target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_opertions::destroy_empty_strap`,
+                    target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::destroy_empty_strap`,
                     typeArguments: [collateralType],
                     arguments: [
                         tx.sharedObjectRef(PROTOCOL_OBJECT),
