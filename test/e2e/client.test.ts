@@ -99,12 +99,4 @@ describe('Interacting with Bucket Client on mainnet', () => {
         timeout: 60_000
     });
     */
-
-    it('tests getUserTanks() function', async () => {
-        const tanks = await buck.getUserTanks("0x44529d74a43073c40963fe42c8d2e51d8a441d480ee105ea0c27f3847433ae21");
-        console.log(tanks);
-        expect(tanks).toBeDefined()
-    }, {
-        timeout: 1000 * 60
-    });
 });

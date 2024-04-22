@@ -667,49 +667,60 @@ export class BucketClient {
       const generalInfoField = generalInfo.data?.content as BucketProtocolResponse;
       const minBottleSize = generalInfoField.fields.min_bottle_size;
 
-      const protocolFields = await this.client.getDynamicFields({
-        parentId: PROTOCOL_ID,
-      });
+      let cursor: string | null = null;
 
-      const bucketList = protocolFields.data.filter((item) =>
-        item.objectType.includes("Bucket")
-      );
-      const objectIdList = bucketList.map((item) => item.objectId);
+      while (true) {
+        const protocolFields = await this.client.getDynamicFields({
+          parentId: PROTOCOL_ID,
+          cursor,
+        });
+        console.log(protocolFields.data.length);
 
-      const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: objectIdList,
-        options: {
-          showContent: true,
-          showType: true, //Check could we get type from response later
-        },
-      });
+        const bucketList = protocolFields.data.filter((item) =>
+          item.objectType.includes("Bucket")
+        );
+        const objectIdList = bucketList.map((item) => item.objectId);
 
-      response.map((res, index) => {
-        const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
-        const token = getCoinSymbol(typeId);
-        if (!token) {
-          return;
+        const response: SuiObjectResponse[] = await this.client.multiGetObjects({
+          ids: objectIdList,
+          options: {
+            showContent: true,
+            showType: true, //Check could we get type from response later
+          },
+        });
+
+        response.map((res) => {
+          const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
+          const token = getCoinSymbol(typeId);
+          if (!token) {
+            return;
+          }
+
+          const fields = getObjectFields(res) as BucketResponse;
+
+          const bucketInfo: BucketInfo = {
+            token: token as COIN,
+            baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
+            bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
+            bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? "",
+            collateralDecimal: fields.collateral_decimal ?? 0,
+            collateralVault: fields.collateral_vault ?? "",
+            latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
+            minCollateralRatio: fields.min_collateral_ratio ?? "",
+            mintedBuckAmount: fields.minted_buck_amount ?? "",
+            minBottleSize: minBottleSize,
+            maxMintAmount: fields.max_mint_amount ?? "",
+            recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
+          };
+
+          buckets[token] = bucketInfo;
+        });
+
+        if (!protocolFields.hasNextPage) {
+          break;
         }
-
-        const fields = getObjectFields(res) as BucketResponse;
-
-        const bucketInfo: BucketInfo = {
-          token: token as COIN,
-          baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
-          bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
-          bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? "",
-          collateralDecimal: fields.collateral_decimal ?? 0,
-          collateralVault: fields.collateral_vault ?? "",
-          latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
-          minCollateralRatio: fields.min_collateral_ratio ?? "",
-          mintedBuckAmount: fields.minted_buck_amount ?? "",
-          minBottleSize: minBottleSize,
-          maxMintAmount: fields.max_mint_amount ?? "",
-          recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
-        };
-
-        buckets[token] = bucketInfo;
-      });
+        cursor = protocolFields.nextCursor;
+      }
     } catch (error) {
       console.log(error);
     }
