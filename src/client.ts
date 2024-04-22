@@ -149,7 +149,6 @@ export class BucketClient {
      * @param insertionPlace optional
      * @returns TransactionResult
      */
-    console.log(collateralInput);
 
     if (strapId) {
       if (strapId === "new") {
@@ -674,7 +673,6 @@ export class BucketClient {
           parentId: PROTOCOL_ID,
           cursor,
         });
-        console.log(protocolFields.data.length);
 
         const bucketList = protocolFields.data.filter((item) =>
           item.objectType.includes("Bucket")

@@ -105,7 +105,6 @@ class BucketClient {
          * @param insertionPlace optional
          * @returns TransactionResult
          */
-        console.log(collateralInput);
         if (strapId) {
             if (strapId === "new") {
                 const [strap] = tx.moveCall({
@@ -536,7 +535,6 @@ class BucketClient {
                     parentId: constants_1.PROTOCOL_ID,
                     cursor,
                 });
-                console.log(protocolFields.data.length);
                 const bucketList = protocolFields.data.filter((item) => item.objectType.includes("Bucket"));
                 const objectIdList = bucketList.map((item) => item.objectId);
                 const response = await this.client.multiGetObjects({

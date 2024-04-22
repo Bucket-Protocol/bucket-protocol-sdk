@@ -35,6 +35,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   NAVX: "0xa99b8952d4f7d947ea77fe0ecdcc9e5fc0bcab2841d6e2a5aa00c3044e5544b5::navx::NAVX",
   CETUS: "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
   STAPEARL: "0xcffc684610db2d1956cfb25858678be8ea96d2766b4c756d4096abd38461f40a::stapearl::STAPEARL",
+  sBUCK: "0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -61,6 +62,8 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   USDY: 6,
   NAVX: 9,
   CETUS: 9,
+
+  sBUCK: 9,
 
   AF_LP_USDC_BUCK: 9,
   AF_LP_SUI_BUCK: 9,
