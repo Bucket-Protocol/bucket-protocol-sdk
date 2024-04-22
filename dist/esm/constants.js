@@ -203,7 +203,7 @@ export const STRAP_FOUNTAIN_IDS = {
         mutable: true,
     }
 };
-export const STRAP_FOUNTAIN_PACKAGE_ID = "0x5a25f201acfa20b966aae192c156c5700b3d91fdabf6da8a13fb33798b656737";
+export const STRAP_FOUNTAIN_PACKAGE_ID = "0x8a8e91f0453de1bf2684f371b09a9320277d2aa9d3f572bf499542ed471c15a3";
 export const STRAP_TYPE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
 export const STAKE_PROOF_ID = `${STRAP_TYPE_ID}::fountain::StakeProof`;
 //# sourceMappingURL=constants.js.map

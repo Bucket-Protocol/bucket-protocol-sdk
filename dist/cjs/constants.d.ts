@@ -118,7 +118,7 @@ export declare const FOUNTAIN_PACKAGE_ID = "0x8f16cb934fa0c4ad403ac3fddaab8585a6
 export declare const KRIYA_FOUNTAIN_PACKAGE_ID = "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
 export declare const STRAP_ID = "0xd9162764da404339384fe40487499dc867c3f1fa3eb870381c41a8b41458b0e5::strap::BottleStrap";
 export declare const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef>>;
-export declare const STRAP_FOUNTAIN_PACKAGE_ID = "0x5a25f201acfa20b966aae192c156c5700b3d91fdabf6da8a13fb33798b656737";
+export declare const STRAP_FOUNTAIN_PACKAGE_ID = "0x8a8e91f0453de1bf2684f371b09a9320277d2aa9d3f572bf499542ed471c15a3";
 export declare const STRAP_TYPE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
 export declare const STAKE_PROOF_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59::fountain::StakeProof";
 //# sourceMappingURL=constants.d.ts.map
