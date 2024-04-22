@@ -1,6 +1,6 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { DevInspectResults, SuiClient, SuiObjectResponse, getFullnodeUrl } from "@mysten/sui.js/client";
+import { DevInspectResults, DynamicFieldInfo, SuiClient, SuiObjectResponse, getFullnodeUrl } from "@mysten/sui.js/client";
 import { TransactionArgument, TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
@@ -666,59 +666,60 @@ export class BucketClient {
       const generalInfoField = generalInfo.data?.content as BucketProtocolResponse;
       const minBottleSize = generalInfoField.fields.min_bottle_size;
 
+      let bucketList: DynamicFieldInfo[] = [];
       let cursor: string | null = null;
-
       while (true) {
         const protocolFields = await this.client.getDynamicFields({
           parentId: PROTOCOL_ID,
           cursor,
         });
 
-        const bucketList = protocolFields.data.filter((item) =>
+        bucketList = bucketList.concat(protocolFields.data.filter((item) =>
           item.objectType.includes("Bucket")
-        );
-        const objectIdList = bucketList.map((item) => item.objectId);
-
-        const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-          ids: objectIdList,
-          options: {
-            showContent: true,
-            showType: true, //Check could we get type from response later
-          },
-        });
-
-        response.map((res) => {
-          const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
-          const token = getCoinSymbol(typeId);
-          if (!token) {
-            return;
-          }
-
-          const fields = getObjectFields(res) as BucketResponse;
-
-          const bucketInfo: BucketInfo = {
-            token: token as COIN,
-            baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
-            bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
-            bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? "",
-            collateralDecimal: fields.collateral_decimal ?? 0,
-            collateralVault: fields.collateral_vault ?? "",
-            latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
-            minCollateralRatio: fields.min_collateral_ratio ?? "",
-            mintedBuckAmount: fields.minted_buck_amount ?? "",
-            minBottleSize: minBottleSize,
-            maxMintAmount: fields.max_mint_amount ?? "",
-            recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
-          };
-
-          buckets[token] = bucketInfo;
-        });
+        ));
 
         if (!protocolFields.hasNextPage) {
           break;
         }
         cursor = protocolFields.nextCursor;
       }
+
+      const objectIdList = bucketList.map((item) => item.objectId);
+
+      const response: SuiObjectResponse[] = await this.client.multiGetObjects({
+        ids: objectIdList,
+        options: {
+          showContent: true,
+          showType: true, //Check could we get type from response later
+        },
+      });
+
+      response.map((res) => {
+        const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
+        const token = getCoinSymbol(typeId);
+        if (!token) {
+          return;
+        }
+
+        const fields = getObjectFields(res) as BucketResponse;
+
+        const bucketInfo: BucketInfo = {
+          token: token as COIN,
+          baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
+          bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
+          bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? "",
+          collateralDecimal: fields.collateral_decimal ?? 0,
+          collateralVault: fields.collateral_vault ?? "",
+          latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
+          minCollateralRatio: fields.min_collateral_ratio ?? "",
+          mintedBuckAmount: fields.minted_buck_amount ?? "",
+          minBottleSize: minBottleSize,
+          maxMintAmount: fields.max_mint_amount ?? "",
+          recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
+        };
+
+        buckets[token] = bucketInfo;
+      });
     } catch (error) {
       console.log(error);
     }
@@ -734,13 +735,23 @@ export class BucketClient {
     const tankInfoList: TankList = {};
 
     try {
-      const protocolFields = await this.client.getDynamicFields({
-        parentId: PROTOCOL_ID
-      });
+      let tankList: DynamicFieldInfo[] = [];
+      let cursor: string | null = null;
+      while (true) {
+        const protocolFields = await this.client.getDynamicFields({
+          parentId: PROTOCOL_ID,
+          cursor,
+        });
 
-      const tankList = protocolFields.data.filter((item) =>
-        item.objectType.includes("Tank")
-      );
+        tankList = tankList.concat(protocolFields.data.filter((item) =>
+          item.objectType.includes("Tank")
+        ));
+
+        if (!protocolFields.hasNextPage) {
+          break;
+        }
+        cursor = protocolFields.nextCursor;
+      }
 
       const objectIdList = tankList.map((item) => item.objectId);
 
@@ -771,7 +782,6 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-
     } catch (error) {
     }
 
@@ -960,13 +970,23 @@ export class BucketClient {
     if (!address) return [];
 
     try {
-      const protocolFields = await this.client.getDynamicFields({
-        parentId: PROTOCOL_ID
-      });
+      let bucketList: DynamicFieldInfo[] = [];
+      let cursor: string | null = null;
+      while (true) {
+        const protocolFields = await this.client.getDynamicFields({
+          parentId: PROTOCOL_ID,
+          cursor,
+        });
 
-      const bucketList = protocolFields.data.filter((item) =>
-        item.objectType.includes("Bucket")
-      );
+        bucketList = bucketList.concat(protocolFields.data.filter((item) =>
+          item.objectType.includes("Bucket")
+        ));
+
+        if (!protocolFields.hasNextPage) {
+          break;
+        }
+        cursor = protocolFields.nextCursor;
+      }
 
       const objectTypeList = bucketList.map((item) => item.objectType);
       const objectIdList = bucketList.map((item) => item.objectId);
@@ -1161,14 +1181,23 @@ export class BucketClient {
     let userTanks: UserTankList = {};
 
     try {
-      // Get all tank objects
-      const protocolFields = await this.client.getDynamicFields({
-        parentId: PROTOCOL_ID
-      });
+      let tankList: DynamicFieldInfo[] = [];
+      let cursor: string | null = null;
+      while (true) {
+        const protocolFields = await this.client.getDynamicFields({
+          parentId: PROTOCOL_ID,
+          cursor,
+        });
 
-      const tankList = protocolFields.data.filter((item) =>
-        item.objectType.includes("Tank")
-      );
+        tankList = tankList.concat(protocolFields.data.filter((item) =>
+          item.objectType.includes("Tank")
+        ));
+
+        if (!protocolFields.hasNextPage) {
+          break;
+        }
+        cursor = protocolFields.nextCursor;
+      }
 
       // Split coin type from result
       const tankTypes = tankList.map(tank => {

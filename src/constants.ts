@@ -1,16 +1,16 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { ObjectType, SharedObjectRef } from "./objects/objectTypes";
+import { SharedObjectRef } from "./objects/objectTypes";
 import { COIN } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
-  "0x2264f400a5afccb753dcbf9c73e80ee629671b0d56e286cd0f95fc5af8099bd5";
+  "0xcf79e8c44acaf6e7ca1e78ca7ca5fa039a055cb64a45d7219418e22fcf28fa02";
 export const PROTOCOL_ID =
   "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export const CONTRIBUTOR_TOKEN_ID =
   "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
 export const CORE_PACKAGE_ID =
-  "0x2545d6a3da56cfd79a0394710f42d038baf87bcf6cfd7f5bb14906dcd7f4e8b3";
+  "0x8e39c5069076cbb95bede1e5d2217c91f7fdc3ee266d778927f128e561c6f3eb";
 
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {

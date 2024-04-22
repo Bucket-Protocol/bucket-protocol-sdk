@@ -3,7 +3,7 @@ import { COIN } from "./types";
 export declare const BUCKET_OPERATIONS_PACKAGE_ID: string;
 export declare const PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export declare const CONTRIBUTOR_TOKEN_ID = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
-export declare const CORE_PACKAGE_ID = "0x2545d6a3da56cfd79a0394710f42d038baf87bcf6cfd7f5bb14906dcd7f4e8b3";
+export declare const CORE_PACKAGE_ID = "0x8e39c5069076cbb95bede1e5d2217c91f7fdc3ee266d778927f128e561c6f3eb";
 export declare const COINS_TYPE_LIST: Record<COIN, string>;
 export declare const COIN_DECIMALS: Record<COIN, number>;
 export declare const PSM_POOL_IDS: Partial<Record<COIN, string>>;

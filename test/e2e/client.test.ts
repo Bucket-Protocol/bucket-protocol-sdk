@@ -6,7 +6,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     // Instantiate BucketClient
     const buck = new BucketClient("https://sui-mainnet-endpoint.blockvision.org/");
 
-    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -98,5 +97,5 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 60_000
     });
-    */
+
 });
