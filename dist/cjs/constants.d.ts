@@ -42,7 +42,7 @@ export declare const PROTOCOL_OBJECT: {
     mutable: boolean;
     initialSharedVersion: number;
 };
-export declare const FOUNTAIN_PERIHERY_PACKAGE_ID = "0xba3e34a587ea2b994069998a21e2d9bfcb8de2168ade2717e0f400dc45e51225";
+export declare const FOUNTAIN_PERIHERY_PACKAGE_ID = "0x440ea4d7679c0fbf4a8a7f98ba1a44ac60fe268f767a4531f1a6843a482194bc";
 export declare const CETUS_SUI_BUCK_LP_REGISTRY_ID = "0x7778d68f02810b2c002b6f40084c5f3fe0b1bcc7d7a7c64d72ba40ff9a815bac";
 export declare const CETUS_SUI_BUCK_LP_REGISTRY: {
     objectId: string;
@@ -78,6 +78,12 @@ export declare const AF_USDC_BUCK_LP_REGISTRY: {
     objectId: string;
     initialSharedVersion: number;
     mutable: boolean;
+};
+export declare const SBUCK_BUCK_LP_REGISTRY_ID = "0xbdf91f558c2b61662e5839db600198eda66d502e4c10c4fc5c683f9caca13359";
+export declare const SBUCK_BUCK_LP_REGISTRY: {
+    objectId: string;
+    mutable: boolean;
+    initialSharedVersion: number;
 };
 export declare const CETUS_SUI_BUCK_POOL_ID = "0x9379d2d3f221dcea70f7f7d4a7bf30bab0128bcfda0d13a85267e51f7e6e15c0";
 export declare const CETUS_BUCK_USDC_POOL_01_ID = "0xd4573bdd25c629127d54c5671d72a0754ef47767e6c01758d6dc651f57951e7d";
@@ -116,6 +122,7 @@ export declare const BUCKETUS_LP_VAULT_05: {
 };
 export declare const FOUNTAIN_PACKAGE_ID = "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";
 export declare const KRIYA_FOUNTAIN_PACKAGE_ID = "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
+export declare const SBUCK_FOUNTAIN_PACKAGE_ID = "0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82";
 export declare const STRAP_ID = "0xd9162764da404339384fe40487499dc867c3f1fa3eb870381c41a8b41458b0e5::strap::BottleStrap";
 export declare const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef>>;
 export declare const STRAP_FOUNTAIN_PACKAGE_ID = "0x8a8e91f0453de1bf2684f371b09a9320277d2aa9d3f572bf499542ed471c15a3";

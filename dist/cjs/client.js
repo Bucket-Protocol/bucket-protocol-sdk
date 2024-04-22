@@ -673,7 +673,7 @@ class BucketClient {
     ;
     async getAllFountains() {
         /**
-         * @description Get all fountains from KRIYA, CETUS, AFTERMATHs
+         * @description Get all fountains from KRIYA, CETUS, AFTERMATH, sBUCK
          * @returns Promise<FountainList>
          */
         const objectIds = [
@@ -683,6 +683,7 @@ class BucketClient {
             constants_1.AF_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.CETUS_SUI_BUCK_LP_REGISTRY_ID,
             constants_1.CETUS_USDC_BUCK_LP_REGISTRY_ID,
+            constants_1.SBUCK_BUCK_LP_REGISTRY_ID,
         ];
         const fountainResults = await this.client.multiGetObjects({
             ids: objectIds,
@@ -1147,6 +1148,7 @@ class BucketClient {
             constants_1.CETUS_SUI_BUCK_LP_REGISTRY_ID,
             constants_1.KRIYA_USDC_BUCK_LP_REGISTRY_ID,
             constants_1.KRIYA_SUI_BUCK_LP_REGISTRY_ID,
+            constants_1.SBUCK_BUCK_LP_REGISTRY_ID,
         ];
         const res = await this.client.getOwnedObjects({
             owner,
@@ -1157,6 +1159,9 @@ class BucketClient {
                     },
                     {
                         Package: constants_1.KRIYA_FOUNTAIN_PACKAGE_ID,
+                    },
+                    {
+                        Package: constants_1.SBUCK_FOUNTAIN_PACKAGE_ID,
                     }
                 ]
             },
