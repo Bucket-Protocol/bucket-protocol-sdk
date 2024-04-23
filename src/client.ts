@@ -7,9 +7,9 @@ import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { SharedObjectRef, getObjectFields } from "./objects/objectTypes";
 
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, CETUS_BUCK_USDC_POOL_05_ID, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID, SBUCK_BUCK_LP_REGISTRY_ID, SBUCK_FOUNTAIN_PACKAGE_ID } from "./constants";
-import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, TvlList, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList } from "./types";
+import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList, PsmList, PsmInfo } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
-import { objectToFountain, objectToStrapFountain } from "./utils/convert";
+import { objectToFountain, objectToPsm, objectToStrapFountain } from "./utils/convert";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -888,11 +888,11 @@ export class BucketClient {
     return objectToFountain(res);
   }
 
-  async getPsmTVL(): Promise<TvlList> {
+  async getAllPsms(): Promise<PsmList> {
     /**
-   * @description Get all PSM's TVL
+   * @description Get all PSM's information
    */
-    let tvlList: TvlList = {};
+    let psmList: PsmList = {};
 
     try {
       const objectIdList = Object.values(PSM_POOL_IDS);
@@ -905,20 +905,40 @@ export class BucketClient {
       });
 
       response.map((res) => {
-        const fields = getObjectFields(res) as PsmPoolResponse;
-        const poolId = fields.id.id;
-        const coins = Object.keys(PSM_POOL_IDS).filter(symbol => PSM_POOL_IDS[symbol] == poolId);
-        if (coins.length > 0) {
-          const coin = coins[0];
-          tvlList[coin] = Number(formatUnits(BigInt(fields.pool), COIN_DECIMALS[coins[0]] ?? 9));
+        const psm = objectToPsm(res);
+        const coin = Object.keys(PSM_POOL_IDS).find(symbol => PSM_POOL_IDS[symbol] == psm.id);
+        if (coin) {
+          psmList[coin] = psm;
         }
       });
     } catch (error) {
       console.log(error);
     }
 
-    return tvlList;
+    return psmList;
   };
+
+  async getPsm(coin: COIN): Promise<PsmInfo> {
+    /**
+     * @description Get psm information from id
+     * @param poolId PSM pool id
+     * @returns Promise<PsmInfo>
+     */
+    const poolId = PSM_POOL_IDS[coin];
+    if (!poolId) {
+      throw Error("Not PSM supported token");
+    }
+
+    const response: SuiObjectResponse = await this.client.getObject({
+      id: poolId,
+      options: {
+        showContent: true,
+        showType: true, //Check could we get type from response later
+      },
+    });
+
+    return objectToPsm(response);
+  }
 
   async getAllStrapFountains(): Promise<StrapFountainList> {
     /**

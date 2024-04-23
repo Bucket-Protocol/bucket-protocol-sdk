@@ -131,6 +131,7 @@ export type SupraPriceFeedResponse = {
 export type PsmPoolResponse = {
   buck_minted_amount: string;
   charge_fee_rate: string;
+  discharge_fee_rate: string;
   conversion_rate: string;
   id: {
     id: string;

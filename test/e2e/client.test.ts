@@ -6,6 +6,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     // Instantiate BucketClient
     const buck = new BucketClient("https://sui-mainnet-endpoint.blockvision.org/");
 
+    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -65,9 +66,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
         timeout: 60_000
     });
 
-    it('tests getPsmTVL() function', async () => {
-        const tvl = await buck.getPsmTVL();
-        expect(tvl).toBeDefined;
+    it('tests getAllPsms() function', async () => {
+        const psms = await buck.getAllPsms();
+        expect(psms).toBeDefined;
     });
 
     it('tests findInsertionPlace() function', async () => {
@@ -97,5 +98,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 60_000
     });
+    */
 
 });

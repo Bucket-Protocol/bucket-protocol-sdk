@@ -1,5 +1,6 @@
-import { KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID } from "../constants";
+import { COIN_DECIMALS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, PSM_POOL_IDS } from "../constants";
 import { getObjectFields } from "../objects/objectTypes";
+import { formatUnits } from "./format";
 export function objectToFountain(res) {
     const id = res.data?.objectId ?? "";
     const isKriya = id == KRIYA_SUI_BUCK_LP_REGISTRY_ID || id == KRIYA_USDC_BUCK_LP_REGISTRY_ID;
@@ -28,6 +29,19 @@ export function objectToStrapFountain(res) {
         cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
         latestReleaseTime: Number(fields?.latest_release_time ?? 0),
         strapId: fields?.strap_table.fields.id.id,
+    };
+}
+export function objectToPsm(res) {
+    const fields = getObjectFields(res);
+    console.log(fields);
+    const poolId = fields.id.id;
+    const coin = Object.keys(PSM_POOL_IDS).find(symbol => PSM_POOL_IDS[symbol] == poolId);
+    return {
+        id: poolId,
+        tvl: Number(formatUnits(BigInt(fields.pool), COIN_DECIMALS[coin] ?? 9)),
+        chargeRate: Number(fields.charge_fee_rate),
+        dischargeRate: Number(fields.discharge_fee_rate),
+        conversionRate: Number(fields.conversion_rate),
     };
 }
 //# sourceMappingURL=convert.js.map

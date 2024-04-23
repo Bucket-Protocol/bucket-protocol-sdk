@@ -1,6 +1,7 @@
-import { FountainInfo, StrapFountainInfo } from "src/types";
-import { KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID } from "../constants";
+import { COIN, FountainInfo, PsmInfo, PsmPoolResponse, StrapFountainInfo } from "src/types";
+import { COIN_DECIMALS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, PSM_POOL_IDS } from "../constants";
 import { SuiObjectResponse, getObjectFields } from "../objects/objectTypes";
+import { formatUnits } from "./format";
 
 export function objectToFountain(res: SuiObjectResponse): FountainInfo {
     const id = res.data?.objectId ?? "";
@@ -34,4 +35,19 @@ export function objectToStrapFountain(res: SuiObjectResponse): StrapFountainInfo
         latestReleaseTime: Number(fields?.latest_release_time ?? 0),
         strapId: fields?.strap_table.fields.id.id,
     }
+}
+
+export function objectToPsm(res: SuiObjectResponse): PsmInfo {
+    const fields = getObjectFields(res) as PsmPoolResponse;
+    console.log(fields)
+    const poolId = fields.id.id;
+    const coin = Object.keys(PSM_POOL_IDS).find(symbol => PSM_POOL_IDS[symbol] == poolId) as string;
+
+    return {
+        id: poolId,
+        tvl: Number(formatUnits(BigInt(fields.pool), COIN_DECIMALS[coin] ?? 9)),
+        chargeRate: Number(fields.charge_fee_rate),
+        dischargeRate: Number(fields.discharge_fee_rate),
+        conversionRate: Number(fields.conversion_rate),
+    };
 }

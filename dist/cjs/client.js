@@ -712,11 +712,11 @@ class BucketClient {
         });
         return (0, convert_1.objectToFountain)(res);
     }
-    async getPsmTVL() {
+    async getAllPsms() {
         /**
-       * @description Get all PSM's TVL
+       * @description Get all PSM's information
        */
-        let tvlList = {};
+        let psmList = {};
         try {
             const objectIdList = Object.values(constants_1.PSM_POOL_IDS);
             const response = await this.client.multiGetObjects({
@@ -727,21 +727,38 @@ class BucketClient {
                 },
             });
             response.map((res) => {
-                const fields = (0, objectTypes_1.getObjectFields)(res);
-                const poolId = fields.id.id;
-                const coins = Object.keys(constants_1.PSM_POOL_IDS).filter(symbol => constants_1.PSM_POOL_IDS[symbol] == poolId);
-                if (coins.length > 0) {
-                    const coin = coins[0];
-                    tvlList[coin] = Number((0, utils_2.formatUnits)(BigInt(fields.pool), constants_1.COIN_DECIMALS[coins[0]] ?? 9));
+                const psm = (0, convert_1.objectToPsm)(res);
+                const coin = Object.keys(constants_1.PSM_POOL_IDS).find(symbol => constants_1.PSM_POOL_IDS[symbol] == psm.id);
+                if (coin) {
+                    psmList[coin] = psm;
                 }
             });
         }
         catch (error) {
             console.log(error);
         }
-        return tvlList;
+        return psmList;
     }
     ;
+    async getPsm(coin) {
+        /**
+         * @description Get psm information from id
+         * @param poolId PSM pool id
+         * @returns Promise<PsmInfo>
+         */
+        const poolId = constants_1.PSM_POOL_IDS[coin];
+        if (!poolId) {
+            throw Error("Not PSM supported token");
+        }
+        const response = await this.client.getObject({
+            id: poolId,
+            options: {
+                showContent: true,
+                showType: true, //Check could we get type from response later
+            },
+        });
+        return (0, convert_1.objectToPsm)(response);
+    }
     async getAllStrapFountains() {
         /**
          * @description Get all stake proof list from afSUI, haSUI, vSUI fountains

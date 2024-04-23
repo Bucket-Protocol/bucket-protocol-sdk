@@ -81,7 +81,16 @@ export type StrapFountainInfo = {
 
 export type StrapFountainList = Record<string, StrapFountainInfo>;
 
-export type TvlList = Record<string, number>;
+
+export type PsmInfo = {
+  id: string;
+  tvl: number;
+  chargeRate: number;
+  dischargeRate: number;
+  conversionRate: number;
+};
+
+export type PsmList = Record<string, PsmInfo>;
 
 export type ContributorToken = {
   data: {
