@@ -1489,13 +1489,11 @@ export class BucketClient {
          * @param walletAddress
          * @returns Promise<boolean>
          */
-        const inputCoinType = psmSwitch ? COINS_TYPE_LIST.BUCK : COINS_TYPE_LIST[psmCoin];
+        const inputCoinType = psmSwitch ? COINS_TYPE_LIST.BUCK : psmCoin;
         const [inputCoin] = await getInputCoins(tx, this.client, walletAddress, inputCoinType, psmAmount);
-        if (!referrer)
-            referrer = "0x8fb41c0caf9fa1205a854806edf5f3f16023e7ddbb013c717b50ce7e539dc038";
-        const outCoinType = psmSwitch ? COINS_TYPE_LIST[psmCoin] : COINS_TYPE_LIST.BUCK;
-        const inputCoinBalance = coinIntoBalance(tx, inputCoinType, inputCoin);
+        const outCoinType = psmSwitch ? psmCoin : COINS_TYPE_LIST.BUCK;
         if (psmSwitch) {
+            const inputCoinBalance = coinIntoBalance(tx, inputCoinType, inputCoin);
             const outBalance = tx.moveCall({
                 target: `${CORE_PACKAGE_ID}::buck::discharge_reservoir`,
                 typeArguments: [outCoinType],
@@ -1508,8 +1506,13 @@ export class BucketClient {
             tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
         }
         else {
-            const coinOut = this.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
-            tx.transferObjects([coinOut], tx.pure.address(walletAddress));
+            if (inputCoin) {
+                const coinOut = this.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
+                tx.transferObjects([coinOut], tx.pure.address(walletAddress));
+            }
+            else {
+                return false;
+            }
         }
         return true;
     }
