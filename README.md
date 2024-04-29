@@ -17,24 +17,72 @@ Install Bucket Protocol using npm and git : `npm install https://github.com/andr
 Choose a package ID based `mainnet` or `testnet` by replacing `packageType` value. By default package ID is set to `mainnet`. 
 
 ```ts
-import { BucketClient } from "bucket-protocol-sdk/src/";
-import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
-
-// Instantiate SuiClient connected to testnet
-const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+import { BucketClient } from "bucket-protocol-sdk";
 
 // Instantiate BucketClient
-const buck = new BucketClient(client, {
-  packageType: "testnet"
-});
+const buck = new BucketClient();
+
+// Or create with rpc url
+const buck = new BucketClient("https://sui-mainnet-endpoint.blockvision.org/");
 ```
 
 ## Query Bucket Protocol
+
 ```ts
+
+// Return overall information
+await buck.getProtocol()
 
 // Return all available bottles
 await buck.getAllBottes()
 
 // Return all destroyed bottles
 await buck.getDestroyedBottles()
+
+// Return all tanks
+await buck.getAllTanks()
+
+// Return all psms
+await buck.getAllPsms()
+
+// Return all fountains
+await buck.getAllFountains()
+
+// Return all strap fountains
+await buck.getAllStrapFountains()
+
+```
+
+## Query User state
+
+```ts
+
+// Return user tanks with address
+await buck.getUserTanks(`0xdummy.....`)
+
+// Return user bottles with address
+await buck.getUserBottles(`0xdummy.....`)
+
+// Return user positions with address
+await buck.getUserLpProofs(`0xdummy.....`)
+
+```
+
+
+## Get borrow transaction
+
+```ts
+let tx = new TransactionBlock();
+
+tx = await buck.getBorrowTx(
+  tx,
+  `0x2::sui::SUI`,      // collateral coin type
+  1_000_000_000,        // collateral amount in raw
+  1_000_000_000,        // borrow amount in raw
+  `0xdummy...`,         // recipient address
+  true,                 // isUpdateOracle       
+  `0xdummy...`,         // you can fetch with findInsertionPlace function
+  strapId,              // bottle's strapId
+);
+
 ```
