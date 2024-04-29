@@ -1508,7 +1508,7 @@ export class BucketClient {
             tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
         }
         else {
-            const coinOut = this.psmSwapIn(tx, psmCoin, inputCoin, referrer);
+            const coinOut = this.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
             tx.transferObjects([coinOut], tx.pure.address(walletAddress));
         }
         return true;
