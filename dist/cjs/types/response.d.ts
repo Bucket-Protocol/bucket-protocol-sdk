@@ -120,6 +120,17 @@ export type SupraPriceFeedResponse = {
         };
     };
 };
+export type SBUCKFlaskResponse = {
+    id: {
+        id: string;
+    };
+    reserves: string;
+    sbuck_supply: {
+        fields: {
+            value: string;
+        };
+    };
+};
 export type PsmPoolResponse = {
     buck_minted_amount: string;
     charge_fee_rate: string;

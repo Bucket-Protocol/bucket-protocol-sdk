@@ -6,7 +6,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     // Instantiate BucketClient
     const buck = new BucketClient("https://sui-mainnet-endpoint.blockvision.org/");
 
-    /*
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
             feePrecision: "1000000",
@@ -23,7 +22,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     it('tests getProtocol() function', async () => {
         const protocol = await buck.getProtocol();
-        console.log(protocol);
         expect(protocol).toBeDefined()
     });
 
@@ -52,7 +50,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     it('tests getUserTanks() function', async () => {
         const tanks = await buck.getUserTanks("");
-        console.log(tanks);
         expect(tanks).toBeDefined()
     }, {
         timeout: 1000 * 60
@@ -60,7 +57,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     it('tests getUserBottle() function', async () => {
         const bottles = await buck.getUserBottles("");
-        console.log(bottles)
         expect(bottles).toBeDefined()
     }, {
         timeout: 60_000
@@ -77,7 +73,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
             1,
             50,
         );
-        console.log(owner);
         expect(owner).toBeDefined;
     }, {
         timeout: 60 * 1000
@@ -85,7 +80,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     it('tests getAllFountains() function', async () => {
         const fountains = await buck.getAllFountains();
-        console.log(fountains);
         expect(fountains).toBeDefined()
     }, {
         timeout: 60_000
@@ -93,11 +87,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     it('tests getAllStrapFountains() function', async () => {
         const strapFountains = await buck.getAllStrapFountains();
-        console.log(strapFountains);
         expect(strapFountains).toBeDefined()
     }, {
         timeout: 60_000
     });
-    */
-
 });

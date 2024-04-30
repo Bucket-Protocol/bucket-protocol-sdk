@@ -1211,7 +1211,7 @@ class BucketClient {
         /**
          * @description Get all prices
         */
-        const ids = Object.values(constants_1.SUPRA_PRICE_FEEDS);
+        const ids = Object.values(constants_1.SUPRA_PRICE_FEEDS).concat(constants_1.SBUCK_FLASK_OBJECT_ID);
         const objectNameList = Object.keys(constants_1.SUPRA_PRICE_FEEDS);
         const priceObjects = await this.client.multiGetObjects({
             ids,
@@ -1230,41 +1230,52 @@ class BucketClient {
             USDT: 1,
             USDY: 1,
             BUCK: 1,
+            sBUCK: 1,
             BUCKETUS: 1,
             CETABLE: 1,
             STAPEARL: 1,
         };
         priceObjects.map((res, index) => {
-            const priceFeed = (0, objectTypes_1.getObjectFields)(res);
-            const priceBn = priceFeed.value.fields.value;
-            const decimals = priceFeed.value.fields.decimal;
-            const price = parseInt(priceBn) / Math.pow(10, decimals);
-            if (objectNameList[index] == 'usdc_usd') {
-                prices['USDC'] = price;
+            const objectId = res.data?.objectId;
+            if (objectId == constants_1.SBUCK_FLASK_OBJECT_ID) {
+                const priceFeed = (0, objectTypes_1.getObjectFields)(res);
+                const reserves = priceFeed.reserves;
+                const sBuckSupply = priceFeed.sbuck_supply.fields.value;
+                const price = Number(reserves) / Number(sBuckSupply);
+                prices['SBUCK'] = price;
             }
-            else if (objectNameList[index] == 'usdt_usd') {
-                prices['USDT'] = price;
-            }
-            else if (objectNameList[index] == 'navx_usd') {
-                prices['NAVX'] = price;
-            }
-            else if (objectNameList[index] == 'cetus_usd') {
-                prices['CETUS'] = price;
-            }
-            else if (objectNameList[index] == 'eth_usdt') {
-                prices['WETH'] = (prices['USDT'] ?? 1) * price;
-            }
-            else if (objectNameList[index] == 'sui_usdt') {
-                prices['SUI'] = (prices['USDT'] ?? 1) * price;
-            }
-            else if (objectNameList[index] == 'vsui_sui') {
-                prices['vSUI'] = (prices['SUI'] ?? 1) * price;
-            }
-            else if (objectNameList[index] == 'hasui_sui') {
-                prices['haSUI'] = (prices['SUI'] ?? 1) * price;
-            }
-            else if (objectNameList[index] == 'afsui_sui') {
-                prices['afSUI'] = (prices['SUI'] ?? 1) * price;
+            else {
+                const priceFeed = (0, objectTypes_1.getObjectFields)(res);
+                const priceBn = priceFeed.value.fields.value;
+                const decimals = priceFeed.value.fields.decimal;
+                const price = parseInt(priceBn) / Math.pow(10, decimals);
+                if (objectNameList[index] == 'usdc_usd') {
+                    prices['USDC'] = price;
+                }
+                else if (objectNameList[index] == 'usdt_usd') {
+                    prices['USDT'] = price;
+                }
+                else if (objectNameList[index] == 'navx_usd') {
+                    prices['NAVX'] = price;
+                }
+                else if (objectNameList[index] == 'cetus_usd') {
+                    prices['CETUS'] = price;
+                }
+                else if (objectNameList[index] == 'eth_usdt') {
+                    prices['WETH'] = (prices['USDT'] ?? 1) * price;
+                }
+                else if (objectNameList[index] == 'sui_usdt') {
+                    prices['SUI'] = (prices['USDT'] ?? 1) * price;
+                }
+                else if (objectNameList[index] == 'vsui_sui') {
+                    prices['vSUI'] = (prices['SUI'] ?? 1) * price;
+                }
+                else if (objectNameList[index] == 'hasui_sui') {
+                    prices['haSUI'] = (prices['SUI'] ?? 1) * price;
+                }
+                else if (objectNameList[index] == 'afsui_sui') {
+                    prices['afSUI'] = (prices['SUI'] ?? 1) * price;
+                }
             }
         });
         return prices;
