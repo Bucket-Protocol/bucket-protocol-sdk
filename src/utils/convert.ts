@@ -39,7 +39,6 @@ export function objectToStrapFountain(res: SuiObjectResponse): StrapFountainInfo
 
 export function objectToPsm(res: SuiObjectResponse): PsmInfo {
     const fields = getObjectFields(res) as PsmPoolResponse;
-    console.log(fields)
     const poolId = fields.id.id;
     const coin = Object.keys(PSM_POOL_IDS).find(symbol => PSM_POOL_IDS[symbol] == poolId) as string;
 

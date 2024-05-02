@@ -33,7 +33,6 @@ export function objectToStrapFountain(res) {
 }
 export function objectToPsm(res) {
     const fields = getObjectFields(res);
-    console.log(fields);
     const poolId = fields.id.id;
     const coin = Object.keys(PSM_POOL_IDS).find(symbol => PSM_POOL_IDS[symbol] == poolId);
     return {
