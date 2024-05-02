@@ -10,6 +10,7 @@ export declare const PSM_POOL_IDS: Partial<Record<COIN, string>>;
 export declare const SUPRA_PRICE_FEEDS: {
     usdc_usd: string;
     usdt_usd: string;
+    usdy_usd: string;
     eth_usdt: string;
     sui_usdt: string;
     hasui_sui: string;

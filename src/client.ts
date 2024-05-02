@@ -1499,7 +1499,7 @@ export class BucketClient {
     priceObjects.map((res, index) => {
 
       const objectId = res.data?.objectId;
-      if(objectId == SBUCK_FLASK_OBJECT_ID) {
+      if (objectId == SBUCK_FLASK_OBJECT_ID) {
         const priceFeed = getObjectFields(res) as SBUCKFlaskResponse;
         const reserves = priceFeed.reserves;
         const sBuckSupply = priceFeed.sbuck_supply.fields.value;
@@ -1511,12 +1511,15 @@ export class BucketClient {
         const priceBn = priceFeed.value.fields.value;
         const decimals = priceFeed.value.fields.decimal;
         const price = parseInt(priceBn) / Math.pow(10, decimals);
-  
+
         if (objectNameList[index] == 'usdc_usd') {
           prices['USDC'] = price;
         }
         else if (objectNameList[index] == 'usdt_usd') {
           prices['USDT'] = price;
+        }
+        else if (objectNameList[index] == 'usdy_usd') {
+          prices['USDY'] = price;
         }
         else if (objectNameList[index] == 'navx_usd') {
           prices['NAVX'] = price;
@@ -1780,7 +1783,7 @@ export class BucketClient {
   ): TransactionResult {
     /**
      * @description Get transaction for PSM
-     * @param coinType T e.g "0x2::sui::SUI"
+     * @param coinType T e.g USDC coin type
      * @param coinInput Coin<T>
      * @param referrer referrer get 50% rebate
      * @returns Coin<BUCK>

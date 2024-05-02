@@ -1252,6 +1252,9 @@ export class BucketClient {
                 else if (objectNameList[index] == 'usdt_usd') {
                     prices['USDT'] = price;
                 }
+                else if (objectNameList[index] == 'usdy_usd') {
+                    prices['USDY'] = price;
+                }
                 else if (objectNameList[index] == 'navx_usd') {
                     prices['NAVX'] = price;
                 }
@@ -1463,7 +1466,7 @@ export class BucketClient {
     psmSwapIn(tx, coinType, coinInput, referrer) {
         /**
          * @description Get transaction for PSM
-         * @param coinType T e.g "0x2::sui::SUI"
+         * @param coinType T e.g USDC coin type
          * @param coinInput Coin<T>
          * @param referrer referrer get 50% rebate
          * @returns Coin<BUCK>

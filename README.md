@@ -26,6 +26,23 @@ const buck = new BucketClient();
 const buck = new BucketClient("https://sui-mainnet-endpoint.blockvision.org/");
 ```
 
+
+## Become a stable swap and start earning rebates by integrating psmIn
+
+```ts
+
+// Build psmIn transaction
+let tx = new TransactionBlock();
+
+const coinOut = await buck.psmSwapIn(
+  tx,
+  "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN",  // e.g USDC coin type
+  usdcInput,        // usdc coin object
+  "0xdummy...",     // referrer address
+);
+
+```
+
 ## Query Bucket Protocol
 
 ```ts
