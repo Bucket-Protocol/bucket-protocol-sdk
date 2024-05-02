@@ -94,7 +94,11 @@ exports.SUPRA_ID = {
     CETUS: "93",
 };
 exports.SWITCHBOARD_UPDATE_TARGET = "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_switchboard";
-exports.SUPRA_HANDLER_OBJECT = "0xaa0315f0748c1f24ddb2b45f7939cff40f7a8104af5ccbc4a1d32f870c0b4105";
+exports.SUPRA_HANDLER_OBJECT = {
+    objectId: "0xaa0315f0748c1f24ddb2b45f7939cff40f7a8104af5ccbc4a1d32f870c0b4105",
+    initialSharedVersion: 5963053,
+    mutable: true,
+};
 exports.SUPRA_UPDATE_TARGET = "0xe2077d678de929d64d3fcd79c1adfbd23d97324e9bae3a60102d44367fbe008c::bucket_oracle::update_price_from_supra";
 exports.CLOCK_OBJECT = {
     objectId: "0x0000000000000000000000000000000000000000000000000000000000000006",

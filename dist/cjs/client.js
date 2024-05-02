@@ -353,7 +353,7 @@ class BucketClient {
                 arguments: [
                     tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
                     tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
-                    tx.object(constants_1.SUPRA_HANDLER_OBJECT),
+                    tx.sharedObjectRef(constants_1.SUPRA_HANDLER_OBJECT),
                     tx.pure(constants_1.SUPRA_ID['SUI'] ?? "", "u32"),
                 ],
             });
@@ -384,6 +384,49 @@ class BucketClient {
                 });
             }
         }
+        else if (token === "vSUI") {
+            tx.moveCall({
+                target: constants_1.SUPRA_UPDATE_TARGET,
+                typeArguments: [constants_1.COINS_TYPE_LIST['SUI']],
+                arguments: [
+                    tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
+                    tx.sharedObjectRef(constants_1.SUPRA_HANDLER_OBJECT),
+                    tx.pure(constants_1.SUPRA_ID['SUI'] ?? "", "u32"),
+                ],
+            });
+            // update vSUI price
+            tx.moveCall({
+                target: "0x1caed1bf0cc4ca7357989b3a08e487078c6e60277512a8799347010e9ea92e8f::vsui_rule::update_price",
+                arguments: [
+                    tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                    tx.object("0x7fa2faa111b8c65bea48a23049bfd81ca8f971a262d981dcd9a17c3825cb5baf"),
+                    tx.object("0x680cd26af32b2bde8d3361e804c53ec1d1cfe24c7f039eb7f549e8dfde389a60"),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
+                ],
+            });
+        }
+        else if (token === "haSUI") {
+            tx.moveCall({
+                target: constants_1.SUPRA_UPDATE_TARGET,
+                typeArguments: [constants_1.COINS_TYPE_LIST['SUI']],
+                arguments: [
+                    tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
+                    tx.sharedObjectRef(constants_1.SUPRA_HANDLER_OBJECT),
+                    tx.pure(constants_1.SUPRA_ID['SUI'] ?? "", "u32"),
+                ],
+            });
+            // update haSUI price
+            tx.moveCall({
+                target: "0x4433ab096a71cbcdf70183f465e613955526f321039d9a76be0bd98c5da75382::hasui_rule::update_price",
+                arguments: [
+                    tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
+                    tx.object("0x47b224762220393057ebf4f70501b6e657c3e56684737568439a04f80849b2ca"),
+                    tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
+                ],
+            });
+        }
         else {
             tx.moveCall({
                 target: constants_1.SUPRA_UPDATE_TARGET,
@@ -391,7 +434,7 @@ class BucketClient {
                 arguments: [
                     tx.sharedObjectRef(constants_1.ORACLE_OBJECT),
                     tx.sharedObjectRef(constants_1.CLOCK_OBJECT),
-                    tx.object(constants_1.SUPRA_HANDLER_OBJECT),
+                    tx.sharedObjectRef(constants_1.SUPRA_HANDLER_OBJECT),
                     tx.pure(constants_1.SUPRA_ID[token] ?? "", "u32"),
                 ],
             });
