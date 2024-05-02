@@ -1504,7 +1504,7 @@ export class BucketClient {
         const reserves = priceFeed.reserves;
         const sBuckSupply = priceFeed.sbuck_supply.fields.value;
         const price = Number(reserves) / Number(sBuckSupply);
-        prices['SBUCK'] = price;
+        prices['sBUCK'] = price;
       }
       else {
         const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
