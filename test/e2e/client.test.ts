@@ -33,13 +33,14 @@ describe('Interacting with Bucket Client on mainnet', () => {
         expect(await buck.getDestroyedBottles()).toBeDefined()
     });
 
-    it('testsgetAllBuckets() function', async () => {
+    it('tests getAllBuckets() function', async () => {
         const buckets = await buck.getAllBuckets();
         expect(buckets).toBeDefined()
     });
 
     it('tests getPrices() function', async () => {
         const prices = await buck.getPrices();
+        console.log(prices);
         expect(prices).toBeDefined()
     });
 

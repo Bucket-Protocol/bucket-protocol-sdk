@@ -130,7 +130,7 @@ export declare const KRIYA_FOUNTAIN_PACKAGE_ID = "0x3daf65b7356c560bd5bdd989aa25
 export declare const SBUCK_FOUNTAIN_PACKAGE_ID = "0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82";
 export declare const STRAP_ID = "0xd9162764da404339384fe40487499dc867c3f1fa3eb870381c41a8b41458b0e5::strap::BottleStrap";
 export declare const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef>>;
-export declare const STRAP_FOUNTAIN_PACKAGE_ID = "0x8a8e91f0453de1bf2684f371b09a9320277d2aa9d3f572bf499542ed471c15a3";
+export declare const STRAP_FOUNTAIN_PACKAGE_ID = "0x75ac5c740576a9db5906d339cbf806bd2b08c41b63d7bde341f30a04338dda4f";
 export declare const STRAP_TYPE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
 export declare const STAKE_PROOF_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59::fountain::StakeProof";
 export declare const SBUCK_FLASK_OBJECT_ID = "0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8";

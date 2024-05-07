@@ -215,7 +215,7 @@ export const STRAP_FOUNTAIN_IDS = {
         mutable: true,
     }
 };
-export const STRAP_FOUNTAIN_PACKAGE_ID = "0x8a8e91f0453de1bf2684f371b09a9320277d2aa9d3f572bf499542ed471c15a3";
+export const STRAP_FOUNTAIN_PACKAGE_ID = "0x75ac5c740576a9db5906d339cbf806bd2b08c41b63d7bde341f30a04338dda4f";
 export const STRAP_TYPE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
 export const STAKE_PROOF_ID = `${STRAP_TYPE_ID}::fountain::StakeProof`;
 export const SBUCK_FLASK_OBJECT_ID = "0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8";
