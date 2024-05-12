@@ -6,7 +6,7 @@ import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
 import { SharedObjectRef, getObjectFields } from "./objects/objectTypes";
 
-import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, CETUS_BUCK_USDC_POOL_05_ID, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID, SBUCK_BUCK_LP_REGISTRY_ID, SBUCK_FOUNTAIN_PACKAGE_ID, SBUCK_FLASK_OBJECT_ID } from "./constants";
+import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, CETUS_BUCK_USDC_POOL_05_ID, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID, SBUCK_BUCK_LP_REGISTRY_ID, SBUCK_FOUNTAIN_PACKAGE_ID, SBUCK_FLASK_OBJECT_ID, SWITCHBOARD_UPDATE_TARGET } from "./constants";
 import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, BottleInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, PsmPoolResponse, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList, PsmList, PsmInfo, SBUCKFlaskResponse } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
 import { objectToFountain, objectToPsm, objectToStrapFountain } from "./utils/convert";
@@ -452,6 +452,16 @@ export class BucketClient {
      * @description update token price using supra oracle
      * @param assetType Asset , e.g "0x2::sui::SUI"
      */
+
+    tx.moveCall({
+      target: SWITCHBOARD_UPDATE_TARGET,
+      typeArguments: [COINS_TYPE_LIST.SUI],
+      arguments: [
+        tx.sharedObjectRef(ORACLE_OBJECT),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.object("0xbca474133638352ba83ccf7b5c931d50f764b09550e16612c9f70f1e21f3f594"),
+      ],
+    });
 
     if (token === "afSUI" || token === "AF_LP_SUI_SUI") {
       tx.moveCall({
