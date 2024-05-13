@@ -1,4 +1,4 @@
-import { COIN, FountainInfo, PsmInfo, PsmPoolResponse, StrapFountainInfo } from "src/types";
+import { COIN, FountainInfo, PsmInfo, PsmPoolResponse, StrapFountainInfo } from "../types";
 import { COIN_DECIMALS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, PSM_POOL_IDS } from "../constants";
 import { SuiObjectResponse, getObjectFields } from "../objects/objectTypes";
 import { formatUnits } from "./format";
@@ -40,11 +40,11 @@ export function objectToStrapFountain(res: SuiObjectResponse): StrapFountainInfo
 export function objectToPsm(res: SuiObjectResponse): PsmInfo {
     const fields = getObjectFields(res) as PsmPoolResponse;
     const poolId = fields.id.id;
-    const coin = Object.keys(PSM_POOL_IDS).find(symbol => PSM_POOL_IDS[symbol] == poolId) as string;
+    const coin = Object.keys(PSM_POOL_IDS).find(symbol => PSM_POOL_IDS[symbol as COIN] == poolId) as string;
 
     return {
         id: poolId,
-        tvl: Number(formatUnits(BigInt(fields.pool), COIN_DECIMALS[coin] ?? 9)),
+        tvl: Number(formatUnits(BigInt(fields.pool), COIN_DECIMALS[coin as COIN] ?? 9)),
         chargeRate: Number(fields.charge_fee_rate),
         dischargeRate: Number(fields.discharge_fee_rate),
         conversionRate: Number(fields.conversion_rate),

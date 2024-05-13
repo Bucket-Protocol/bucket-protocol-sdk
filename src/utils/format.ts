@@ -1,6 +1,5 @@
-import { UserLpProof } from "src/types";
 import { COINS_TYPE_LIST } from "../constants";
-import { COIN } from "..";
+import { COIN, UserLpProof } from "..";
 
 export function getObjectNames(objectTypes: string[]) {
 
@@ -99,4 +98,6 @@ export const getCoinSymbol = (coinType: string) => {
     if (coin) {
         return coin as COIN;
     }
+
+    return undefined;
 }

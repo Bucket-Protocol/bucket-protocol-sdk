@@ -1,4 +1,4 @@
-import { BucketInfo } from "src/types";
+import { BucketInfo } from "../types";
 
 export function computeBorrowFeeRate(
     bucketInfo: BucketInfo | null | undefined
