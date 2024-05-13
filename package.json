@@ -1,28 +1,34 @@
 {
   "name": "bucket-protocol-sdk",
   "author": "Andrei <andreid.dev@gmail.com>",
-  "version": "0.7.67",
+  "version": "0.7.70",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
-  "files": [
-    "dist"
-  ],
-  "module": "./dist/esm/index.js",
-  "main": "./dist/cjs/index.js",
-  "types": "./dist/cjs/index.d.ts",
   "scripts": {
     "clean": "rm -fr dist/",
-    "build": "rm -fr dist/ && tsc && tsc -p tsconfig.esm.json",
-    "test": "vitest",
-    "prettier:check": "prettier -c --ignore-unknown .",
-    "prettier:fix": "prettier -w --ignore-unknown .",
-    "eslint:check": "eslint .",
-    "eslint:fix": "pnpm run eslint:check --fix",
-    "lint": "pnpm run eslint:check && pnpm run prettier:check",
-    "lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
+    "build": "tsup",
+    "test": "vitest"
+  },
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@mysten/sui.js": "^0.54.1",
+    "@types/superstruct": "^0.8.2",
     "superstruct": "^1.0.3"
   },
   "devDependencies": {
@@ -31,7 +37,7 @@
     "@typescript-eslint/parser": "^6.3.0",
     "eslint": "^8.47.0",
     "prettier": "^3.0.1",
-    "tsup": "^7.2.0",
+    "tsup": "^8.0.2",
     "typescript": "^5.1.6",
     "vitest": "^0.34.1"
   }

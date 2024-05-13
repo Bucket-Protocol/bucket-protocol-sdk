@@ -1,4 +1,4 @@
-import { EventId } from "@mysten/sui.js/src/client";
+import { EventId } from "@mysten/sui.js/client";
 
 export type BucketProtocolResponse = {
   dataType: string;
@@ -110,6 +110,49 @@ export type TankInfoResponse = {
   collateral_pool: string;
   current_s: string;
   current_p: string;
+};
+
+export type FountainResponse = {
+  cumulative_unit: string;
+  flow_amount: string;
+  flow_interval: string;
+  id: {
+    id: string;
+  };
+  latest_release_time: string;
+  max_lock_time: string;
+  min_lock_time: string;
+  pool: string;
+  source: string;
+  staked: string;
+  total_weight: string;
+};
+
+export type StrapFountainResponse = {
+  cumulative_unit: string;
+  flow_amount: string;
+  flow_interval: string;
+  id: {
+    id: string;
+  };
+  latest_release_time: string;
+  total_debt_amount: string;
+  pool: string;
+  source: string;
+  strap_table: {
+    fields: {
+      id: {
+        id: string;
+      };
+    }
+  };
+  surplus_table: {
+    fields: {
+      id: {
+        id: string;
+      };
+    }
+  };
 };
 
 export type SupraPriceFeedResponse = {

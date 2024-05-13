@@ -1,39 +1,38 @@
-import { COIN, FountainInfo, PsmInfo, PsmPoolResponse, StrapFountainInfo } from "../types";
-import { COIN_DECIMALS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, PSM_POOL_IDS } from "../constants";
-import { SuiObjectResponse, getObjectFields } from "../objects/objectTypes";
+import { COIN, FountainInfo, FountainResponse, PsmInfo, PsmPoolResponse, StrapFountainInfo, StrapFountainResponse } from "../types";
+import { COIN_DECIMALS, PSM_POOL_IDS } from "../constants";
 import { formatUnits } from "./format";
+import { SuiObjectResponse } from "@mysten/sui.js/client";
+import { getObjectFields } from "./object";
 
 export function objectToFountain(res: SuiObjectResponse): FountainInfo {
     const id = res.data?.objectId ?? "";
-    const isKriya = id == KRIYA_SUI_BUCK_LP_REGISTRY_ID || id == KRIYA_USDC_BUCK_LP_REGISTRY_ID;
-    const fields = getObjectFields(res);
 
+    const fields = getObjectFields(res) as FountainResponse;
     return {
-        id: res.data?.objectId ?? "",
-        flowAmount: Number(fields?.flow_amount ?? 0),
-        flowInterval: Number(fields?.flow_interval ?? 1),
-        sourceBalance: Number(fields?.source ?? 0),
-        poolBalance: Number(fields?.pool ?? 0),
-        stakedBalance: isKriya ? Number(fields?.staked?.fields?.lsp.fields?.balance ?? 0) : Number(fields?.staked ?? 0),
-        totalWeight: Number(fields?.total_weight ?? 0),
-        cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
-        latestReleaseTime: Number(fields?.latest_release_time ?? 0),
+        id,
+        flowAmount: Number(fields.flow_amount ?? 0),
+        flowInterval: Number(fields.flow_interval ?? 1),
+        sourceBalance: Number(fields.source ?? 0),
+        poolBalance: Number(fields.pool ?? 0),
+        stakedBalance: Number(fields.staked ?? 0),
+        totalWeight: Number(fields.total_weight ?? 0),
+        cumulativeUnit: Number(fields.cumulative_unit ?? 0),
+        latestReleaseTime: Number(fields.latest_release_time ?? 0),
     }
 }
 
 export function objectToStrapFountain(res: SuiObjectResponse): StrapFountainInfo {
-    const fields = getObjectFields(res);
-
+    const fields = getObjectFields(res) as StrapFountainResponse;
     return {
         id: res.data?.objectId ?? "",
-        flowAmount: Number(fields?.flow_amount ?? 0),
-        flowInterval: Number(fields?.flow_interval ?? 1),
-        sourceBalance: Number(fields?.source ?? 0),
-        poolBalance: Number(fields?.pool ?? 0),
-        totalDebtAmount: Number(fields?.total_debt_amount ?? 0),
-        cumulativeUnit: Number(fields?.cumulative_unit ?? 0),
-        latestReleaseTime: Number(fields?.latest_release_time ?? 0),
-        strapId: fields?.strap_table.fields.id.id,
+        flowAmount: Number(fields.flow_amount ?? 0),
+        flowInterval: Number(fields.flow_interval ?? 1),
+        sourceBalance: Number(fields.source ?? 0),
+        poolBalance: Number(fields.pool ?? 0),
+        totalDebtAmount: Number(fields.total_debt_amount ?? 0),
+        cumulativeUnit: Number(fields.cumulative_unit ?? 0),
+        latestReleaseTime: Number(fields.latest_release_time ?? 0),
+        strapId: fields.strap_table.fields.id.id,
     }
 }
 

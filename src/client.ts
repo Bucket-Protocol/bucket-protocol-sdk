@@ -4,12 +4,11 @@ import { DevInspectResults, DynamicFieldInfo, SuiClient, SuiObjectResponse, getF
 import { TransactionArgument, TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
 import { normalizeSuiAddress } from "@mysten/sui.js/utils";
 import { BCS, getSuiMoveConfig } from "@mysten/bcs"
-import { SharedObjectRef, getObjectFields } from "./objects/objectTypes";
+import { SharedObjectRef } from "@mysten/sui.js/bcs";
 
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID, SBUCK_BUCK_LP_REGISTRY_ID, SBUCK_FOUNTAIN_PACKAGE_ID, SBUCK_FLASK_OBJECT_ID, SWITCHBOARD_UPDATE_TARGET } from "./constants";
 import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList, PsmList, PsmInfo, SBUCKFlaskResponse } from "./types";
-import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin } from "./utils";
-import { objectToFountain, objectToPsm, objectToStrapFountain } from "./utils/convert";
+import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin, objectToFountain, objectToPsm, objectToStrapFountain, getObjectFields } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -139,7 +138,7 @@ export class BucketClient {
     buckOutput: number | TransactionArgument,
     insertionPlace?: string,
     strapId?: string | TransactionArgument,
-  ): TransactionResult {
+  ): TransactionResult | null {
     /**
      * @description Borrow
      * @param tx
@@ -156,20 +155,22 @@ export class BucketClient {
           target: `${CORE_PACKAGE_ID}::strap::new`,
           typeArguments: [collateralType],
         });
-        const [buckOut] = tx.moveCall({
-          target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
-          typeArguments: [collateralType],
-          arguments: [
-            tx.sharedObjectRef(PROTOCOL_OBJECT),
-            tx.sharedObjectRef(ORACLE_OBJECT),
-            strap,
-            tx.sharedObjectRef(CLOCK_OBJECT),
-            collateralInput,
-            typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
-            tx.pure(insertionPlace ? [insertionPlace] : []),
-          ],
-        });
-        return [strap, buckOut] as TransactionResult;
+        if (strap) {
+          const [buckOut] = tx.moveCall({
+            target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
+            typeArguments: [collateralType],
+            arguments: [
+              tx.sharedObjectRef(PROTOCOL_OBJECT),
+              tx.sharedObjectRef(ORACLE_OBJECT),
+              strap,
+              tx.sharedObjectRef(CLOCK_OBJECT),
+              collateralInput,
+              typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
+              tx.pure(insertionPlace ? [insertionPlace] : []),
+            ],
+          });
+          return [strap, buckOut] as TransactionResult;
+        }
       } else {
         // console.log(strapId, insertionPlace);
         return tx.moveCall({
@@ -200,6 +201,8 @@ export class BucketClient {
         ],
       });
     }
+
+    return null;
   }
 
   topUp(
@@ -1008,9 +1011,9 @@ export class BucketClient {
     });
 
     const fountains: StrapFountainList = {};
-    for (const id in response) {
-      const fountain = objectToStrapFountain(response[id]);
-      const coin = fountainIds[id];
+    for (let idx = 0; idx < response.length; idx++) {
+      const fountain = objectToStrapFountain(response[idx]);
+      const coin = fountainIds[idx];
       fountains[coin] = fountain;
     }
 

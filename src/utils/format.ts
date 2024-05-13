@@ -81,8 +81,13 @@ export const parseBigInt = (number: `${number}`, decimal: number) => {
 };
 
 export const proofTypeToCoinType = (poolType: string): string[] => {
-    const coinTypes = poolType.split("<")[1].replace(">", "").split(", ");
-    return coinTypes;
+    const typeChunks = poolType.split("<");
+    if (typeChunks[1]) {
+        return typeChunks[1].replace(">", "").split(", ");
+    }
+
+    return [];
+
 };
 
 export const lpProofToObject = (lpProof: UserLpProof) => {
