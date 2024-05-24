@@ -1720,14 +1720,14 @@ export class BucketClient {
             tx.sharedObjectRef(CLOCK_OBJECT),
           ],
         });
-        tx.moveCall({
-          target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::destroy_empty_strap`,
-          typeArguments: [collateralType],
-          arguments: [
-            tx.sharedObjectRef(PROTOCOL_OBJECT),
-            strap,
-          ]
-        });
+        // tx.moveCall({
+        //   target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::destroy_empty_strap`,
+        //   typeArguments: [collateralType],
+        //   arguments: [
+        //     tx.sharedObjectRef(PROTOCOL_OBJECT),
+        //     strap,
+        //   ]
+        // });
       }
       else {
         tx.moveCall({
