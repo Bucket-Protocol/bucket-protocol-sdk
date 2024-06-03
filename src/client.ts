@@ -1,13 +1,13 @@
 // Copyright Andrei <andreid.dev@gmail.com>
 
-import { DevInspectResults, DynamicFieldInfo, SuiClient, SuiObjectResponse, getFullnodeUrl } from "@mysten/sui.js/client";
-import { TransactionArgument, TransactionBlock, TransactionResult } from "@mysten/sui.js/transactions";
-import { normalizeSuiAddress } from "@mysten/sui.js/utils";
-import { BCS, getSuiMoveConfig } from "@mysten/bcs"
-import { SharedObjectRef } from "@mysten/sui.js/bcs";
+import { DevInspectResults, DynamicFieldInfo, SuiClient, SuiObjectResponse, getFullnodeUrl } from "@mysten/sui/client";
+import { TransactionArgument, Transaction, TransactionResult } from "@mysten/sui/transactions";
+import { normalizeSuiAddress } from "@mysten/sui/utils";
+import { bcs } from "@mysten/sui/bcs";
+
 
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID, SBUCK_BUCK_LP_REGISTRY_ID, SBUCK_FOUNTAIN_PACKAGE_ID, SBUCK_FLASK_OBJECT_ID, SWITCHBOARD_UPDATE_TARGET } from "./constants";
-import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList, PsmList, PsmInfo, SBUCKFlaskResponse } from "./types";
+import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList, PsmList, PsmInfo, SBUCKFlaskResponse, SharedObjectRef } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin, objectToFountain, objectToPsm, objectToStrapFountain, getObjectFields } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -40,7 +40,7 @@ export class BucketClient {
   }
 
   depositToTank(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetBuck: string,
     assetType: string,
     tankId: string,
@@ -58,12 +58,12 @@ export class BucketClient {
     return tx.moveCall({
       target: `${CORE_PACKAGE_ID}::tank::deposit`,
       typeArguments: [assetBuck, assetType],
-      arguments: [tx.object(tankId), tx.pure(depositAmount)],
+      arguments: [tx.object(tankId), tx.pure.u64(depositAmount)],
     });
   }
 
   withdrawFromTank(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetBuck: string,
     assetType: string,
     tankId: string,
@@ -81,12 +81,12 @@ export class BucketClient {
     return tx.moveCall({
       target: `${CORE_PACKAGE_ID}::tank::withdraw`,
       typeArguments: [assetBuck, assetType],
-      arguments: [tx.object(tankId), tx.pure(contributorToken)],
+      arguments: [tx.object(tankId), tx.object(contributorToken)],
     });
   }
 
   claimFromTank(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetBuck: string,
     assetType: string,
     tankId: string,
@@ -104,12 +104,12 @@ export class BucketClient {
     return tx.moveCall({
       target: `${CORE_PACKAGE_ID}::tank::claim`,
       typeArguments: [assetBuck, assetType],
-      arguments: [tx.object(tankId), tx.pure(contributorToken)],
+      arguments: [tx.object(tankId), tx.object(contributorToken)],
     });
   }
 
   claimBkt(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetBuck: string,
     assetType: string,
     tankId: string,
@@ -127,12 +127,12 @@ export class BucketClient {
     return tx.moveCall({
       target: `${CORE_PACKAGE_ID}::tank::claim_bkt`,
       typeArguments: [assetBuck, assetType],
-      arguments: [tx.object(tankId), tx.pure(contributorToken)],
+      arguments: [tx.object(tankId), tx.object(contributorToken)],
     });
   }
 
   borrow(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     collateralInput: TransactionResult,
     buckOutput: number | TransactionArgument,
@@ -165,8 +165,8 @@ export class BucketClient {
               strap,
               tx.sharedObjectRef(CLOCK_OBJECT),
               collateralInput,
-              typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
-              tx.pure(insertionPlace ? [insertionPlace] : []),
+              typeof buckOutput === "number" ? tx.pure.u64(buckOutput) : buckOutput,
+              tx.pure(bcs.vector(bcs.Address).serialize(insertionPlace ? [insertionPlace] : [])),
             ],
           });
           return [strap, buckOut] as TransactionResult;
@@ -182,8 +182,8 @@ export class BucketClient {
             typeof strapId === "string" ? tx.object(strapId) : strapId,
             tx.sharedObjectRef(CLOCK_OBJECT),
             collateralInput,
-            typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
-            tx.pure(insertionPlace ? [insertionPlace] : []),
+            typeof buckOutput === "number" ? tx.pure.u64(buckOutput) : buckOutput,
+            tx.pure(bcs.vector(bcs.Address).serialize(insertionPlace ? [insertionPlace] : [])),
           ],
         });
       }
@@ -196,8 +196,8 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           collateralInput,
-          typeof buckOutput === "number" ? tx.pure(buckOutput, "u64") : buckOutput,
-          tx.pure(insertionPlace ? [insertionPlace] : []),
+          typeof buckOutput === "number" ? tx.pure.u64(buckOutput) : buckOutput,
+          tx.pure(bcs.vector(bcs.Address).serialize(insertionPlace ? [insertionPlace] : [])),
         ],
       });
     }
@@ -206,7 +206,7 @@ export class BucketClient {
   }
 
   topUp(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     collateralInput: TransactionResult,
     forAddress: string,
@@ -228,15 +228,15 @@ export class BucketClient {
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
         collateralInput,
-        tx.pure(forAddress, "address"),
-        tx.pure(insertionPlace ? [insertionPlace] : []),
+        tx.pure.address(forAddress),
+        tx.pure(bcs.vector(bcs.Address).serialize(insertionPlace ? [insertionPlace] : [])),
         tx.sharedObjectRef(CLOCK_OBJECT),
       ],
     });
   }
 
   withdraw(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetType: string,
     collateralAmount: string,
     insertionPlace?: string,
@@ -259,8 +259,8 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           typeof strapId === "string" ? tx.object(strapId) : strapId,
           tx.sharedObjectRef(CLOCK_OBJECT),
-          tx.pure(collateralAmount, "u64"),
-          tx.pure(insertionPlace ? [insertionPlace] : []),
+          tx.pure.u64(collateralAmount),
+          tx.pure(bcs.vector(bcs.Address).serialize(insertionPlace ? [insertionPlace] : [])),
         ],
       });
     } else {
@@ -271,15 +271,15 @@ export class BucketClient {
           tx.sharedObjectRef(PROTOCOL_OBJECT),
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
-          tx.pure(collateralAmount, "u64"),
-          tx.pure(insertionPlace ? [insertionPlace] : []),
+          tx.pure.u64(collateralAmount),
+          tx.pure(bcs.vector(bcs.Address).serialize(insertionPlace ? [insertionPlace] : [])),
         ],
       });
     }
   }
 
   repay(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetType: string,
     buckInput: TransactionResult,
     strapId?: string | TransactionArgument,
@@ -316,7 +316,7 @@ export class BucketClient {
   }
 
   redeem(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetType: string,
     buckInput: TransactionResult,
     insertionPlace?: string,
@@ -337,13 +337,13 @@ export class BucketClient {
         tx.sharedObjectRef(ORACLE_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
         buckInput,
-        tx.pure(insertionPlace ? [insertionPlace] : []),
+        tx.pure(bcs.vector(bcs.Address).serialize(insertionPlace ? [insertionPlace] : [])),
       ],
     });
   }
 
   stake(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetType: string,
     well: string,
     bktInput: string,
@@ -363,8 +363,8 @@ export class BucketClient {
       typeArguments: [assetType],
       arguments: [
         tx.object(well),
-        tx.pure(bktInput),
-        tx.pure(lockTime),
+        tx.object(bktInput),
+        tx.pure.u64(lockTime),
         tx.sharedObjectRef(CLOCK_OBJECT)
       ],
     });
@@ -372,7 +372,7 @@ export class BucketClient {
 
 
   unstake(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetType: string,
     well: string,
     stakedBkt: string,
@@ -390,14 +390,14 @@ export class BucketClient {
       typeArguments: [assetType],
       arguments: [
         tx.object(well),
-        tx.pure(stakedBkt),
+        tx.object(stakedBkt),
         tx.sharedObjectRef(CLOCK_OBJECT)
       ],
     });
   }
 
   forceUnstake(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetType: string,
     well: string,
     bktTreasury: string,
@@ -417,14 +417,14 @@ export class BucketClient {
       arguments: [
         tx.object(well),
         tx.object(bktTreasury),
-        tx.pure(stakedBkt),
+        tx.object(stakedBkt),
         tx.sharedObjectRef(CLOCK_OBJECT)
       ],
     });
   }
 
   claimFromWell(
-    tx: TransactionBlock,
+    tx: Transaction,
     assetType: string,
     well: string,
     stakedBkt: string,
@@ -442,13 +442,13 @@ export class BucketClient {
       typeArguments: [assetType],
       arguments: [
         tx.object(well),
-        tx.pure(stakedBkt),
+        tx.object(stakedBkt),
       ],
     });
   }
 
   updateSupraOracle(
-    tx: TransactionBlock,
+    tx: Transaction,
     token: string,
   ) {
     /**
@@ -474,7 +474,7 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
-          tx.pure(SUPRA_ID['SUI'] ?? "", "u32"),
+          tx.pure.u32(SUPRA_ID["SUI"] ?? 0),
         ],
       });
       // update afSUI price
@@ -511,7 +511,7 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
-          tx.pure(SUPRA_ID['SUI'] ?? "", "u32"),
+          tx.pure.u32(SUPRA_ID["SUI"] ?? 0),
         ],
       });
       // update vSUI price
@@ -532,7 +532,7 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
-          tx.pure(SUPRA_ID['SUI'] ?? "", "u32"),
+          tx.pure.u32(SUPRA_ID["SUI"] ?? 0),
         ],
       });
       // update haSUI price
@@ -552,7 +552,7 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
-          tx.pure(SUPRA_ID[token] ?? "", "u32"),
+          tx.pure.u32(SUPRA_ID[token] ?? 0),
         ],
       });
     }
@@ -563,7 +563,7 @@ export class BucketClient {
      * @description Get encoded BCS Bucket values
      * @returns devInspectTransactionBlock
      */
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
     tx.moveCall({
       target: `${CORE_PACKAGE_ID}::constants::fee_precision`,
     });
@@ -614,21 +614,18 @@ export class BucketClient {
       return undefined;
     }
 
-    const bcs = new BCS(getSuiMoveConfig());
-
     const bucketObject = {
-      feePrecision: bcs.de("u64", Uint8Array.from(results.results![0].returnValues[0][0])),
-      liquidationRebate: bcs.de("u64", Uint8Array.from(results.results![1].returnValues[0][0])),
-      flashLoanFee: bcs.de("u64", Uint8Array.from(results.results![2].returnValues[0][0])),
-      buckDecimal: bcs.de("u8", Uint8Array.from(results.results![3].returnValues[0][0])),
-      maxLockTime: bcs.de("u64", Uint8Array.from(results.results![4].returnValues[0][0])),
-      minLockTime: bcs.de("u64", Uint8Array.from(results.results![5].returnValues[0][0])),
-      minFee: bcs.de("u64", Uint8Array.from(results.results![6].returnValues[0][0])),
-      maxFee: bcs.de("u64", Uint8Array.from(results.results![7].returnValues[0][0])),
+      feePrecision: bcs.U64.parse(Uint8Array.from(results.results![0].returnValues[0][0])),
+      liquidationRebate: bcs.U64.parse(Uint8Array.from(results.results![1].returnValues[0][0])),
+      flashLoanFee: bcs.U64.parse(Uint8Array.from(results.results![2].returnValues[0][0])),
+      buckDecimal: bcs.U8.parse(Uint8Array.from(results.results![3].returnValues[0][0])),
+      maxLockTime: bcs.U64.parse(Uint8Array.from(results.results![4].returnValues[0][0])),
+      minLockTime: bcs.U64.parse(Uint8Array.from(results.results![5].returnValues[0][0])),
+      minFee: bcs.U64.parse(Uint8Array.from(results.results![6].returnValues[0][0])),
+      maxFee: bcs.U64.parse(Uint8Array.from(results.results![7].returnValues[0][0])),
     }
 
     return bucketObject
-
   }
 
   async getProtocol(): Promise<ProtocolInfo> {
@@ -1343,7 +1340,7 @@ export class BucketClient {
       return 0;
     }
 
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     const tank = tx.moveCall({
       target: `${CORE_PACKAGE_ID}::buck::borrow_tank` as `${string}::${string}::${string}`,
@@ -1405,7 +1402,7 @@ export class BucketClient {
       return 0;
     }
 
-    const tx = new TransactionBlock();
+    const tx = new Transaction();
 
     const tank = tx.moveCall({
       target: `${CORE_PACKAGE_ID}::buck::borrow_tank` as `${string}::${string}::${string}`,
@@ -1604,7 +1601,7 @@ export class BucketClient {
   }
 
   async getBorrowTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     collateralAmount: number,
     borrowAmount: number,
@@ -1645,7 +1642,7 @@ export class BucketClient {
         tx,
         collateralType,
         collateralBalance,
-        tx.pure(borrowAmount, "u64"),
+        tx.pure.u64(borrowAmount),
         insertionPlace ? insertionPlace : (strapId ? (strapId === "new" ? undefined : strapId) : recipient),
         strapId,
       );
@@ -1654,13 +1651,13 @@ export class BucketClient {
           const [strap, buckOut] = borrowRet;
           if (strap && buckOut) {
             const buckCoinBalance = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckOut);
-            tx.transferObjects([buckCoinBalance], tx.pure(recipient, "address"));
-            tx.transferObjects([strap], tx.pure(recipient, "address"));
+            tx.transferObjects([buckCoinBalance], tx.pure.address(recipient));
+            tx.transferObjects([strap], tx.pure.address(recipient));
           }
         }
         else {
           const buckCoinBalance = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, borrowRet);
-          tx.transferObjects([buckCoinBalance], tx.pure(recipient, "address"));
+          tx.transferObjects([buckCoinBalance], tx.pure.address(recipient));
         }
       }
     };
@@ -1669,7 +1666,7 @@ export class BucketClient {
   }
 
   async getRepayTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     repayAmount: number,
     withdrawAmount: number,
@@ -1752,8 +1749,8 @@ export class BucketClient {
             tx.object(strapId),
             tx.sharedObjectRef(CLOCK_OBJECT),
             buckCoinInput,
-            tx.pure(withdrawAmount, "u64"),
-            tx.pure([insertionPlace ? insertionPlace : strapId]),
+            tx.pure.u64(withdrawAmount),
+            tx.pure(bcs.vector(bcs.Address).serialize([insertionPlace ? insertionPlace : strapId])),
           ],
         });
       }
@@ -1766,8 +1763,8 @@ export class BucketClient {
             tx.sharedObjectRef(ORACLE_OBJECT),
             tx.sharedObjectRef(CLOCK_OBJECT),
             buckCoinInput,
-            tx.pure(withdrawAmount, "u64"),
-            tx.pure([insertionPlace ? insertionPlace : walletAddress]),
+            tx.pure.u64(withdrawAmount),
+            tx.pure(bcs.vector(bcs.Address).serialize([insertionPlace ? insertionPlace : walletAddress])),
           ],
         });
       }
@@ -1776,17 +1773,17 @@ export class BucketClient {
     return true;
   }
   async getSurplusWithdrawTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     walletAddress: string,
     strapId?: string,
-  ): Promise<TransactionBlock> {
+  ): Promise<Transaction> {
     /**
      * @description Withdraw
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param walletAddress
      * @param strapId Optional
-     * @returns Promise<TransactionBlock>
+     * @returns Promise<Transaction>
      */
 
     const token = getCoinSymbol(collateralType);
@@ -1813,7 +1810,7 @@ export class BucketClient {
         ]
       });
       const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
-      tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
+      tx.transferObjects([surplusCoin], tx.pure.address(walletAddress));
     } else {
       const surplusCollateral = tx.moveCall({
         target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_collateral`,
@@ -1823,14 +1820,14 @@ export class BucketClient {
         ],
       });
       const surplusCoin = coinFromBalance(tx, collateralType, surplusCollateral);
-      tx.transferObjects([surplusCoin], tx.pure(walletAddress, "address"));
+      tx.transferObjects([surplusCoin], tx.pure.address(walletAddress));
     }
 
     return tx;
   }
 
   psmSwapIn(
-    tx: TransactionBlock,
+    tx: Transaction,
     coinType: string,
     coinInput: TransactionArgument,
     referrer?: string,
@@ -1859,7 +1856,7 @@ export class BucketClient {
     });
     const referralRebateAmount = tx.moveCall({
       target: "0x00db9a10bb9536ab367b7d1ffa404c1d6c55f009076df1139dc108dd86608bbe::math::mul_factor",
-      arguments: [coinOutValue, tx.pure.u64(5), tx.pure(9995)],
+      arguments: [coinOutValue, tx.pure.u64(5), tx.pure.u64(9995)],
     });
     const referralRebate = tx.splitCoins(coinOut, [referralRebateAmount]);
     tx.transferObjects([referralRebate], tx.pure.address(referrer ?? "0x8fb41c0caf9fa1205a854806edf5f3f16023e7ddbb013c717b50ce7e539dc038"));
@@ -1867,7 +1864,7 @@ export class BucketClient {
   }
 
   async getPsmTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     psmCoin: string,
     psmAmount: number,
     psmSwitch: boolean,
@@ -1899,7 +1896,7 @@ export class BucketClient {
       });
 
       const coinOut = coinFromBalance(tx, outCoinType, outBalance);
-      tx.transferObjects([coinOut], tx.pure(walletAddress, "address"));
+      tx.transferObjects([coinOut], tx.pure.address(walletAddress));
     }
     else {
       if (inputCoin) {
@@ -1915,7 +1912,7 @@ export class BucketClient {
   }
 
   async getRedeemTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     redeemAmount: number,
     walletAddress: string,
@@ -1944,7 +1941,7 @@ export class BucketClient {
         tx.sharedObjectRef(ORACLE_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
         buckCoinInput,
-        tx.pure(insertionPlace ? [insertionPlace] : []),
+        tx.pure(bcs.vector(bcs.Address).serialize(insertionPlace ? [insertionPlace] : [])),
       ],
     });
 
@@ -1952,7 +1949,7 @@ export class BucketClient {
   }
 
   async getTankDepositTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     tankType: string,
     depositAmount: number,
     walletAddress: string,
@@ -1981,7 +1978,7 @@ export class BucketClient {
   }
 
   async getTankWithdrawTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     tankType: string,
     withdrawAmount: number,
     walletAddress: string,
@@ -2016,7 +2013,7 @@ export class BucketClient {
       })
     );
     const tokenObjs = tx.makeMoveVec({
-      objects: tokens,
+      elements: tokens
     });
 
     this.updateSupraOracle(tx, token);
@@ -2030,7 +2027,7 @@ export class BucketClient {
         tx.sharedObjectRef(CLOCK_OBJECT),
         tx.sharedObjectRef(TREASURY_OBJECT),
         tokenObjs,
-        tx.pure(parseBigInt(`${withdrawAmount ?? 0}`, 9), "u64"),
+        tx.pure.u64(parseBigInt(`${withdrawAmount ?? 0}`, 9)),
       ],
     });
 
@@ -2038,7 +2035,7 @@ export class BucketClient {
   }
 
   async getTankClaimTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     tankType: string,
     walletAddress: string,
   ): Promise<boolean> {
@@ -2088,7 +2085,7 @@ export class BucketClient {
   }
 
   async getStakeUsdcTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     isAf: boolean,
     stakeAmount: number,
     walletAddress: string,
@@ -2119,7 +2116,7 @@ export class BucketClient {
           tx.sharedObjectRef(AF_USDC_BUCK_LP_REGISTRY),
           tx.sharedObjectRef(CLOCK_OBJECT),
           stakeCoinInput,
-          tx.pure(walletAddress, "address"),
+          tx.pure.address(walletAddress),
         ]
       });
     }
@@ -2136,7 +2133,7 @@ export class BucketClient {
           tx.object(CETUS_OBJS.buckUsdcPool),
           tx.sharedObjectRef(CLOCK_OBJECT),
           stakeCoinInput,
-          tx.pure(walletAddress, "address"),
+          tx.pure.address(walletAddress),
         ]
       });
     }
@@ -2145,7 +2142,7 @@ export class BucketClient {
   }
 
   async getAfUnstakeTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     fountainId: string,
     lpProof: UserLpProof,
     recipient: string,
@@ -2185,13 +2182,16 @@ export class BucketClient {
       ],
     });
 
-    tx.transferObjects([buckCoin, usdcCoin, rewardCoin], tx.pure(recipient, "address"));
+    tx.transferObjects(
+      [buckCoin, usdcCoin, rewardCoin],
+      tx.pure.address(recipient)
+    );
 
     return true;
   }
 
   async getKriyaUnstakeTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     fountainId: string,
     lpProof: UserLpProof,
   ): Promise<boolean> {
@@ -2216,7 +2216,7 @@ export class BucketClient {
   }
 
   async getCetusUnstakeTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     fountainId: string,
     lpProof: UserLpProof,
     walletAddress: string,
@@ -2255,13 +2255,16 @@ export class BucketClient {
       ],
     });
 
-    tx.transferObjects([buckCoin, usdcCoin, suiCoin], tx.pure(walletAddress, "address"));
+    tx.transferObjects(
+      [buckCoin, usdcCoin, suiCoin],
+      tx.pure.address(walletAddress)
+    );
 
     return true;
   }
 
   async getAfClaimTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     fountainId: string,
     lpProofs: UserLpProof[],
   ): Promise<boolean> {
@@ -2290,7 +2293,7 @@ export class BucketClient {
   }
 
   async getCetusClaimTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     fountainId: string,
     lpProofs: UserLpProof[],
     walletAddress: string,
@@ -2310,7 +2313,7 @@ export class BucketClient {
           tx.object(fountainId),
           tx.sharedObjectRef(CLOCK_OBJECT),
           tx.objectRef(lpProofToObject(lpProof)),
-          tx.pure(walletAddress, "address"),
+          tx.pure.address(walletAddress)
         ],
       });
     }
@@ -2319,7 +2322,7 @@ export class BucketClient {
   }
 
   async getKriyaClaimTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     fountainId: string,
     lpProofs: UserLpProof[],
   ): Promise<boolean> {
@@ -2347,7 +2350,7 @@ export class BucketClient {
   }
 
   getStrapStakeTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     strapId: string | TransactionArgument,
     address: string,
@@ -2380,7 +2383,7 @@ export class BucketClient {
   }
 
   getStrapUnstakeTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     strapId: string | TransactionArgument,
     address: string,
@@ -2412,7 +2415,7 @@ export class BucketClient {
   }
 
   getStrapClaimTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     strapId: string | TransactionArgument,
     address: string,
@@ -2444,7 +2447,7 @@ export class BucketClient {
   }
 
   getDestroyPositionTx(
-    tx: TransactionBlock,
+    tx: Transaction,
     collateralType: string,
     strapId: string | TransactionArgument,
   ): boolean {

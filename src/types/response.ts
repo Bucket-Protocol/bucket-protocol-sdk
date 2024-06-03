@@ -1,4 +1,4 @@
-import { EventId } from "@mysten/sui.js/client";
+import { EventId } from "@mysten/sui/client";
 
 export type BucketProtocolResponse = {
   dataType: string;
