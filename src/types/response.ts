@@ -74,6 +74,13 @@ export type BucketResponse = {
   total_flash_loan_amount: string;
 };
 
+export type PipeResponse = {
+  id: {
+    id: string;
+  };
+  output_volume: string;
+};
+
 export type BottleInfoResponse = {
   value: {
     fields: {
