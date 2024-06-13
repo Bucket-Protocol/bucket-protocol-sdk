@@ -1,9 +1,9 @@
-import { SuiClient } from "@mysten/sui.js/client";
-import { TransactionBlock, TransactionArgument } from "@mysten/sui.js/transactions";
+import { SuiClient } from "@mysten/sui/client";
+import { Transaction, TransactionArgument } from "@mysten/sui/transactions";
 import { COINS_TYPE_LIST } from "../constants";
 
 export function coinIntoBalance(
-    tx: TransactionBlock,
+    tx: Transaction,
     coinType: string,
     coinInput: TransactionArgument | undefined,
 ) {
@@ -24,7 +24,7 @@ export function coinIntoBalance(
 }
 
 export function coinFromBalance(
-    tx: TransactionBlock,
+    tx: Transaction,
     coinType: string,
     balanceInput: TransactionArgument,
 ) {
@@ -36,7 +36,7 @@ export function coinFromBalance(
 }
 
 export async function getInputCoins(
-    tx: TransactionBlock,
+    tx: Transaction,
     client: SuiClient,
     owner: string,
     coinType: string,
@@ -55,7 +55,7 @@ export async function getInputCoins(
     }
 
     if (coinType === COINS_TYPE_LIST.SUI) {
-        return tx.splitCoins(tx.gas, amounts.map(amount => tx.pure(amount, "u64")));
+        return tx.splitCoins(tx.gas, amounts.map(amount => tx.pure.u64(amount)));
     } else {
         const { data: userCoins } = await client.getCoins({ owner, coinType });
         const [mainCoin, ...otherCoins] = userCoins.map((coin) =>
@@ -74,12 +74,12 @@ export async function getInputCoins(
 
         if (otherCoins.length > 0) tx.mergeCoins(mainCoin, otherCoins);
 
-        return tx.splitCoins(mainCoin, amounts.map(amount => tx.pure(amount, "u64")));
+        return tx.splitCoins(mainCoin, amounts.map(amount => tx.pure.u64(amount)));
     }
 };
 
 export async function getMainCoin(
-    tx: TransactionBlock,
+    tx: Transaction,
     client: SuiClient,
     owner: string,
     coinType: string,

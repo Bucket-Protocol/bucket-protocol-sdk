@@ -4,7 +4,7 @@ import {
     record,
     string,
 } from "superstruct";
-import { SuiMoveObject, SuiObjectData, SuiObjectResponse, SuiParsedData } from "@mysten/sui.js/client";
+import { SuiMoveObject, SuiObjectData, SuiObjectResponse, SuiParsedData } from "@mysten/sui/client";
 
 export const ObjectContentFields = record(string(), any());
 export type ObjectContentFields = Infer<typeof ObjectContentFields>;
