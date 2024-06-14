@@ -2494,4 +2494,66 @@ export class BucketClient {
     return true;
   }
 
+  getFlashBorrowTx(
+    tx: Transaction,
+    inputs: {
+      coinSymbol: string;
+      amount: number | TransactionArgument;
+    },
+  ): [TransactionArgument, TransactionArgument] {
+    /**
+     * @description Get flash borrow transaction
+     * @param tx base transaction
+     * @param inputs coin with amount
+     * @returns [flashLoans, flashReceipt]
+     */
+    const { coinSymbol, amount } = inputs;
+    const coinType = COINS_TYPE_LIST[coinSymbol as COIN];
+    const isBuck = coinType === COINS_TYPE_LIST.BUCK;
+    const target = isBuck
+      ? (`${CORE_PACKAGE_ID}::buck::flash_borrow_buck`)
+      : (`${CORE_PACKAGE_ID}::buck::flash_borrow`);
+    const typeArguments = isBuck ? [COINS_TYPE_LIST.SUI] : [coinType];
+    const [flashLoans, flashReceipt] = tx.moveCall({
+      target,
+      typeArguments,
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        typeof amount == "number" ? tx.pure.u64(amount) : amount,
+      ],
+    });
+    return [flashLoans, flashReceipt];
+  }
+
+  getFlashRepayTx(
+    tx: Transaction,
+    inputs: {
+      coinSymbol: string;
+      repayment: TransactionArgument;
+      flashReceipt: TransactionArgument;
+    },
+  ) {
+    /**
+     * @description Get flash repay transaction
+     * @param tx base transaction
+     * @param inputs coin with receipt & repay amount
+     */
+    const { coinSymbol, repayment, flashReceipt } = inputs;
+    const coinType = COINS_TYPE_LIST[coinSymbol as COIN];
+    const isBuck = coinType === COINS_TYPE_LIST.BUCK;
+    const target = isBuck
+      ? (`${CORE_PACKAGE_ID}::buck::flash_repay_buck`)
+      : (`${CORE_PACKAGE_ID}::buck::flash_repay`);
+    const typeArguments = isBuck ? [COINS_TYPE_LIST.SUI] : [coinType];
+    tx.moveCall({
+      target,
+      typeArguments,
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        repayment,
+        flashReceipt
+      ],
+    });
+  }
+
 }
