@@ -7,7 +7,7 @@ import { bcs } from "@mysten/sui/bcs";
 
 
 import { COINS_TYPE_LIST, PROTOCOL_ID, SUPRA_PRICE_FEEDS, SUPRA_UPDATE_TARGET, SUPRA_HANDLER_OBJECT, SUPRA_ID, TREASURY_OBJECT, BUCKET_OPERATIONS_PACKAGE_ID, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, COIN_DECIMALS, FOUNTAIN_PERIHERY_PACKAGE_ID, AF_OBJS, AF_USDC_BUCK_LP_REGISTRY_ID, BUCKETUS_TREASURY, BUCKETUS_LP_VAULT_05, CETUS_OBJS, KRIYA_SUI_BUCK_LP_REGISTRY_ID, KRIYA_USDC_BUCK_LP_REGISTRY_ID, AF_SUI_BUCK_LP_REGISTRY_ID, CETUS_SUI_BUCK_LP_REGISTRY_ID, FOUNTAIN_PACKAGE_ID, KRIYA_FOUNTAIN_PACKAGE_ID, ORACLE_OBJECT, CLOCK_OBJECT, AF_USDC_BUCK_LP_REGISTRY, PROTOCOL_OBJECT, PSM_POOL_IDS, CETUS_USDC_BUCK_LP_REGISTRY_ID, CETUS_USDC_BUCK_LP_REGISTRY, STRAP_ID, STAKE_PROOF_ID, STRAP_FOUNTAIN_IDS, STRAP_FOUNTAIN_PACKAGE_ID, SBUCK_BUCK_LP_REGISTRY_ID, SBUCK_FOUNTAIN_PACKAGE_ID, SBUCK_FLASK_OBJECT_ID, SWITCHBOARD_UPDATE_TARGET } from "./constants";
-import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList, PsmList, PsmInfo, SBUCKFlaskResponse, SharedObjectRef } from "./types";
+import { BucketConstants, PaginatedBottleSummary, BucketResponse, BottleInfoResponse, BucketProtocolResponse, SupraPriceFeedResponse, BucketInfo, TankInfoResponse, TankInfo, UserTankList, ProtocolInfo, TankList, FountainList, UserLpProof, UserLpList, BucketList, FountainInfo, COIN, UserBottleInfo, StrapFountainInfo, StrapFountainList, PsmList, PsmInfo, SBUCKFlaskResponse, SharedObjectRef, PipeResponse } from "./types";
 import { U64FromBytes, formatUnits, getCoinSymbol, getObjectNames, lpProofToObject, parseBigInt, proofTypeToCoinType, getInputCoins, coinFromBalance, coinIntoBalance, getMainCoin, objectToFountain, objectToPsm, objectToStrapFountain, getObjectFields } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -717,7 +717,7 @@ export class BucketClient {
       const generalInfoField = generalInfo.data?.content as BucketProtocolResponse;
       const minBottleSize = generalInfoField.fields.min_bottle_size;
 
-      let bucketList: DynamicFieldInfo[] = [];
+      let objectIds: string[] = [];
       let cursor: string | null = null;
       while (true) {
         const protocolFields = await this.client.getDynamicFields({
@@ -725,9 +725,10 @@ export class BucketClient {
           cursor,
         });
 
-        bucketList = bucketList.concat(protocolFields.data.filter((item) =>
-          item.objectType.includes("Bucket")
-        ));
+        objectIds = objectIds.concat(protocolFields.data.filter((item) =>
+          item.objectType.includes("::bucket::Bucket")
+          || item.objectType.includes("::pipe::Pipe")
+        ).map(t => t.objectId));
 
         if (!protocolFields.hasNextPage) {
           break;
@@ -735,42 +736,61 @@ export class BucketClient {
         cursor = protocolFields.nextCursor;
       }
 
-      const objectIdList = bucketList.map((item) => item.objectId);
-
       const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: objectIdList,
+        ids: objectIds,
         options: {
           showContent: true,
           showType: true, //Check could we get type from response later
         },
       });
 
-      response.map((res) => {
-        const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
-        const token = getCoinSymbol(typeId);
-        if (!token) {
-          return;
-        }
+      response
+        .filter(t => t.data?.type?.includes("::bucket::Bucket"))
+        .map((res) => {
+          const typeId = res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
+          const token = getCoinSymbol(typeId);
+          if (!token) {
+            return;
+          }
 
-        const fields = getObjectFields(res) as BucketResponse;
+          const fields = getObjectFields(res) as BucketResponse;
 
-        const bucketInfo: BucketInfo = {
-          token: token as COIN,
-          baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
-          bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
-          bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? "",
-          collateralDecimal: fields.collateral_decimal ?? 0,
-          collateralVault: fields.collateral_vault ?? "",
-          latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
-          minCollateralRatio: fields.min_collateral_ratio ?? "",
-          mintedBuckAmount: fields.minted_buck_amount ?? "",
-          minBottleSize: minBottleSize,
-          maxMintAmount: fields.max_mint_amount ?? "",
-          recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
-        };
+          const bucketInfo: BucketInfo = {
+            token: token as COIN,
+            baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
+            bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
+            bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? "",
+            collateralDecimal: fields.collateral_decimal ?? 0,
+            collateralVault: fields.collateral_vault ?? "",
+            latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
+            minCollateralRatio: fields.min_collateral_ratio ?? "",
+            mintedBuckAmount: fields.minted_buck_amount ?? "",
+            minBottleSize: minBottleSize,
+            maxMintAmount: fields.max_mint_amount ?? "",
+            recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
+          };
 
-        buckets[token] = bucketInfo;
-      });
+          buckets[token] = bucketInfo;
+        });
+
+      // Add pipe ponds
+      response
+        .filter(t => t.data?.type?.includes("::pipe::Pipe"))
+        .map((res) => {
+          const typeId = res.data?.type?.split("<").pop()?.replace(">", "").split(", ")[0].trim() ?? "";
+          const token = getCoinSymbol(typeId);
+          if (!token) {
+            return;
+          }
+
+          const bucket = buckets[token];
+          if (bucket) {
+            const fields = getObjectFields(res) as PipeResponse;
+            const collateralVault = BigInt(bucket.collateralVault);
+            const outputAmount = BigInt(fields.output_volume);
+            bucket.collateralVault = (collateralVault + outputAmount).toString();
+          }
+        });
     } catch (error) {
       console.log(error);
     }
@@ -2472,6 +2492,68 @@ export class BucketClient {
     });
 
     return true;
+  }
+
+  getFlashBorrowTx(
+    tx: Transaction,
+    inputs: {
+      coinSymbol: string;
+      amount: number | TransactionArgument;
+    },
+  ): [TransactionArgument, TransactionArgument] {
+    /**
+     * @description Get flash borrow transaction
+     * @param tx base transaction
+     * @param inputs coin with amount
+     * @returns [flashLoans, flashReceipt]
+     */
+    const { coinSymbol, amount } = inputs;
+    const coinType = COINS_TYPE_LIST[coinSymbol as COIN];
+    const isBuck = coinType === COINS_TYPE_LIST.BUCK;
+    const target = isBuck
+      ? (`${CORE_PACKAGE_ID}::buck::flash_borrow_buck`)
+      : (`${CORE_PACKAGE_ID}::buck::flash_borrow`);
+    const typeArguments = isBuck ? [COINS_TYPE_LIST.SUI] : [coinType];
+    const [flashLoans, flashReceipt] = tx.moveCall({
+      target,
+      typeArguments,
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        typeof amount == "number" ? tx.pure.u64(amount) : amount,
+      ],
+    });
+    return [flashLoans, flashReceipt];
+  }
+
+  getFlashRepayTx(
+    tx: Transaction,
+    inputs: {
+      coinSymbol: string;
+      repayment: TransactionArgument;
+      flashReceipt: TransactionArgument;
+    },
+  ) {
+    /**
+     * @description Get flash repay transaction
+     * @param tx base transaction
+     * @param inputs coin with receipt & repay amount
+     */
+    const { coinSymbol, repayment, flashReceipt } = inputs;
+    const coinType = COINS_TYPE_LIST[coinSymbol as COIN];
+    const isBuck = coinType === COINS_TYPE_LIST.BUCK;
+    const target = isBuck
+      ? (`${CORE_PACKAGE_ID}::buck::flash_repay_buck`)
+      : (`${CORE_PACKAGE_ID}::buck::flash_repay`);
+    const typeArguments = isBuck ? [COINS_TYPE_LIST.SUI] : [coinType];
+    tx.moveCall({
+      target,
+      typeArguments,
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        repayment,
+        flashReceipt
+      ],
+    });
   }
 
 }
