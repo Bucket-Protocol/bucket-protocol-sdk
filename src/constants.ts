@@ -3,13 +3,13 @@
 import { COIN, SharedObjectRef } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
-  "0xcf79e8c44acaf6e7ca1e78ca7ca5fa039a055cb64a45d7219418e22fcf28fa02";
+  "0x82fc47ec25ff2ed651c609848f0239aa67517276d62d638853163c22545869b5";
 export const PROTOCOL_ID =
   "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export const CONTRIBUTOR_TOKEN_ID =
   "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
 export const CORE_PACKAGE_ID =
-  "0x8e39c5069076cbb95bede1e5d2217c91f7fdc3ee266d778927f128e561c6f3eb";
+  "0x0c592cdefe5ad2d062b128b6a097983e9c40a742c50abb867a5821714a628457";
 
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
@@ -297,7 +297,7 @@ export const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef>> = {
   }
 };
 
-export const STRAP_FOUNTAIN_PACKAGE_ID = "0x75ac5c740576a9db5906d339cbf806bd2b08c41b63d7bde341f30a04338dda4f";
+export const STRAP_FOUNTAIN_PACKAGE_ID = "0xa96528decac392b8b8c6b9c5fc6d46b5614adbade964b6e414c9430a45615607";
 
 export const STRAP_TYPE_ID = "0x5d019c033bb8051fe9631cf910d0f4d077364d64ed4bb1940e98e6dc419a8d59";
 
