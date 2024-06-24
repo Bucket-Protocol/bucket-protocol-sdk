@@ -29,10 +29,9 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   BUCK: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK",
   BKT: "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::bkt::BKT",
   BUCKETUS: "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS",
-  CETABLE: "0x072f3814fdd168c5f5706fe4642bf6cdf14b4bae20a4f13deeb9933bcfc89f0d::cetable::CETABLE",
   USDY: "0x960b531667636f39e85867775f52f6b1f220a058c4de786905bdf761e06a56bb::usdy::USDY",
   NAVX: "0xa99b8952d4f7d947ea77fe0ecdcc9e5fc0bcab2841d6e2a5aa00c3044e5544b5::navx::NAVX",
-  CETUS: "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
+  SCABLE: "0x08a7a3c873402d7cf9d44192aae337e0b27a72c2a4a230d10230488cf614c5a2::scable::SCABLE",
   STAPEARL: "0xcffc684610db2d1956cfb25858678be8ea96d2766b4c756d4096abd38461f40a::stapearl::STAPEARL",
   sBUCK: "0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK",
 
@@ -40,8 +39,6 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
   AF_LP_SUI_BUCK:
     "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
-  AF_LP_SUI_SUI:
-    "0x42d0b3476bc10d18732141a471d7ad3aa588a6fb4ba8e1a6608a4a7b78e171bf::af_lp::AF_LP",
 
 };
 
@@ -55,18 +52,16 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   WETH: 8,
   BUCK: 9,
   BKT: 9,
-  CETABLE: 6,
   BUCKETUS: 9,
   STAPEARL: 6,
   USDY: 6,
   NAVX: 9,
-  CETUS: 9,
+  SCABLE: 6,
 
   sBUCK: 9,
 
   AF_LP_USDC_BUCK: 9,
   AF_LP_SUI_BUCK: 9,
-  AF_LP_SUI_SUI: 9,
 
   USDCarb: 6,
   USDCpol: 6,
@@ -76,7 +71,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
 
 export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   BUCKETUS: "0xba86a0f37377844f38060a9f62b5c5cd3f8ba13901fa6c4ee5777c1cc535306b",
-  CETABLE: "0x6e94fe6910747a30e52addf446f2d7e844f69bf39eced6bed03441e01fa66acd",
+  SCABLE: "0xe3a3ca38171458c6f310bc9b4ba5d7bff7850b190049dcdb1e89ddbd7893d528",
   STAPEARL: "0xccdaf635eb1c419dc5ab813cc64c728a9f5a851202769e254f348bff51f9a6dc",
   USDC: "0x0c2e5fbfeb5caa4c2f7c8645ffe9eca7e3c783536efef859be03146b235f9e04",
   USDT: "0x607e7d386e29066b964934e0eb1daa084538a79b5707c34f38e190d64e24923e",

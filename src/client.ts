@@ -1563,7 +1563,7 @@ export class BucketClient {
       BUCK: 1,
       sBUCK: 1,
       BUCKETUS: 1,
-      CETABLE: 1,
+      SCABLE: 1,
       STAPEARL: 1,
     };
 
