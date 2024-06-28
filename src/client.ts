@@ -2235,7 +2235,12 @@ export class BucketClient {
         ],
       });
     } else {
-      throw "coin type error";
+      const outBalance = tx.moveCall({
+        target: `${CORE_PACKAGE_ID}::buck::discharge_reservoir`,
+        typeArguments: [outCoinType],
+        arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), inputCoinBalance],
+      });
+      return coinFromBalance(tx, outCoinType, outBalance);
     }
   }
 
