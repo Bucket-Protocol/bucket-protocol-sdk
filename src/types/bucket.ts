@@ -88,6 +88,7 @@ export type PsmInfo = {
   chargeRate: number;
   dischargeRate: number;
   conversionRate: number;
+  balance?: number;
 };
 
 export type PsmList = Record<string, PsmInfo>;

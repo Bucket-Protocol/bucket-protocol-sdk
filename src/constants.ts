@@ -83,6 +83,11 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   USDCarb: "0x10970069e17f31aee9cb55c53237d3a62584582e05f3c2030f92ce9fc6365c90",
 };
 
+export const PSM_BALANCE_IDS: Record<string, string> = {
+  USDC: "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+  USDT: "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+};
+
 export const SUPRA_PRICE_FEEDS = {
   usdc_usd: "0x1c400c096e8b52a22c43c080fea4aa22661c9a35b469493dfac5332aecb4789c",
   usdt_usd: "0x11ea8c7b6287f1410c8bac2e475b4fe6fea45fd59e036a058522ab3acec8fed3",

@@ -54,6 +54,7 @@ import {
   SBUCK_FOUNTAIN_PACKAGE_ID,
   SBUCK_FLASK_OBJECT_ID,
   SWITCHBOARD_UPDATE_TARGET,
+  PSM_BALANCE_IDS,
 } from "./constants";
 import {
   BucketConstants,
@@ -82,6 +83,7 @@ import {
   SBUCKFlaskResponse,
   SharedObjectRef,
   PipeResponse,
+  PsmBalanceResponse,
 } from "./types";
 import {
   U64FromBytes,
@@ -1026,7 +1028,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1140,24 +1142,38 @@ export class BucketClient {
     let psmList: PsmList = {};
 
     try {
-      const objectIdList = Object.values(PSM_POOL_IDS);
+      const psmPoolIds = Object.values(PSM_POOL_IDS);
+      const psmBalanceIds = Object.values(PSM_BALANCE_IDS);
       const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: objectIdList,
+        ids: [...psmPoolIds, ...psmBalanceIds],
         options: {
           showContent: true,
           showType: true, //Check could we get type from response later
         },
       });
 
-      response.map((res) => {
-        const psm = objectToPsm(res);
-        const coin = Object.keys(PSM_POOL_IDS).find(
-          (symbol) => PSM_POOL_IDS[symbol as COIN] == psm.id,
-        );
-        if (coin) {
-          psmList[coin] = psm;
+      for(const res of response) {
+        const objectId = res.data?.objectId ?? "";
+        if(psmPoolIds.includes(objectId)) {
+          let psm = objectToPsm(res);
+          const coin = Object.keys(PSM_POOL_IDS).find(
+            (symbol) => PSM_POOL_IDS[symbol as COIN] == psm.id,
+          );
+          if (coin) {
+            psmList[coin] = psm;
+          }
         }
-      });
+
+        if(psmBalanceIds.includes(objectId)) {
+          let balanceObj = getObjectFields(res) as PsmBalanceResponse;
+          const coin = Object.keys(PSM_BALANCE_IDS).find(
+            (symbol) => PSM_BALANCE_IDS[symbol as COIN] == objectId,
+          );
+          if (coin) {
+            psmList[coin].balance = Number(formatUnits(BigInt(balanceObj.coin_balance), COIN_DECIMALS[coin as COIN] ?? 9));;
+          }
+        }
+      }
     } catch (error) {
       console.log(error);
     }
@@ -1369,7 +1385,7 @@ export class BucketClient {
 
               debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
               startUnit = Number(ret?.value.fields.start_unit ?? 0);
-            } catch {}
+            } catch { }
           }
         }
 
@@ -1542,7 +1558,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -2117,7 +2133,7 @@ export class BucketClient {
       [referralRebate],
       tx.pure.address(
         referrer ??
-          "0x8fb41c0caf9fa1205a854806edf5f3f16023e7ddbb013c717b50ce7e539dc038",
+        "0x8fb41c0caf9fa1205a854806edf5f3f16023e7ddbb013c717b50ce7e539dc038",
       ),
     );
     return coinOut;
@@ -2192,17 +2208,17 @@ export class BucketClient {
       const isUSDC = outCoinType === COINS_TYPE_LIST.USDC;
       const vaultObj = isUSDC
         ? tx.sharedObjectRef({
-            objectId:
-              "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
-            initialSharedVersion: 272980432,
-            mutable: true,
-          })
+          objectId:
+            "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+          initialSharedVersion: 272980432,
+          mutable: true,
+        })
         : tx.sharedObjectRef({
-            objectId:
-              "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
-            initialSharedVersion: 272980433,
-            mutable: true,
-          });
+          objectId:
+            "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+          initialSharedVersion: 272980433,
+          mutable: true,
+        });
       const treasuryObj = tx.sharedObjectRef({
         objectId:
           "0x3b9e577e96fcc0bc7a06a39f82f166417f675813a294d64833d4adb2229f6321",

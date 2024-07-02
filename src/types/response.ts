@@ -200,3 +200,11 @@ export type PsmPoolResponse = {
   };
   pool: string;
 };
+
+export type PsmBalanceResponse = {
+  coin_balance: string;
+  scoin_balance: string;
+  id: {
+    id: string;
+  };
+};
