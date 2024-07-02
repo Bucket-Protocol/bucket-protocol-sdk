@@ -2172,7 +2172,7 @@ export class BucketClient {
       const [lpCoin] = tx.moveCall({
         target:
           "0x83f4534f2bd62bc01affa7318ce4950857ea3a1e7c38edc4f1f111617140b8ad::stapearl::withdraw",
-        arguments: [vaultObj, flxStateObj, flxContainerObj, clockObj, outCoin],
+        arguments: [vaultObj, flxContainerObj, flxStateObj, clockObj, outCoin],
       });
       return tx.moveCall({
         target:
@@ -2188,7 +2188,7 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST.SCABLE],
         arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), inputCoinBalance],
       });
-      const outCoin = coinFromBalance(tx, outCoinType, outBalance);
+      const outCoin = coinFromBalance(tx, COINS_TYPE_LIST.SCABLE, outBalance);
       const isUSDC = outCoinType === COINS_TYPE_LIST.USDC;
       const vaultObj = isUSDC
         ? tx.sharedObjectRef({
@@ -2272,11 +2272,13 @@ export class BucketClient {
     const outCoinType = psmSwitch ? psmCoin : COINS_TYPE_LIST.BUCK;
 
     if (psmSwitch) {
-      const [usdA, usdB] = this.psmSwapIn(tx, outCoinType, inputCoin);
-      tx.transferObjects(
-        usdB ? [usdA, usdB] : [usdA],
-        tx.pure.address(walletAddress),
-      );
+      if (psmCoin === COINS_TYPE_LIST.STAPEARL) {
+        const [usdA, usdB] = this.psmSwapOut(tx, outCoinType, inputCoin);
+        tx.transferObjects([usdA, usdB], tx.pure.address(walletAddress));
+      } else {
+        const [usd] = this.psmSwapOut(tx, outCoinType, inputCoin);
+        tx.transferObjects([usd], tx.pure.address(walletAddress));
+      }
     } else {
       if (inputCoin) {
         const coinOut = this.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
