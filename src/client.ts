@@ -1028,7 +1028,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1152,9 +1152,9 @@ export class BucketClient {
         },
       });
 
-      for(const res of response) {
+      for (const res of response) {
         const objectId = res.data?.objectId ?? "";
-        if(psmPoolIds.includes(objectId)) {
+        if (psmPoolIds.includes(objectId)) {
           let psm = objectToPsm(res);
           const coin = Object.keys(PSM_POOL_IDS).find(
             (symbol) => PSM_POOL_IDS[symbol as COIN] == psm.id,
@@ -1164,13 +1164,18 @@ export class BucketClient {
           }
         }
 
-        if(psmBalanceIds.includes(objectId)) {
+        if (psmBalanceIds.includes(objectId)) {
           let balanceObj = getObjectFields(res) as PsmBalanceResponse;
           const coin = Object.keys(PSM_BALANCE_IDS).find(
             (symbol) => PSM_BALANCE_IDS[symbol as COIN] == objectId,
           );
           if (coin) {
-            psmList[coin].balance = Number(formatUnits(BigInt(balanceObj.coin_balance), COIN_DECIMALS[coin as COIN] ?? 9));;
+            psmList[coin].balance = Number(
+              formatUnits(
+                BigInt(balanceObj.coin_balance),
+                COIN_DECIMALS[coin as COIN] ?? 9,
+              ),
+            );
           }
         }
       }
@@ -1385,7 +1390,7 @@ export class BucketClient {
 
               debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
               startUnit = Number(ret?.value.fields.start_unit ?? 0);
-            } catch { }
+            } catch {}
           }
         }
 
@@ -1558,7 +1563,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -2123,19 +2128,15 @@ export class BucketClient {
       typeArguments: [COINS_TYPE_LIST.BUCK],
       arguments: [coinOut],
     });
-    const referralRebateAmount = tx.moveCall({
-      target:
-        "0x00db9a10bb9536ab367b7d1ffa404c1d6c55f009076df1139dc108dd86608bbe::math::mul_factor",
-      arguments: [coinOutValue, tx.pure.u64(5), tx.pure.u64(9995)],
-    });
-    const referralRebate = tx.splitCoins(coinOut, [referralRebateAmount]);
-    tx.transferObjects(
-      [referralRebate],
-      tx.pure.address(
-        referrer ??
-        "0x8fb41c0caf9fa1205a854806edf5f3f16023e7ddbb013c717b50ce7e539dc038",
-      ),
-    );
+    if (referrer) {
+      const referralRebateAmount = tx.moveCall({
+        target:
+          "0x00db9a10bb9536ab367b7d1ffa404c1d6c55f009076df1139dc108dd86608bbe::math::mul_factor",
+        arguments: [coinOutValue, tx.pure.u64(5), tx.pure.u64(9995)],
+      });
+      const referralRebate = tx.splitCoins(coinOut, [referralRebateAmount]);
+      tx.transferObjects([referralRebate], tx.pure.address(referrer));
+    }
     return coinOut;
   }
 
@@ -2208,17 +2209,17 @@ export class BucketClient {
       const isUSDC = outCoinType === COINS_TYPE_LIST.USDC;
       const vaultObj = isUSDC
         ? tx.sharedObjectRef({
-          objectId:
-            "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
-          initialSharedVersion: 272980432,
-          mutable: true,
-        })
+            objectId:
+              "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+            initialSharedVersion: 272980432,
+            mutable: true,
+          })
         : tx.sharedObjectRef({
-          objectId:
-            "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
-          initialSharedVersion: 272980433,
-          mutable: true,
-        });
+            objectId:
+              "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+            initialSharedVersion: 272980433,
+            mutable: true,
+          });
       const treasuryObj = tx.sharedObjectRef({
         objectId:
           "0x3b9e577e96fcc0bc7a06a39f82f166417f675813a294d64833d4adb2229f6321",
