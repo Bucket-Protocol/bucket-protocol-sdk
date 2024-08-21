@@ -2108,12 +2108,14 @@ export class BucketClient {
     coinType: string,
     coinInput: TransactionArgument,
     referrer?: string,
+    rate?: number,
   ): TransactionResult {
     /**
      * @description Get transaction for PSM
      * @param coinType input coinType e.g USDC coin type
      * @param coinInput Coin<T>
      * @param referrer referrer get 50% rebate
+     * @param rate 5 => 0.05%
      * @returns Coin<BUCK>
      */
     const balanceInput = coinIntoBalance(tx, coinType, coinInput);
@@ -2132,7 +2134,7 @@ export class BucketClient {
       const referralRebateAmount = tx.moveCall({
         target:
           "0x00db9a10bb9536ab367b7d1ffa404c1d6c55f009076df1139dc108dd86608bbe::math::mul_factor",
-        arguments: [coinOutValue, tx.pure.u64(5), tx.pure.u64(9995)],
+        arguments: [coinOutValue, tx.pure.u64(rate ?? 5), tx.pure.u64(10_000)],
       });
       const referralRebate = tx.splitCoins(coinOut, [referralRebateAmount]);
       tx.transferObjects([referralRebate], tx.pure.address(referrer));
