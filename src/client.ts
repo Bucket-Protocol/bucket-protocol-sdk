@@ -2242,7 +2242,7 @@ export class BucketClient {
       });
       return tx.moveCall({
         target:
-          "0x78bafc413c95493e839b000c2aee79517f87a90d455e713e6e55e20b3d757d41::scable::withdraw_coin",
+          "0xecc3e8dec68782dbd40bdf416c7305fd5bcf203f536e49a42507934877f8706f::scable::withdraw_coin_from_spool",
         typeArguments: [outCoinType],
         arguments: [
           vaultObj,
@@ -2251,6 +2251,9 @@ export class BucketClient {
           scaMarketObj,
           clockObj,
           outCoin,
+          tx.object(
+            "0x4ace6648ddc64e646ba47a957c562c32c9599b3bba8f5ac1aadb2ae23a2f8ca0",
+          ),
         ],
       });
     } else {
