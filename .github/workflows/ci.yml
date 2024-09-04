@@ -28,4 +28,4 @@ jobs:
         - name: Publish to npm
           env:
             NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          run: npm publish
+          run: npm config set _auth $NODE_AUTH_TOKEN & npm publish
