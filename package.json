@@ -18,6 +18,9 @@
     },
     "./package.json": "./package.json"
   },
+  "repository": {
+    "url": "https://github.com/Bucket-Protocol/bucket-protocol-sdk"
+  },
   "files": [
     "dist",
     "package.json",
