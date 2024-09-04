@@ -18,7 +18,7 @@ jobs:
           uses: actions/setup-node@v4
           with:
             node-version: ${{ matrix.node-version }}
-            registry-url: 'https://registry.npmjs.org'
+          registry-url: 'https://registry.npmjs.org'
 
         - name: Install main dependencies
           run: npm install
@@ -29,4 +29,4 @@ jobs:
         - name: Publish to npm
           run: npm publish --provenance --access public
           env:
-            NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKENs }}
+            NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
