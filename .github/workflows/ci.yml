@@ -25,7 +25,7 @@ jobs:
           run: npm install
 
         - name: Compile code
-          run: npm build
+          run: npm run build
 
         - name: Run e2e tests
           run: npm test
