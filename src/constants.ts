@@ -2,11 +2,11 @@
 
 import { COIN, SharedObjectRef } from "./types";
 
-export const BUCKET_OPERATIONS_PACKAGE_ID: string = "0xb3f10f2c9a52b615ab8b0b930ee55e019bacb407b29f5f534e6d9c3291341db8";
+export const BUCKET_OPERATIONS_PACKAGE_ID: string = "0x865ab51aceb2decefa4bf3658e26a22f046b6059700b0223eb43d31d8ba05edc";
 export const PROTOCOL_ID = "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export const CONTRIBUTOR_TOKEN_ID = "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
 export const CORE_PACKAGE_ID = "0x0275217e283b408b60adc2ca5f842df3e59fb71e06ee79f07b4eb989141f91d3";
-export const STRAP_FOUNTAIN_PACKAGE_ID = "0x5c5c325898cde61add081f52efb22dae4193f588ac385d61c50cf9ffe54630ff";
+export const STRAP_FOUNTAIN_PACKAGE_ID = "0x563bab87935fc27517a505c3ba8f7603b80b232de6abf24c71363773c930f70d";
 
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
