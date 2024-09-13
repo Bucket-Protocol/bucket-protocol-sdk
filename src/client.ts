@@ -2972,7 +2972,7 @@ export class BucketClient {
     });
   }
 
-  sBUCKWithdraw(
+  getSBUCKWithdrawTx(
     tx: Transaction,
     sBuckCoin: TransactionArgument,
   ): TransactionArgument {
@@ -2988,7 +2988,7 @@ export class BucketClient {
     return buckBalance;
   }
 
-  sBUCKDeposit(
+  getSBUCKDepositTx(
     tx: Transaction,
     buckCoin: TransactionArgument,
   ): TransactionArgument {
@@ -3004,7 +3004,7 @@ export class BucketClient {
     return sbuckBalance;
   }
 
-  sBUCKFountainStake(
+  getSBUCKStakeTx(
     tx: Transaction,
     sBuckCoin: TransactionArgument,
   ): TransactionArgument {
@@ -3021,7 +3021,7 @@ export class BucketClient {
     });
   }
 
-  sBUCKFountainUnstake(
+  getSBUCKUnstakeTx(
     tx: Transaction,
     proofId: string,
   ): [TransactionArgument, TransactionArgument] {
@@ -3041,7 +3041,7 @@ export class BucketClient {
     ];
   }
 
-  sBUCKFountainClaim(tx: Transaction, proofId: string): TransactionArgument {
+  getSBUCKClaimTx(tx: Transaction, proofId: string): TransactionArgument {
     return tx.moveCall({
       target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::claim`,
       typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
