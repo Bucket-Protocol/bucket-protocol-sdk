@@ -55,6 +55,9 @@ import {
   SBUCK_FLASK_OBJECT_ID,
   SWITCHBOARD_UPDATE_TARGET,
   PSM_BALANCE_IDS,
+  FLASK_OBJECT,
+  SBUCK_BUCK_LP_REGISTRY,
+  MAX_LOCK_TIME,
 } from "./constants";
 import {
   BucketConstants,
@@ -2966,6 +2969,87 @@ export class BucketClient {
       target,
       typeArguments,
       arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), repayment, flashReceipt],
+    });
+  }
+
+  sBUCKWithdraw(
+    tx: Transaction,
+    sBuckCoin: TransactionArgument,
+  ): TransactionArgument {
+    const [buckBalance] = tx.moveCall({
+      target: `${CORE_PACKAGE_ID}::buck::sbuck_to_buck`,
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        tx.sharedObjectRef(FLASK_OBJECT),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        coinIntoBalance(tx, COINS_TYPE_LIST.sBUCK, sBuckCoin),
+      ],
+    });
+    return buckBalance;
+  }
+
+  sBUCKDeposit(
+    tx: Transaction,
+    buckCoin: TransactionArgument,
+  ): TransactionArgument {
+    const [sbuckBalance] = tx.moveCall({
+      target: `${CORE_PACKAGE_ID}::buck::buck_to_sbuck`,
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        tx.sharedObjectRef(FLASK_OBJECT),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        coinIntoBalance(tx, COINS_TYPE_LIST.BUCK, buckCoin),
+      ],
+    });
+    return sbuckBalance;
+  }
+
+  sBUCKFountainStake(
+    tx: Transaction,
+    sBuckCoin: TransactionArgument,
+  ): TransactionArgument {
+    const sBUCKBalance = coinIntoBalance(tx, COINS_TYPE_LIST.sBUCK, sBuckCoin);
+    return tx.moveCall({
+      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::stake`,
+      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
+      arguments: [
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
+        sBUCKBalance,
+        tx.pure.u64(MAX_LOCK_TIME),
+      ],
+    });
+  }
+
+  sBUCKFountainUnstake(
+    tx: Transaction,
+    proofId: string,
+  ): [TransactionArgument, TransactionArgument] {
+    const [stakeBalance, rewardBalance] = tx.moveCall({
+      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::force_unstake`,
+      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
+      arguments: [
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
+        tx.object(proofId),
+      ],
+    });
+
+    return [
+      stakeBalance as TransactionArgument,
+      rewardBalance as TransactionArgument,
+    ];
+  }
+
+  sBUCKFountainClaim(tx: Transaction, proofId: string): TransactionArgument {
+    return tx.moveCall({
+      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::claim`,
+      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
+      arguments: [
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
+        tx.object(proofId),
+      ],
     });
   }
 }
