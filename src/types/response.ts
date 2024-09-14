@@ -208,3 +208,17 @@ export type PsmBalanceResponse = {
     id: string;
   };
 };
+
+
+export type AprResponse = {
+  id: {
+    id: string;
+  };
+  latest_time: string;
+  rate: {
+    fields: {
+      value: string;
+    };
+    type: string;
+  };
+};

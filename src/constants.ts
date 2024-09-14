@@ -352,4 +352,6 @@ export const STAKE_PROOF_ID = `${STRAP_TYPE_ID}::fountain::StakeProof`;
 export const SBUCK_FLASK_OBJECT_ID =
   "0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8";
 
+export const SBUCK_APR_OBJECT_ID = "0x4a9c3a7f42ead76b350e268976c502eafb448ff72da02923efcd4d202e46dee4";
+
 export const MAX_LOCK_TIME = 4838400_000; // 8 weeks

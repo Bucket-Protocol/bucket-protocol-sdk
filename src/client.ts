@@ -58,6 +58,7 @@ import {
   FLASK_OBJECT,
   SBUCK_BUCK_LP_REGISTRY,
   MAX_LOCK_TIME,
+  SBUCK_APR_OBJECT_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -87,6 +88,7 @@ import {
   SharedObjectRef,
   PipeResponse,
   PsmBalanceResponse,
+  AprResponse,
 } from "./types";
 import {
   U64FromBytes,
@@ -1031,7 +1033,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1393,7 +1395,7 @@ export class BucketClient {
 
               debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
               startUnit = Number(ret?.value.fields.start_unit ?? 0);
-            } catch {}
+            } catch { }
           }
         }
 
@@ -1566,7 +1568,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -1832,6 +1834,23 @@ export class BucketClient {
     });
 
     return prices;
+  }
+
+  async getSBUCKApr(): Promise<number> {
+    /**
+     * @description Get sBUCK apr value
+     * @returns Promise<number>
+     */
+    const res = await this.client.getObject({
+      id: SBUCK_APR_OBJECT_ID,
+      options: {
+        showContent: true,
+      },
+    });
+
+    const obj = getObjectFields(res) as AprResponse;
+    const apr = parseFloat(formatUnits(BigInt(obj.rate.fields.value), 16));
+    return apr;
   }
 
   async getBorrowTx(
@@ -2214,17 +2233,17 @@ export class BucketClient {
       const isUSDC = outCoinType === COINS_TYPE_LIST.USDC;
       const vaultObj = isUSDC
         ? tx.sharedObjectRef({
-            objectId:
-              "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
-            initialSharedVersion: 272980432,
-            mutable: true,
-          })
+          objectId:
+            "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+          initialSharedVersion: 272980432,
+          mutable: true,
+        })
         : tx.sharedObjectRef({
-            objectId:
-              "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
-            initialSharedVersion: 272980433,
-            mutable: true,
-          });
+          objectId:
+            "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+          initialSharedVersion: 272980433,
+          mutable: true,
+        });
       const treasuryObj = tx.sharedObjectRef({
         objectId:
           "0x3b9e577e96fcc0bc7a06a39f82f166417f675813a294d64833d4adb2229f6321",

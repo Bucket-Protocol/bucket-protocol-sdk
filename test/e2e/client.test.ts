@@ -92,4 +92,10 @@ describe('Interacting with Bucket Client on mainnet', () => {
     }, {
         timeout: 60_000
     });
+
+    it('tests getSBUCKApr() function', async () => {
+        const apr = await buck.getSBUCKApr();
+        console.log(apr);
+        expect(apr).toBeDefined();
+    });
 });
