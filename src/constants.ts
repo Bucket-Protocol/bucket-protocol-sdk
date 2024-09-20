@@ -352,6 +352,44 @@ export const STAKE_PROOF_ID = `${STRAP_TYPE_ID}::fountain::StakeProof`;
 export const SBUCK_FLASK_OBJECT_ID =
   "0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8";
 
-export const SBUCK_APR_OBJECT_ID = "0x4a9c3a7f42ead76b350e268976c502eafb448ff72da02923efcd4d202e46dee4";
+export const SBUCK_APR_OBJECT_ID =
+  "0x4a9c3a7f42ead76b350e268976c502eafb448ff72da02923efcd4d202e46dee4";
 
 export const MAX_LOCK_TIME = 4838400_000; // 8 weeks
+
+export const BUCKET_POINT_PACKAGE_ID =
+  "0xadad56b1af73a29dbfed997ea13e4a6044eae29fd029fbd524fd121a13adca42";
+
+export const BUCKET_POINT_CONFIG_OBJ = {
+  objectId:
+    "0x89d71e7c0dbd2ce47e0c44df0c1cd65858bbc57304d0392cd0b9389f53ceb5f1",
+  initialSharedVersion: "337351213",
+  mutable: false,
+};
+
+export const LOCKER_MAP = {
+  afSUI: {
+    objectId:
+      "0x69550d2439ae19da902c1fa430fe7e3251cf0ddea8af76121f61d705bb95673b",
+    initialSharedVersion: "337351217",
+    mutable: true,
+  },
+  haSUI: {
+    objectId:
+      "0xcae53a48cf09957be981498d1a2bf549f1a548b3c5e85fe9a2c9564207e7b2f0",
+    initialSharedVersion: "337351218",
+    mutable: true,
+  },
+  vSUI: {
+    objectId:
+      "0x0cdc2b47abf0914991a7bac115788c5ace6c2936c7135736e9df87c3e6bb80c3",
+    initialSharedVersion: "337351219",
+    mutable: true,
+  },
+  sBUCK: {
+    objectId:
+      "0xf0ac007f3532c0612a99183160f4bc0d2a41ee9a98013eba1949d753c2d7f6b5",
+    initialSharedVersion: "337351220",
+    mutable: true,
+  },
+};
