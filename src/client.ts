@@ -59,6 +59,9 @@ import {
   SBUCK_BUCK_LP_REGISTRY,
   MAX_LOCK_TIME,
   SBUCK_APR_OBJECT_ID,
+  BUCKET_POINT_PACKAGE_ID,
+  BUCKET_POINT_CONFIG_OBJ,
+  LOCKER_MAP,
 } from "./constants";
 import {
   BucketConstants,
@@ -1033,7 +1036,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1395,7 +1398,7 @@ export class BucketClient {
 
               debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
               startUnit = Number(ret?.value.fields.start_unit ?? 0);
-            } catch { }
+            } catch {}
           }
         }
 
@@ -1568,7 +1571,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -2233,17 +2236,17 @@ export class BucketClient {
       const isUSDC = outCoinType === COINS_TYPE_LIST.USDC;
       const vaultObj = isUSDC
         ? tx.sharedObjectRef({
-          objectId:
-            "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
-          initialSharedVersion: 272980432,
-          mutable: true,
-        })
+            objectId:
+              "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+            initialSharedVersion: 272980432,
+            mutable: true,
+          })
         : tx.sharedObjectRef({
-          objectId:
-            "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
-          initialSharedVersion: 272980433,
-          mutable: true,
-        });
+            objectId:
+              "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+            initialSharedVersion: 272980433,
+            mutable: true,
+          });
       const treasuryObj = tx.sharedObjectRef({
         objectId:
           "0x3b9e577e96fcc0bc7a06a39f82f166417f675813a294d64833d4adb2229f6321",
@@ -3070,5 +3073,77 @@ export class BucketClient {
         tx.object(proofId),
       ],
     });
+  }
+
+  lockBucketProofs(
+    tx: Transaction,
+    inputs: {
+      afSuiProof?: TransactionArgument;
+      vSuiProof?: TransactionArgument;
+      haSuiProof?: TransactionArgument;
+      sbuckProofs?: TransactionArgument[];
+    },
+  ) {
+    const { afSuiProof, vSuiProof, haSuiProof, sbuckProofs } = inputs;
+
+    const protocolObj = tx.sharedObjectRef(PROTOCOL_OBJECT);
+    const clockObj = tx.sharedObjectRef(CLOCK_OBJECT);
+
+    if (afSuiProof) {
+      tx.moveCall({
+        target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
+        typeArguments: [COINS_TYPE_LIST.afSUI],
+        arguments: [
+          tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
+          tx.sharedObjectRef(LOCKER_MAP.afSUI),
+          protocolObj,
+          clockObj,
+          afSuiProof,
+        ],
+      });
+    }
+
+    if (haSuiProof) {
+      tx.moveCall({
+        target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
+        typeArguments: [COINS_TYPE_LIST.haSUI],
+        arguments: [
+          tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
+          tx.sharedObjectRef(LOCKER_MAP.haSUI),
+          protocolObj,
+          clockObj,
+          haSuiProof,
+        ],
+      });
+    }
+
+    if (vSuiProof) {
+      tx.moveCall({
+        target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
+        typeArguments: [COINS_TYPE_LIST.vSUI],
+        arguments: [
+          tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
+          tx.sharedObjectRef(LOCKER_MAP.vSUI),
+          protocolObj,
+          clockObj,
+          vSuiProof,
+        ],
+      });
+    }
+
+    if (sbuckProofs && sbuckProofs.length > 0) {
+      sbuckProofs.map((sbuckProof) => {
+        tx.moveCall({
+          target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::lock`,
+          typeArguments: [COINS_TYPE_LIST.sBUCK],
+          arguments: [
+            tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
+            tx.sharedObjectRef(LOCKER_MAP.sBUCK),
+            clockObj,
+            sbuckProof,
+          ],
+        });
+      });
+    }
   }
 }
