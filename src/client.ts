@@ -109,6 +109,7 @@ import {
   objectToPsm,
   objectToStrapFountain,
   getObjectFields,
+  ObjectContentFields,
 } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -3145,5 +3146,145 @@ export class BucketClient {
         });
       });
     }
+  }
+
+  unlockLstProof(
+    tx: Transaction,
+    lstSymbol: "afSUI" | "haSUI" | "vSUI",
+    account: string,
+  ) {
+    const [lstType, lstLocker] =
+      lstSymbol === "afSUI"
+        ? [COINS_TYPE_LIST.afSUI, LOCKER_MAP.afSUI]
+        : lstSymbol === "haSUI"
+          ? [COINS_TYPE_LIST.haSUI, LOCKER_MAP.haSUI]
+          : [COINS_TYPE_LIST.vSUI, LOCKER_MAP.vSUI];
+
+    const [proof] = tx.moveCall({
+      target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::unlock`,
+      typeArguments: [lstType],
+      arguments: [
+        tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
+        tx.sharedObjectRef(lstLocker),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.pure.u64(0),
+      ],
+    });
+    tx.transferObjects([proof], account);
+  }
+
+  unlockAllSBuckProofs(tx: Transaction, proofCount: number, account: string) {
+    Array(proofCount).map(() => {
+      const [proof] = tx.moveCall({
+        target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::unlock`,
+        typeArguments: [COINS_TYPE_LIST.sBUCK],
+        arguments: [
+          tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
+          tx.sharedObjectRef(LOCKER_MAP.sBUCK),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.pure.u64(0),
+        ],
+      });
+      tx.transferObjects([proof], account);
+    });
+  }
+
+  async getLockedSBUCKInfos(address: string): Promise<UserLpProof[]> {
+    const res = await this.client.getDynamicFieldObject({
+      parentId:
+        "0xbb4c253eec08636e0416cb8e820b4386c1042747fbdc5a5df6c025c9c6a06fef",
+      name: {
+        type: "address",
+        value: address,
+      },
+    });
+    const fields = getObjectFields(res);
+    if (!fields) return [];
+    const proofInfos = fields.value as ObjectContentFields[];
+    return proofInfos.map((info, idx) => {
+      return {
+        objectId: idx.toString(),
+        version: "",
+        digest: "",
+        typeName: info.type,
+        fountainId: info.fields.fountain_id,
+        startUnit: Number(info.fields.start_uint),
+        stakeAmount: Number(info.fields.stake_amount),
+        stakeWeight: Number(info.fields.stake_weight),
+        lockUntil: Number(info.fields.lock_until),
+      };
+    });
+  }
+
+  async getLockedLstProofs(
+    proofSymbol: "afSUI" | "haSUI" | "vSUI",
+    address: string,
+  ): Promise<UserBottleInfo | undefined> {
+    const lockerTableId = (() => {
+      switch (proofSymbol) {
+        case "afSUI":
+          return "0x95d0d20ab42f78f75a7d63513ed60415b9dcb41c58ef493a7a69b531b212e713";
+        case "haSUI":
+          return "0x3674f3183780166553d42174d02229c679e431b9a5911d02a28271a8fd9abd88";
+        case "vSUI":
+          return "0x502760cac10dd4fae78672c1e27bc0e5cdbae449aa2b15dbfb72434af33cb8f6";
+        default:
+          return undefined;
+      }
+    })();
+    if (!lockerTableId) return undefined;
+    const res = await this.client.getDynamicFieldObject({
+      parentId: lockerTableId,
+      name: {
+        type: "address",
+        value: address,
+      },
+    });
+    const proofInfo = getObjectFields(res);
+    if (!proofInfo) return undefined;
+    const [info] = proofInfo.value;
+    const strapAddress = info.strap_address;
+    const lstFountain = await this.getStakeProofFountain(
+      STRAP_FOUNTAIN_IDS[proofSymbol]?.objectId as string,
+    );
+    const strapRes = await this.client.getDynamicFieldObject({
+      parentId: lstFountain.strapId,
+      name: {
+        type: "address",
+        value: strapAddress,
+      },
+    });
+    const strapData = getObjectFields(strapRes);
+    if (!strapData) return undefined;
+    const bottleTableId = (() => {
+      switch (proofSymbol) {
+        case "afSUI":
+          return "0x8f1be0aed5bc2283898b94879b3419d7ff0125bd8d8b59d926720aab93cc5147";
+        case "haSUI":
+          return "0xa531d0ab31004158facb4b559e97113e7013d9265bf4bec0a33abc718de77821";
+        case "vSUI":
+          return "0xb28bc06b342bd25e65795b785015cc1d386155725494b43eff7aae8eece04514";
+        default:
+          return undefined;
+      }
+    })();
+    if (!bottleTableId) return;
+    const bottleRes = await this.client.getDynamicFieldObject({
+      parentId: bottleTableId,
+      name: {
+        type: "address",
+        value: strapAddress,
+      },
+    });
+    const bottleData = getObjectFields(bottleRes);
+    if (!bottleData) return;
+    return {
+      strapId: strapData.value.fields.strap.fields.id.id,
+      debtAmount: Number(strapData.value.fields.debt_amount),
+      startUnit: Number(strapData.value.fields.start_unit),
+      token: proofSymbol,
+      collateralAmount: bottleData.value.fields.value.fields.collateral_amount,
+      buckAmount: bottleData.value.fields.value.fields.buck_amount,
+    };
   }
 }
