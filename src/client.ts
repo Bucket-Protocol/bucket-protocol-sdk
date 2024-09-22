@@ -3216,7 +3216,7 @@ export class BucketClient {
     });
   }
 
-  async getLockedLstProofs(
+  async getLockedLstInfos(
     proofSymbol: "afSUI" | "haSUI" | "vSUI",
     address: string,
   ): Promise<UserBottleInfo | undefined> {
