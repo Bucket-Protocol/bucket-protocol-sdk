@@ -3075,7 +3075,7 @@ export class BucketClient {
     });
   }
 
-  lockBucketProofs(
+  getLockProofsTx(
     tx: Transaction,
     inputs: {
       afSuiProof?: TransactionArgument;
