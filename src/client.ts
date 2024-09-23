@@ -3159,13 +3159,16 @@ export class BucketClient {
         : lstSymbol === "haSUI"
           ? [COINS_TYPE_LIST.haSUI, LOCKER_MAP.haSUI]
           : [COINS_TYPE_LIST.vSUI, LOCKER_MAP.vSUI];
-
+    const fountainObj = STRAP_FOUNTAIN_IDS[lstSymbol];
+    if (!fountainObj) return;
     const [proof] = tx.moveCall({
       target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::unlock`,
       typeArguments: [lstType],
       arguments: [
         tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
         tx.sharedObjectRef(lstLocker),
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        tx.sharedObjectRef(fountainObj),
         tx.sharedObjectRef(CLOCK_OBJECT),
         tx.pure.u64(0),
       ],
