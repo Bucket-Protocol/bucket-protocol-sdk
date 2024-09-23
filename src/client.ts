@@ -3287,4 +3287,45 @@ export class BucketClient {
       buckAmount: bottleData.value.fields.value.fields.buck_amount,
     };
   }
+
+  claimLockedReward(
+    tx: Transaction,
+    proofSymbol: "afSUI" | "haSUI" | "vSUI" | "sBUCK",
+    sBuckLength?: number,
+  ): TransactionResult | undefined {
+    if (proofSymbol === "sBUCK") {
+      if (!sBuckLength) return undefined;
+      const totalReward = tx.moveCall({
+        target: "0x2::coin::zero",
+        typeArguments: [COINS_TYPE_LIST.sBUCK],
+      });
+      for (let i = 0; i < sBuckLength; ++i) {
+        const reward = tx.moveCall({
+          target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::claim`,
+          typeArguments: [COINS_TYPE_LIST.sBUCK],
+          arguments: [
+            tx.sharedObjectRef(LOCKER_MAP.sBUCK),
+            tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
+            tx.sharedObjectRef(CLOCK_OBJECT),
+            tx.pure.u64(i),
+          ],
+        });
+        tx.mergeCoins(totalReward, [reward]);
+      }
+      return totalReward;
+    } else {
+      const fountainObj = STRAP_FOUNTAIN_IDS[proofSymbol];
+      if (!fountainObj) return undefined;
+      return tx.moveCall({
+        target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::claim`,
+        typeArguments: [COINS_TYPE_LIST.sBUCK],
+        arguments: [
+          tx.sharedObjectRef(LOCKER_MAP[proofSymbol]),
+          tx.sharedObjectRef(fountainObj),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.pure.u64(0),
+        ],
+      });
+    }
+  }
 }
