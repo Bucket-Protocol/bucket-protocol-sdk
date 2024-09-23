@@ -3288,11 +3288,11 @@ export class BucketClient {
     };
   }
 
-  async claimLockedReward(
+  claimLockedReward(
     tx: Transaction,
     proofSymbol: "afSUI" | "haSUI" | "vSUI" | "sBUCK",
     sBuckLength?: number,
-  ): Promise<TransactionResult | undefined> {
+  ): TransactionResult | undefined {
     if (proofSymbol === "sBUCK") {
       if (!sBuckLength) return undefined;
       const totalReward = tx.moveCall({
