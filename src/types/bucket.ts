@@ -31,6 +31,7 @@ export type UserBottleInfo = {
   strapId?: string;
   debtAmount?: number;
   startUnit?: number;
+  isLocked?: boolean;
 } & BottleInfo;
 
 export interface BucketConstants {
