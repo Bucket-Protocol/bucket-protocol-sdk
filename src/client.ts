@@ -1037,7 +1037,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1399,7 +1399,7 @@ export class BucketClient {
 
               debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
               startUnit = Number(ret?.value.fields.start_unit ?? 0);
-            } catch { }
+            } catch {}
           }
         }
 
@@ -1572,7 +1572,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -1798,17 +1798,10 @@ export class BucketClient {
     });
   }
 
-  async getLockedLstBottles(
-    address: string,
-  ): Promise<UserBottleInfo[]> {
+  async getLockedLstBottles(address: string): Promise<UserBottleInfo[]> {
+    const lpTokens: COIN[] = ["afSUI", "haSUI", "vSUI"];
 
-    const lpTokens: COIN[] = [
-      "afSUI",
-      "haSUI",
-      "vSUI"
-    ];
-
-    const getLockerTableId = ((lpToken: string) => {
+    const getLockerTableId = (lpToken: string) => {
       switch (lpToken) {
         case "afSUI":
           return "0x95d0d20ab42f78f75a7d63513ed60415b9dcb41c58ef493a7a69b531b212e713";
@@ -1819,9 +1812,9 @@ export class BucketClient {
         default:
           return undefined;
       }
-    });
+    };
 
-    const getBottleTableId = ((lpToken: string) => {
+    const getBottleTableId = (lpToken: string) => {
       switch (lpToken) {
         case "afSUI":
           return "0x8f1be0aed5bc2283898b94879b3419d7ff0125bd8d8b59d926720aab93cc5147";
@@ -1832,7 +1825,7 @@ export class BucketClient {
         default:
           return undefined;
       }
-    });
+    };
 
     const lstBottles: UserBottleInfo[] = [];
     for (const lpToken of lpTokens) {
@@ -1883,7 +1876,8 @@ export class BucketClient {
         strapId: strapData.value.fields.strap.fields.id.id,
         debtAmount: Number(strapData.value.fields.debt_amount),
         startUnit: Number(strapData.value.fields.start_unit),
-        collateralAmount: bottleData.value.fields.value.fields.collateral_amount,
+        collateralAmount:
+          bottleData.value.fields.value.fields.collateral_amount,
         buckAmount: bottleData.value.fields.value.fields.buck_amount,
         isLocked: true,
       });
@@ -2364,17 +2358,17 @@ export class BucketClient {
       const isUSDC = outCoinType === COINS_TYPE_LIST.USDC;
       const vaultObj = isUSDC
         ? tx.sharedObjectRef({
-          objectId:
-            "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
-          initialSharedVersion: 272980432,
-          mutable: true,
-        })
+            objectId:
+              "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+            initialSharedVersion: 272980432,
+            mutable: true,
+          })
         : tx.sharedObjectRef({
-          objectId:
-            "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
-          initialSharedVersion: 272980433,
-          mutable: true,
-        });
+            objectId:
+              "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+            initialSharedVersion: 272980433,
+            mutable: true,
+          });
       const treasuryObj = tx.sharedObjectRef({
         objectId:
           "0x3b9e577e96fcc0bc7a06a39f82f166417f675813a294d64833d4adb2229f6321",
@@ -2853,10 +2847,7 @@ export class BucketClient {
     return true;
   }
 
-  getAfClaimTx(
-    tx: Transaction,
-    lpProof: UserLpProof,
-  ) {
+  getAfClaimTx(tx: Transaction, lpProof: UserLpProof) {
     /**
      * @description Get transaction for claim token from AF pool
      * @param lpProof UserLpProof object
@@ -2900,10 +2891,7 @@ export class BucketClient {
     });
   }
 
-  getKriyaClaimTx(
-    tx: Transaction,
-    lpProof: UserLpProof,
-  ) {
+  getKriyaClaimTx(tx: Transaction, lpProof: UserLpProof) {
     /**
      * @description Get transaction for claim token from Kriya pool
      * @param lpProof UserLpProof object
@@ -2934,11 +2922,9 @@ export class BucketClient {
     for (const lpProof of lpProofs) {
       if (lpProof.fountainId == AF_USDC_BUCK_LP_REGISTRY_ID) {
         this.getAfClaimTx(tx, lpProof);
-      }
-      else if (lpProof.fountainId == KRIYA_USDC_BUCK_LP_REGISTRY_ID) {
+      } else if (lpProof.fountainId == KRIYA_USDC_BUCK_LP_REGISTRY_ID) {
         this.getKriyaClaimTx(tx, lpProof);
-      }
-      else if (lpProof.fountainId == CETUS_USDC_BUCK_LP_REGISTRY_ID) {
+      } else if (lpProof.fountainId == CETUS_USDC_BUCK_LP_REGISTRY_ID) {
         this.getCetusClaimTx(tx, lpProof, walletAddress);
       }
     }
@@ -3209,7 +3195,6 @@ export class BucketClient {
     const clockObj = tx.sharedObjectRef(CLOCK_OBJECT);
 
     for (const lstBottle of lstBottles) {
-
       if (!lstBottle.strapId) {
         continue;
       }
@@ -3226,8 +3211,7 @@ export class BucketClient {
             tx.object(lstBottle.strapId),
           ],
         });
-      }
-      else if (lstBottle.token == "haSUI") {
+      } else if (lstBottle.token == "haSUI") {
         tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
           typeArguments: [COINS_TYPE_LIST.haSUI],
@@ -3239,8 +3223,7 @@ export class BucketClient {
             tx.object(lstBottle.strapId),
           ],
         });
-      }
-      else if (lstBottle.token == "vSUI") {
+      } else if (lstBottle.token == "vSUI") {
         tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
           typeArguments: [COINS_TYPE_LIST.vSUI],
@@ -3267,36 +3250,28 @@ export class BucketClient {
         ],
       });
     }
-
   }
 
-  getUnlockLstProofTx(
-    tx: Transaction,
-    coin: string,
-    account: string,
-  ) {
+  getUnlockLstProofTx(tx: Transaction, coin: string, account: string) {
     let lstType, lstLocker;
 
     if (coin == "afSUI") {
       lstType = COINS_TYPE_LIST.afSUI;
       lstLocker = LOCKER_MAP.afSUI;
-    }
-    else if (coin == "haSUI") {
+    } else if (coin == "haSUI") {
       lstType = COINS_TYPE_LIST.haSUI;
       lstLocker = LOCKER_MAP.haSUI;
-    }
-    else if (coin == "vSUI") {
+    } else if (coin == "vSUI") {
       lstType = COINS_TYPE_LIST.vSUI;
       lstLocker = LOCKER_MAP.vSUI;
-    }
-    else {
+    } else {
       throw new Error("Not LST token");
     }
 
     const fountainObj = STRAP_FOUNTAIN_IDS[coin];
     if (!fountainObj) {
       throw new Error("No fountain exists");
-    };
+    }
 
     const [proof] = tx.moveCall({
       target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::unlock`,
@@ -3311,14 +3286,18 @@ export class BucketClient {
       ],
     });
     if (!proof) {
-      throw Error("Unlock proof failed")
+      throw Error("Unlock proof failed");
     }
 
     tx.transferObjects([proof], account);
   }
 
-  getUnlockSBuckProofsTx(tx: Transaction, proofCount: number, account: string) {
-    Array(proofCount).map(() => {
+  getUnlockSBuckProofsTx(
+    tx: Transaction,
+    proofCount: number,
+    account?: string,
+  ): TransactionArgument[] | undefined {
+    const proofs = Array(proofCount).map(() => {
       const [proof] = tx.moveCall({
         target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::unlock`,
         typeArguments: [COINS_TYPE_LIST.sBUCK],
@@ -3329,12 +3308,12 @@ export class BucketClient {
           tx.pure.u64(0),
         ],
       });
-      if (!proof) {
-        return;
-      }
-
-      tx.transferObjects([proof], account);
+      return proof;
     });
+    if (account) {
+      tx.transferObjects(proofs, account);
+      return undefined;
+    } else return proofs;
   }
 
   getClaimLockedRewardTx(
