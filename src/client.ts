@@ -3156,15 +3156,16 @@ export class BucketClient {
 
   getSBUCKUnstakeTx(
     tx: Transaction,
-    proofId: string,
+    proof: string | TransactionArgument,
   ): [TransactionArgument, TransactionArgument] {
+    const proofObj = typeof proof === "string" ? tx.object(proof) : proof;
     const [stakeBalance, rewardBalance] = tx.moveCall({
       target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::force_unstake`,
       typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
       arguments: [
         tx.sharedObjectRef(CLOCK_OBJECT),
         tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
-        tx.object(proofId),
+        proofObj,
       ],
     });
 
