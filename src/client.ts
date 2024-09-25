@@ -3339,7 +3339,9 @@ export class BucketClient {
     proofCount: number,
     account?: string,
   ): TransactionArgument[] | undefined {
-    const proofs = Array(proofCount).map(() => {
+    let proofs = [];
+
+    for (let i = 0; i < proofCount; i++) {
       const [proof] = tx.moveCall({
         target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::unlock`,
         typeArguments: [COINS_TYPE_LIST.sBUCK],
@@ -3351,8 +3353,10 @@ export class BucketClient {
         ],
       });
 
-      return proof as TransactionArgument;
-    }).filter(t => !!t);
+      if (proof) {
+        proofs.push(proof);
+      }
+    }
 
     if (account) {
       tx.transferObjects(proofs, account);
