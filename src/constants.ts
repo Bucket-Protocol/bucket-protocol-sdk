@@ -1,5 +1,3 @@
-// Copyright Andrei <andreid.dev@gmail.com>
-
 import { COIN, SharedObjectRef } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =

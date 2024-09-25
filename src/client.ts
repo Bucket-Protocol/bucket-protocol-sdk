@@ -1,5 +1,3 @@
-// Copyright Andrei <andreid.dev@gmail.com>
-
 import {
   DevInspectResults,
   DynamicFieldInfo,

@@ -10,7 +10,7 @@ In addition to the collateral, the loans are secured by TANK containing $BUCK an
 
 Install Bucket Protocol using npm : `npm i bucket-protocol-sdk`
 
-Install Bucket Protocol using npm and git : `npm install https://github.com/andreidev1/bucket-protocol-sdk.git`
+Install Bucket Protocol using npm and git : `npm install https://github.com/Bucket-Protocol/bucket-protocol-sdk.git`
 
 ## Quick start
 
