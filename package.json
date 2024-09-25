@@ -30,7 +30,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@mysten/sui": "^1.1.0",
+    "@mysten/sui": "^1.1.2",
     "@types/superstruct": "^0.8.2",
     "superstruct": "^1.0.3"
   },
