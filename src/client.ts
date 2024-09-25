@@ -1174,17 +1174,20 @@ export class BucketClient {
         }
 
         if (psmBalanceIds.includes(objectId)) {
-          let balanceObj = getObjectFields(res) as PsmBalanceResponse;
+          const balanceObj = getObjectFields(res) as PsmBalanceResponse;
+
           const coin = Object.keys(PSM_BALANCE_IDS).find(
             (symbol) => PSM_BALANCE_IDS[symbol as COIN] == objectId,
           );
           if (coin && psmList[coin]) {
-            psmList[coin].balance = Number(
+            const balance = Number(
               formatUnits(
                 BigInt(balanceObj.coin_balance),
                 COIN_DECIMALS[coin as COIN] ?? 9,
               ),
             );
+
+            (psmList[coin] as PsmInfo).balance = balance;
           }
         }
       }
@@ -2481,14 +2484,13 @@ export class BucketClient {
     redeemAmount: number,
     walletAddress: string,
     insertionPlace?: string,
-  ): Promise<boolean> {
+  ) {
     /**
      * @description Get transaction for Redeem
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param redeemAmount
      * @param walletAddress
      * @param insertionPlace  Optional
-     * @returns Promise<boolean>
      */
 
     const token = getCoinSymbol(collateralType) ?? "";
@@ -2499,7 +2501,7 @@ export class BucketClient {
       COINS_TYPE_LIST.BUCK,
       redeemAmount,
     );
-    if (!buckCoinInput) return false;
+    if (!buckCoinInput) throw new Error("No BUCK input");
 
     this.updateSupraOracle(tx, token);
 
@@ -2518,8 +2520,6 @@ export class BucketClient {
         ),
       ],
     });
-
-    return true;
   }
 
   async getTankDepositTx(
@@ -2723,18 +2723,17 @@ export class BucketClient {
     return true;
   }
 
-  async getAfUnstakeTx(
+  getAfUnstakeTx(
     tx: Transaction,
     fountainId: string,
     lpProof: UserLpProof,
     recipient: string,
-  ): Promise<boolean> {
+  ) {
     /**
      * @description Get transaction for unstake token from AF pool
      * @param fountainId
      * @param lpProof UserLpProof object
      * @param recipient Recipient address
-     * @returns Promise<boolean>
      */
 
     const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
@@ -2788,11 +2787,9 @@ export class BucketClient {
       [buckCoin, usdcCoin, rewardCoin],
       tx.pure.address(recipient),
     );
-
-    return true;
   }
 
-  async getKriyaUnstakeTx(
+  getKriyaUnstakeTx(
     tx: Transaction,
     fountainId: string,
     lpProof: UserLpProof,
@@ -2801,7 +2798,6 @@ export class BucketClient {
      * @description Get transaction for unstake token from Kriya pool
      * @param fountainId
      * @param lpProof UserLpProof object
-     * @returns Promise<boolean>
      */
 
     tx.moveCall({
@@ -2816,7 +2812,7 @@ export class BucketClient {
     });
   }
 
-  async getCetusUnstakeTx(
+  getCetusUnstakeTx(
     tx: Transaction,
     fountainId: string,
     lpProof: UserLpProof,
@@ -3338,7 +3334,7 @@ export class BucketClient {
     tx.transferObjects([proof], account);
   }
 
-  getUnlockSBuckProofs(
+  getUnlockSBuckProofsTx(
     tx: Transaction,
     proofCount: number,
     account?: string,
@@ -3355,7 +3351,7 @@ export class BucketClient {
         ],
       });
 
-      return proof;
+      return proof as TransactionArgument;
     }).filter(t => !!t);
 
     if (account) {
@@ -3366,7 +3362,7 @@ export class BucketClient {
     };
   }
 
-  getClaimLockedRewards(
+  getClaimLockedRewardsTx(
     tx: Transaction,
     token: string,
     sbuckProofs?: number,
