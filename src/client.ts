@@ -953,7 +953,7 @@ export class BucketClient {
               .pop()
               ?.replace(">", "")
               .split(", ")[0]
-              .trim() ?? "";
+              ?.trim() ?? "";
           const token = getCoinSymbol(typeId);
           if (!token) {
             return;
@@ -1037,7 +1037,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1179,7 +1179,7 @@ export class BucketClient {
             (symbol) => PSM_BALANCE_IDS[symbol as COIN] == objectId,
           );
           if (coin) {
-            psmList[coin].balance = Number(
+            psmList[coin as string].balance = Number(
               formatUnits(
                 BigInt(balanceObj.coin_balance),
                 COIN_DECIMALS[coin as COIN] ?? 9,
@@ -1237,9 +1237,9 @@ export class BucketClient {
 
     const fountains: StrapFountainList = {};
     for (let idx = 0; idx < response.length; idx++) {
-      const fountain = objectToStrapFountain(response[idx]);
+      const fountain = objectToStrapFountain(response[idx] as SuiObjectResponse);
       const coin = fountainIds[idx];
-      fountains[coin] = fountain;
+      fountains[coin as COIN] = fountain;
     }
 
     return fountains;
@@ -1399,7 +1399,7 @@ export class BucketClient {
 
               debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
               startUnit = Number(ret?.value.fields.start_unit ?? 0);
-            } catch {}
+            } catch { }
           }
         }
 
@@ -1572,7 +1572,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -1706,7 +1706,7 @@ export class BucketClient {
 
   async getUserLpProofs(owner: string): Promise<UserLpList> {
     /**
-     * @description Get all LP proofs from KRIYA, CETUS, AFTERMATHs
+     * @description Get all LP proofs from KRIYA, CETUS, AFTERMATH, SBUCK fountain
      * @param owner User address
      * @returns Promise<UserLpList>
      */
@@ -1765,7 +1765,7 @@ export class BucketClient {
     return userLpList;
   }
 
-  async getLockedSBUCKInfos(address: string): Promise<UserLpProof[]> {
+  async getLockedSBuckProofs(address: string): Promise<UserLpProof[]> {
     /**
      * @description Get locked sBUCK proof information
      * @param owner User address
@@ -1798,10 +1798,17 @@ export class BucketClient {
     });
   }
 
-  async getLockedLstBottles(address: string): Promise<UserBottleInfo[]> {
-    const lpTokens: COIN[] = ["afSUI", "haSUI", "vSUI"];
+  async getLockedLstBottles(
+    address: string,
+  ): Promise<UserBottleInfo[]> {
 
-    const getLockerTableId = (lpToken: string) => {
+    const lpTokens: COIN[] = [
+      "afSUI",
+      "haSUI",
+      "vSUI"
+    ];
+
+    const getLockerTableId = ((lpToken: string) => {
       switch (lpToken) {
         case "afSUI":
           return "0x95d0d20ab42f78f75a7d63513ed60415b9dcb41c58ef493a7a69b531b212e713";
@@ -1812,9 +1819,9 @@ export class BucketClient {
         default:
           return undefined;
       }
-    };
+    });
 
-    const getBottleTableId = (lpToken: string) => {
+    const getBottleTableId = ((lpToken: string) => {
       switch (lpToken) {
         case "afSUI":
           return "0x8f1be0aed5bc2283898b94879b3419d7ff0125bd8d8b59d926720aab93cc5147";
@@ -1825,7 +1832,7 @@ export class BucketClient {
         default:
           return undefined;
       }
-    };
+    });
 
     const lstBottles: UserBottleInfo[] = [];
     for (const lpToken of lpTokens) {
@@ -1841,8 +1848,8 @@ export class BucketClient {
       });
       const proofInfo = getObjectFields(res);
       if (!proofInfo) continue;
-
       const [info] = proofInfo.value;
+      if (!info) continue;
       const strapAddress = info.fields.strap_address;
       if (!strapAddress) continue;
 
@@ -1876,8 +1883,7 @@ export class BucketClient {
         strapId: strapData.value.fields.strap.fields.id.id,
         debtAmount: Number(strapData.value.fields.debt_amount),
         startUnit: Number(strapData.value.fields.start_unit),
-        collateralAmount:
-          bottleData.value.fields.value.fields.collateral_amount,
+        collateralAmount: bottleData.value.fields.value.fields.collateral_amount,
         buckAmount: bottleData.value.fields.value.fields.buck_amount,
         isLocked: true,
       });
@@ -2340,6 +2346,10 @@ export class BucketClient {
           "0x83f4534f2bd62bc01affa7318ce4950857ea3a1e7c38edc4f1f111617140b8ad::stapearl::withdraw",
         arguments: [vaultObj, flxContainerObj, flxStateObj, clockObj, outCoin],
       });
+      if (!lpCoin) {
+        throw new Error("Withdraw not available");
+      }
+
       return tx.moveCall({
         target:
           "0x83f4534f2bd62bc01affa7318ce4950857ea3a1e7c38edc4f1f111617140b8ad::stapearl::remove_liquidity",
@@ -2358,17 +2368,17 @@ export class BucketClient {
       const isUSDC = outCoinType === COINS_TYPE_LIST.USDC;
       const vaultObj = isUSDC
         ? tx.sharedObjectRef({
-            objectId:
-              "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
-            initialSharedVersion: 272980432,
-            mutable: true,
-          })
+          objectId:
+            "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+          initialSharedVersion: 272980432,
+          mutable: true,
+        })
         : tx.sharedObjectRef({
-            objectId:
-              "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
-            initialSharedVersion: 272980433,
-            mutable: true,
-          });
+          objectId:
+            "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+          initialSharedVersion: 272980433,
+          mutable: true,
+        });
       const treasuryObj = tx.sharedObjectRef({
         objectId:
           "0x3b9e577e96fcc0bc7a06a39f82f166417f675813a294d64833d4adb2229f6321",
@@ -2420,14 +2430,13 @@ export class BucketClient {
     psmSwitch: boolean,
     walletAddress: string,
     referrer?: string,
-  ): Promise<boolean> {
+  ) {
     /**
      * @description Get transaction for PSM
      * @param psmCoin Asset , e.g "0x2::sui::SUI"
      * @param psmAmount
      * @param psmSwitch BUCK -> stablecoin or not
      * @param walletAddress
-     * @returns Promise<boolean>
      */
 
     const inputCoinType = psmSwitch ? COINS_TYPE_LIST.BUCK : psmCoin;
@@ -2438,26 +2447,32 @@ export class BucketClient {
       inputCoinType,
       psmAmount,
     );
+    if (!inputCoin) {
+      throw new Error("Input not valid");
+    }
+
     const outCoinType = psmSwitch ? psmCoin : COINS_TYPE_LIST.BUCK;
 
     if (psmSwitch) {
       if (psmCoin === COINS_TYPE_LIST.STAPEARL) {
         const [usdA, usdB] = this.psmSwapOut(tx, outCoinType, inputCoin);
+        if (!usdA || !usdB) {
+          throw new Error("Swap failed");
+        }
+
         tx.transferObjects([usdA, usdB], tx.pure.address(walletAddress));
       } else {
         const [usd] = this.psmSwapOut(tx, outCoinType, inputCoin);
+        if (!usd) {
+          throw new Error("Swap failed");
+        }
+
         tx.transferObjects([usd], tx.pure.address(walletAddress));
       }
     } else {
-      if (inputCoin) {
-        const coinOut = this.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
-        tx.transferObjects([coinOut], tx.pure.address(walletAddress));
-      } else {
-        return false;
-      }
+      const coinOut = this.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
+      tx.transferObjects([coinOut], tx.pure.address(walletAddress));
     }
-
-    return true;
   }
 
   async getRedeemTx(
@@ -2723,6 +2738,9 @@ export class BucketClient {
      */
 
     const [stakeType, rewardType] = proofTypeToCoinType(lpProof.typeName);
+    if (!stakeType || !rewardType) {
+      throw new Error("Lp proof not valid");
+    }
 
     const [afLpBalance, rewardBalance] = tx.moveCall({
       target:
@@ -2734,6 +2752,10 @@ export class BucketClient {
         tx.objectRef(lpProofToObject(lpProof)),
       ],
     });
+    if (!afLpBalance || !rewardBalance) {
+      throw new Error("Unstake not available");
+    }
+
     const afLpCoin = coinFromBalance(
       tx,
       COINS_TYPE_LIST.AF_LP_USDC_BUCK,
@@ -2759,6 +2781,9 @@ export class BucketClient {
       ],
     });
 
+    if (!buckCoin || !usdcCoin) {
+      throw new Error("Withdraw not available");
+    }
     tx.transferObjects(
       [buckCoin, usdcCoin, rewardCoin],
       tx.pure.address(recipient),
@@ -2771,7 +2796,7 @@ export class BucketClient {
     tx: Transaction,
     fountainId: string,
     lpProof: UserLpProof,
-  ): Promise<boolean> {
+  ) {
     /**
      * @description Get transaction for unstake token from Kriya pool
      * @param fountainId
@@ -2789,8 +2814,6 @@ export class BucketClient {
         tx.objectRef(lpProofToObject(lpProof)),
       ],
     });
-
-    return true;
   }
 
   async getCetusUnstakeTx(
@@ -2798,13 +2821,12 @@ export class BucketClient {
     fountainId: string,
     lpProof: UserLpProof,
     walletAddress: string,
-  ): Promise<boolean> {
+  ) {
     /**
      * @description Get transaction for unstake token from Cetus pool
      * @param fountainId
      * @param lpProof UserLpProof object
      * @param walletAddress
-     * @returns Promise<boolean>
      */
 
     const [bucketusOut, suiReward] = tx.moveCall({
@@ -2817,6 +2839,9 @@ export class BucketClient {
         tx.objectRef(lpProofToObject(lpProof)),
       ],
     });
+    if (!bucketusOut || !suiReward) {
+      throw new Error("Unstake not available");
+    }
 
     const suiCoin = coinFromBalance(tx, COINS_TYPE_LIST.SUI, suiReward);
     const bucketusCoin = coinFromBalance(
@@ -2838,16 +2863,20 @@ export class BucketClient {
         bucketusCoin,
       ],
     });
+    if (!buckCoin || !usdcCoin) {
+      throw new Error("Withdraw not available");
+    }
 
     tx.transferObjects(
       [buckCoin, usdcCoin, suiCoin],
       tx.pure.address(walletAddress),
     );
-
-    return true;
   }
 
-  getAfClaimTx(tx: Transaction, lpProof: UserLpProof) {
+  getAfClaimTx(
+    tx: Transaction,
+    lpProof: UserLpProof,
+  ) {
     /**
      * @description Get transaction for claim token from AF pool
      * @param lpProof UserLpProof object
@@ -2891,7 +2920,10 @@ export class BucketClient {
     });
   }
 
-  getKriyaClaimTx(tx: Transaction, lpProof: UserLpProof) {
+  getKriyaClaimTx(
+    tx: Transaction,
+    lpProof: UserLpProof,
+  ) {
     /**
      * @description Get transaction for claim token from Kriya pool
      * @param lpProof UserLpProof object
@@ -2922,9 +2954,11 @@ export class BucketClient {
     for (const lpProof of lpProofs) {
       if (lpProof.fountainId == AF_USDC_BUCK_LP_REGISTRY_ID) {
         this.getAfClaimTx(tx, lpProof);
-      } else if (lpProof.fountainId == KRIYA_USDC_BUCK_LP_REGISTRY_ID) {
+      }
+      else if (lpProof.fountainId == KRIYA_USDC_BUCK_LP_REGISTRY_ID) {
         this.getKriyaClaimTx(tx, lpProof);
-      } else if (lpProof.fountainId == CETUS_USDC_BUCK_LP_REGISTRY_ID) {
+      }
+      else if (lpProof.fountainId == CETUS_USDC_BUCK_LP_REGISTRY_ID) {
         this.getCetusClaimTx(tx, lpProof, walletAddress);
       }
     }
@@ -3053,7 +3087,7 @@ export class BucketClient {
       coinSymbol: string;
       amount: number | TransactionArgument;
     },
-  ): [TransactionArgument, TransactionArgument] {
+  ): [TransactionArgument | undefined, TransactionArgument | undefined] {
     /**
      * @description Get flash borrow transaction
      * @param tx base transaction
@@ -3105,10 +3139,10 @@ export class BucketClient {
     });
   }
 
-  getSBUCKWithdrawTx(
+  getSBUCKWithdraw(
     tx: Transaction,
     sBuckCoin: TransactionArgument,
-  ): TransactionArgument {
+  ): TransactionArgument | undefined {
     const [buckBalance] = tx.moveCall({
       target: `${CORE_PACKAGE_ID}::buck::sbuck_to_buck`,
       arguments: [
@@ -3121,10 +3155,10 @@ export class BucketClient {
     return buckBalance;
   }
 
-  getSBUCKDepositTx(
+  getSBUCKDeposit(
     tx: Transaction,
     buckCoin: TransactionArgument,
-  ): TransactionArgument {
+  ): TransactionArgument | undefined {
     const [sbuckBalance] = tx.moveCall({
       target: `${CORE_PACKAGE_ID}::buck::buck_to_sbuck`,
       arguments: [
@@ -3137,7 +3171,7 @@ export class BucketClient {
     return sbuckBalance;
   }
 
-  getSBUCKStakeTx(
+  getSBUCKStake(
     tx: Transaction,
     sBuckCoin: TransactionArgument,
   ): TransactionArgument {
@@ -3154,7 +3188,7 @@ export class BucketClient {
     });
   }
 
-  getSBUCKUnstakeTx(
+  getSBUCKUnstake(
     tx: Transaction,
     proof: string | TransactionArgument,
   ): [TransactionArgument, TransactionArgument] {
@@ -3175,7 +3209,7 @@ export class BucketClient {
     ];
   }
 
-  getSBUCKClaimTx(tx: Transaction, proofId: string): TransactionArgument {
+  getSBUCKClaim(tx: Transaction, proofId: string): TransactionArgument {
     return tx.moveCall({
       target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::claim`,
       typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
@@ -3196,6 +3230,7 @@ export class BucketClient {
     const clockObj = tx.sharedObjectRef(CLOCK_OBJECT);
 
     for (const lstBottle of lstBottles) {
+
       if (!lstBottle.strapId) {
         continue;
       }
@@ -3212,7 +3247,8 @@ export class BucketClient {
             tx.object(lstBottle.strapId),
           ],
         });
-      } else if (lstBottle.token == "haSUI") {
+      }
+      else if (lstBottle.token == "haSUI") {
         tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
           typeArguments: [COINS_TYPE_LIST.haSUI],
@@ -3224,7 +3260,8 @@ export class BucketClient {
             tx.object(lstBottle.strapId),
           ],
         });
-      } else if (lstBottle.token == "vSUI") {
+      }
+      else if (lstBottle.token == "vSUI") {
         tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
           typeArguments: [COINS_TYPE_LIST.vSUI],
@@ -3251,21 +3288,29 @@ export class BucketClient {
         ],
       });
     }
+
   }
 
-  getUnlockLstProofTx(tx: Transaction, coin: string, account: string) {
+  getUnlockLstProofTx(
+    tx: Transaction,
+    coin: string,
+    account: string,
+  ) {
     let lstType, lstLocker;
 
     if (coin == "afSUI") {
       lstType = COINS_TYPE_LIST.afSUI;
       lstLocker = LOCKER_MAP.afSUI;
-    } else if (coin == "haSUI") {
+    }
+    else if (coin == "haSUI") {
       lstType = COINS_TYPE_LIST.haSUI;
       lstLocker = LOCKER_MAP.haSUI;
-    } else if (coin == "vSUI") {
+    }
+    else if (coin == "vSUI") {
       lstType = COINS_TYPE_LIST.vSUI;
       lstLocker = LOCKER_MAP.vSUI;
-    } else {
+    }
+    else {
       throw new Error("Not LST token");
     }
 
@@ -3293,7 +3338,7 @@ export class BucketClient {
     tx.transferObjects([proof], account);
   }
 
-  getUnlockSBuckProofsTx(
+  getUnlockSBuckProofs(
     tx: Transaction,
     proofCount: number,
     account?: string,
@@ -3317,18 +3362,25 @@ export class BucketClient {
     } else return proofs;
   }
 
-  getClaimLockedRewardTx(
+  getClaimLockedRewards(
     tx: Transaction,
-    proofSymbol: "afSUI" | "haSUI" | "vSUI" | "sBUCK",
-    sBuckLength?: number,
+    token: string,
+    sbuckProofs?: number,
   ): TransactionResult | undefined {
-    if (proofSymbol === "sBUCK") {
-      if (!sBuckLength) return undefined;
+    if (token != "afSUI"
+      && token != "haSUI"
+      && token != "vSUI"
+      && token != "sBUCK") {
+      throw new Error("Not supported token");
+    }
+
+    if (token === "sBUCK") {
+      if (!sbuckProofs) return undefined;
       const totalReward = tx.moveCall({
         target: "0x2::coin::zero",
-        typeArguments: [COINS_TYPE_LIST.sBUCK],
+        typeArguments: [COINS_TYPE_LIST.SUI],
       });
-      for (let i = 0; i < sBuckLength; ++i) {
+      for (let i = 0; i < sbuckProofs; ++i) {
         const [reward] = tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::claim`,
           typeArguments: [COINS_TYPE_LIST.sBUCK],
@@ -3339,22 +3391,27 @@ export class BucketClient {
             tx.pure.u64(i),
           ],
         });
-        tx.mergeCoins(totalReward, [reward]);
+        if (reward) {
+          tx.mergeCoins(totalReward, [reward]);
+        }
       }
+
       return totalReward;
     } else {
-      const fountainObj = STRAP_FOUNTAIN_IDS[proofSymbol];
+      const fountainObj = STRAP_FOUNTAIN_IDS[token];
       if (!fountainObj) return undefined;
-      return tx.moveCall({
+      const reward = tx.moveCall({
         target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::claim`,
-        typeArguments: [COINS_TYPE_LIST.sBUCK],
+        typeArguments: [COINS_TYPE_LIST[token]],
         arguments: [
-          tx.sharedObjectRef(LOCKER_MAP[proofSymbol]),
+          tx.sharedObjectRef(LOCKER_MAP[token]),
           tx.sharedObjectRef(fountainObj),
           tx.sharedObjectRef(CLOCK_OBJECT),
           tx.pure.u64(0),
         ],
       });
+
+      return reward;
     }
   }
 }
