@@ -1,7 +1,7 @@
 import { COIN, SharedObjectRef } from "./types";
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
-  "0x865ab51aceb2decefa4bf3658e26a22f046b6059700b0223eb43d31d8ba05edc";
+  "0xa1f1e93a392f011c69175d9064f5c4cb45ecd46468c1c9f537d3efa1d021cb95";
 export const PROTOCOL_ID =
   "0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df";
 export const CONTRIBUTOR_TOKEN_ID =

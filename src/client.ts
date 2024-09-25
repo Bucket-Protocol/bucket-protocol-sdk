@@ -259,7 +259,7 @@ export class BucketClient {
         });
         if (strap) {
           const [buckOut] = tx.moveCall({
-            target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
+            target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::high_borrow_with_strap`,
             typeArguments: [collateralType],
             arguments: [
               tx.sharedObjectRef(PROTOCOL_OBJECT),
@@ -282,7 +282,7 @@ export class BucketClient {
       } else {
         // console.log(strapId, insertionPlace);
         return tx.moveCall({
-          target: `${CORE_PACKAGE_ID}::buck::borrow_with_strap`,
+          target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::high_borrow_with_strap`,
           typeArguments: [collateralType],
           arguments: [
             tx.sharedObjectRef(PROTOCOL_OBJECT),
@@ -303,7 +303,7 @@ export class BucketClient {
       }
     } else {
       return tx.moveCall({
-        target: `${CORE_PACKAGE_ID}::buck::borrow`,
+        target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::high_borrow`,
         typeArguments: [collateralType],
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
@@ -341,7 +341,7 @@ export class BucketClient {
      */
 
     tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::top_up_coll`,
+      target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::high_top_up`,
       typeArguments: [collateralType],
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
