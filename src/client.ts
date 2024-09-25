@@ -3349,7 +3349,7 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST.sBUCK],
       });
       for (let i = 0; i < sBuckLength; ++i) {
-        const reward = tx.moveCall({
+        const [reward] = tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::claim`,
           typeArguments: [COINS_TYPE_LIST.sBUCK],
           arguments: [
