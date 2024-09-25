@@ -1,4 +1,7 @@
 import { COIN } from "./config";
+import {
+  TransactionArgument,
+} from "@mysten/sui/transactions";
 
 export type ProtocolInfo = {
   buckSupply: number;
@@ -122,3 +125,8 @@ export type UserLpProof = {
 };
 
 export type UserLpList = Record<string, UserLpProof[]>;
+
+export type ProofObject = {
+  token: string;
+  proof: TransactionArgument | string;
+};

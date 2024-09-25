@@ -92,6 +92,7 @@ import {
   PipeResponse,
   PsmBalanceResponse,
   AprResponse,
+  ProofObject,
 } from "./types";
 import {
   U64FromBytes,
@@ -3219,19 +3220,16 @@ export class BucketClient {
 
   getLockProofsTx(
     tx: Transaction,
-    lstBottles: UserBottleInfo[],
-    sbuckProofs: UserLpProof[],
+    proofs: ProofObject[],
   ) {
     const protocolObj = tx.sharedObjectRef(PROTOCOL_OBJECT);
     const clockObj = tx.sharedObjectRef(CLOCK_OBJECT);
 
-    for (const lstBottle of lstBottles) {
+    for (const item of proofs) {
 
-      if (!lstBottle.strapId) {
-        continue;
-      }
+      const proofObj = typeof item.proof === "string" ? tx.object(item.proof) : item.proof;
 
-      if (lstBottle.token == "afSUI") {
+      if (item.token == "afSUI") {
         tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
           typeArguments: [COINS_TYPE_LIST.afSUI],
@@ -3240,11 +3238,11 @@ export class BucketClient {
             tx.sharedObjectRef(LOCKER_MAP.afSUI),
             protocolObj,
             clockObj,
-            tx.object(lstBottle.strapId),
+            proofObj,
           ],
         });
       }
-      else if (lstBottle.token == "haSUI") {
+      else if (item.token == "haSUI") {
         tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
           typeArguments: [COINS_TYPE_LIST.haSUI],
@@ -3253,11 +3251,11 @@ export class BucketClient {
             tx.sharedObjectRef(LOCKER_MAP.haSUI),
             protocolObj,
             clockObj,
-            tx.object(lstBottle.strapId),
+            proofObj,
           ],
         });
       }
-      else if (lstBottle.token == "vSUI") {
+      else if (item.token == "vSUI") {
         tx.moveCall({
           target: `${BUCKET_POINT_PACKAGE_ID}::lst_proof_rule::lock`,
           typeArguments: [COINS_TYPE_LIST.vSUI],
@@ -3266,25 +3264,23 @@ export class BucketClient {
             tx.sharedObjectRef(LOCKER_MAP.vSUI),
             protocolObj,
             clockObj,
-            tx.object(lstBottle.strapId),
+            proofObj,
+          ],
+        });
+      }
+      else if (item.token == "sBUCK") {
+        tx.moveCall({
+          target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::lock`,
+          typeArguments: [COINS_TYPE_LIST.sBUCK],
+          arguments: [
+            tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
+            tx.sharedObjectRef(LOCKER_MAP.sBUCK),
+            clockObj,
+            proofObj,
           ],
         });
       }
     }
-
-    for (const lpProof of sbuckProofs) {
-      tx.moveCall({
-        target: `${BUCKET_POINT_PACKAGE_ID}::proof_rule::lock`,
-        typeArguments: [COINS_TYPE_LIST.sBUCK],
-        arguments: [
-          tx.sharedObjectRef(BUCKET_POINT_CONFIG_OBJ),
-          tx.sharedObjectRef(LOCKER_MAP.sBUCK),
-          clockObj,
-          tx.object(lpProof.objectId),
-        ],
-      });
-    }
-
   }
 
   getUnlockLstProofTx(
