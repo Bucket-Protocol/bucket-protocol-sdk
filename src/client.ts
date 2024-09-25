@@ -1178,8 +1178,8 @@ export class BucketClient {
           const coin = Object.keys(PSM_BALANCE_IDS).find(
             (symbol) => PSM_BALANCE_IDS[symbol as COIN] == objectId,
           );
-          if (coin) {
-            psmList[coin as string].balance = Number(
+          if (coin && psmList[coin]) {
+            psmList[coin].balance = Number(
               formatUnits(
                 BigInt(balanceObj.coin_balance),
                 COIN_DECIMALS[coin as COIN] ?? 9,
@@ -3354,12 +3354,16 @@ export class BucketClient {
           tx.pure.u64(0),
         ],
       });
+
       return proof;
-    });
+    }).filter(t => !!t);
+
     if (account) {
       tx.transferObjects(proofs, account);
-      return undefined;
-    } else return proofs;
+      return;
+    } else {
+      return proofs;
+    };
   }
 
   getClaimLockedRewards(
