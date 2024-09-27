@@ -3216,7 +3216,7 @@ export class BucketClient {
     });
   }
 
-  getLockProofsTx(
+  lockProofs(
     tx: Transaction,
     proofs: ProofObject[],
   ) {
@@ -3281,11 +3281,11 @@ export class BucketClient {
     }
   }
 
-  getUnlockLstProofTx(
+  unlockLstProof(
     tx: Transaction,
     coin: string,
-    account: string,
-  ) {
+    account?: string,
+  ): TransactionArgument | undefined {
     let lstType, lstLocker;
 
     if (coin == "afSUI") {
@@ -3325,10 +3325,15 @@ export class BucketClient {
       throw Error("Unlock proof failed");
     }
 
-    tx.transferObjects([proof], account);
+    if (account) {
+      tx.transferObjects([proof], account);
+      return;
+    } else {
+      return proof;
+    };
   }
 
-  getUnlockSBuckProofsTx(
+  unlockSBuckProofs(
     tx: Transaction,
     proofCount: number,
     account?: string,
@@ -3360,7 +3365,7 @@ export class BucketClient {
     };
   }
 
-  getClaimLockedRewardsTx(
+  claimLockedRewards(
     tx: Transaction,
     token: string,
     sbuckProofs?: number,
