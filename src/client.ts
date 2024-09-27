@@ -2959,22 +2959,21 @@ export class BucketClient {
     }
   }
 
-  getStrapStakeTx(
+  stakeStrapFountain(
     tx: Transaction,
     collateralType: string,
     strapId: string | TransactionArgument,
-    address: string,
-  ) {
+    address?: string | undefined,
+  ): TransactionArgument | undefined {
     /**
      * @description Get transaction for stake token to strap fountain
      * @param collateralType
      * @param strapId
      * @param address
-     * @returns boolean
      */
     const coin = getCoinSymbol(collateralType);
     if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
-      throw new Error("Coin type not supported");
+      throw new Error("Collateral type not supported");
     }
 
     const proof = tx.moveCall({
@@ -2987,15 +2986,21 @@ export class BucketClient {
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ],
     });
-    tx.transferObjects([proof], tx.pure.address(address));
+
+    if (address) {
+      tx.transferObjects([proof], tx.pure.address(address));
+      return;
+    } else {
+      return proof;
+    };
   }
 
-  getStrapUnstakeTx(
+  unstakeStrapFountain(
     tx: Transaction,
     collateralType: string,
     strapId: string | TransactionArgument,
-    address: string,
-  ) {
+    address?: string,
+  ): TransactionResult | undefined {
     /**
      * @description Get transaction for unstake token from strap fountain
      * @param collateralType
@@ -3005,10 +3010,10 @@ export class BucketClient {
      */
     const coin = getCoinSymbol(collateralType);
     if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
-      throw new Error("Coin type not supported");
+      throw new Error("Collateral type not supported");
     }
 
-    const proof = tx.moveCall({
+    const res = tx.moveCall({
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::unstake`,
       typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
       arguments: [
@@ -3017,15 +3022,21 @@ export class BucketClient {
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ],
     });
-    tx.transferObjects([proof], tx.pure.address(address));
+
+    if (address) {
+      tx.transferObjects([res], tx.pure.address(address));
+      return;
+    } else {
+      return res;
+    };
   }
 
-  getStrapClaimTx(
+  claimStrapFountain(
     tx: Transaction,
     collateralType: string,
     strapId: string | TransactionArgument,
-    address: string,
-  ) {
+    address?: string,
+  ): TransactionArgument | undefined {
     /**
      * @description Get transaction for claim token from strap fountain
      * @param collateralType
@@ -3034,7 +3045,7 @@ export class BucketClient {
      */
     const coin = getCoinSymbol(collateralType);
     if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
-      throw new Error("Coin type not supported");
+      throw new Error("Collateral type not supported");
     }
 
     const reward = tx.moveCall({
@@ -3046,14 +3057,20 @@ export class BucketClient {
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ],
     });
-    tx.transferObjects([reward], tx.pure.address(address));
+
+    if (address) {
+      tx.transferObjects([reward], tx.pure.address(address));
+      return;
+    } else {
+      return reward;
+    };
   }
 
-  getDestroyPositionTx(
+  destroyStrapFountain(
     tx: Transaction,
     collateralType: string,
     strapId: string | TransactionArgument,
-  ): boolean {
+  ) {
     /**
      * @description Get transaction for destroy position
      * @param collateralType
@@ -3061,7 +3078,7 @@ export class BucketClient {
      */
     const coin = getCoinSymbol(collateralType);
     if (!coin) {
-      return false;
+      throw new Error("Collateral type not supported");
     }
 
     tx.moveCall({
@@ -3072,11 +3089,91 @@ export class BucketClient {
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ],
     });
-
-    return true;
   }
 
-  getFlashBorrowTx(
+  withdrawSBUCK(
+    tx: Transaction,
+    sBuckCoin: TransactionArgument,
+  ): TransactionArgument | undefined {
+    const [buckBalance] = tx.moveCall({
+      target: `${CORE_PACKAGE_ID}::buck::sbuck_to_buck`,
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        tx.sharedObjectRef(FLASK_OBJECT),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        coinIntoBalance(tx, COINS_TYPE_LIST.sBUCK, sBuckCoin),
+      ],
+    });
+    return buckBalance;
+  }
+
+  depositSBUCK(
+    tx: Transaction,
+    buckCoin: TransactionArgument,
+  ): TransactionArgument | undefined {
+    const [sbuckBalance] = tx.moveCall({
+      target: `${CORE_PACKAGE_ID}::buck::buck_to_sbuck`,
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        tx.sharedObjectRef(FLASK_OBJECT),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        coinIntoBalance(tx, COINS_TYPE_LIST.BUCK, buckCoin),
+      ],
+    });
+    return sbuckBalance;
+  }
+
+  stakeSBUCK(
+    tx: Transaction,
+    sBuckCoin: TransactionArgument,
+  ): TransactionArgument {
+    const sBUCKBalance = coinIntoBalance(tx, COINS_TYPE_LIST.sBUCK, sBuckCoin);
+    return tx.moveCall({
+      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::stake`,
+      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
+      arguments: [
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
+        sBUCKBalance,
+        tx.pure.u64(MAX_LOCK_TIME),
+      ],
+    });
+  }
+
+  unstakeSBUCK(
+    tx: Transaction,
+    proof: string | TransactionArgument,
+  ): [TransactionArgument, TransactionArgument] {
+    const proofObj = typeof proof === "string" ? tx.object(proof) : proof;
+    const [stakeBalance, rewardBalance] = tx.moveCall({
+      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::force_unstake`,
+      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
+      arguments: [
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
+        proofObj,
+      ],
+    });
+
+    return [
+      stakeBalance as TransactionArgument,
+      rewardBalance as TransactionArgument,
+    ];
+  }
+
+  claimSBUCK(tx: Transaction, proofId: string): TransactionArgument {
+    return tx.moveCall({
+      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::claim`,
+      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
+      arguments: [
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
+        tx.object(proofId),
+      ],
+    });
+  }
+
+  flashBorrow(
     tx: Transaction,
     inputs: {
       coinSymbol: string;
@@ -3107,7 +3204,7 @@ export class BucketClient {
     return [flashLoans, flashReceipt];
   }
 
-  getFlashRepayTx(
+  flashRepay(
     tx: Transaction,
     inputs: {
       coinSymbol: string;
@@ -3131,88 +3228,6 @@ export class BucketClient {
       target,
       typeArguments,
       arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), repayment, flashReceipt],
-    });
-  }
-
-  getSBUCKWithdraw(
-    tx: Transaction,
-    sBuckCoin: TransactionArgument,
-  ): TransactionArgument | undefined {
-    const [buckBalance] = tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::sbuck_to_buck`,
-      arguments: [
-        tx.sharedObjectRef(PROTOCOL_OBJECT),
-        tx.sharedObjectRef(FLASK_OBJECT),
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        coinIntoBalance(tx, COINS_TYPE_LIST.sBUCK, sBuckCoin),
-      ],
-    });
-    return buckBalance;
-  }
-
-  getSBUCKDeposit(
-    tx: Transaction,
-    buckCoin: TransactionArgument,
-  ): TransactionArgument | undefined {
-    const [sbuckBalance] = tx.moveCall({
-      target: `${CORE_PACKAGE_ID}::buck::buck_to_sbuck`,
-      arguments: [
-        tx.sharedObjectRef(PROTOCOL_OBJECT),
-        tx.sharedObjectRef(FLASK_OBJECT),
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        coinIntoBalance(tx, COINS_TYPE_LIST.BUCK, buckCoin),
-      ],
-    });
-    return sbuckBalance;
-  }
-
-  getSBUCKStake(
-    tx: Transaction,
-    sBuckCoin: TransactionArgument,
-  ): TransactionArgument {
-    const sBUCKBalance = coinIntoBalance(tx, COINS_TYPE_LIST.sBUCK, sBuckCoin);
-    return tx.moveCall({
-      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::stake`,
-      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
-      arguments: [
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
-        sBUCKBalance,
-        tx.pure.u64(MAX_LOCK_TIME),
-      ],
-    });
-  }
-
-  getSBUCKUnstake(
-    tx: Transaction,
-    proof: string | TransactionArgument,
-  ): [TransactionArgument, TransactionArgument] {
-    const proofObj = typeof proof === "string" ? tx.object(proof) : proof;
-    const [stakeBalance, rewardBalance] = tx.moveCall({
-      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::force_unstake`,
-      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
-      arguments: [
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
-        proofObj,
-      ],
-    });
-
-    return [
-      stakeBalance as TransactionArgument,
-      rewardBalance as TransactionArgument,
-    ];
-  }
-
-  getSBUCKClaim(tx: Transaction, proofId: string): TransactionArgument {
-    return tx.moveCall({
-      target: `${SBUCK_FOUNTAIN_PACKAGE_ID}::fountain_core::claim`,
-      typeArguments: [COINS_TYPE_LIST.sBUCK, COINS_TYPE_LIST.SUI],
-      arguments: [
-        tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.sharedObjectRef(SBUCK_BUCK_LP_REGISTRY),
-        tx.object(proofId),
-      ],
     });
   }
 
@@ -3369,6 +3384,7 @@ export class BucketClient {
     tx: Transaction,
     token: string,
     sbuckProofs?: number,
+    account?: string,
   ): TransactionResult | undefined {
     if (token != "afSUI"
       && token != "haSUI"
@@ -3399,7 +3415,12 @@ export class BucketClient {
         }
       }
 
-      return totalReward;
+      if (account) {
+        tx.transferObjects([totalReward], account);
+        return;
+      } else {
+        return totalReward;
+      };
     } else {
       const fountainObj = STRAP_FOUNTAIN_IDS[token];
       if (!fountainObj) return undefined;
@@ -3414,7 +3435,12 @@ export class BucketClient {
         ],
       });
 
-      return reward;
+      if (account) {
+        tx.transferObjects([reward], account);
+        return;
+      } else {
+        return reward;
+      };
     }
   }
 }
