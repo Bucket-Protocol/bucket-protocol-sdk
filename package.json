@@ -1,7 +1,7 @@
 {
   "name": "bucket-protocol-sdk",
   "author": "Bucketniper <bucketbird@outlook.com>",
-  "version": "0.9.4",
+  "version": "0.9.4-beta",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
   "scripts": {
@@ -30,7 +30,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@mysten/sui": "^1.1.2",
+    "@mysten/sui": "^1.11.0",
     "@types/superstruct": "^0.8.2",
     "superstruct": "^1.0.3"
   },
