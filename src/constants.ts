@@ -355,8 +355,7 @@ export const SBUCK_APR_OBJECT_ID =
 
 export const MAX_LOCK_TIME = 4838400_000; // 8 weeks
 
-export const BUCKET_POINT_PACKAGE_ID = "0x94ccb36285f06beca61f3edb24b2e452debacab7f646fff335706f52442f2004";
-
+export const BUCKET_POINT_PACKAGE_ID = "0x34b6d1a1e6d9ea97d17ca5a2ce9cd7f84789e47990cf23cfc7607affa1af298b";
 export const BUCKET_POINT_CONFIG_OBJ = {
   objectId:
     "0x89d71e7c0dbd2ce47e0c44df0c1cd65858bbc57304d0392cd0b9389f53ceb5f1",
