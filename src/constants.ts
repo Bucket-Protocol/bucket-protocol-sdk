@@ -389,3 +389,17 @@ export const LOCKER_MAP = {
     mutable: true,
   },
 };
+
+export type LstToken = "afSUI" | "haSUI" | "vSUI";
+
+export const LOCKER_TABLE: Record<LstToken, string> = {
+  afSUI: "0x95d0d20ab42f78f75a7d63513ed60415b9dcb41c58ef493a7a69b531b212e713",
+  haSUI: "0x3674f3183780166553d42174d02229c679e431b9a5911d02a28271a8fd9abd88",
+  vSUI: "0x502760cac10dd4fae78672c1e27bc0e5cdbae449aa2b15dbfb72434af33cb8f6",
+};
+
+export const LST_BOTTLE_TABLE: Record<LstToken, string> = {
+  afSUI: "0x8f1be0aed5bc2283898b94879b3419d7ff0125bd8d8b59d926720aab93cc5147",
+  haSUI: "0xa531d0ab31004158facb4b559e97113e7013d9265bf4bec0a33abc718de77821",
+  vSUI: "0xb28bc06b342bd25e65795b785015cc1d386155725494b43eff7aae8eece04514",
+};

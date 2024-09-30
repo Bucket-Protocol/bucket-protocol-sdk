@@ -60,6 +60,9 @@ import {
   BUCKET_POINT_PACKAGE_ID,
   BUCKET_POINT_CONFIG_OBJ,
   LOCKER_MAP,
+  LstToken,
+  LOCKER_TABLE,
+  LST_BOTTLE_TABLE,
 } from "./constants";
 import {
   BucketConstants,
@@ -1271,219 +1274,270 @@ export class BucketClient {
      */
     if (!address) return [];
 
-    try {
-      let bucketList: DynamicFieldInfo[] = [];
-      let cursor: string | null = null;
-      while (true) {
-        const protocolFields = await this.client.getDynamicFields({
-          parentId: PROTOCOL_ID,
-          cursor,
-        });
+    let bucketList: DynamicFieldInfo[] = [];
+    let cursor: string | null = null;
+    while (true) {
+      const protocolFields = await this.client.getDynamicFields({
+        parentId: PROTOCOL_ID,
+        cursor,
+      });
 
-        bucketList = bucketList.concat(
-          protocolFields.data.filter((item) =>
-            item.objectType.includes("Bucket"),
-          ),
-        );
+      bucketList = bucketList.concat(
+        protocolFields.data.filter((item) =>
+          item.objectType.includes("Bucket"),
+        ),
+      );
 
-        if (!protocolFields.hasNextPage) {
-          break;
-        }
-        cursor = protocolFields.nextCursor;
+      if (!protocolFields.hasNextPage) {
+        break;
       }
+      cursor = protocolFields.nextCursor;
+    }
 
-      const objectTypeList = bucketList.map((item) => item.objectType);
-      const objectIdList = bucketList.map((item) => item.objectId);
-      const objectNameList = getObjectNames(objectTypeList);
+    const objectTypeList = bucketList.map((item) => item.objectType);
+    const objectIdList = bucketList.map((item) => item.objectId);
+    const objectNameList = getObjectNames(objectTypeList);
 
-      const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: objectIdList,
-        options: {
-          showContent: true,
-          showType: true, //Check could we get type from response later
-        },
+    const response: SuiObjectResponse[] = await this.client.multiGetObjects({
+      ids: objectIdList,
+      options: {
+        showContent: true,
+        showType: true, //Check could we get type from response later
+      },
+    });
+
+    const bottleIdList: {
+      name: string;
+      id: string;
+      surplus_id: string;
+    }[] = [];
+
+    response.map((res, index) => {
+      //Filter out WBTC, when we launch WBTC we need to remove this exception
+      if (objectNameList[index] === "WBTC") return;
+
+      const bucketFields = getObjectFields(res) as BucketResponse;
+
+      bottleIdList.push({
+        name: objectNameList[index] ?? "",
+        id: bucketFields.bottle_table.fields.table.fields.id.id,
+        surplus_id: bucketFields.surplus_bottle_table.fields.id.id,
       });
+    });
 
-      const bottleIdList: {
-        name: string;
-        id: string;
-        surplus_id: string;
-      }[] = [];
+    const userBottles: UserBottleInfo[] = [];
 
-      response.map((res, index) => {
-        //Filter out WBTC, when we launch WBTC we need to remove this exception
-        if (objectNameList[index] === "WBTC") return;
+    // Get strapIds for user address
+    const { data: strapObjects } = await this.client.getOwnedObjects({
+      owner: address,
+      filter: {
+        StructType: STRAP_ID,
+      },
+      options: {
+        showContent: true,
+        showType: true,
+      },
+    });
+    let strapIds = strapObjects.map((strapObj) => {
+      let obj = getObjectFields(strapObj);
+      return {
+        id: obj?.id.id,
+        type: strapObj.data?.type,
+        strap_address: obj?.id.id,
+      };
+    });
 
-        const bucketFields = getObjectFields(res) as BucketResponse;
-
-        bottleIdList.push({
-          name: objectNameList[index] ?? "",
-          id: bucketFields.bottle_table.fields.table.fields.id.id,
-          surplus_id: bucketFields.surplus_bottle_table.fields.id.id,
-        });
-      });
-
-      const userBottles: UserBottleInfo[] = [];
-
-      // Get strapIds for user address
-      const { data: strapObjects } = await this.client.getOwnedObjects({
-        owner: address,
-        filter: {
-          StructType: STRAP_ID,
-        },
-        options: {
-          showContent: true,
-          showType: true,
-        },
-      });
-      let strapIds = strapObjects.map((strapObj) => {
+    // Get stakeProofIds for user address
+    const { data: stakeProofs } = await this.client.getOwnedObjects({
+      owner: address,
+      filter: {
+        StructType: STAKE_PROOF_ID,
+      },
+      options: {
+        showContent: true,
+        showType: true,
+      },
+    });
+    strapIds = strapIds.concat(
+      stakeProofs.map((strapObj) => {
         let obj = getObjectFields(strapObj);
         return {
           id: obj?.id.id,
           type: strapObj.data?.type,
-          strap_address: obj?.id.id,
+          strap_address: obj?.strap_address,
         };
-      });
+      }),
+    );
 
-      // Get stakeProofIds for user address
-      const { data: stakeProofs } = await this.client.getOwnedObjects({
-        owner: address,
-        filter: {
-          StructType: STAKE_PROOF_ID,
-        },
-        options: {
-          showContent: true,
-          showType: true,
-        },
-      });
-      strapIds = strapIds.concat(
-        stakeProofs.map((strapObj) => {
-          let obj = getObjectFields(strapObj);
-          return {
-            id: obj?.id.id,
-            type: strapObj.data?.type,
-            strap_address: obj?.strap_address,
-          };
-        }),
+    // Loop bottles
+    for (const bottle of bottleIdList) {
+      const token = bottle.name as COIN;
+      const bottleStrapIds = strapIds.filter((t) =>
+        t.type?.includes(`<${COINS_TYPE_LIST[token]}`),
       );
+      const addresses = [
+        address,
+        ...bottleStrapIds.map((t) => t.strap_address),
+      ];
 
-      // Loop bottles
-      for (const bottle of bottleIdList) {
-        const token = bottle.name as COIN;
-        const bottleStrapIds = strapIds.filter((t) =>
-          t.type?.includes(`<${COINS_TYPE_LIST[token]}`),
-        );
-        const addresses = [
-          address,
-          ...bottleStrapIds.map((t) => t.strap_address),
-        ];
+      let startUnit = 0;
+      let debtAmount = 0;
 
-        let startUnit = 0;
-        let debtAmount = 0;
-
-        if (bottleStrapIds.length > 0) {
-          if (
-            (token == "afSUI" || token == "vSUI" || token == "haSUI") &&
-            STRAP_FOUNTAIN_IDS[token]
-          ) {
-            try {
-              let lstFountain = await this.getStakeProofFountain(
-                STRAP_FOUNTAIN_IDS[token]?.objectId as string,
-              );
-              const data = await this.client.getDynamicFieldObject({
-                parentId: lstFountain.strapId,
-                name: {
-                  type: "address",
-                  value: bottleStrapIds[0]?.strap_address,
-                },
-              });
-              const ret = getObjectFields(data);
-
-              debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
-              startUnit = Number(ret?.value.fields.start_unit ?? 0);
-            } catch { }
-          }
-        }
-
-        for (const _address of addresses) {
-          await this.client
-            .getDynamicFieldObject({
-              parentId: bottle.id ?? "",
+      if (bottleStrapIds.length > 0) {
+        if (
+          (token == "afSUI" || token == "vSUI" || token == "haSUI") &&
+          STRAP_FOUNTAIN_IDS[token]
+        ) {
+          try {
+            let lstFountain = await this.getStakeProofFountain(
+              STRAP_FOUNTAIN_IDS[token]?.objectId as string,
+            );
+            const data = await this.client.getDynamicFieldObject({
+              parentId: lstFountain.strapId,
               name: {
                 type: "address",
-                value: _address,
+                value: bottleStrapIds[0]?.strap_address,
               },
-            })
-            .then(async (bottleInfo) => {
-              const bottleInfoFields = getObjectFields(
-                bottleInfo,
-              ) as BottleInfoResponse;
-
-              if (bottleInfoFields) {
-                userBottles.push({
-                  token,
-                  collateralAmount:
-                    bottleInfoFields.value.fields.value.fields
-                      .collateral_amount,
-                  buckAmount:
-                    bottleInfoFields.value.fields.value.fields.buck_amount,
-                  strapId: bottleStrapIds.find(
-                    (t) => t.strap_address == _address,
-                  )?.id,
-                  startUnit,
-                  debtAmount,
-                });
-              } else {
-                const surplusBottleInfo =
-                  await this.client.getDynamicFieldObject({
-                    parentId: bottle.surplus_id,
-                    name: {
-                      type: "address",
-                      value: _address,
-                    },
-                  });
-
-                const surplusBottleFields = getObjectFields(surplusBottleInfo);
-                const collateralAmount =
-                  surplusBottleFields?.value.fields.collateral_amount ?? 0;
-                if (collateralAmount) {
-                  userBottles.push({
-                    token,
-                    collateralAmount,
-                    buckAmount: 0,
-                    strapId: bottleStrapIds.find(
-                      (t) => t.strap_address == _address,
-                    )?.id,
-                  });
-                }
-              }
-            })
-            .catch((error) => {
-              console.log("error", error);
             });
-        }
+            const ret = getObjectFields(data);
 
-        // We can add liquidated positions
-        let liquidatedStraps = bottleStrapIds.filter(
-          (t) => !userBottles.find((u) => u.strapId == t.id),
-        );
-        for (const strap of liquidatedStraps) {
-          userBottles.push({
-            token,
-            collateralAmount: 0,
-            buckAmount: 0,
-            strapId: strap.id,
-          });
+            debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
+            startUnit = Number(ret?.value.fields.start_unit ?? 0);
+          } catch { }
         }
       }
 
-      // Sort liquidated positions to last
-      userBottles.sort((a, b) => b.collateralAmount - a.collateralAmount);
+      for (const _address of addresses) {
+        await this.client
+          .getDynamicFieldObject({
+            parentId: bottle.id ?? "",
+            name: {
+              type: "address",
+              value: _address,
+            },
+          })
+          .then(async (bottleInfo) => {
+            const bottleInfoFields = getObjectFields(
+              bottleInfo,
+            ) as BottleInfoResponse;
 
-      return userBottles;
-    } catch (error) {
-      return [];
+            if (bottleInfoFields) {
+              userBottles.push({
+                token,
+                collateralAmount:
+                  bottleInfoFields.value.fields.value.fields
+                    .collateral_amount,
+                buckAmount:
+                  bottleInfoFields.value.fields.value.fields.buck_amount,
+                strapId: bottleStrapIds.find(
+                  (t) => t.strap_address == _address,
+                )?.id,
+                startUnit,
+                debtAmount,
+              });
+            } else {
+              const surplusBottleInfo =
+                await this.client.getDynamicFieldObject({
+                  parentId: bottle.surplus_id,
+                  name: {
+                    type: "address",
+                    value: _address,
+                  },
+                });
+
+              const surplusBottleFields = getObjectFields(surplusBottleInfo);
+              const collateralAmount =
+                surplusBottleFields?.value.fields.collateral_amount ?? 0;
+              if (collateralAmount) {
+                userBottles.push({
+                  token,
+                  collateralAmount,
+                  buckAmount: 0,
+                  strapId: bottleStrapIds.find(
+                    (t) => t.strap_address == _address,
+                  )?.id,
+                });
+              }
+            }
+          })
+          .catch((error) => {
+            console.log("error", error);
+          });
+      }
+
+      // We can add liquidated positions
+      let liquidatedStraps = bottleStrapIds.filter(
+        (t) => !userBottles.find((u) => u.strapId == t.id),
+      );
+      for (const strap of liquidatedStraps) {
+        userBottles.push({
+          token,
+          collateralAmount: 0,
+          buckAmount: 0,
+          strapId: strap.id,
+        });
+      }
     }
+
+    // Get locked positions
+    const lpTokens: LstToken[] = [
+      "afSUI",
+      "haSUI",
+      "vSUI"
+    ];
+    for (const lpToken of lpTokens) {
+      const res = await this.client.getDynamicFieldObject({
+        parentId: LOCKER_TABLE[lpToken],
+        name: {
+          type: "address",
+          value: address,
+        },
+      });
+      const proofInfo = getObjectFields(res);
+      if (!proofInfo) continue;
+      const [info] = proofInfo.value;
+      if (!info) continue;
+      const strapAddress = info.fields.strap_address;
+      if (!strapAddress) continue;
+
+      const lstFountain = await this.getStakeProofFountain(
+        STRAP_FOUNTAIN_IDS[lpToken]?.objectId as string,
+      );
+      const strapRes = await this.client.getDynamicFieldObject({
+        parentId: lstFountain.strapId,
+        name: {
+          type: "address",
+          value: strapAddress,
+        },
+      });
+      const strapData = getObjectFields(strapRes);
+      if (!strapData) continue;
+
+      const bottleRes = await this.client.getDynamicFieldObject({
+        parentId: LST_BOTTLE_TABLE[lpToken],
+        name: {
+          type: "address",
+          value: strapAddress,
+        },
+      });
+      const bottleData = getObjectFields(bottleRes);
+      if (!bottleData) continue;
+
+      userBottles.push({
+        token: lpToken,
+        strapId: strapData.value.fields.strap.fields.id.id,
+        debtAmount: Number(strapData.value.fields.debt_amount),
+        startUnit: Number(strapData.value.fields.start_unit),
+        collateralAmount: bottleData.value.fields.value.fields.collateral_amount,
+        buckAmount: bottleData.value.fields.value.fields.buck_amount,
+        isLocked: true,
+      });
+    }
+
+    // Sort liquidated positions to last
+    userBottles.sort((a, b) => b.collateralAmount - a.collateralAmount);
+
+    return userBottles;
   }
 
   async getUserTanks(address: string): Promise<UserTankList> {
@@ -1764,134 +1818,42 @@ export class BucketClient {
       );
     }
 
-    return userLpList;
-  }
-
-  async getLockedSBuckProofs(address: string): Promise<UserLpProof[]> {
-    /**
-     * @description Get locked sBUCK proof information
-     * @param owner User address
-     * @returns Promise<UserLpProof>
-     */
-
-    const res = await this.client.getDynamicFieldObject({
-      parentId:
-        "0xbb4c253eec08636e0416cb8e820b4386c1042747fbdc5a5df6c025c9c6a06fef",
-      name: {
-        type: "address",
-        value: address,
-      },
-    });
-    const fields = getObjectFields(res);
-    if (!fields) return [];
-    const proofInfos = fields.value as ObjectContentFields[];
-    return proofInfos.map((info, idx) => {
-      return {
-        objectId: idx.toString(),
-        version: "",
-        digest: "",
-        typeName: info.type,
-        fountainId: info.fields.fountain_id,
-        startUnit: Number(info.fields.start_uint),
-        stakeAmount: Number(info.fields.stake_amount),
-        stakeWeight: Number(info.fields.stake_weight),
-        lockUntil: Number(info.fields.lock_until),
-      };
-    });
-  }
-
-  async getLockedLstBottles(
-    address: string,
-  ): Promise<UserBottleInfo[]> {
-
-    const lpTokens: COIN[] = [
-      "afSUI",
-      "haSUI",
-      "vSUI"
-    ];
-
-    const getLockerTableId = ((lpToken: string) => {
-      switch (lpToken) {
-        case "afSUI":
-          return "0x95d0d20ab42f78f75a7d63513ed60415b9dcb41c58ef493a7a69b531b212e713";
-        case "haSUI":
-          return "0x3674f3183780166553d42174d02229c679e431b9a5911d02a28271a8fd9abd88";
-        case "vSUI":
-          return "0x502760cac10dd4fae78672c1e27bc0e5cdbae449aa2b15dbfb72434af33cb8f6";
-        default:
-          return undefined;
-      }
-    });
-
-    const getBottleTableId = ((lpToken: string) => {
-      switch (lpToken) {
-        case "afSUI":
-          return "0x8f1be0aed5bc2283898b94879b3419d7ff0125bd8d8b59d926720aab93cc5147";
-        case "haSUI":
-          return "0xa531d0ab31004158facb4b559e97113e7013d9265bf4bec0a33abc718de77821";
-        case "vSUI":
-          return "0xb28bc06b342bd25e65795b785015cc1d386155725494b43eff7aae8eece04514";
-        default:
-          return undefined;
-      }
-    });
-
-    const lstBottles: UserBottleInfo[] = [];
-    for (const lpToken of lpTokens) {
-      const lockerTableId = getLockerTableId(lpToken);
-      if (!lockerTableId) continue;
-
+    // Get locked positions
+    {
       const res = await this.client.getDynamicFieldObject({
-        parentId: lockerTableId,
+        parentId:
+          "0xbb4c253eec08636e0416cb8e820b4386c1042747fbdc5a5df6c025c9c6a06fef",
         name: {
           type: "address",
-          value: address,
+          value: owner,
         },
       });
-      const proofInfo = getObjectFields(res);
-      if (!proofInfo) continue;
-      const [info] = proofInfo.value;
-      if (!info) continue;
-      const strapAddress = info.fields.strap_address;
-      if (!strapAddress) continue;
+      const fields = getObjectFields(res);
+      if (fields) {
+        const proofInfos = fields.value as ObjectContentFields[];
+        const lockedSBUCKs = proofInfos.map((info, idx) => {
+          return {
+            objectId: idx.toString(),
+            version: "",
+            digest: "",
+            typeName: info.type,
+            fountainId: info.fields.fountain_id,
+            startUnit: Number(info.fields.start_uint),
+            stakeAmount: Number(info.fields.stake_amount),
+            stakeWeight: Number(info.fields.stake_weight),
+            lockUntil: Number(info.fields.lock_until),
+          };
+        });
 
-      const lstFountain = await this.getStakeProofFountain(
-        STRAP_FOUNTAIN_IDS[lpToken]?.objectId as string,
-      );
-      const strapRes = await this.client.getDynamicFieldObject({
-        parentId: lstFountain.strapId,
-        name: {
-          type: "address",
-          value: strapAddress,
-        },
-      });
-      const strapData = getObjectFields(strapRes);
-      if (!strapData) continue;
+        userLpList[SBUCK_BUCK_LP_REGISTRY_ID] = [
+          ...(userLpList[SBUCK_BUCK_LP_REGISTRY_ID] ?? []),
+          ...lockedSBUCKs,
+        ];
+      }
 
-      const bottleTableId = getBottleTableId(lpToken);
-      if (!bottleTableId) continue;
-      const bottleRes = await this.client.getDynamicFieldObject({
-        parentId: bottleTableId,
-        name: {
-          type: "address",
-          value: strapAddress,
-        },
-      });
-      const bottleData = getObjectFields(bottleRes);
-      if (!bottleData) continue;
-
-      lstBottles.push({
-        token: lpToken,
-        strapId: strapData.value.fields.strap.fields.id.id,
-        debtAmount: Number(strapData.value.fields.debt_amount),
-        startUnit: Number(strapData.value.fields.start_unit),
-        collateralAmount: bottleData.value.fields.value.fields.collateral_amount,
-        buckAmount: bottleData.value.fields.value.fields.buck_amount,
-        isLocked: true,
-      });
     }
 
-    return lstBottles;
+    return userLpList;
   }
 
   async getPrices() {
