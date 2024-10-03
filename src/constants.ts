@@ -45,6 +45,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK",
   CETUS:
     "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
+  AUSD:
+    "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -68,6 +70,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   NAVX: 9,
   CETUS: 9,
   SCABLE: 6,
+  AUSD: 6,
 
   sBUCK: 9,
 
@@ -92,6 +95,7 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   USDCsol: "0x596d696153f405cdee285a0da122c8c9a4cf6c883298aaf9bec1149e0909e168",
   USDCpol: "0x741ec9190953ee9eaa1b92b2285f15a0c7068bac2e591bfa5f7f596a75ada351",
   USDCarb: "0x10970069e17f31aee9cb55c53237d3a62584582e05f3c2030f92ce9fc6365c90",
+  AUSD: "0x5a0373b5c08f0d6a33bd88bfd89db7557613699ae88e4c0039e8f7c542551a7b",
 };
 
 export const PSM_BALANCE_IDS: Record<string, string> = {
