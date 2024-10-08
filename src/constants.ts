@@ -13,7 +13,8 @@ export const STRAP_FOUNTAIN_PACKAGE_ID =
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
   SUI: "0x2::sui::SUI",
-  USDC: "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN",
+  wUSDC: "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN",
+  USDC: "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC",
   USDT: "0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN",
   afSUI:
     "0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI",
@@ -56,6 +57,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
 
 export const COIN_DECIMALS: Record<COIN, number> = {
   SUI: 9,
+  wUSDC: 6,
   USDC: 6,
   USDT: 6,
   afSUI: 9,
@@ -89,17 +91,18 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   SCABLE: "0xe3a3ca38171458c6f310bc9b4ba5d7bff7850b190049dcdb1e89ddbd7893d528",
   STAPEARL:
     "0xccdaf635eb1c419dc5ab813cc64c728a9f5a851202769e254f348bff51f9a6dc",
-  USDC: "0x0c2e5fbfeb5caa4c2f7c8645ffe9eca7e3c783536efef859be03146b235f9e04",
+  wUSDC: "0x0c2e5fbfeb5caa4c2f7c8645ffe9eca7e3c783536efef859be03146b235f9e04",
   USDT: "0x607e7d386e29066b964934e0eb1daa084538a79b5707c34f38e190d64e24923e",
   USDCbnb: "0x973c51875b3fb9c8cf5d8ec4aeac83fddaacb88c17960fd5258d8fa38bc4dd82",
   USDCsol: "0x596d696153f405cdee285a0da122c8c9a4cf6c883298aaf9bec1149e0909e168",
   USDCpol: "0x741ec9190953ee9eaa1b92b2285f15a0c7068bac2e591bfa5f7f596a75ada351",
   USDCarb: "0x10970069e17f31aee9cb55c53237d3a62584582e05f3c2030f92ce9fc6365c90",
   AUSD: "0x5a0373b5c08f0d6a33bd88bfd89db7557613699ae88e4c0039e8f7c542551a7b",
+  USDC: "0xd22388010d7bdb9f02f14805a279322a3fa3fbde42896b7fb3d1214af404c455",
 };
 
 export const PSM_BALANCE_IDS: Record<string, string> = {
-  USDC: "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+  wUSDC: "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
   USDT: "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
 };
 
@@ -128,7 +131,7 @@ export const SUPRA_PRICE_FEEDS = {
 
 export const SUPRA_ID: Record<string, number> = {
   USDT: 48,
-  USDC: 89,
+  wUSDC: 89,
   // WBTC: 18,
   WETH: 19,
   SUI: 90,

@@ -1880,6 +1880,7 @@ export class BucketClient {
       vSUI: 1,
       afSUI: 1,
       haSUI: 1,
+      wUSDC: 1,
       USDC: 1,
       USDT: 1,
       USDY: 1,
@@ -1906,7 +1907,7 @@ export class BucketClient {
         const price = parseInt(priceBn) / Math.pow(10, decimals);
 
         if (objectNameList[index] == "usdc_usd") {
-          prices["USDC"] = price;
+          prices["wUSDC"] = price;
         } else if (objectNameList[index] == "usdt_usd") {
           prices["USDT"] = price;
         } else if (objectNameList[index] == "usdy_usd") {
@@ -2321,7 +2322,7 @@ export class BucketClient {
         arguments: [flxContainerObj, lpCoin],
       });
     } else if (
-      outCoinType === COINS_TYPE_LIST.USDC ||
+      outCoinType === COINS_TYPE_LIST.wUSDC ||
       outCoinType === COINS_TYPE_LIST.USDT
     ) {
       const outBalance = tx.moveCall({
@@ -2330,7 +2331,7 @@ export class BucketClient {
         arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), inputCoinBalance],
       });
       const outCoin = coinFromBalance(tx, COINS_TYPE_LIST.SCABLE, outBalance);
-      const isUSDC = outCoinType === COINS_TYPE_LIST.USDC;
+      const isUSDC = outCoinType === COINS_TYPE_LIST.wUSDC;
       const vaultObj = isUSDC
         ? tx.sharedObjectRef({
           objectId:
@@ -2641,7 +2642,7 @@ export class BucketClient {
       tx,
       this.client,
       walletAddress,
-      COINS_TYPE_LIST.USDC,
+      COINS_TYPE_LIST.wUSDC,
       stakeAmount,
     );
     if (!stakeCoinInput) return false;
@@ -2649,7 +2650,7 @@ export class BucketClient {
     if (isAf) {
       tx.moveCall({
         target: `${FOUNTAIN_PERIHERY_PACKAGE_ID}::aftermath_fountain::stake`,
-        typeArguments: [COINS_TYPE_LIST.AF_LP_USDC_BUCK, COINS_TYPE_LIST.USDC],
+        typeArguments: [COINS_TYPE_LIST.AF_LP_USDC_BUCK, COINS_TYPE_LIST.wUSDC],
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
           tx.object(AF_OBJS.pool),
@@ -2667,7 +2668,7 @@ export class BucketClient {
     } else {
       tx.moveCall({
         target: `${FOUNTAIN_PERIHERY_PACKAGE_ID}::cetus_fountain::stake`,
-        typeArguments: [COINS_TYPE_LIST.USDC],
+        typeArguments: [COINS_TYPE_LIST.wUSDC],
         arguments: [
           tx.sharedObjectRef(PROTOCOL_OBJECT),
           tx.sharedObjectRef(CETUS_USDC_BUCK_LP_REGISTRY),
@@ -2729,7 +2730,7 @@ export class BucketClient {
       typeArguments: [
         COINS_TYPE_LIST.AF_LP_USDC_BUCK,
         COINS_TYPE_LIST.BUCK,
-        COINS_TYPE_LIST.USDC,
+        COINS_TYPE_LIST.wUSDC,
       ],
       arguments: [
         tx.object(AF_OBJS.pool),
@@ -2811,7 +2812,7 @@ export class BucketClient {
     const [buckCoin, usdcCoin] = tx.moveCall({
       target:
         "0x8da48ef1e49dcb81631ce468df5c273d2f8eb5770af4d27ec2f1049bc8a61f75::bucketus::withdraw",
-      typeArguments: [COINS_TYPE_LIST.BUCK, COINS_TYPE_LIST.USDC],
+      typeArguments: [COINS_TYPE_LIST.BUCK, COINS_TYPE_LIST.wUSDC],
       arguments: [
         tx.sharedObjectRef(BUCKETUS_TREASURY),
         tx.sharedObjectRef(BUCKETUS_LP_VAULT_05),
