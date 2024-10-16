@@ -13,7 +13,8 @@ export const STRAP_FOUNTAIN_PACKAGE_ID =
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
   SUI: "0x2::sui::SUI",
-  wUSDC: "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN",
+  wUSDC:
+    "0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN",
   USDC: "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC",
   USDT: "0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN",
   afSUI:
@@ -46,8 +47,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK",
   CETUS:
     "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
-  AUSD:
-    "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
+  AUSD: "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -104,6 +104,7 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
 export const PSM_BALANCE_IDS: Record<string, string> = {
   wUSDC: "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
   USDT: "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+  USDC: "0xdf91ef19f6038e662e9c89f111ffe19e808cdfb891d080208d15141932f9513b",
 };
 
 export const SUPRA_PRICE_FEEDS = {
@@ -362,7 +363,8 @@ export const SBUCK_APR_OBJECT_ID =
 
 export const MAX_LOCK_TIME = 4838400_000; // 8 weeks
 
-export const BUCKET_POINT_PACKAGE_ID = "0x34b6d1a1e6d9ea97d17ca5a2ce9cd7f84789e47990cf23cfc7607affa1af298b";
+export const BUCKET_POINT_PACKAGE_ID =
+  "0x34b6d1a1e6d9ea97d17ca5a2ce9cd7f84789e47990cf23cfc7607affa1af298b";
 export const BUCKET_POINT_CONFIG_OBJ = {
   objectId:
     "0x89d71e7c0dbd2ce47e0c44df0c1cd65858bbc57304d0392cd0b9389f53ceb5f1",
@@ -409,4 +411,25 @@ export const LST_BOTTLE_TABLE: Record<LstToken, string> = {
   afSUI: "0x8f1be0aed5bc2283898b94879b3419d7ff0125bd8d8b59d926720aab93cc5147",
   haSUI: "0xa531d0ab31004158facb4b559e97113e7013d9265bf4bec0a33abc718de77821",
   vSUI: "0xb28bc06b342bd25e65795b785015cc1d386155725494b43eff7aae8eece04514",
+};
+
+export const SCABLE_VAULTS: Record<COIN, SharedObjectRef> = {
+  wUSDC: {
+    objectId:
+      "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
+    initialSharedVersion: "272980432",
+    mutable: true,
+  },
+  USDT: {
+    objectId:
+      "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+    initialSharedVersion: "272980433",
+    mutable: true,
+  },
+  USDC: {
+    objectId:
+      "0xdf91ef19f6038e662e9c89f111ffe19e808cdfb891d080208d15141932f9513b",
+    initialSharedVersion: "373914575",
+    mutable: true,
+  },
 };
