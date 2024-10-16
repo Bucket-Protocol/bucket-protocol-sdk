@@ -413,7 +413,9 @@ export const LST_BOTTLE_TABLE: Record<LstToken, string> = {
   vSUI: "0xb28bc06b342bd25e65795b785015cc1d386155725494b43eff7aae8eece04514",
 };
 
-export const SCABLE_VAULTS: Record<COIN, SharedObjectRef> = {
+export type ScableToken = "wUSDC" | "USDT" | "USDC";
+
+export const SCABLE_VAULTS: Record<ScableToken, SharedObjectRef> = {
   wUSDC: {
     objectId:
       "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",

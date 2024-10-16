@@ -64,6 +64,7 @@ import {
   LOCKER_TABLE,
   LST_BOTTLE_TABLE,
   SCABLE_VAULTS,
+  ScableToken,
 } from "./constants";
 import {
   BucketConstants,
@@ -1040,7 +1041,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1406,7 +1407,7 @@ export class BucketClient {
 
             debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
             startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch {}
+          } catch { }
         }
       }
 
@@ -1627,7 +1628,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -2330,7 +2331,7 @@ export class BucketClient {
         arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), inputCoinBalance],
       });
       const outCoin = coinFromBalance(tx, COINS_TYPE_LIST.SCABLE, outBalance);
-      const vaultObj = SCABLE_VAULTS[getCoinSymbol(outCoinType) as COIN];
+      const vaultObj = SCABLE_VAULTS[getCoinSymbol(outCoinType) as ScableToken];
       if (!vaultObj) throw new Error("Unspported PSM type");
       const treasuryObj = tx.sharedObjectRef({
         objectId:
