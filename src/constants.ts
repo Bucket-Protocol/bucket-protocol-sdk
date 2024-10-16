@@ -104,6 +104,7 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
 export const PSM_BALANCE_IDS: Record<string, string> = {
   wUSDC: "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
   USDT: "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+  USDC: "0xdf91ef19f6038e662e9c89f111ffe19e808cdfb891d080208d15141932f9513b",
 };
 
 export const SUPRA_PRICE_FEEDS = {
