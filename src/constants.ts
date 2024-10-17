@@ -130,8 +130,7 @@ export const SUPRA_PRICE_FEEDS = {
     "0x996cfab93ecd365cea4e2ea5bb6d29160192513eec5e08521d0edad3796f667c",
   cetus_usd:
     "0xc0205c51048f09dee3d28c08d1f3dd8c8b5aca65337aac63562e8b8140b32ac6",
-  sca_usd:
-    "0x94dff56ca222ecb8b1df97596720e1d5de65e31e242067f19c8ef9544050233c",
+  sca_usd: "0x94dff56ca222ecb8b1df97596720e1d5de65e31e242067f19c8ef9544050233c",
 };
 
 export const SUPRA_ID: Record<string, number> = {
@@ -369,7 +368,7 @@ export const SBUCK_APR_OBJECT_ID =
 export const MAX_LOCK_TIME = 4838400_000; // 8 weeks
 
 export const BUCKET_POINT_PACKAGE_ID =
-  "0x34b6d1a1e6d9ea97d17ca5a2ce9cd7f84789e47990cf23cfc7607affa1af298b";
+  "0x9c7289341e07dbeb09bbf805ade663a529ea12d4826a63d467f6326b8fd0c13e";
 export const BUCKET_POINT_CONFIG_OBJ = {
   objectId:
     "0x89d71e7c0dbd2ce47e0c44df0c1cd65858bbc57304d0392cd0b9389f53ceb5f1",
