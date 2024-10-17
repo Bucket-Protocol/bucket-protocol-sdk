@@ -1041,7 +1041,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1407,7 +1407,7 @@ export class BucketClient {
 
             debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
             startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch { }
+          } catch {}
         }
       }
 
@@ -1511,27 +1511,49 @@ export class BucketClient {
       });
       const strapData = getObjectFields(strapRes);
       if (!strapData) continue;
-
+      const bottleInfo = bottleIdList.find((info) => info.name === lpToken);
+      if (!bottleInfo) continue;
       const bottleRes = await this.client.getDynamicFieldObject({
-        parentId: LST_BOTTLE_TABLE[lpToken],
+        parentId: bottleInfo.id,
         name: {
           type: "address",
           value: strapAddress,
         },
       });
       const bottleData = getObjectFields(bottleRes);
-      if (!bottleData) continue;
-
-      userBottles.push({
-        token: lpToken,
-        strapId: strapData.value.fields.strap.fields.id.id,
-        debtAmount: Number(strapData.value.fields.debt_amount),
-        startUnit: Number(strapData.value.fields.start_unit),
-        collateralAmount:
-          bottleData.value.fields.value.fields.collateral_amount,
-        buckAmount: bottleData.value.fields.value.fields.buck_amount,
-        isLocked: true,
-      });
+      if (bottleData) {
+        userBottles.push({
+          token: lpToken,
+          strapId: strapData.value.fields.strap.fields.id.id,
+          debtAmount: Number(strapData.value.fields.debt_amount),
+          startUnit: Number(strapData.value.fields.start_unit),
+          collateralAmount:
+            bottleData.value.fields.value.fields.collateral_amount,
+          buckAmount: bottleData.value.fields.value.fields.buck_amount,
+          isLocked: true,
+        });
+      } else {
+        const surplusBottleRes = await this.client.getDynamicFieldObject({
+          parentId: bottleInfo.surplus_id,
+          name: {
+            type: "address",
+            value: strapAddress,
+          },
+        });
+        const surplusData = getObjectFields(surplusBottleRes);
+        if (surplusData) {
+          userBottles.push({
+            token: lpToken,
+            strapId: strapData.value.fields.strap.fields.id.id,
+            debtAmount: Number(strapData.value.fields.debt_amount),
+            startUnit: Number(strapData.value.fields.start_unit),
+            collateralAmount:
+              surplusData.value.fields.value.fields.collateral_amount,
+            buckAmount: surplusData.value.fields.value.fields.buck_amount,
+            isLocked: true,
+          });
+        }
+      }
     }
 
     // Sort liquidated positions to last
@@ -1628,7 +1650,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
