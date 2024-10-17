@@ -39,6 +39,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0x8d1aee27f8537c06d19c16641f27008caafc42affd2d2fb7adb96919470481ec::bucketus::BUCKETUS",
   USDY: "0x960b531667636f39e85867775f52f6b1f220a058c4de786905bdf761e06a56bb::usdy::USDY",
   NAVX: "0xa99b8952d4f7d947ea77fe0ecdcc9e5fc0bcab2841d6e2a5aa00c3044e5544b5::navx::NAVX",
+  SCA: "0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA",
   SCABLE:
     "0x08a7a3c873402d7cf9d44192aae337e0b27a72c2a4a230d10230488cf614c5a2::scable::SCABLE",
   STAPEARL:
@@ -70,6 +71,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   STAPEARL: 6,
   USDY: 6,
   NAVX: 9,
+  SCA: 9,
   CETUS: 9,
   SCABLE: 6,
   AUSD: 6,
