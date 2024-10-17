@@ -62,7 +62,6 @@ import {
   LOCKER_MAP,
   LstToken,
   LOCKER_TABLE,
-  LST_BOTTLE_TABLE,
   SCABLE_VAULTS,
   ScableToken,
 } from "./constants";

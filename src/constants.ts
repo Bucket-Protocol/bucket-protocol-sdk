@@ -412,12 +412,6 @@ export const LOCKER_TABLE: Record<LstToken, string> = {
   vSUI: "0x502760cac10dd4fae78672c1e27bc0e5cdbae449aa2b15dbfb72434af33cb8f6",
 };
 
-export const LST_BOTTLE_TABLE: Record<LstToken, string> = {
-  afSUI: "0x8f1be0aed5bc2283898b94879b3419d7ff0125bd8d8b59d926720aab93cc5147",
-  haSUI: "0xa531d0ab31004158facb4b559e97113e7013d9265bf4bec0a33abc718de77821",
-  vSUI: "0xb28bc06b342bd25e65795b785015cc1d386155725494b43eff7aae8eece04514",
-};
-
 export type ScableToken = "wUSDC" | "USDT" | "USDC";
 
 export const SCABLE_VAULTS: Record<ScableToken, SharedObjectRef> = {
