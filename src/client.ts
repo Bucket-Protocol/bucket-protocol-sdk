@@ -1547,8 +1547,8 @@ export class BucketClient {
             debtAmount: Number(strapData.value.fields.debt_amount),
             startUnit: Number(strapData.value.fields.start_unit),
             collateralAmount:
-              surplusData.value.fields.value.fields.collateral_amount,
-            buckAmount: surplusData.value.fields.value.fields.buck_amount,
+              surplusData.value.fields.collateral_amount,
+            buckAmount: surplusData.value.fields.buck_amount,
             isLocked: true,
           });
         }
