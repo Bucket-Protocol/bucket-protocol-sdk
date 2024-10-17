@@ -144,6 +144,7 @@ export const SUPRA_ID: Record<string, number> = {
   USDY: 185,
   NAVX: 408,
   CETUS: 93,
+  SCA: 476,
 };
 
 export const SWITCHBOARD_UPDATE_TARGET =
