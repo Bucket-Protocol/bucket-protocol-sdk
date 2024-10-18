@@ -31,7 +31,6 @@
   },
   "dependencies": {
     "@mysten/sui": "^1.11.0",
-    "@scallop-io/sui-scallop-sdk": "^0.47.3",
     "@types/superstruct": "^0.8.2",
     "superstruct": "^1.0.3"
   },

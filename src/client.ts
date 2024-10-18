@@ -114,7 +114,6 @@ import {
   getObjectFields,
   ObjectContentFields,
 } from "./utils";
-import { ScallopQuery } from "@scallop-io/sui-scallop-sdk";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -1952,10 +1951,6 @@ export class BucketClient {
         }
       }
     });
-
-    // const scallopClient = new ScallopQuery({});
-    // const pool = await scallopClient.getMarketPool('usdc');
-    // console.log(pool);
 
     return prices;
   }
