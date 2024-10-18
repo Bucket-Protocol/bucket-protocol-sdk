@@ -1899,7 +1899,10 @@ export class BucketClient {
       vSUI: 1,
       afSUI: 1,
       haSUI: 1,
+
       wUSDC: 1,
+      sWUSDC: 1,
+
       USDC: 1,
       USDT: 1,
       USDY: 1,
@@ -1928,6 +1931,7 @@ export class BucketClient {
 
         if (objectNameList[index] == "usdc_usd") {
           prices["wUSDC"] = price;
+          prices["sWUSDC"] = price;
         } else if (objectNameList[index] == "usdt_usd") {
           prices["USDT"] = price;
         } else if (objectNameList[index] == "usdy_usd") {
