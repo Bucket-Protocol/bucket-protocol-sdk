@@ -49,6 +49,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   CETUS:
     "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
   AUSD: "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
+  sUSDC: "0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -75,6 +76,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   CETUS: 9,
   SCABLE: 6,
   AUSD: 6,
+  sUSDC: 6,
 
   sBUCK: 9,
 

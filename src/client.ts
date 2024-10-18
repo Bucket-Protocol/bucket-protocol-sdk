@@ -114,6 +114,7 @@ import {
   getObjectFields,
   ObjectContentFields,
 } from "./utils";
+import { ScallopQuery } from "@scallop-io/sui-scallop-sdk";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -123,26 +124,25 @@ export class BucketClient {
    * @param network connection to fullnode: 'mainnet' | 'testnet' | 'devnet' | 'localnet' | string
    * @param owner (optional) address of the current user (default: DUMMY_ADDRESS)
    */
+  private rpcEndpoint: string;
   private client: SuiClient;
 
   constructor(
     public network: string = "mainnet",
     public owner: string = DUMMY_ADDRESS,
   ) {
-    let url = "";
-
     if (
       network == "mainnet" ||
       network == "testnet" ||
       network == "devnet" ||
       network == "localnet"
     ) {
-      url = getFullnodeUrl(network);
+      this.rpcEndpoint = getFullnodeUrl(network);
     } else {
-      url = network as string;
+      this.rpcEndpoint = network as string;
     }
 
-    this.client = new SuiClient({ url });
+    this.client = new SuiClient({ url: this.rpcEndpoint });
   }
 
   depositToTank(
@@ -1910,6 +1910,7 @@ export class BucketClient {
       SCABLE: 1,
       STAPEARL: 1,
       AUSD: 1,
+      sUSDC: 1,
     };
 
     priceObjects.map((res, index) => {
@@ -1951,6 +1952,10 @@ export class BucketClient {
         }
       }
     });
+
+    // const scallopClient = new ScallopQuery({});
+    // const pool = await scallopClient.getMarketPool('usdc');
+    // console.log(pool);
 
     return prices;
   }
