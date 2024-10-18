@@ -693,9 +693,10 @@ export class BucketClient {
         ],
       });
     } else if (token === "sUSDC" || token === "swUSDC") {
+      const underlyingToke = token.slice(1) as COIN;
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
-        typeArguments: [COINS_TYPE_LIST["wUSDC"]],
+        typeArguments: [COINS_TYPE_LIST[underlyingToke]],
         arguments: [
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
@@ -707,7 +708,7 @@ export class BucketClient {
       tx.moveCall({
         target:
           "0xe8e2e65d77e92fee59b9027ad0e29da5d932c6a5fb46c9d4eecbcc747e33d38a::scoin_rule::update_price",
-        typeArguments: [coinType, COINS_TYPE_LIST["wUSDC"]],
+        typeArguments: [coinType, COINS_TYPE_LIST[underlyingToke]],
         arguments: [
           tx.sharedObjectRef({
             objectId:
