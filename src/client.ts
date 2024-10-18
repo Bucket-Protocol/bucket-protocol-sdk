@@ -1040,7 +1040,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1406,7 +1406,7 @@ export class BucketClient {
 
             debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
             startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch {}
+          } catch { }
         }
       }
 
@@ -1649,7 +1649,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -2190,12 +2190,12 @@ export class BucketClient {
 
     return true;
   }
-  async getSurplusWithdrawTx(
+
+  withdrawSurplus(
     tx: Transaction,
     collateralType: string,
-    walletAddress: string,
-    strapId?: string,
-  ): Promise<Transaction> {
+    strap?: TransactionArgument,
+  ): TransactionResult {
     /**
      * @description Withdraw
      * @param collateralType Asset , e.g "0x2::sui::SUI"
@@ -2206,11 +2206,10 @@ export class BucketClient {
 
     const token = getCoinSymbol(collateralType);
     if (!token) {
-      return tx;
+      throw "Collateral type not supported"
     }
 
-    if (strapId) {
-      const strap = tx.object(strapId);
+    if (strap) {
       const surplusCollateral = tx.moveCall({
         target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_with_strap`,
         typeArguments: [collateralType],
@@ -2226,7 +2225,7 @@ export class BucketClient {
         collateralType,
         surplusCollateral,
       );
-      tx.transferObjects([surplusCoin], tx.pure.address(walletAddress));
+      return surplusCoin;
     } else {
       const surplusCollateral = tx.moveCall({
         target: `${CORE_PACKAGE_ID}::buck::withdraw_surplus_collateral`,
@@ -2238,10 +2237,8 @@ export class BucketClient {
         collateralType,
         surplusCollateral,
       );
-      tx.transferObjects([surplusCoin], tx.pure.address(walletAddress));
+      return surplusCoin;
     }
-
-    return tx;
   }
 
   psmSwapIn(
