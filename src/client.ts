@@ -692,6 +692,45 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
+    } else if (token === "sUSDC" || token === "swUSDC") {
+      tx.moveCall({
+        target: SUPRA_UPDATE_TARGET,
+        typeArguments: [COINS_TYPE_LIST["wUSDC"]],
+        arguments: [
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
+          tx.pure.u32(SUPRA_ID["wUSDC"] ?? 0),
+        ],
+      });
+      const coinType = COINS_TYPE_LIST[token];
+      tx.moveCall({
+        target:
+          "0xe8e2e65d77e92fee59b9027ad0e29da5d932c6a5fb46c9d4eecbcc747e33d38a::scoin_rule::update_oracle",
+        typeArguments: [coinType, COINS_TYPE_LIST["wUSDC"]],
+        arguments: [
+          tx.sharedObjectRef({
+            objectId:
+              "0x44f5343585d18d23f5e29a3c70da655c0cd11a9cc1f931c114a1e5323a229442",
+            initialSharedVersion: 389243325,
+            mutable: false,
+          }),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef({
+            objectId:
+              "0x07871c4b3c847a0f674510d4978d5cf6f960452795e8ff6f189fd2088a3f6ac7",
+            initialSharedVersion: 7765848,
+            mutable: false,
+          }),
+          tx.sharedObjectRef({
+            objectId:
+              "0xa757975255146dc9686aa823b7838b507f315d704f428cbadad2f4ea061939d9",
+            initialSharedVersion: 7765848,
+            mutable: true,
+          }),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+        ],
+      });
     } else {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
@@ -1039,7 +1078,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1405,7 +1444,7 @@ export class BucketClient {
 
             debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
             startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch { }
+          } catch {}
         }
       }
 
@@ -1545,8 +1584,7 @@ export class BucketClient {
             strapId: strapData.value.fields.strap.fields.id.id,
             debtAmount: Number(strapData.value.fields.debt_amount),
             startUnit: Number(strapData.value.fields.start_unit),
-            collateralAmount:
-              surplusData.value.fields.collateral_amount,
+            collateralAmount: surplusData.value.fields.collateral_amount,
             buckAmount: surplusData.value.fields.buck_amount,
             isLocked: true,
           });
@@ -1648,7 +1686,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -2207,7 +2245,7 @@ export class BucketClient {
 
     const token = getCoinSymbol(collateralType);
     if (!token) {
-      throw "Collateral type not supported"
+      throw "Collateral type not supported";
     }
 
     if (strap) {
