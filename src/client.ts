@@ -64,8 +64,6 @@ import {
   LOCKER_TABLE,
   SCABLE_VAULTS,
   ScableToken,
-  SUSDC_PRICE_FEED_OBJECT_ID,
-  SWUSDC_PRICE_FEED_OBJECT_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -97,7 +95,7 @@ import {
   PsmBalanceResponse,
   AprResponse,
   ProofObject,
-  ScallopUsdcResponse,
+  CrDiffInfo,
 } from "./types";
 import {
   U64FromBytes,
@@ -116,6 +114,7 @@ import {
   objectToStrapFountain,
   getObjectFields,
   ObjectContentFields,
+  getBottlesByStep,
 } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -1082,7 +1081,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1091,6 +1090,7 @@ export class BucketClient {
     bottleTableId: string,
     targetCR: number,
     tolerance: number,
+    coinType: string,
   ): Promise<string> {
     /**
      * @description Find insertaion place in tolerance range
@@ -1121,11 +1121,18 @@ export class BucketClient {
           const bottleInfo = getObjectFields(res) as BottleInfoResponse;
           const bottleFields = bottleInfo.value.fields.value.fields;
           const cr = bottleFields.collateral_amount / bottleFields.buck_amount;
-          if (
-            cr > targetCR * (1 - tolerance / 100) &&
-            cr < targetCR * (1 + tolerance / 100)
-          ) {
-            return bottleInfo.value.fields.next;
+          if (cr >= targetCR * (1 - tolerance / 100) && cr <= targetCR) {
+            const bottleRes = await getBottlesByStep(
+              this.client,
+              coinType,
+              bottleInfo.value.fields.next,
+            );
+            const crDiffVec = bottleRes.bottles.map((bottle) => {
+              return { debtor: bottle.debtor, crDiff: targetCR - bottle.ncr };
+            });
+            const result = crDiffVec.find((info) => info.crDiff > 0);
+            if (!result) continue;
+            return result.debtor;
           }
         }
 
@@ -1448,7 +1455,7 @@ export class BucketClient {
 
             debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
             startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch { }
+          } catch {}
         }
       }
 
@@ -1690,7 +1697,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -1921,11 +1928,7 @@ export class BucketClient {
     /**
      * @description Get all prices
      */
-    const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
-      SBUCK_FLASK_OBJECT_ID,
-      SUSDC_PRICE_FEED_OBJECT_ID,
-      SWUSDC_PRICE_FEED_OBJECT_ID,
-    ]);
+    const ids = Object.values(SUPRA_PRICE_FEEDS).concat(SBUCK_FLASK_OBJECT_ID);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
       {
@@ -1967,14 +1970,6 @@ export class BucketClient {
         const sBuckSupply = priceFeed.sbuck_supply.fields.value;
         const price = Number(reserves) / Number(sBuckSupply);
         prices["sBUCK"] = price;
-      } else if (objectId == SUSDC_PRICE_FEED_OBJECT_ID) {
-        const priceFeed = getObjectFields(res) as ScallopUsdcResponse;
-        const price = Number(priceFeed.price) / Number(priceFeed.precision);
-        prices["sUSDC"] = price;
-      } else if (objectId == SWUSDC_PRICE_FEED_OBJECT_ID) {
-        const priceFeed = getObjectFields(res) as ScallopUsdcResponse;
-        const price = Number(priceFeed.price) / Number(priceFeed.precision);
-        prices["swUSDC"] = price;
       } else {
         const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
         const priceBn = priceFeed.value.fields.value;
