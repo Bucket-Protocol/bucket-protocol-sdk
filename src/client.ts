@@ -95,7 +95,6 @@ import {
   PsmBalanceResponse,
   AprResponse,
   ProofObject,
-  CrDiffInfo,
 } from "./types";
 import {
   U64FromBytes,
@@ -1081,7 +1080,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1455,7 +1454,7 @@ export class BucketClient {
 
             debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
             startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch {}
+          } catch { }
         }
       }
 
@@ -1697,7 +1696,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
