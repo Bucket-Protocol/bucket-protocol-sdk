@@ -1,7 +1,8 @@
-import { Transaction } from "@mysten/sui/dist/cjs/transactions";
+import { SuiClient } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
+import { bcs } from "@mysten/sui/bcs";
+
 import { BucketInfo } from "../types";
-import { bcs } from "@mysten/sui/dist/cjs/bcs";
-import { SuiClient } from "@mysten/sui/dist/cjs/client";
 import { CLOCK_OBJECT, PROTOCOL_ID, PROTOCOL_OBJECT } from "../constants";
 
 export function computeBorrowFeeRate(
