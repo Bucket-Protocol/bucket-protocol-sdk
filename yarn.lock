@@ -626,9 +626,9 @@
   dependencies:
     bs58 "^6.0.0"
 
-"@mysten/sui@^1.11.0":
+"@mysten/sui@1.11.0":
   version "1.11.0"
-  resolved "https://registry.npmjs.org/@mysten/sui/-/sui-1.11.0.tgz"
+  resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.11.0.tgz#bfd7e1dc960894e536329006b2cab4c3ad67e4da"
   integrity sha512-+5kSXmoPFrecxUb+fweqqy4eXRpgvv6H51IwRzJbxlolE0AmnM+5IJbLpTlM5RNZEmmocE7p5bUn1OijbuDVkw==
   dependencies:
     "@graphql-typed-document-node/core" "^3.2.0"
