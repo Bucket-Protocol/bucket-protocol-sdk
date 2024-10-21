@@ -605,7 +605,7 @@
   dependencies:
     bs58 "^6.0.0"
 
-"@mysten/sui@^1.12.0":
+"@mysten/sui@^1.11.0":
   version "1.13.0"
   resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.13.0.tgz#d40819bca42fca1ec22b83ade5d006123c07d3ee"
   integrity sha512-zxRFWkb5dFjwQh6gGkswNrdSVoeBbjrL70AmRa13seNe8mfnf2lZgE8Kcj1fj4MTsDI2mGNWihQVkK99cprW+w==
