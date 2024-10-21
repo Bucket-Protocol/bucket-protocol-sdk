@@ -190,6 +190,18 @@ export type SBUCKFlaskResponse = {
   }
 };
 
+export type ScallopUsdcResponse = {
+  id: {
+    id: string;
+  };
+  price: string;
+  precision: string;
+  precision_decimal: number;
+  threshold: string;
+  tolerance_ms: string;
+  latest_update_ms: string;
+};
+
 export type PsmPoolResponse = {
   buck_minted_amount: string;
   charge_fee_rate: string;

@@ -437,3 +437,7 @@ export const SCABLE_VAULTS: Record<ScableToken, SharedObjectRef> = {
     mutable: true,
   },
 };
+
+export const SUSDC_PRICE_FEED_OBJECT_ID = "0xe83dae90d004e07db82186fd7d2ebb216f161977da5d78ca5cf7778ff56a2bf5";
+
+export const SWUSDC_PRICE_FEED_OBJECT_ID = "0x8ddfb53b381fdeb95b0923c6c827582e9f5a64dcad3fb3b0b55ae11a0a144ed2";
