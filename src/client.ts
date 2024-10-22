@@ -1083,7 +1083,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1099,8 +1099,11 @@ export class BucketClient {
      */
     try {
       let cursor: string | null = null;
+      let hasNextPage = true;
+      let pageIdx = 0;
+      let bottleInfoVec = [];
 
-      while (true) {
+      while (hasNextPage && pageIdx < tolerance) {
         const bottlesResp = await this.client.getDynamicFields({
           parentId: bottleTableId,
           cursor,
@@ -1108,6 +1111,7 @@ export class BucketClient {
 
         const bottles = bottlesResp.data;
         const objectIdList = bottles.map((item) => item.objectId);
+        const debtorList = bottles.map((item) => item.name.value as string);
 
         const response: SuiObjectResponse[] = await this.client.multiGetObjects(
           {
@@ -1119,29 +1123,49 @@ export class BucketClient {
           },
         );
 
-        for (const res of response) {
-          const bottleInfo = getObjectFields(res) as BottleInfoResponse;
-          const bottleFields = bottleInfo.value.fields.value.fields;
-          const cr = bottleFields.collateral_amount / bottleFields.buck_amount;
-          if (cr >= targetCR * (1 - tolerance / 100) && cr <= targetCR) {
-            const bottleRes = await getBottlesByStep(
-              this.client,
-              coinType,
-              bottleInfo.value.fields.next,
-            );
-            const crDiffVec = bottleRes.bottles.map((bottle) => {
-              return { debtor: bottle.debtor, crDiff: targetCR - bottle.ncr };
-            });
-            const result = crDiffVec.find((info) => info.crDiff > 0);
-            if (!result) continue;
-            return result.debtor;
-          }
-        }
-
-        if (!bottlesResp.hasNextPage) {
-          break;
-        }
+        bottleInfoVec.push(
+          response.map((res, idx) => {
+            const bottleInfo = getObjectFields(res) as BottleInfoResponse;
+            const bottleFields = bottleInfo.value.fields.value.fields;
+            const ncrDiff =
+              bottleFields.collateral_amount / bottleFields.buck_amount -
+              targetCR;
+            return { debtor: debtorList[idx], ncrDiff };
+          }),
+        );
         cursor = bottlesResp.nextCursor;
+        hasNextPage = bottlesResp.hasNextPage;
+        ++pageIdx;
+      }
+      const bottleSamples = bottleInfoVec.flat();
+      let minNcrDiff = Infinity;
+      let closestDebtor = "";
+      let isUpward = true;
+      for (const sample of bottleSamples) {
+        const ncrDiffAbs = Math.abs(sample.ncrDiff);
+        if (ncrDiffAbs < minNcrDiff) {
+          minNcrDiff = ncrDiffAbs;
+          closestDebtor = sample.debtor;
+          isUpward = sample.ncrDiff < 0;
+        }
+      }
+      if (closestDebtor.length === 0) return "";
+      const stepBottles = await getBottlesByStep(
+        this.client,
+        coinType,
+        closestDebtor,
+        isUpward,
+      );
+      const crDiffVec = stepBottles.bottles.map((bottle) => {
+        return { debtor: bottle.debtor, crDiff: bottle.ncr - targetCR };
+      });
+      const result = crDiffVec.find((info) =>
+        isUpward ? info.crDiff >= 0 : info.crDiff < 0,
+      );
+      if (result) {
+        return result.debtor;
+      } else {
+        return stepBottles.nextCursor ?? "";
       }
     } catch (error) {
       console.log(error);
@@ -1457,7 +1481,7 @@ export class BucketClient {
 
             debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
             startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch { }
+          } catch {}
         }
       }
 
@@ -1699,7 +1723,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }

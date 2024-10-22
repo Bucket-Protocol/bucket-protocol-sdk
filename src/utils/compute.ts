@@ -43,18 +43,20 @@ export async function getBottlesByStep(
   client: SuiClient,
   coinType: string,
   cursor: string | null,
+  isUpward: boolean,
 ): Promise<BottlePage> {
   const tx = new Transaction();
   tx.moveCall({
     target:
-      "0x59224980e510b9e78f757baedcd50bf746c4fd48067d4f5c8d29f3d9e3648125::utils::get_bottles_by_step",
+      "0xf84a73f667f65dbc54483b8c456defc3ebc4e469026e5e8b4c2a0f3ff4a8748d::utils::get_bottles_by_step",
     typeArguments: [coinType],
     arguments: [
       tx.sharedObjectRef(PROTOCOL_OBJECT),
       tx.sharedObjectRef(CLOCK_OBJECT),
       tx.pure(bcs.option(bcs.Address).serialize(cursor)),
       tx.pure.u64(50),
-      tx.pure.u64(800),
+      tx.pure.u64(951),
+      tx.pure.bool(isUpward),
     ],
   });
   const res = await client.devInspectTransactionBlock({
