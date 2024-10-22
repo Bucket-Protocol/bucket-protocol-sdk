@@ -64,6 +64,8 @@ import {
   LOCKER_TABLE,
   SCABLE_VAULTS,
   ScableToken,
+  SUSDC_PRICE_FEED_OBJECT_ID,
+  SWUSDC_PRICE_FEED_OBJECT_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -95,6 +97,7 @@ import {
   PsmBalanceResponse,
   AprResponse,
   ProofObject,
+  ScallopUsdcResponse,
 } from "./types";
 import {
   U64FromBytes,
@@ -1927,7 +1930,11 @@ export class BucketClient {
     /**
      * @description Get all prices
      */
-    const ids = Object.values(SUPRA_PRICE_FEEDS).concat(SBUCK_FLASK_OBJECT_ID);
+    const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
+      SBUCK_FLASK_OBJECT_ID,
+      SUSDC_PRICE_FEED_OBJECT_ID,
+      SWUSDC_PRICE_FEED_OBJECT_ID,
+    ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
       {
@@ -1942,23 +1949,23 @@ export class BucketClient {
     const prices: {
       [key: string]: number;
     } = {
-      WETH: 1,
-      SUI: 1,
-      vSUI: 1,
-      afSUI: 1,
-      haSUI: 1,
-      USDC: 1,
-      wUSDC: 1,
-      sUSDC: 1,
-      swUSDC: 1,
-      USDT: 1,
-      USDY: 1,
-      BUCK: 1,
-      sBUCK: 1,
-      BUCKETUS: 1,
-      SCABLE: 1,
-      STAPEARL: 1,
-      AUSD: 1,
+      WETH: 0,
+      SUI: 0,
+      vSUI: 0,
+      afSUI: 0,
+      haSUI: 0,
+      USDC: 0,
+      wUSDC: 0,
+      sUSDC: 0,
+      swUSDC: 0,
+      USDT: 0,
+      USDY: 0,
+      BUCK: 0,
+      sBUCK: 0,
+      BUCKETUS: 0,
+      SCABLE: 0,
+      STAPEARL: 0,
+      AUSD: 0,
     };
 
     priceObjects.map((res, index) => {
@@ -1969,6 +1976,14 @@ export class BucketClient {
         const sBuckSupply = priceFeed.sbuck_supply.fields.value;
         const price = Number(reserves) / Number(sBuckSupply);
         prices["sBUCK"] = price;
+      } else if (objectId == SUSDC_PRICE_FEED_OBJECT_ID) {
+        const priceFeed = getObjectFields(res) as ScallopUsdcResponse;
+        const price = Number(priceFeed.price) / Number(priceFeed.precision);
+        prices["sUSDC"] = price;
+      } else if (objectId == SWUSDC_PRICE_FEED_OBJECT_ID) {
+        const priceFeed = getObjectFields(res) as ScallopUsdcResponse;
+        const price = Number(priceFeed.price) / Number(priceFeed.precision);
+        prices["swUSDC"] = price;
       } else {
         const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
         const priceBn = priceFeed.value.fields.value;
