@@ -1949,23 +1949,27 @@ export class BucketClient {
     const prices: {
       [key: string]: number;
     } = {
-      WETH: 0,
       SUI: 0,
       vSUI: 0,
       afSUI: 0,
       haSUI: 0,
-      USDC: 0,
-      wUSDC: 0,
-      sUSDC: 0,
-      swUSDC: 0,
-      USDT: 0,
-      USDY: 0,
-      BUCK: 0,
-      sBUCK: 0,
-      BUCKETUS: 0,
-      SCABLE: 0,
-      STAPEARL: 0,
-      AUSD: 0,
+      SCA: 0,
+      CETUS: 0,
+      NAVX: 0,
+      WETH: 0,
+
+      BUCK: 1,
+      sBUCK: 1,
+      USDC: 1,
+      wUSDC: 1,
+      sUSDC: 1,
+      swUSDC: 1,
+      USDT: 1,
+      USDY: 1,
+      AUSD: 1,
+      BUCKETUS: 1,
+      SCABLE: 1,
+      STAPEARL: 1,
     };
 
     priceObjects.map((res, index) => {
