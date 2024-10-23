@@ -48,7 +48,7 @@ export async function getBottlesByStep(
   const tx = new Transaction();
   tx.moveCall({
     target:
-      "0xf84a73f667f65dbc54483b8c456defc3ebc4e469026e5e8b4c2a0f3ff4a8748d::utils::get_bottles_with_direction",
+      "0x0e2e9d96beaf27fb80cacb5947f1a0fa36664fe644e968e81263ffccf979d6db::utils::get_bottles_with_direction",
     typeArguments: [coinType],
     arguments: [
       tx.sharedObjectRef(PROTOCOL_OBJECT),
