@@ -1093,7 +1093,7 @@ export class BucketClient {
     targetCR: number,
     tolerance: number,
     coinType: string,
-  ): Promise<string> {
+  ): Promise<string | undefined> {
     /**
      * @description Find insertaion place in tolerance range
      */
@@ -1101,7 +1101,7 @@ export class BucketClient {
       let cursor: string | null = null;
       let hasNextPage = true;
       let pageIdx = 0;
-      let bottleInfoVec = [];
+      const bottleInfoVec = [];
 
       while (hasNextPage && pageIdx < tolerance) {
         const bottlesResp = await this.client.getDynamicFields({
@@ -1149,7 +1149,7 @@ export class BucketClient {
           isUpward = sample.ncrDiff < 0;
         }
       }
-      if (closestDebtor.length === 0) return "";
+      if (closestDebtor.length === 0) return undefined;
       const stepBottles = await getBottlesByStep(
         this.client,
         coinType,
@@ -1165,13 +1165,12 @@ export class BucketClient {
       if (result) {
         return result.debtor;
       } else {
-        return stepBottles.nextCursor ?? "";
+        return stepBottles.bottles[stepBottles.bottles.length - 1].debtor;
       }
     } catch (error) {
       console.log(error);
+      return undefined;
     }
-
-    return "";
   }
 
   async getAllFountains(): Promise<FountainList> {
