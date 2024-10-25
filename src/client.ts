@@ -105,7 +105,6 @@ import {
   getCoinSymbol,
   getObjectNames,
   lpProofToObject,
-  parseBigInt,
   proofTypeToCoinType,
   getInputCoins,
   coinFromBalance,

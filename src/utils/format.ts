@@ -76,10 +76,6 @@ export const parseUnits = (value: `${number}`, decimals: number) => {
     return BigInt(`${negative ? "-" : ""}${integer}${fraction}`);
 };
 
-export const parseBigInt = (number: `${number}`, decimal: number) => {
-    return parseUnits(number, decimal);
-};
-
 export const proofTypeToCoinType = (poolType: string): string[] => {
     const typeChunks = poolType.split("<");
     if (typeChunks[1]) {
