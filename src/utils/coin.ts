@@ -42,14 +42,17 @@ export async function getInputCoins(
   client: SuiClient,
   owner: string,
   coinType: string,
-  ...amounts: number[]
+  ...amounts: string[]
 ) {
-  let totalAmount = 0;
+  let isZero = true;
   for (const amount of amounts) {
-    totalAmount += amount;
+    if (Number(amount) > 0) {
+      isZero = false;
+      break;
+    }
   }
 
-  if (totalAmount == 0) {
+  if (isZero) {
     return tx.moveCall({
       target: `0x2::coin::zero`,
       typeArguments: [coinType],
