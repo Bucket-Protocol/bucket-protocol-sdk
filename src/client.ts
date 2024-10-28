@@ -105,6 +105,7 @@ import {
   getCoinSymbol,
   getObjectNames,
   lpProofToObject,
+  parseBigInt,
   proofTypeToCoinType,
   getInputCoins,
   coinFromBalance,
@@ -243,7 +244,7 @@ export class BucketClient {
     tx: Transaction,
     collateralType: string,
     collateralInput: TransactionResult,
-    buckOutput: string | TransactionArgument,
+    buckOutput: number | TransactionArgument,
     insertionPlace?: string,
     strapId?: string | TransactionArgument,
   ): TransactionResult | null {
@@ -273,7 +274,7 @@ export class BucketClient {
               strap,
               tx.sharedObjectRef(CLOCK_OBJECT),
               collateralInput,
-              typeof buckOutput === "string"
+              typeof buckOutput === "number"
                 ? tx.pure.u64(buckOutput)
                 : buckOutput,
               tx.pure(
@@ -296,7 +297,7 @@ export class BucketClient {
             typeof strapId === "string" ? tx.object(strapId) : strapId,
             tx.sharedObjectRef(CLOCK_OBJECT),
             collateralInput,
-            typeof buckOutput === "string"
+            typeof buckOutput === "number"
               ? tx.pure.u64(buckOutput)
               : buckOutput,
             tx.pure(
@@ -316,7 +317,7 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           collateralInput,
-          typeof buckOutput === "string" ? tx.pure.u64(buckOutput) : buckOutput,
+          typeof buckOutput === "number" ? tx.pure.u64(buckOutput) : buckOutput,
           tx.pure(
             bcs
               .vector(bcs.Address)
@@ -1082,7 +1083,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1461,11 +1462,15 @@ export class BucketClient {
 
       if (bottleStrapIds.length > 0) {
         if (
-          (token == "afSUI" || token == "vSUI" || token == "haSUI") &&
+          (token == "afSUI" ||
+            token == "vSUI" ||
+            token == "haSUI" ||
+            token == "SCA" ||
+            token == "sUSDC") &&
           STRAP_FOUNTAIN_IDS[token]
         ) {
           try {
-            let lstFountain = await this.getStakeProofFountain(
+            const lstFountain = await this.getStakeProofFountain(
               STRAP_FOUNTAIN_IDS[token]?.objectId as string,
             );
             const data = await this.client.getDynamicFieldObject({
@@ -1479,7 +1484,9 @@ export class BucketClient {
 
             debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
             startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch { }
+          } catch {
+            continue;
+          }
         }
       }
 
@@ -1541,7 +1548,7 @@ export class BucketClient {
       }
 
       // We can add liquidated positions
-      let liquidatedStraps = bottleStrapIds.filter(
+      const liquidatedStraps = bottleStrapIds.filter(
         (t) => !userBottles.find((u) => u.strapId == t.id),
       );
       for (const strap of liquidatedStraps) {
@@ -1623,6 +1630,16 @@ export class BucketClient {
             buckAmount: surplusData.value.fields.buck_amount,
             isLocked: true,
           });
+        } else {
+          userBottles.push({
+            token: lpToken,
+            strapId: strapData.value.fields.strap.fields.id.id,
+            debtAmount: 0,
+            startUnit: Number(strapData.value.fields.start_unit),
+            collateralAmount: 0,
+            buckAmount: 0,
+            isLocked: true,
+          });
         }
       }
     }
@@ -1641,7 +1658,7 @@ export class BucketClient {
      */
     if (!address) return {};
 
-    let userTanks: UserTankList = {};
+    const userTanks: UserTankList = {};
 
     try {
       let tankList: DynamicFieldInfo[] = [];
@@ -1721,7 +1738,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -2065,8 +2082,8 @@ export class BucketClient {
   async getBorrowTx(
     tx: Transaction,
     collateralType: string,
-    collateralAmount: string,
-    borrowAmount: string,
+    collateralAmount: number,
+    borrowAmount: number,
     recipient: string,
     isUpdateOracle: boolean,
     insertionPlace?: string,
@@ -2103,7 +2120,7 @@ export class BucketClient {
       collateralInput,
     );
 
-    if (Number(borrowAmount) == 0) {
+    if (borrowAmount == 0) {
       this.topUp(
         tx,
         collateralType,
@@ -2159,8 +2176,8 @@ export class BucketClient {
   async getRepayTx(
     tx: Transaction,
     collateralType: string,
-    repayAmount: string,
-    withdrawAmount: string,
+    repayAmount: number,
+    withdrawAmount: number,
     walletAddress: string,
     insertionPlace?: string,
     strapId?: string,
@@ -2180,7 +2197,7 @@ export class BucketClient {
     }
 
     let _buckCoinInput;
-    if (Number(repayAmount) > 0) {
+    if (repayAmount > 0) {
       [_buckCoinInput] = await getInputCoins(
         tx,
         this.client,
@@ -2207,7 +2224,7 @@ export class BucketClient {
     this.updateSupraOracle(tx, token);
 
     // Fully repay
-    if (Number(repayAmount) == 0 && Number(withdrawAmount) == 0) {
+    if (repayAmount == 0 && withdrawAmount == 0) {
       if (strapId) {
         const strap = tx.object(strapId);
         tx.moveCall({
@@ -2490,7 +2507,7 @@ export class BucketClient {
   async getPsmTx(
     tx: Transaction,
     psmCoin: string,
-    psmAmount: string,
+    psmAmount: number,
     psmSwitch: boolean,
     walletAddress: string,
     referrer?: string,
@@ -2542,7 +2559,7 @@ export class BucketClient {
   async getRedeemTx(
     tx: Transaction,
     collateralType: string,
-    redeemAmount: string,
+    redeemAmount: number,
     walletAddress: string,
     insertionPlace?: string,
   ) {
@@ -2586,7 +2603,7 @@ export class BucketClient {
   async getTankDepositTx(
     tx: Transaction,
     tankType: string,
-    depositAmount: string,
+    depositAmount: number,
     walletAddress: string,
   ): Promise<boolean> {
     /**
@@ -2618,7 +2635,7 @@ export class BucketClient {
   async getTankWithdrawTx(
     tx: Transaction,
     tankType: string,
-    withdrawAmount: string,
+    withdrawAmount: number,
     walletAddress: string,
   ): Promise<boolean> {
     /**
@@ -2665,7 +2682,7 @@ export class BucketClient {
         tx.sharedObjectRef(CLOCK_OBJECT),
         tx.sharedObjectRef(TREASURY_OBJECT),
         tokenObjs,
-        tx.pure.u64(withdrawAmount),
+        tx.pure.u64(parseBigInt(`${withdrawAmount ?? 0}`, 9)),
       ],
     });
 
@@ -2725,7 +2742,7 @@ export class BucketClient {
   async getStakeUsdcTx(
     tx: Transaction,
     isAf: boolean,
-    stakeAmount: string,
+    stakeAmount: number,
     walletAddress: string,
   ): Promise<boolean> {
     /**
@@ -3025,12 +3042,13 @@ export class BucketClient {
     if (!coin || !STRAP_FOUNTAIN_IDS[coin]) {
       throw new Error("Collateral type not supported");
     }
+    const strapFountain = STRAP_FOUNTAIN_IDS[coin];
 
     const proof = tx.moveCall({
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::stake`,
-      typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
+      typeArguments: [collateralType, strapFountain.rewardType],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin] as SharedObjectRef),
+        tx.sharedObjectRef(strapFountain),
         tx.sharedObjectRef(PROTOCOL_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
@@ -3063,11 +3081,13 @@ export class BucketClient {
       throw new Error("Collateral type not supported");
     }
 
+    const strapFountain = STRAP_FOUNTAIN_IDS[coin];
+
     const res = tx.moveCall({
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::unstake`,
-      typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
+      typeArguments: [collateralType, strapFountain.rewardType],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin] as SharedObjectRef),
+        tx.sharedObjectRef(strapFountain),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ],
@@ -3098,11 +3118,13 @@ export class BucketClient {
       throw new Error("Collateral type not supported");
     }
 
+    const strapFountain = STRAP_FOUNTAIN_IDS[coin];
+
     const reward = tx.moveCall({
       target: `${STRAP_FOUNTAIN_PACKAGE_ID}::fountain::claim`,
-      typeArguments: [collateralType, COINS_TYPE_LIST.SUI],
+      typeArguments: [collateralType, strapFountain.rewardType],
       arguments: [
-        tx.sharedObjectRef(STRAP_FOUNTAIN_IDS[coin] as SharedObjectRef),
+        tx.sharedObjectRef(strapFountain),
         tx.sharedObjectRef(CLOCK_OBJECT),
         typeof strapId === "string" ? tx.object(strapId) : strapId,
       ],
@@ -3227,7 +3249,7 @@ export class BucketClient {
     tx: Transaction,
     inputs: {
       coinSymbol: string;
-      amount: string | TransactionArgument;
+      amount: number | TransactionArgument;
     },
   ): [TransactionArgument | undefined, TransactionArgument | undefined] {
     /**
@@ -3248,7 +3270,7 @@ export class BucketClient {
       typeArguments,
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
-        typeof amount == "string" ? tx.pure.u64(amount) : amount,
+        typeof amount == "number" ? tx.pure.u64(amount) : amount,
       ],
     });
     return [flashLoans, flashReceipt];
