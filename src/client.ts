@@ -92,7 +92,6 @@ import {
   PsmList,
   PsmInfo,
   SBUCKFlaskResponse,
-  SharedObjectRef,
   PipeResponse,
   PsmBalanceResponse,
   AprResponse,
@@ -105,7 +104,6 @@ import {
   getCoinSymbol,
   getObjectNames,
   lpProofToObject,
-  parseBigInt,
   proofTypeToCoinType,
   getInputCoins,
   coinFromBalance,
@@ -244,7 +242,7 @@ export class BucketClient {
     tx: Transaction,
     collateralType: string,
     collateralInput: TransactionResult,
-    buckOutput: number | TransactionArgument,
+    buckOutput: string | TransactionArgument,
     insertionPlace?: string,
     strapId?: string | TransactionArgument,
   ): TransactionResult | null {
@@ -274,7 +272,7 @@ export class BucketClient {
               strap,
               tx.sharedObjectRef(CLOCK_OBJECT),
               collateralInput,
-              typeof buckOutput === "number"
+              typeof buckOutput === "string"
                 ? tx.pure.u64(buckOutput)
                 : buckOutput,
               tx.pure(
@@ -297,7 +295,7 @@ export class BucketClient {
             typeof strapId === "string" ? tx.object(strapId) : strapId,
             tx.sharedObjectRef(CLOCK_OBJECT),
             collateralInput,
-            typeof buckOutput === "number"
+            typeof buckOutput === "string"
               ? tx.pure.u64(buckOutput)
               : buckOutput,
             tx.pure(
@@ -317,7 +315,7 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           collateralInput,
-          typeof buckOutput === "number" ? tx.pure.u64(buckOutput) : buckOutput,
+          typeof buckOutput === "string" ? tx.pure.u64(buckOutput) : buckOutput,
           tx.pure(
             bcs
               .vector(bcs.Address)
@@ -1083,7 +1081,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1738,7 +1736,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -2082,8 +2080,8 @@ export class BucketClient {
   async getBorrowTx(
     tx: Transaction,
     collateralType: string,
-    collateralAmount: number,
-    borrowAmount: number,
+    collateralAmount: string,
+    borrowAmount: string,
     recipient: string,
     isUpdateOracle: boolean,
     insertionPlace?: string,
@@ -2120,7 +2118,7 @@ export class BucketClient {
       collateralInput,
     );
 
-    if (borrowAmount == 0) {
+    if (borrowAmount == "0") {
       this.topUp(
         tx,
         collateralType,
@@ -2176,8 +2174,8 @@ export class BucketClient {
   async getRepayTx(
     tx: Transaction,
     collateralType: string,
-    repayAmount: number,
-    withdrawAmount: number,
+    repayAmount: string,
+    withdrawAmount: string,
     walletAddress: string,
     insertionPlace?: string,
     strapId?: string,
@@ -2197,20 +2195,20 @@ export class BucketClient {
     }
 
     let _buckCoinInput;
-    if (repayAmount > 0) {
+    if (repayAmount == "0") {
+      _buckCoinInput = await getMainCoin(
+        tx,
+        this.client,
+        walletAddress,
+        COINS_TYPE_LIST.BUCK,
+      );
+    } else {
       [_buckCoinInput] = await getInputCoins(
         tx,
         this.client,
         walletAddress,
         COINS_TYPE_LIST.BUCK,
         repayAmount,
-      );
-    } else {
-      _buckCoinInput = await getMainCoin(
-        tx,
-        this.client,
-        walletAddress,
-        COINS_TYPE_LIST.BUCK,
       );
     }
 
@@ -2224,7 +2222,7 @@ export class BucketClient {
     this.updateSupraOracle(tx, token);
 
     // Fully repay
-    if (repayAmount == 0 && withdrawAmount == 0) {
+    if (repayAmount == "0" && withdrawAmount == "0") {
       if (strapId) {
         const strap = tx.object(strapId);
         tx.moveCall({
@@ -2507,7 +2505,7 @@ export class BucketClient {
   async getPsmTx(
     tx: Transaction,
     psmCoin: string,
-    psmAmount: number,
+    psmAmount: string,
     psmSwitch: boolean,
     walletAddress: string,
     referrer?: string,
@@ -2559,7 +2557,7 @@ export class BucketClient {
   async getRedeemTx(
     tx: Transaction,
     collateralType: string,
-    redeemAmount: number,
+    redeemAmount: string,
     walletAddress: string,
     insertionPlace?: string,
   ) {
@@ -2603,7 +2601,7 @@ export class BucketClient {
   async getTankDepositTx(
     tx: Transaction,
     tankType: string,
-    depositAmount: number,
+    depositAmount: string,
     walletAddress: string,
   ): Promise<boolean> {
     /**
@@ -2635,7 +2633,7 @@ export class BucketClient {
   async getTankWithdrawTx(
     tx: Transaction,
     tankType: string,
-    withdrawAmount: number,
+    withdrawAmount: string,
     walletAddress: string,
   ): Promise<boolean> {
     /**
@@ -2682,7 +2680,7 @@ export class BucketClient {
         tx.sharedObjectRef(CLOCK_OBJECT),
         tx.sharedObjectRef(TREASURY_OBJECT),
         tokenObjs,
-        tx.pure.u64(parseBigInt(`${withdrawAmount ?? 0}`, 9)),
+        tx.pure.u64(withdrawAmount),
       ],
     });
 
@@ -2742,7 +2740,7 @@ export class BucketClient {
   async getStakeUsdcTx(
     tx: Transaction,
     isAf: boolean,
-    stakeAmount: number,
+    stakeAmount: string,
     walletAddress: string,
   ): Promise<boolean> {
     /**
@@ -3249,7 +3247,7 @@ export class BucketClient {
     tx: Transaction,
     inputs: {
       coinSymbol: string;
-      amount: number | TransactionArgument;
+      amount: string | TransactionArgument;
     },
   ): [TransactionArgument | undefined, TransactionArgument | undefined] {
     /**
@@ -3270,7 +3268,7 @@ export class BucketClient {
       typeArguments,
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
-        typeof amount == "number" ? tx.pure.u64(amount) : amount,
+        typeof amount == "string" ? tx.pure.u64(amount) : amount,
       ],
     });
     return [flashLoans, flashReceipt];
