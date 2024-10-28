@@ -49,8 +49,10 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   CETUS:
     "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
   AUSD: "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
-  sUSDC: "0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC",
-  swUSDC: "0xad4d71551d31092230db1fd482008ea42867dbf27b286e9c70a79d2a6191d58d::scallop_wormhole_usdc::SCALLOP_WORMHOLE_USDC",
+  sUSDC:
+    "0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC",
+  swUSDC:
+    "0xad4d71551d31092230db1fd482008ea42867dbf27b286e9c70a79d2a6191d58d::scallop_wormhole_usdc::SCALLOP_WORMHOLE_USDC",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -337,24 +339,43 @@ export const SBUCK_FOUNTAIN_PACKAGE_ID =
 
 export const STRAP_ID = `0xd9162764da404339384fe40487499dc867c3f1fa3eb870381c41a8b41458b0e5::strap::BottleStrap`;
 
-export const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef>> = {
+export const STRAP_FOUNTAIN_IDS: Partial<
+  Record<COIN, SharedObjectRef & { rewardType: string }>
+> = {
   afSUI: {
     objectId:
       "0xcfc2678c5ba0d8f57dc4984b6875988a92d34c55a3bdc47c593710931d128e68",
     initialSharedVersion: "77035444",
     mutable: true,
+    rewardType: COINS_TYPE_LIST.SUI,
   },
   vSUI: {
     objectId:
       "0x1f7cc70940fa415fb1af862642ff9791d4376453496d28b95eea01604dc5291f",
     initialSharedVersion: "77035445",
     mutable: true,
+    rewardType: COINS_TYPE_LIST.SUI,
   },
   haSUI: {
     objectId:
       "0x07df6066e0a92bfb61f54f0a65f765030c8624849916eed9afbd634840082f5e",
     initialSharedVersion: "77035446",
     mutable: true,
+    rewardType: COINS_TYPE_LIST.SUI,
+  },
+  SCA: {
+    objectId:
+      "0xde8df1bed9afa9cbdc3ed6f868e5d8bb8819354c181288919692e2d072d71954",
+    initialSharedVersion: "406217067",
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
+  },
+  sUSDC: {
+    objectId:
+      "0xec596ccd29fee021f22c69147d75836d07d97823d0c9bf95ef40de9eccef4b55",
+    initialSharedVersion: "406217068",
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
   },
 };
 
@@ -438,6 +459,8 @@ export const SCABLE_VAULTS: Record<ScableToken, SharedObjectRef> = {
   },
 };
 
-export const SUSDC_PRICE_FEED_OBJECT_ID = "0xe83dae90d004e07db82186fd7d2ebb216f161977da5d78ca5cf7778ff56a2bf5";
+export const SUSDC_PRICE_FEED_OBJECT_ID =
+  "0xe83dae90d004e07db82186fd7d2ebb216f161977da5d78ca5cf7778ff56a2bf5";
 
-export const SWUSDC_PRICE_FEED_OBJECT_ID = "0x8ddfb53b381fdeb95b0923c6c827582e9f5a64dcad3fb3b0b55ae11a0a144ed2";
+export const SWUSDC_PRICE_FEED_OBJECT_ID =
+  "0x8ddfb53b381fdeb95b0923c6c827582e9f5a64dcad3fb3b0b55ae11a0a144ed2";
