@@ -45,9 +45,8 @@ export const formatUnits = (value: bigint, decimals: number) => {
         }`;
 };
 
-
-export const parseUnits = (value: `${number}`, decimals: number) => {
-    let [integer, fraction = "0"] = value.split(".");
+export const parseUnits = (value: number | string, decimals: number) => {
+    let [integer, fraction = "0"] = typeof value == "string" ? value.split(".") : (value.toString()).split(".");
 
     if (integer === undefined) {
         return BigInt(0);
