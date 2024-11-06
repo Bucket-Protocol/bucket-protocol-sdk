@@ -66,6 +66,7 @@ import {
   ScableToken,
   SUSDC_PRICE_FEED_OBJECT_ID,
   SWUSDC_PRICE_FEED_OBJECT_ID,
+  SSUI_LIQUID_STAKING_OBJECT_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -97,6 +98,7 @@ import {
   AprResponse,
   ProofObject,
   ScallopUsdcResponse,
+  SsuiLiquidStakingResponse,
 } from "./types";
 import {
   U64FromBytes,
@@ -1971,6 +1973,7 @@ export class BucketClient {
       SBUCK_FLASK_OBJECT_ID,
       SUSDC_PRICE_FEED_OBJECT_ID,
       SWUSDC_PRICE_FEED_OBJECT_ID,
+      SSUI_LIQUID_STAKING_OBJECT_ID,
     ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
@@ -1990,6 +1993,7 @@ export class BucketClient {
       vSUI: 0,
       afSUI: 0,
       haSUI: 0,
+      sSUI: 0,
       SCA: 0,
       CETUS: 0,
       NAVX: 0,
@@ -2009,6 +2013,7 @@ export class BucketClient {
       STAPEARL: 1,
     };
 
+    let sSuiRate = 0;
     priceObjects.map((res, index) => {
       const objectId = res.data?.objectId;
       if (objectId == SBUCK_FLASK_OBJECT_ID) {
@@ -2025,6 +2030,12 @@ export class BucketClient {
         const priceFeed = getObjectFields(res) as ScallopUsdcResponse;
         const price = Number(priceFeed.price) / Number(priceFeed.precision);
         prices["swUSDC"] = price;
+      } else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
+        const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
+
+        const totalSuiSupply = Number(resp.storage.fields.total_sui_supply) / (10 ** 9);
+        const totalLstSupply = Number(resp.lst_treasury_cap.fields.total_supply.fields.value) / (10 ** 9);
+        sSuiRate = totalSuiSupply / totalLstSupply;
       } else {
         const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
         const priceBn = priceFeed.value.fields.value;
@@ -2056,6 +2067,9 @@ export class BucketClient {
         }
       }
     });
+
+    prices["sSUI"] = (prices["SUI"] ?? 1) * sSuiRate;
+    console.log(sSuiRate)
 
     return prices;
   }

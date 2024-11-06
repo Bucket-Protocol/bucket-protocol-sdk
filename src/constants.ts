@@ -53,6 +53,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC",
   swUSDC:
     "0xad4d71551d31092230db1fd482008ea42867dbf27b286e9c70a79d2a6191d58d::scallop_wormhole_usdc::SCALLOP_WORMHOLE_USDC",
+  sSUI:
+    "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -81,6 +83,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   AUSD: 6,
   sUSDC: 6,
   swUSDC: 6,
+  sSUI: 9,
 
   sBUCK: 9,
 
@@ -389,6 +392,9 @@ export const SBUCK_FLASK_OBJECT_ID =
 
 export const SBUCK_APR_OBJECT_ID =
   "0x4a9c3a7f42ead76b350e268976c502eafb448ff72da02923efcd4d202e46dee4";
+
+export const SSUI_LIQUID_STAKING_OBJECT_ID =
+  "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b";
 
 export const MAX_LOCK_TIME = 4838400_000; // 8 weeks
 

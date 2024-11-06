@@ -202,6 +202,30 @@ export type ScallopUsdcResponse = {
   latest_update_ms: string;
 };
 
+export type SsuiLiquidStakingResponse = {
+  id: {
+    id: string;
+  };
+  accrued_spread_fees: string;
+  fees: string;
+  lst_treasury_cap: {
+    fields: {
+      total_supply: {
+        fields: {
+          value: string;
+        }
+      }
+    }
+  };
+  storage: {
+    fields: {
+      last_refresh_epoch: string;
+      sui_pool: string;
+      total_sui_supply: string;
+    }
+  };
+};
+
 export type PsmPoolResponse = {
   buck_minted_amount: string;
   charge_fee_rate: string;
