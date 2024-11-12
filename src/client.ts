@@ -1096,7 +1096,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1751,7 +1751,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -2201,6 +2201,156 @@ export class BucketClient {
     return true;
   }
 
+  async getBorrowGenericTx(
+    tx: Transaction,
+    collateralType: string,
+    collateralAmount: string,
+    borrowAmount: string,
+    recipient: string,
+    isLST: boolean,
+    isCountingPoint: boolean,
+    insertionPlace?: string,
+    strapId?: string,
+  ) {
+    /**
+     * @description Borrow
+     * @param collateralType Asset , e.g "0x2::sui::SUI"
+     * @param collateralAmount
+     * @param borrowAmount
+     * @param recipient
+     * @param isLST
+     * @param isCountingPoint
+     * @param insertionPlace  Optional
+     * @param strapId         Optional
+     */
+
+    const coin = getCoinSymbol(collateralType);
+    if (!coin) {
+      throw new Error("Collateral not supported");
+    }
+
+    if (!strapId || !isLST) {
+      const collInputCoin = await getInputCoins(
+        tx,
+        this.client,
+        recipient,
+        collateralType,
+        collateralAmount,
+      );
+      this.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? "");
+      if (borrowAmount != "0") {
+        const buckBalance = this.borrow(
+          tx,
+          collateralType,
+          coinIntoBalance(tx, collateralType, collInputCoin),
+          tx.pure.u64(borrowAmount),
+          insertionPlace,
+          strapId,
+        );
+        if (!buckBalance) return;
+
+        tx.transferObjects(
+          [coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance)],
+          tx.pure.address(recipient),
+        );
+      } else {
+        this.topUp(
+          tx,
+          collateralType,
+          coinIntoBalance(tx, collateralType, collInputCoin),
+          recipient,
+          insertionPlace,
+        );
+      }
+    } else {
+      const lstInputCoin = await getInputCoins(
+        tx,
+        this.client,
+        recipient,
+        collateralType,
+        collateralAmount,
+      );
+
+      this.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? "");
+      if (strapId === "new") {
+        const ret = this.borrow(
+          tx,
+          collateralType,
+          coinIntoBalance(tx, collateralType, lstInputCoin),
+          tx.pure.u64(borrowAmount),
+          insertionPlace,
+          "new",
+        );
+        if (!ret) return;
+
+        const [strap, buckBalance] = ret;
+        if (!strap || !buckBalance) return;
+
+        tx.transferObjects(
+          [coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance)],
+          tx.pure.address(recipient),
+        );
+
+        const proof = this.stakeStrapFountain(
+          tx,
+          collateralType,
+          strap,
+        );
+        if (!proof) return;
+        if (isCountingPoint) {
+          this.lockProofs(tx, [{ token: coin, proof }]);
+        } else {
+          tx.transferObjects([proof], recipient);
+        }
+      } else {
+        let strapObj =
+          strapId === "locked"
+            ? this.unlockLstProof(tx, coin)
+            : tx.object(strapId);
+        if (!strapObj) return;
+        const unstakeRes = this.unstakeStrapFountain(
+          tx,
+          collateralType,
+          strapObj,
+        );
+        if (!unstakeRes) return;
+        const [strap, reward] = unstakeRes;
+        if (!strap || !reward) return;
+
+        const buckBalance = this.borrow(
+          tx,
+          collateralType,
+          coinIntoBalance(tx, collateralType, lstInputCoin),
+          tx.pure.u64(borrowAmount),
+          insertionPlace,
+          strap,
+        );
+        if (!buckBalance) return;
+
+        const proof = this.stakeStrapFountain(
+          tx,
+          collateralType,
+          strap,
+        );
+        if (!proof) return;
+
+        if (isCountingPoint) {
+          this.lockProofs(tx, [{ token: coin, proof }]);
+        } else {
+          tx.transferObjects([proof], recipient);
+        }
+        tx.transferObjects(
+          [
+            reward,
+            coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance),
+            // proof,
+          ],
+          recipient,
+        );
+      }
+    }
+  }
+
   async getRepayTx(
     tx: Transaction,
     collateralType: string,
@@ -2326,6 +2476,138 @@ export class BucketClient {
     return true;
   }
 
+  async getRepayGenericTx(
+    tx: Transaction,
+    collateralType: string,
+    repayAmount: string,
+    withdrawAmount: string,
+    recipient: string,
+    isLST: boolean,
+    isCountingPoint: boolean,
+    isSurplus: boolean,
+    insertionPlace?: string,
+    strapId?: string,
+  ) {
+    /**
+     * @description Repay
+     * @param collateralType Asset , e.g "0x2::sui::SUI"
+     * @param repayAmount
+     * @param withdrawAmount
+     * @param recipient
+     * @param isLST
+     * @param isCountingPoint
+     * @param isSurplus
+     * @param insertionPlace  Optional
+     * @param strapId         Optional
+     */
+
+    const coin = getCoinSymbol(collateralType);
+    if (!coin) {
+      throw new Error("Collateral not supported");
+    }
+
+    const isClose = withdrawAmount == "0" && repayAmount == "0";
+
+    if (!strapId || !isLST) {
+      if (collateralType) {
+        const surplusCoin = this.withdrawSurplus(tx, collateralType);
+        tx.transferObjects([surplusCoin], recipient);
+      } else {
+        await this.getRepayTx(
+          tx,
+          collateralType,
+          repayAmount,
+          withdrawAmount,
+          recipient,
+          insertionPlace,
+          strapId,
+        );
+      }
+    } else {
+      let strapObj =
+        strapId === "locked"
+          ? this.unlockLstProof(tx, coin)
+          : tx.object(strapId);
+      if (!strapObj) return;
+      const unstakeRes = this.unstakeStrapFountain(
+        tx,
+        collateralType,
+        strapObj,
+      );
+      if (!unstakeRes) return;
+      const [strap, reward] = unstakeRes;
+      if (!strap || !reward) return;
+
+      if (isClose) {
+        const buckCoin = await getMainCoin(
+          tx,
+          this.client,
+          recipient,
+          COINS_TYPE_LIST.BUCK,
+        );
+        if (!buckCoin) return;
+        if (isSurplus) {
+          const surplusCoin = this.withdrawSurplus(
+            tx,
+            collateralType,
+            strap,
+          );
+          tx.transferObjects([reward, surplusCoin], recipient);
+        } else {
+          tx.moveCall({
+            target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::fully_repay_with_strap`,
+            typeArguments: [collateralType],
+            arguments: [
+              tx.sharedObjectRef(PROTOCOL_OBJECT),
+              strap,
+              buckCoin,
+              tx.sharedObjectRef(CLOCK_OBJECT),
+            ],
+          });
+
+          tx.transferObjects([reward], tx.pure.address(recipient));
+        }
+      } else {
+        const buckCoin = await getInputCoins(
+          tx,
+          this.client,
+          recipient,
+          COINS_TYPE_LIST.BUCK,
+          repayAmount,
+        );
+        this.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? "");
+
+        tx.moveCall({
+          target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::repay_and_withdraw_with_strap`,
+          typeArguments: [collateralType],
+          arguments: [
+            tx.sharedObjectRef(PROTOCOL_OBJECT),
+            tx.sharedObjectRef(ORACLE_OBJECT),
+            strap,
+            tx.sharedObjectRef(CLOCK_OBJECT),
+            buckCoin,
+            tx.pure.u64(withdrawAmount),
+            tx.pure(
+              bcs
+                .vector(bcs.Address)
+                .serialize(insertionPlace ? [insertionPlace] : []),
+            ),
+          ],
+        });
+
+        const proof = this.stakeStrapFountain(tx, collateralType, strap);
+        if (!proof) return;
+
+        if (isCountingPoint) {
+          this.lockProofs(tx, [{ token: coin, proof }]);
+        } else {
+          tx.transferObjects([proof], recipient);
+        }
+        tx.transferObjects([reward], recipient);
+      }
+    }
+  }
+
   withdrawSurplus(
     tx: Transaction,
     collateralType: string,
@@ -2373,6 +2655,127 @@ export class BucketClient {
         surplusCollateral,
       );
       return surplusCoin;
+    }
+  }
+
+  getWithdrawGenericTx(
+    tx: Transaction,
+    collateralType: string,
+    withdrawAmount: string,
+    recipient: string,
+    isLST: boolean,
+    isCountingPoint: boolean,
+    insertionPlace?: string,
+    strapId?: string,
+  ) {
+    /**
+     * @description Withdraw
+     * @param collateralType Asset , e.g "0x2::sui::SUI"
+     * @param withdrawAmount
+     * @param recipient
+     * @param isLST
+     * @param isCountingPoint
+     * @param insertionPlace  Optional
+     * @param strapId         Optional
+     */
+
+    const coin = getCoinSymbol(collateralType);
+    if (!coin) {
+      throw new Error("Collateral not supported");
+    }
+
+    this.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? "");
+
+    if (!strapId || !isLST) {
+      const collOut = this.withdraw(
+        tx,
+        collateralType,
+        `${withdrawAmount}`,
+        insertionPlace,
+        strapId,
+      );
+      tx.transferObjects(
+        [coinFromBalance(tx, collateralType, collOut)],
+        tx.pure.address(recipient),
+      );
+    } else {
+      let strapObj =
+        strapId === "locked"
+          ? this.unlockLstProof(tx, coin)
+          : tx.object(strapId);
+      if (!strapObj) return;
+      const unstakeRes = this.unstakeStrapFountain(
+        tx,
+        collateralType,
+        strapObj,
+      );
+      if (!unstakeRes) return;
+      const [strap, reward] = unstakeRes;
+      if (!strap || !reward) return;
+
+      const collOut = this.withdraw(
+        tx,
+        collateralType,
+        `${withdrawAmount}`,
+        insertionPlace,
+        strap,
+      );
+      const proof = this.stakeStrapFountain(tx, collateralType, strap);
+      if (!proof) return;
+
+      if (isCountingPoint) {
+        this.lockProofs(tx, [{ token: coin, proof }]);
+      } else {
+        tx.transferObjects([proof], recipient);
+      }
+      tx.transferObjects(
+        [reward, coinFromBalance(tx, collateralType, collOut)],
+        tx.pure.address(recipient),
+      );
+    }
+  }
+
+  getCloseGenericTx(
+    tx: Transaction,
+    collateralType: string,
+    recipient: string,
+    isLST: boolean,
+    strapId: string,
+  ) {
+    /**
+     * @description Close position
+     * @param collateralType Asset , e.g "0x2::sui::SUI"
+     * @param recipient
+     * @param isLST
+     * @param strapId         Optional
+     */
+
+    const coin = getCoinSymbol(collateralType);
+    if (!coin) {
+      throw new Error("Collateral not supported");
+    }
+
+    const strap =
+      strapId === "locked"
+        ? this.unlockLstProof(tx, coin)
+        : tx.object(strapId);
+    if (!strap) return;
+
+    if (!isLST) {
+      this.destroyStrapFountain(tx, collateralType, strap);
+    } else {
+      const unstakeRes = this.unstakeStrapFountain(
+        tx,
+        collateralType,
+        strap,
+      );
+      if (!unstakeRes) return;
+
+      const [strapOut, reward] = unstakeRes;
+      if (!strapOut || !reward) return;
+
+      this.destroyStrapFountain(tx, collateralType, strapOut);
+      tx.transferObjects([reward], tx.pure.address(recipient));
     }
   }
 
