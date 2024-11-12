@@ -2509,7 +2509,7 @@ export class BucketClient {
     const isClose = withdrawAmount == "0" && repayAmount == "0";
 
     if (!strapId || !isLST) {
-      if (collateralType) {
+      if (isSurplus) {
         const surplusCoin = this.withdrawSurplus(tx, collateralType);
         tx.transferObjects([surplusCoin], recipient);
       } else {
