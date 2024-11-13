@@ -696,7 +696,7 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
-    } else if (token === "sUSDC" || token === "swUSDC") {
+    } else if (token === "sUSDC" || token === "swUSDC" || token === "sSUI") {
       const underlyingToke = token.slice(1) as COIN;
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
@@ -705,7 +705,7 @@ export class BucketClient {
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
           tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
-          tx.pure.u32(SUPRA_ID["wUSDC"] ?? 0),
+          tx.pure.u32(SUPRA_ID[underlyingToke] ?? 90),
         ],
       });
       const coinType = COINS_TYPE_LIST[token];
@@ -736,19 +736,19 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
-    } else if (token === "sSUI") {
-      tx.moveCall({
-        target:
-          "0x915d11320f37ddb386367dbce81154e1b4cf83e6a3039df183ac4ae78131c786::ssui_rule::update_price",
-        typeArguments: [COINS_TYPE_LIST.sSUI],
-        arguments: [
-          tx.sharedObjectRef(ORACLE_OBJECT),
-          tx.object(
-            "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b",
-          ),
-          tx.sharedObjectRef(CLOCK_OBJECT),
-        ],
-      });
+      // } else if (token === "spSUI") {
+      //   tx.moveCall({
+      //     target:
+      //       "0x915d11320f37ddb386367dbce81154e1b4cf83e6a3039df183ac4ae78131c786::ssui_rule::update_price",
+      //     typeArguments: [COINS_TYPE_LIST.spSUI],
+      //     arguments: [
+      //       tx.sharedObjectRef(ORACLE_OBJECT),
+      //       tx.object(
+      //         "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b",
+      //       ),
+      //       tx.sharedObjectRef(CLOCK_OBJECT),
+      //     ],
+      //   });
     } else {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
@@ -1096,7 +1096,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1751,7 +1751,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -2291,11 +2291,7 @@ export class BucketClient {
           tx.pure.address(recipient),
         );
 
-        const proof = this.stakeStrapFountain(
-          tx,
-          collateralType,
-          strap,
-        );
+        const proof = this.stakeStrapFountain(tx, collateralType, strap);
         if (!proof) return;
         if (isCountingPoint) {
           this.lockProofs(tx, [{ token: coin, proof }]);
@@ -2327,11 +2323,7 @@ export class BucketClient {
         );
         if (!buckBalance) return;
 
-        const proof = this.stakeStrapFountain(
-          tx,
-          collateralType,
-          strap,
-        );
+        const proof = this.stakeStrapFountain(tx, collateralType, strap);
         if (!proof) return;
 
         if (isCountingPoint) {
@@ -2547,11 +2539,7 @@ export class BucketClient {
         );
         if (!buckCoin) return;
         if (isSurplus) {
-          const surplusCoin = this.withdrawSurplus(
-            tx,
-            collateralType,
-            strap,
-          );
+          const surplusCoin = this.withdrawSurplus(tx, collateralType, strap);
           tx.transferObjects([reward, surplusCoin], recipient);
         } else {
           tx.moveCall({
@@ -2756,19 +2744,13 @@ export class BucketClient {
     }
 
     const strap =
-      strapId === "locked"
-        ? this.unlockLstProof(tx, coin)
-        : tx.object(strapId);
+      strapId === "locked" ? this.unlockLstProof(tx, coin) : tx.object(strapId);
     if (!strap) return;
 
     if (!isLST) {
       this.destroyStrapFountain(tx, collateralType, strap);
     } else {
-      const unstakeRes = this.unstakeStrapFountain(
-        tx,
-        collateralType,
-        strap,
-      );
+      const unstakeRes = this.unstakeStrapFountain(tx, collateralType, strap);
       if (!unstakeRes) return;
 
       const [strapOut, reward] = unstakeRes;
