@@ -2727,14 +2727,12 @@ export class BucketClient {
     tx: Transaction,
     collateralType: string,
     recipient: string,
-    isLST: boolean,
     strapId: string,
   ) {
     /**
      * @description Close position
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param recipient
-     * @param isLST
      * @param strapId         Optional
      */
 
@@ -2747,6 +2745,7 @@ export class BucketClient {
       strapId === "locked" ? this.unlockLstProof(tx, coin) : tx.object(strapId);
     if (!strap) return;
 
+    const isLST = collateralType in STRAP_FOUNTAIN_IDS;
     if (!isLST) {
       this.destroyStrapFountain(tx, collateralType, strap);
     } else {
