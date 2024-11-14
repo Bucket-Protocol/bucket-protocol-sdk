@@ -53,8 +53,9 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC",
   swUSDC:
     "0xad4d71551d31092230db1fd482008ea42867dbf27b286e9c70a79d2a6191d58d::scallop_wormhole_usdc::SCALLOP_WORMHOLE_USDC",
-  sSUI:
-    "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
+  sSUI: "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI",
+  // spSUI:
+  //   "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -84,6 +85,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   sUSDC: 6,
   swUSDC: 6,
   sSUI: 9,
+  // spSUI: 9,
 
   sBUCK: 9,
 
@@ -145,6 +147,7 @@ export const SUPRA_PRICE_FEEDS = {
 export const SUPRA_ID: Record<string, number> = {
   USDT: 48,
   wUSDC: 89,
+  USDC: 89,
   // WBTC: 18,
   WETH: 19,
   SUI: 90,
@@ -377,6 +380,13 @@ export const STRAP_FOUNTAIN_IDS: Partial<
     objectId:
       "0xec596ccd29fee021f22c69147d75836d07d97823d0c9bf95ef40de9eccef4b55",
     initialSharedVersion: "406217068",
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
+  },
+  sSUI: {
+    objectId:
+      "0xb818acbf6f2d2c5f18e2c30d3d0ca477dbdfb4d5f5a54e44dd1ac88b9b33a66a",
+    initialSharedVersion: "411503873",
     mutable: true,
     rewardType: COINS_TYPE_LIST.SCA,
   },
