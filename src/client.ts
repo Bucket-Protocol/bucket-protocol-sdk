@@ -60,13 +60,13 @@ import {
   BUCKET_POINT_PACKAGE_ID,
   BUCKET_POINT_CONFIG_OBJ,
   LOCKER_MAP,
-  LstToken,
   LOCKER_TABLE,
   SCABLE_VAULTS,
-  ScableToken,
-  SUSDC_PRICE_FEED_OBJECT_ID,
-  SWUSDC_PRICE_FEED_OBJECT_ID,
-  SSUI_LIQUID_STAKING_OBJECT_ID,
+  SCA_USDC_PRICE_FEED_OBJECT_ID,
+  SCA_SUI_PRICE_FEED_OBJECT_ID,
+  SCA_WUSDC_PRICE_FEED_OBJECT_ID,
+  LOCK_COINS,
+  // SSUI_LIQUID_STAKING_OBJECT_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -97,8 +97,8 @@ import {
   PsmBalanceResponse,
   AprResponse,
   ProofObject,
-  ScallopUsdcResponse,
-  SsuiLiquidStakingResponse,
+  ScallopPriceFeedResponse,
+  ScableCoin,
 } from "./types";
 import {
   U64FromBytes,
@@ -1096,7 +1096,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1575,10 +1575,9 @@ export class BucketClient {
     }
 
     // Get locked positions
-    const lpTokens: LstToken[] = ["afSUI", "haSUI", "vSUI"];
-    for (const lpToken of lpTokens) {
+    for (const coin of LOCK_COINS) {
       const res = await this.client.getDynamicFieldObject({
-        parentId: LOCKER_TABLE[lpToken],
+        parentId: LOCKER_TABLE[coin],
         name: {
           type: "address",
           value: address,
@@ -1592,7 +1591,7 @@ export class BucketClient {
       if (!strapAddress) continue;
 
       const lstFountain = await this.getStakeProofFountain(
-        STRAP_FOUNTAIN_IDS[lpToken]?.objectId as string,
+        STRAP_FOUNTAIN_IDS[coin]?.objectId as string,
       );
       const strapRes = await this.client.getDynamicFieldObject({
         parentId: lstFountain.strapId,
@@ -1603,7 +1602,7 @@ export class BucketClient {
       });
       const strapData = getObjectFields(strapRes);
       if (!strapData) continue;
-      const bottleInfo = bottleIdList.find((info) => info.name === lpToken);
+      const bottleInfo = bottleIdList.find((info) => info.name === coin);
       if (!bottleInfo) continue;
       const bottleRes = await this.client.getDynamicFieldObject({
         parentId: bottleInfo.id,
@@ -1615,7 +1614,7 @@ export class BucketClient {
       const bottleData = getObjectFields(bottleRes);
       if (bottleData) {
         userBottles.push({
-          token: lpToken,
+          token: coin,
           strapId: strapData.value.fields.strap.fields.id.id,
           debtAmount: Number(strapData.value.fields.debt_amount),
           startUnit: Number(strapData.value.fields.start_unit),
@@ -1635,7 +1634,7 @@ export class BucketClient {
         const surplusData = getObjectFields(surplusBottleRes);
         if (surplusData) {
           userBottles.push({
-            token: lpToken,
+            token: coin,
             strapId: strapData.value.fields.strap.fields.id.id,
             debtAmount: Number(strapData.value.fields.debt_amount),
             startUnit: Number(strapData.value.fields.start_unit),
@@ -1645,7 +1644,7 @@ export class BucketClient {
           });
         } else {
           userBottles.push({
-            token: lpToken,
+            token: coin,
             strapId: strapData.value.fields.strap.fields.id.id,
             debtAmount: 0,
             startUnit: Number(strapData.value.fields.start_unit),
@@ -1751,7 +1750,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -1982,12 +1981,14 @@ export class BucketClient {
     /**
      * @description Get all prices
      */
-    const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
-      SBUCK_FLASK_OBJECT_ID,
-      SUSDC_PRICE_FEED_OBJECT_ID,
-      SWUSDC_PRICE_FEED_OBJECT_ID,
-      SSUI_LIQUID_STAKING_OBJECT_ID,
-    ]);
+    const ids = Object.values(SUPRA_PRICE_FEEDS)
+      .concat([
+        SBUCK_FLASK_OBJECT_ID,
+        SCA_USDC_PRICE_FEED_OBJECT_ID,
+        SCA_WUSDC_PRICE_FEED_OBJECT_ID,
+        SCA_SUI_PRICE_FEED_OBJECT_ID,
+        // SSUI_LIQUID_STAKING_OBJECT_ID,
+      ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
       {
@@ -2026,7 +2027,6 @@ export class BucketClient {
       STAPEARL: 1,
     };
 
-    let sSuiRate = 0;
     priceObjects.map((res, index) => {
       const objectId = res.data?.objectId;
       if (objectId == SBUCK_FLASK_OBJECT_ID) {
@@ -2035,24 +2035,30 @@ export class BucketClient {
         const sBuckSupply = priceFeed.sbuck_supply.fields.value;
         const price = Number(reserves) / Number(sBuckSupply);
         prices["sBUCK"] = price;
-      } else if (objectId == SUSDC_PRICE_FEED_OBJECT_ID) {
-        const priceFeed = getObjectFields(res) as ScallopUsdcResponse;
+      } else if (objectId == SCA_USDC_PRICE_FEED_OBJECT_ID) {
+        const priceFeed = getObjectFields(res) as ScallopPriceFeedResponse;
         const price = Number(priceFeed.price) / Number(priceFeed.precision);
         prices["sUSDC"] = price;
-      } else if (objectId == SWUSDC_PRICE_FEED_OBJECT_ID) {
-        const priceFeed = getObjectFields(res) as ScallopUsdcResponse;
+      } else if (objectId == SCA_WUSDC_PRICE_FEED_OBJECT_ID) {
+        const priceFeed = getObjectFields(res) as ScallopPriceFeedResponse;
         const price = Number(priceFeed.price) / Number(priceFeed.precision);
         prices["swUSDC"] = price;
-      } else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
-        const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
+      } else if (objectId == SCA_SUI_PRICE_FEED_OBJECT_ID) {
+        const priceFeed = getObjectFields(res) as ScallopPriceFeedResponse;
+        const price = Number(priceFeed.price) / Number(priceFeed.precision);
+        prices["sSUI"] = price;
+      }
+      // else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
+      //   const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
 
-        const totalSuiSupply =
-          Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
-        const totalLstSupply =
-          Number(resp.lst_treasury_cap.fields.total_supply.fields.value) /
-          10 ** 9;
-        sSuiRate = totalSuiSupply / totalLstSupply;
-      } else {
+      //   const totalSuiSupply =
+      //     Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
+      //   const totalLstSupply =
+      //     Number(resp.lst_treasury_cap.fields.total_supply.fields.value) /
+      //     10 ** 9;
+      //   sSuiRate = totalSuiSupply / totalLstSupply;
+      // }
+      else {
         const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
         const priceBn = priceFeed.value.fields.value;
         const decimals = priceFeed.value.fields.decimal;
@@ -2084,8 +2090,7 @@ export class BucketClient {
       }
     });
 
-    prices["sSUI"] = (prices["SUI"] ?? 1) * sSuiRate;
-    console.log(sSuiRate);
+    prices["sSUI"] = (prices["SUI"] ?? 1) * prices["sSUI"];
 
     return prices;
   }
@@ -2871,7 +2876,7 @@ export class BucketClient {
         arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), inputCoinBalance],
       });
       const outCoin = coinFromBalance(tx, COINS_TYPE_LIST.SCABLE, outBalance);
-      const vaultObj = SCABLE_VAULTS[getCoinSymbol(outCoinType) as ScableToken];
+      const vaultObj = SCABLE_VAULTS[getCoinSymbol(outCoinType) as ScableCoin];
       if (!vaultObj) throw new Error("Unspported PSM type");
       const treasuryObj = tx.sharedObjectRef({
         objectId:

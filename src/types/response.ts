@@ -190,7 +190,7 @@ export type SBUCKFlaskResponse = {
   }
 };
 
-export type ScallopUsdcResponse = {
+export type ScallopPriceFeedResponse = {
   id: {
     id: string;
   };
