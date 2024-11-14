@@ -2212,8 +2212,6 @@ export class BucketClient {
     collateralAmount: string,
     borrowAmount: string,
     recipient: string,
-    isLST: boolean,
-    isCountingPoint: boolean,
     insertionPlace?: string,
     strapId?: string,
   ) {
@@ -2223,8 +2221,6 @@ export class BucketClient {
      * @param collateralAmount
      * @param borrowAmount
      * @param recipient
-     * @param isLST
-     * @param isCountingPoint
      * @param insertionPlace  Optional
      * @param strapId         Optional
      */
@@ -2234,6 +2230,8 @@ export class BucketClient {
       throw new Error("Collateral not supported");
     }
 
+    const isLST = collateralType in STRAP_FOUNTAIN_IDS;
+    const isCountingPoint = collateralType in LOCKER_MAP;
     if (!strapId || !isLST) {
       const collInputCoin = await getInputCoins(
         tx,
@@ -2479,8 +2477,6 @@ export class BucketClient {
     repayAmount: string,
     withdrawAmount: string,
     recipient: string,
-    isLST: boolean,
-    isCountingPoint: boolean,
     isSurplus: boolean,
     insertionPlace?: string,
     strapId?: string,
@@ -2491,8 +2487,6 @@ export class BucketClient {
      * @param repayAmount
      * @param withdrawAmount
      * @param recipient
-     * @param isLST
-     * @param isCountingPoint
      * @param isSurplus
      * @param insertionPlace  Optional
      * @param strapId         Optional
@@ -2504,6 +2498,8 @@ export class BucketClient {
     }
 
     const isClose = withdrawAmount == "0" && repayAmount == "0";
+    const isLST = collateralType in STRAP_FOUNTAIN_IDS;
+    const isCountingPoint = collateralType in LOCKER_MAP;
 
     if (!strapId || !isLST) {
       if (isSurplus) {
@@ -2656,8 +2652,6 @@ export class BucketClient {
     collateralType: string,
     withdrawAmount: string,
     recipient: string,
-    isLST: boolean,
-    isCountingPoint: boolean,
     insertionPlace?: string,
     strapId?: string,
   ) {
@@ -2666,8 +2660,6 @@ export class BucketClient {
      * @param collateralType Asset , e.g "0x2::sui::SUI"
      * @param withdrawAmount
      * @param recipient
-     * @param isLST
-     * @param isCountingPoint
      * @param insertionPlace  Optional
      * @param strapId         Optional
      */
@@ -2678,6 +2670,9 @@ export class BucketClient {
     }
 
     this.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? "");
+
+    const isLST = collateralType in STRAP_FOUNTAIN_IDS;
+    const isCountingPoint = collateralType in LOCKER_MAP;
 
     if (!strapId || !isLST) {
       const collOut = this.withdraw(
