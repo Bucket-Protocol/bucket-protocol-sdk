@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { BucketClient } from '../../src';
+import { BucketClient, COINS_TYPE_LIST } from '../../src';
 
 describe('Interacting with Bucket Client on mainnet', () => {
 
@@ -73,6 +73,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
             `0x44529d74a43073c40963fe42c8d2e51d8a441d480ee105ea0c27f3847433ae21`,
             1,
             50,
+            COINS_TYPE_LIST.SUI,
         );
         expect(owner).toBeDefined;
     }, {

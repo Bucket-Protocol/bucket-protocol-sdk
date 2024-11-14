@@ -4,7 +4,6 @@ export const LOCK_COINS: LockupCoin[] = [
   "afSUI",
   "haSUI",
   "vSUI",
-  "sBUCK",
 ]
 
 export const BUCKET_POINT_PACKAGE_ID =
@@ -44,9 +43,8 @@ export const LOCKER_MAP: Record<LockupCoin, SharedObjectRef> = {
   },
 };
 
-export const LOCKER_TABLE: Record<LockupCoin, string> = {
+export const LOCKER_TABLE: Partial<Record<LockupCoin, string>> = {
   afSUI: "0x95d0d20ab42f78f75a7d63513ed60415b9dcb41c58ef493a7a69b531b212e713",
   haSUI: "0x3674f3183780166553d42174d02229c679e431b9a5911d02a28271a8fd9abd88",
   vSUI: "0x502760cac10dd4fae78672c1e27bc0e5cdbae449aa2b15dbfb72434af33cb8f6",
-  sBUCK: "",
 };

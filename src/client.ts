@@ -1474,14 +1474,7 @@ export class BucketClient {
       let debtAmount = 0;
 
       if (bottleStrapIds.length > 0) {
-        if (
-          (token == "afSUI" ||
-            token == "vSUI" ||
-            token == "haSUI" ||
-            token == "SCA" ||
-            token == "sUSDC") &&
-          STRAP_FOUNTAIN_IDS[token]
-        ) {
+        if (token in STRAP_FOUNTAIN_IDS) {
           try {
             const lstFountain = await this.getStakeProofFountain(
               STRAP_FOUNTAIN_IDS[token]?.objectId as string,
@@ -1577,7 +1570,7 @@ export class BucketClient {
     // Get locked positions
     for (const coin of LOCK_COINS) {
       const res = await this.client.getDynamicFieldObject({
-        parentId: LOCKER_TABLE[coin],
+        parentId: LOCKER_TABLE[coin] as string,
         name: {
           type: "address",
           value: address,
