@@ -383,6 +383,13 @@ export const STRAP_FOUNTAIN_IDS: Partial<
     mutable: true,
     rewardType: COINS_TYPE_LIST.SCA,
   },
+  sSUI: {
+    objectId:
+      "0xb818acbf6f2d2c5f18e2c30d3d0ca477dbdfb4d5f5a54e44dd1ac88b9b33a66a",
+    initialSharedVersion: "411503873",
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
+  },
 };
 
 export const STRAP_TYPE_ID =
