@@ -62,9 +62,6 @@ import {
   LOCKER_MAP,
   LOCKER_TABLE,
   SCABLE_VAULTS,
-  SCA_USDC_PRICE_FEED_OBJECT_ID,
-  SCA_SUI_PRICE_FEED_OBJECT_ID,
-  SCA_WUSDC_PRICE_FEED_OBJECT_ID,
   LOCK_COINS,
   // SSUI_LIQUID_STAKING_OBJECT_ID,
 } from "./constants";
@@ -97,7 +94,6 @@ import {
   PsmBalanceResponse,
   AprResponse,
   ProofObject,
-  ScallopPriceFeedResponse,
   ScableCoin,
 } from "./types";
 import {
@@ -1977,10 +1973,6 @@ export class BucketClient {
     const ids = Object.values(SUPRA_PRICE_FEEDS)
       .concat([
         SBUCK_FLASK_OBJECT_ID,
-        SCA_USDC_PRICE_FEED_OBJECT_ID,
-        SCA_WUSDC_PRICE_FEED_OBJECT_ID,
-        SCA_SUI_PRICE_FEED_OBJECT_ID,
-        // SSUI_LIQUID_STAKING_OBJECT_ID,
       ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
@@ -2000,7 +1992,6 @@ export class BucketClient {
       vSUI: 0,
       afSUI: 0,
       haSUI: 0,
-      sSUI: 0,
       SCA: 0,
       CETUS: 0,
       NAVX: 0,
@@ -2010,8 +2001,6 @@ export class BucketClient {
       sBUCK: 1,
       USDC: 1,
       wUSDC: 1,
-      sUSDC: 1,
-      swUSDC: 1,
       USDT: 1,
       USDY: 1,
       AUSD: 1,
@@ -2028,18 +2017,6 @@ export class BucketClient {
         const sBuckSupply = priceFeed.sbuck_supply.fields.value;
         const price = Number(reserves) / Number(sBuckSupply);
         prices["sBUCK"] = price;
-      } else if (objectId == SCA_USDC_PRICE_FEED_OBJECT_ID) {
-        const priceFeed = getObjectFields(res) as ScallopPriceFeedResponse;
-        const price = Number(priceFeed.price) / Number(priceFeed.precision);
-        prices["sUSDC"] = price;
-      } else if (objectId == SCA_WUSDC_PRICE_FEED_OBJECT_ID) {
-        const priceFeed = getObjectFields(res) as ScallopPriceFeedResponse;
-        const price = Number(priceFeed.price) / Number(priceFeed.precision);
-        prices["swUSDC"] = price;
-      } else if (objectId == SCA_SUI_PRICE_FEED_OBJECT_ID) {
-        const priceFeed = getObjectFields(res) as ScallopPriceFeedResponse;
-        const price = Number(priceFeed.price) / Number(priceFeed.precision);
-        prices["sSUI"] = price;
       }
       // else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
       //   const resp = getObjectFields(res) as SsuiLiquidStakingResponse;

@@ -215,10 +215,6 @@ export const SBUCK_APR_OBJECT_ID =
 export const SSUI_LIQUID_STAKING_OBJECT_ID =
   "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b";
 
-export const SCA_USDC_PRICE_FEED_OBJECT_ID = "0xe83dae90d004e07db82186fd7d2ebb216f161977da5d78ca5cf7778ff56a2bf5";
-export const SCA_WUSDC_PRICE_FEED_OBJECT_ID = "0x8ddfb53b381fdeb95b0923c6c827582e9f5a64dcad3fb3b0b55ae11a0a144ed2";
-export const SCA_SUI_PRICE_FEED_OBJECT_ID = "0xaa91d69d041c3b803fae92d4efd6d1e98742ead6c4e5d06b6aa5ba0575a35ff6";
-
 export const SCABLE_VAULTS: Record<ScableCoin, SharedObjectRef> = {
   wUSDC: {
     objectId:
