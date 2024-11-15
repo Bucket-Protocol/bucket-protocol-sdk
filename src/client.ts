@@ -2223,8 +2223,8 @@ export class BucketClient {
       throw new Error("Collateral not supported");
     }
 
-    const isLST = collateralType in STRAP_FOUNTAIN_IDS;
-    const isCountingPoint = collateralType in LOCKER_MAP;
+    const isLST = coin in STRAP_FOUNTAIN_IDS;
+    const isCountingPoint = coin in LOCKER_MAP;
     if (!strapId || !isLST) {
       const collInputCoin = await getInputCoins(
         tx,
@@ -2491,8 +2491,8 @@ export class BucketClient {
     }
 
     const isClose = withdrawAmount == "0" && repayAmount == "0";
-    const isLST = collateralType in STRAP_FOUNTAIN_IDS;
-    const isCountingPoint = collateralType in LOCKER_MAP;
+    const isLST = coin in STRAP_FOUNTAIN_IDS;
+    const isCountingPoint = coin in LOCKER_MAP;
 
     if (!strapId || !isLST) {
       if (isSurplus) {
@@ -2664,8 +2664,8 @@ export class BucketClient {
 
     this.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? "");
 
-    const isLST = collateralType in STRAP_FOUNTAIN_IDS;
-    const isCountingPoint = collateralType in LOCKER_MAP;
+    const isLST = coin in STRAP_FOUNTAIN_IDS;
+    const isCountingPoint = coin in LOCKER_MAP;
 
     if (!strapId || !isLST) {
       const collOut = this.withdraw(
@@ -2738,7 +2738,7 @@ export class BucketClient {
       strapId === "locked" ? this.unlockLstProof(tx, coin) : tx.object(strapId);
     if (!strap) return;
 
-    const isLST = collateralType in STRAP_FOUNTAIN_IDS;
+    const isLST = coin in STRAP_FOUNTAIN_IDS;
     if (!isLST) {
       this.destroyStrapFountain(tx, collateralType, strap);
     } else {
