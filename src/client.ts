@@ -63,6 +63,7 @@ import {
   LOCKER_TABLE,
   SCABLE_VAULTS,
   LOCK_COINS,
+  SSUI_LIQUID_STAKING_OBJECT_ID,
   // SSUI_LIQUID_STAKING_OBJECT_ID,
 } from "./constants";
 import {
@@ -95,6 +96,7 @@ import {
   AprResponse,
   ProofObject,
   ScableCoin,
+  SsuiLiquidStakingResponse,
 } from "./types";
 import {
   U64FromBytes,
@@ -732,19 +734,19 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
-      // } else if (token === "spSUI") {
-      //   tx.moveCall({
-      //     target:
-      //       "0x915d11320f37ddb386367dbce81154e1b4cf83e6a3039df183ac4ae78131c786::ssui_rule::update_price",
-      //     typeArguments: [COINS_TYPE_LIST.spSUI],
-      //     arguments: [
-      //       tx.sharedObjectRef(ORACLE_OBJECT),
-      //       tx.object(
-      //         "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b",
-      //       ),
-      //       tx.sharedObjectRef(CLOCK_OBJECT),
-      //     ],
-      //   });
+    } else if (token === "spSUI") {
+      tx.moveCall({
+        target:
+          "0x915d11320f37ddb386367dbce81154e1b4cf83e6a3039df183ac4ae78131c786::ssui_rule::update_price",
+        typeArguments: [COINS_TYPE_LIST.spSUI],
+        arguments: [
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.object(
+            "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b",
+          ),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+        ],
+      });
     } else {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
@@ -1973,6 +1975,7 @@ export class BucketClient {
     const ids = Object.values(SUPRA_PRICE_FEEDS)
       .concat([
         SBUCK_FLASK_OBJECT_ID,
+        SSUI_LIQUID_STAKING_OBJECT_ID,
       ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
@@ -1996,6 +1999,7 @@ export class BucketClient {
       CETUS: 0,
       NAVX: 0,
       WETH: 0,
+      spSUI: 0,
 
       BUCK: 1,
       sBUCK: 1,
@@ -2009,6 +2013,8 @@ export class BucketClient {
       STAPEARL: 1,
     };
 
+    let spSuiRate = 0;
+
     priceObjects.map((res, index) => {
       const objectId = res.data?.objectId;
       if (objectId == SBUCK_FLASK_OBJECT_ID) {
@@ -2018,16 +2024,16 @@ export class BucketClient {
         const price = Number(reserves) / Number(sBuckSupply);
         prices["sBUCK"] = price;
       }
-      // else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
-      //   const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
+      else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
+        const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
 
-      //   const totalSuiSupply =
-      //     Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
-      //   const totalLstSupply =
-      //     Number(resp.lst_treasury_cap.fields.total_supply.fields.value) /
-      //     10 ** 9;
-      //   sSuiRate = totalSuiSupply / totalLstSupply;
-      // }
+        const totalSuiSupply =
+          Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
+        const totalLstSupply =
+          Number(resp.lst_treasury_cap.fields.total_supply.fields.value) /
+          10 ** 9;
+        spSuiRate = totalSuiSupply / totalLstSupply;
+      }
       else {
         const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
         const priceBn = priceFeed.value.fields.value;
@@ -2060,8 +2066,7 @@ export class BucketClient {
       }
     });
 
-    prices["sSUI"] = (prices["SUI"] ?? 1) * prices["sSUI"];
-
+    prices["spSUI"] = (prices["SUI"] ?? 1) * spSuiRate;
     return prices;
   }
 

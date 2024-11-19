@@ -26,8 +26,8 @@ export type COIN =
   | "SCA"
   | "sUSDC"
   | "swUSDC"
-  // | "spSUI"
-  | "sSUI";
+  | "sSUI"
+  | "spSUI";
 
 export type LstCoin = "afSUI" | "haSUI" | "vSUI";
 

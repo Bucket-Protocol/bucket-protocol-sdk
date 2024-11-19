@@ -8,8 +8,20 @@ export const CONTRIBUTOR_TOKEN_ID =
   "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2";
 export const CORE_PACKAGE_ID =
   "0xb71c0893203d0f59622fc3fac849d0833de559d7503af21c5daf880d60d754ed";
+export const FOUNTAIN_PERIHERY_PACKAGE_ID =
+  "0x440ea4d7679c0fbf4a8a7f98ba1a44ac60fe268f767a4531f1a6843a482194bc";
+
+export const FOUNTAIN_PACKAGE_ID =
+  "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";
+
+export const KRIYA_FOUNTAIN_PACKAGE_ID =
+  "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
+
 export const STRAP_FOUNTAIN_PACKAGE_ID =
   "0x563bab87935fc27517a505c3ba8f7603b80b232de6abf24c71363773c930f70d";
+
+export const SBUCK_FOUNTAIN_PACKAGE_ID =
+  "0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82";
 
 export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   BUCKETUS:
@@ -71,9 +83,6 @@ export const FLASK_OBJECT = {
   mutable: true,
   initialSharedVersion: 90706194,
 };
-
-export const FOUNTAIN_PERIHERY_PACKAGE_ID =
-  "0x440ea4d7679c0fbf4a8a7f98ba1a44ac60fe268f767a4531f1a6843a482194bc";
 
 export const CETUS_SUI_BUCK_LP_REGISTRY_ID =
   "0x7778d68f02810b2c002b6f40084c5f3fe0b1bcc7d7a7c64d72ba40ff9a815bac";
@@ -196,15 +205,6 @@ export const BUCKETUS_LP_VAULT_05 = {
   initialSharedVersion: 75359688,
   mutable: true,
 };
-
-export const FOUNTAIN_PACKAGE_ID =
-  "0x8f16cb934fa0c4ad403ac3fddaab8585a642f2073a47a32215a77448c3e353c6";
-
-export const KRIYA_FOUNTAIN_PACKAGE_ID =
-  "0x3daf65b7356c560bd5bdd989aa2526e38a8e1d0b34c653b93fd65fa9bedc8dc0";
-
-export const SBUCK_FOUNTAIN_PACKAGE_ID =
-  "0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82";
 
 export const SBUCK_FLASK_OBJECT_ID =
   "0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8";
