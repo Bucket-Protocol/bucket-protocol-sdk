@@ -30,7 +30,7 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   STAPEARL:
     "0xccdaf635eb1c419dc5ab813cc64c728a9f5a851202769e254f348bff51f9a6dc",
   wUSDC: "0x0c2e5fbfeb5caa4c2f7c8645ffe9eca7e3c783536efef859be03146b235f9e04",
-  USDT: "0x607e7d386e29066b964934e0eb1daa084538a79b5707c34f38e190d64e24923e",
+  wUSDT: "0x607e7d386e29066b964934e0eb1daa084538a79b5707c34f38e190d64e24923e",
   USDCbnb: "0x973c51875b3fb9c8cf5d8ec4aeac83fddaacb88c17960fd5258d8fa38bc4dd82",
   USDCsol: "0x596d696153f405cdee285a0da122c8c9a4cf6c883298aaf9bec1149e0909e168",
   USDCpol: "0x741ec9190953ee9eaa1b92b2285f15a0c7068bac2e591bfa5f7f596a75ada351",
@@ -41,7 +41,7 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
 
 export const PSM_BALANCE_IDS: Record<string, string> = {
   wUSDC: "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
-  USDT: "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
+  wUSDT: "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
   USDC: "0xdf91ef19f6038e662e9c89f111ffe19e808cdfb891d080208d15141932f9513b",
 };
 
@@ -222,7 +222,7 @@ export const SCABLE_VAULTS: Record<ScableCoin, SharedObjectRef> = {
     initialSharedVersion: "272980432",
     mutable: true,
   },
-  USDT: {
+  wUSDT: {
     objectId:
       "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
     initialSharedVersion: "272980433",

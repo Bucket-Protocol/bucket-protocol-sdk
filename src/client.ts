@@ -2015,7 +2015,7 @@ export class BucketClient {
       sBUCK: 1,
       USDC: 1,
       wUSDC: 1,
-      USDT: 1,
+      wUSDT: 1,
       USDY: 1,
       AUSD: 1,
       BUCKETUS: 1,
@@ -2051,7 +2051,7 @@ export class BucketClient {
         if (objectNameList[index] == "usdc_usd") {
           prices["wUSDC"] = price;
         } else if (objectNameList[index] == "usdt_usd") {
-          prices["USDT"] = price;
+          prices["wUSDT"] = price;
         } else if (objectNameList[index] == "usdy_usd") {
           prices["USDY"] = price;
         } else if (objectNameList[index] == "navx_usd") {
@@ -2061,9 +2061,9 @@ export class BucketClient {
         } else if (objectNameList[index] == "sca_usd") {
           prices["SCA"] = price;
         } else if (objectNameList[index] == "eth_usdt") {
-          prices["WETH"] = (prices["USDT"] ?? 1) * price;
+          prices["WETH"] = (prices["wUSDT"] ?? 1) * price;
         } else if (objectNameList[index] == "sui_usdt") {
-          prices["SUI"] = (prices["USDT"] ?? 1) * price;
+          prices["SUI"] = (prices["wUSDT"] ?? 1) * price;
         } else if (objectNameList[index] == "vsui_sui") {
           prices["vSUI"] = (prices["SUI"] ?? 1) * price;
         } else if (objectNameList[index] == "hasui_sui") {
@@ -2465,7 +2465,7 @@ export class BucketClient {
       });
     } else if (
       outCoinType === COINS_TYPE_LIST.wUSDC ||
-      outCoinType === COINS_TYPE_LIST.USDT ||
+      outCoinType === COINS_TYPE_LIST.wUSDT ||
       outCoinType === COINS_TYPE_LIST.USDC
     ) {
       const outBalance = tx.moveCall({

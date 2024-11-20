@@ -23,7 +23,7 @@ export const SUPRA_PRICE_FEEDS = {
 };
 
 export const SUPRA_ID: Record<string, number> = {
-  USDT: 48,
+  wUSDT: 48,
   wUSDC: 89,
   USDC: 89,
   // WBTC: 18,
