@@ -46,7 +46,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   swUSDC:
     "0xad4d71551d31092230db1fd482008ea42867dbf27b286e9c70a79d2a6191d58d::scallop_wormhole_usdc::SCALLOP_WORMHOLE_USDC",
   swUSDT: "0xe6e5a012ec20a49a3d1d57bd2b67140b96cd4d3400b9d79e541f7bdbab661f95::scallop_wormhole_usdt::SCALLOP_WORMHOLE_USDT",
-  ssbETH: "0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH",
+  sSBETH: "0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH",
 
   spSUI:
     "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
@@ -84,7 +84,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   sSUI: 9,
   sSCA: 9,
   swUSDT: 6,
-  ssbETH: 8,
+  sSBETH: 8,
 
   AF_LP_USDC_BUCK: 9,
   AF_LP_SUI_BUCK: 9,
