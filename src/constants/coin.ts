@@ -38,11 +38,16 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   CETUS:
     "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
   AUSD: "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
+  
+  sSUI: "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI",
+  sSCA: "0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA",
   sUSDC:
     "0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC",
   swUSDC:
     "0xad4d71551d31092230db1fd482008ea42867dbf27b286e9c70a79d2a6191d58d::scallop_wormhole_usdc::SCALLOP_WORMHOLE_USDC",
-  sSUI: "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI",
+  swUSDT: "0xe6e5a012ec20a49a3d1d57bd2b67140b96cd4d3400b9d79e541f7bdbab661f95::scallop_wormhole_usdt::SCALLOP_WORMHOLE_USDT",
+  ssbETH: "0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH",
+
   spSUI:
     "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
 
@@ -71,12 +76,15 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   CETUS: 9,
   SCABLE: 6,
   AUSD: 6,
+  spSUI: 9,
+  sBUCK: 9,
+
   sUSDC: 6,
   swUSDC: 6,
   sSUI: 9,
-  spSUI: 9,
-
-  sBUCK: 9,
+  sSCA: 9,
+  swUSDT: 6,
+  ssbETH: 8,
 
   AF_LP_USDC_BUCK: 9,
   AF_LP_SUI_BUCK: 9,

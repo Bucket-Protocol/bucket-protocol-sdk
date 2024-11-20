@@ -60,7 +60,7 @@ export const STRAP_FOUNTAIN_IDS: Partial<
     mutable: true,
     rewardType: COINS_TYPE_LIST.SCA,
   },
-  sUSDT: {
+  swUSDT: {
     objectId:
       "0x77299d4b0ae5b44c6a300721db6fb989b9ac53008cb71fab932f1b6b6ea923c7",
     initialSharedVersion: "421697129",

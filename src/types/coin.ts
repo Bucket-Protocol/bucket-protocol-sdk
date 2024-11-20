@@ -29,7 +29,7 @@ export type COIN =
   | "swUSDC"
   | "sSUI"
   | "sSCA"
-  | "sUSDT"
+  | "swUSDT"
   | "ssbETH"
   //
   | "spSUI";
@@ -40,4 +40,4 @@ export type ScableCoin = "wUSDC" | "USDT" | "USDC";
 
 export type LockupCoin = "afSUI" | "haSUI" | "vSUI" | "sBUCK";
 
-export type ScallopCoin = "sUSDC" | "swUSDC" | "sSUI";
+export type ScallopCoin = "sUSDC" | "swUSDC" | "sSUI" | "sSCA" | "swUSDT" | "ssbETH";

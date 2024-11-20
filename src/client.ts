@@ -698,11 +698,11 @@ export class BucketClient {
         ],
       });
     } else if (
-      token === "sUSDC" ||
-      token === "swUSDC" ||
       token === "sSUI" ||
       token === "sSCA" ||
-      token === "sUSDT" ||
+      token === "sUSDC" ||
+      token === "swUSDC" ||
+      token === "swUSDT" ||
       token === "ssbETH"
     ) {
       const underlyingToke =
@@ -1105,7 +1105,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1752,7 +1752,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
