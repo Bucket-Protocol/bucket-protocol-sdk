@@ -53,4 +53,25 @@ export const STRAP_FOUNTAIN_IDS: Partial<
     mutable: true,
     rewardType: COINS_TYPE_LIST.SCA,
   },
+  sSCA: {
+    objectId:
+      "0x209a9ef3b719895329eb9ae9311c39e35e89c278593cc3068a7862b48b9f2517",
+    initialSharedVersion: "421697128",
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
+  },
+  sUSDT: {
+    objectId:
+      "0x77299d4b0ae5b44c6a300721db6fb989b9ac53008cb71fab932f1b6b6ea923c7",
+    initialSharedVersion: "421697129",
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
+  },
+  ssbETH: {
+    objectId:
+      "0x4ef5c215794459c8a230fb754ed7b58c4ecdb94ec04abe10d819fa5c5ddd7c14",
+    initialSharedVersion: "421697130",
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
+  },
 };

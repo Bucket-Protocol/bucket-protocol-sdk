@@ -23,10 +23,15 @@ export type COIN =
   | "CETUS"
   | "AUSD"
   | "USDC"
+  // scallop
   | "SCA"
   | "sUSDC"
   | "swUSDC"
   | "sSUI"
+  | "sSCA"
+  | "sUSDT"
+  | "ssbETH"
+  //
   | "spSUI";
 
 export type LstCoin = "afSUI" | "haSUI" | "vSUI";
