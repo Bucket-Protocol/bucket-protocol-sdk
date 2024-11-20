@@ -697,8 +697,16 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
-    } else if (token === "sUSDC" || token === "swUSDC" || token === "sSUI") {
-      const underlyingToke = token.slice(1) as COIN;
+    } else if (
+      token === "sUSDC" ||
+      token === "swUSDC" ||
+      token === "sSUI" ||
+      token === "sSCA" ||
+      token === "sUSDT" ||
+      token === "ssbETH"
+    ) {
+      const underlyingToke =
+        token === "ssbETH" ? "WETH" : (token.slice(1) as COIN);
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
         typeArguments: [COINS_TYPE_LIST[underlyingToke]],
@@ -1097,7 +1105,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1744,7 +1752,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -1975,11 +1983,10 @@ export class BucketClient {
     /**
      * @description Get all prices
      */
-    const ids = Object.values(SUPRA_PRICE_FEEDS)
-      .concat([
-        SBUCK_FLASK_OBJECT_ID,
-        SSUI_LIQUID_STAKING_OBJECT_ID,
-      ]);
+    const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
+      SBUCK_FLASK_OBJECT_ID,
+      SSUI_LIQUID_STAKING_OBJECT_ID,
+    ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
       {
@@ -2026,8 +2033,7 @@ export class BucketClient {
         const sBuckSupply = priceFeed.sbuck_supply.fields.value;
         const price = Number(reserves) / Number(sBuckSupply);
         prices["sBUCK"] = price;
-      }
-      else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
+      } else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
         const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
 
         const totalSuiSupply =
@@ -2036,8 +2042,7 @@ export class BucketClient {
           Number(resp.lst_treasury_cap.fields.total_supply.fields.value) /
           10 ** 9;
         spSuiRate = totalSuiSupply / totalLstSupply;
-      }
-      else {
+      } else {
         const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
         const priceBn = priceFeed.value.fields.value;
         const decimals = priceFeed.value.fields.decimal;
