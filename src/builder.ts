@@ -674,7 +674,7 @@ export async function buildSBUCKDepositTx(
   );
 
   let buckCoin;
-  if (depositType === "BUCK") {
+  if (coin === "BUCK") {
     buckCoin = inputCoin;
   } else {
     // PSM to BUCK
