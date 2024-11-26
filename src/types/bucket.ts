@@ -128,3 +128,15 @@ export type ProofObject = {
   token: string;
   proof: TransactionArgument | string;
 };
+
+export type BottlePage = {
+  bottles: Bottle[];
+  nextCursor: string | null;
+};
+
+export type Bottle = {
+  debtor: string;
+  collAmount: number;
+  debtAmount: number;
+  ncr: number;
+};

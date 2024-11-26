@@ -1,9 +1,6 @@
-import { SuiClient } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
-import { bcs } from "@mysten/sui/bcs";
-
-import { BucketInfo } from "../types";
-import { CLOCK_OBJECT, PROTOCOL_ID, PROTOCOL_OBJECT } from "../constants";
+import { SuiObjectResponse } from "@mysten/sui/client";
+import { BucketInfo, SBUCKFlaskResponse, SsuiLiquidStakingResponse, SupraPriceFeedResponse } from "../types";
+import { getObjectFields } from "./object";
 
 export function computeBorrowFeeRate(
   bucketInfo: BucketInfo | null | undefined,
@@ -18,72 +15,26 @@ export function computeBorrowFeeRate(
   else return borrowFee;
 }
 
-const bottleStruct = bcs.struct(
-  "0xb3f10f2c9a52b615ab8b0b930ee55e019bacb407b29f5f534e6d9c3291341db8::utils::BottleData",
-  {
-    debtor: bcs.Address,
-    coll_amount: bcs.U64,
-    debt_amount: bcs.U64,
-  },
-);
+export function computeSupraPrice(res: SuiObjectResponse): number {
+  const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
+  const priceBn = priceFeed.value.fields.value;
+  const decimals = priceFeed.value.fields.decimal;
+  const price = parseInt(priceBn) / Math.pow(10, decimals);
+  return price;
+}
 
-type Bottle = {
-  debtor: string;
-  collAmount: number;
-  debtAmount: number;
-  ncr: number;
-};
+export function computeSBUCKPrice(res: SuiObjectResponse): number {
+  const priceFeed = getObjectFields(res) as SBUCKFlaskResponse;
+  const reserves = priceFeed.reserves;
+  const sBuckSupply = priceFeed.sbuck_supply.fields.value;
+  const price = Number(reserves) / Number(sBuckSupply);
+  return price;
+}
 
-type BottlePage = {
-  bottles: Bottle[];
-  nextCursor: string | null;
-};
-
-export async function getBottlesByStep(
-  client: SuiClient,
-  coinType: string,
-  cursor: string | null,
-  isUpward: boolean,
-): Promise<BottlePage> {
-  const tx = new Transaction();
-  tx.moveCall({
-    target:
-      "0x0e2e9d96beaf27fb80cacb5947f1a0fa36664fe644e968e81263ffccf979d6db::utils::get_bottles_with_direction",
-    typeArguments: [coinType],
-    arguments: [
-      tx.sharedObjectRef(PROTOCOL_OBJECT),
-      tx.sharedObjectRef(CLOCK_OBJECT),
-      tx.pure(bcs.option(bcs.Address).serialize(cursor)),
-      tx.pure.u64(50),
-      tx.pure.u64(951),
-      tx.pure.bool(isUpward),
-    ],
-  });
-  const res = await client.devInspectTransactionBlock({
-    sender: PROTOCOL_ID,
-    transactionBlock: tx,
-  });
-  const returnValues = res?.results?.[0]?.returnValues;
-  if (!returnValues || returnValues?.[0]?.[0][0] === 0) {
-    return { bottles: [], nextCursor: null };
-  } else {
-    const bottleVec = returnValues[0];
-    const cursorVec = returnValues[1];
-    if (!bottleVec) return { bottles: [], nextCursor: null };
-
-    const [value] = bottleVec;
-    const [cursor] = cursorVec;
-    const bottles = bcs.vector(bottleStruct).parse(Uint8Array.from(value));
-    const nextCursor = bcs.option(bcs.Address).parse(Uint8Array.from(cursor));
-    return {
-      bottles: bottles.map((data) => {
-        const { debtor, coll_amount, debt_amount } = data;
-        const collAmount = Number(coll_amount);
-        const debtAmount = Number(debt_amount);
-        const ncr = collAmount / debtAmount;
-        return { debtor, collAmount, debtAmount, ncr };
-      }),
-      nextCursor,
-    };
-  }
+export function computeSpringSuiRate(res: SuiObjectResponse): number {
+  const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
+  const totalSuiSupply = Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
+  const totalLstSupply = Number(resp.lst_treasury_cap.fields.total_supply.fields.value) / 10 ** 9;
+  const rate = totalSuiSupply / totalLstSupply;
+  return rate;
 }

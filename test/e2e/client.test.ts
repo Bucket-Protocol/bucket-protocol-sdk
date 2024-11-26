@@ -4,7 +4,7 @@ import { BucketClient, COINS_TYPE_LIST } from '../../src';
 describe('Interacting with Bucket Client on mainnet', () => {
 
     // Instantiate BucketClient
-    const buck = new BucketClient("https://sui-mainnet-endpoint.blockvision.org/");
+    const buck = new BucketClient("https://sui-mainnet.blastapi.io");
 
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
@@ -92,6 +92,12 @@ describe('Interacting with Bucket Client on mainnet', () => {
         expect(strapFountains).toBeDefined()
     }, {
         timeout: 60_000
+    });
+
+    it('tests getSBUCKTvl() function', async () => {
+        const tvl = await buck.getSBUCKTvl();
+        console.log(tvl);
+        expect(tvl).toBeDefined();
     });
 
     it('tests getSBUCKApr() function', async () => {

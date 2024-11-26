@@ -49,10 +49,10 @@ import {
   STRAP_FOUNTAIN_PACKAGE_ID,
   SBUCK_BUCK_LP_REGISTRY_ID,
   SBUCK_FOUNTAIN_PACKAGE_ID,
-  SBUCK_FLASK_OBJECT_ID,
   SWITCHBOARD_UPDATE_TARGET,
   PSM_BALANCE_IDS,
-  FLASK_OBJECT,
+  SBUCK_FLASK_OBJECT,
+  SBUCK_FLASK_OBJECT_ID,
   SBUCK_BUCK_LP_REGISTRY,
   MAX_LOCK_TIME,
   SBUCK_APR_OBJECT_ID,
@@ -71,7 +71,6 @@ import {
   BucketResponse,
   BottleInfoResponse,
   BucketProtocolResponse,
-  SupraPriceFeedResponse,
   BucketInfo,
   TankInfoResponse,
   TankInfo,
@@ -95,7 +94,7 @@ import {
   AprResponse,
   ProofObject,
   ScableCoin,
-  SsuiLiquidStakingResponse,
+  BottlePage,
 } from "./types";
 import {
   U64FromBytes,
@@ -113,7 +112,9 @@ import {
   objectToStrapFountain,
   getObjectFields,
   ObjectContentFields,
-  getBottlesByStep,
+  computeSupraPrice,
+  computeSpringSuiRate,
+  computeSBUCKPrice,
 } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -1110,6 +1111,63 @@ export class BucketClient {
     return tankInfoList;
   }
 
+  async getBottlesByStep(
+    coinType: string,
+    cursor: string | null,
+    isUpward: boolean,
+  ): Promise<BottlePage> {
+    const bottleStruct = bcs.struct(
+      "0xb3f10f2c9a52b615ab8b0b930ee55e019bacb407b29f5f534e6d9c3291341db8::utils::BottleData",
+      {
+        debtor: bcs.Address,
+        coll_amount: bcs.U64,
+        debt_amount: bcs.U64,
+      },
+    );
+
+    const tx = new Transaction();
+    tx.moveCall({
+      target:
+        "0x0e2e9d96beaf27fb80cacb5947f1a0fa36664fe644e968e81263ffccf979d6db::utils::get_bottles_with_direction",
+      typeArguments: [coinType],
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        tx.pure(bcs.option(bcs.Address).serialize(cursor)),
+        tx.pure.u64(50),
+        tx.pure.u64(951),
+        tx.pure.bool(isUpward),
+      ],
+    });
+    const res = await this.client.devInspectTransactionBlock({
+      sender: PROTOCOL_ID,
+      transactionBlock: tx,
+    });
+    const returnValues = res?.results?.[0]?.returnValues;
+    if (!returnValues || returnValues?.[0]?.[0][0] === 0) {
+      return { bottles: [], nextCursor: null };
+    } else {
+      const bottleVec = returnValues[0];
+      const cursorVec = returnValues[1];
+      if (!bottleVec) return { bottles: [], nextCursor: null };
+
+      const [value] = bottleVec;
+      const [cursor] = cursorVec;
+      const bottles = bcs.vector(bottleStruct).parse(Uint8Array.from(value));
+      const nextCursor = bcs.option(bcs.Address).parse(Uint8Array.from(cursor));
+      return {
+        bottles: bottles.map((data) => {
+          const { debtor, coll_amount, debt_amount } = data;
+          const collAmount = Number(coll_amount);
+          const debtAmount = Number(debt_amount);
+          const ncr = collAmount / debtAmount;
+          return { debtor, collAmount, debtAmount, ncr };
+        }),
+        nextCursor,
+      };
+    }
+  }
+
   async findInsertionPlace(
     bottleTableId: string,
     targetCR: number,
@@ -1172,8 +1230,7 @@ export class BucketClient {
         }
       }
       if (closestDebtor.length === 0) return undefined;
-      const stepBottles = await getBottlesByStep(
-        this.client,
+      const stepBottles = await this.getBottlesByStep(
         coinType,
         closestDebtor,
         isUpward,
@@ -1437,6 +1494,7 @@ export class BucketClient {
         showType: true,
       },
     });
+
     let strapIds = strapObjects.map((strapObj) => {
       let obj = getObjectFields(strapObj);
       return {
@@ -1983,10 +2041,11 @@ export class BucketClient {
     /**
      * @description Get all prices
      */
-    const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
-      SBUCK_FLASK_OBJECT_ID,
-      SSUI_LIQUID_STAKING_OBJECT_ID,
-    ]);
+    const ids = Object.values(SUPRA_PRICE_FEEDS)
+      .concat([
+        SBUCK_FLASK_OBJECT_ID,
+        SSUI_LIQUID_STAKING_OBJECT_ID,
+      ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
       {
@@ -2028,26 +2087,12 @@ export class BucketClient {
     priceObjects.map((res, index) => {
       const objectId = res.data?.objectId;
       if (objectId == SBUCK_FLASK_OBJECT_ID) {
-        const priceFeed = getObjectFields(res) as SBUCKFlaskResponse;
-        const reserves = priceFeed.reserves;
-        const sBuckSupply = priceFeed.sbuck_supply.fields.value;
-        const price = Number(reserves) / Number(sBuckSupply);
+        const price = computeSBUCKPrice(res);
         prices["sBUCK"] = price;
       } else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
-        const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
-
-        const totalSuiSupply =
-          Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
-        const totalLstSupply =
-          Number(resp.lst_treasury_cap.fields.total_supply.fields.value) /
-          10 ** 9;
-        spSuiRate = totalSuiSupply / totalLstSupply;
+        spSuiRate = computeSpringSuiRate(res);
       } else {
-        const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
-        const priceBn = priceFeed.value.fields.value;
-        const decimals = priceFeed.value.fields.decimal;
-        const price = parseInt(priceBn) / Math.pow(10, decimals);
-
+        const price = computeSupraPrice(res);
         if (objectNameList[index] == "usdc_usd") {
           prices["wUSDC"] = price;
         } else if (objectNameList[index] == "usdt_usd") {
@@ -2078,9 +2123,9 @@ export class BucketClient {
     return prices;
   }
 
-  async getSBUCKApr(): Promise<number> {
+  async getBsr(): Promise<number> {
     /**
-     * @description Get sBUCK apr value
+     * @description Get BSR(bucket saving rate) value
      * @returns Promise<number>
      */
     const res = await this.client.getObject({
@@ -2091,8 +2136,50 @@ export class BucketClient {
     });
 
     const obj = getObjectFields(res) as AprResponse;
-    const apr = parseFloat(formatUnits(BigInt(obj.rate.fields.value), 16));
-    return apr;
+    const val = parseFloat(formatUnits(BigInt(obj.rate.fields.value), 16));
+    const bsr = ((1 + val / 100 / 365) ** 365 - 1) * 100;
+    return bsr;
+  }
+
+  async getSBUCKTvl(): Promise<number> {
+    /**
+     * @description Get sBUCK tvl
+     * @returns Promise<number>
+     */
+    const res = await this.client.getObject({
+      id: SBUCK_FLASK_OBJECT_ID,
+      options: {
+        showContent: true,
+      },
+    });
+
+    const obj = getObjectFields(res) as SBUCKFlaskResponse;
+    const tvl = parseFloat(formatUnits(BigInt(obj.reserves), 9));
+    return tvl;
+  }
+
+  async getSBUCKApr(): Promise<number> {
+    /**
+     * @description Get sBUCK tvl
+     * @returns Promise<number>
+     */
+
+    const bsr = await this.getBsr();
+
+    const lpPrice = 1;
+    const suiSupraObj = await this.client.getObject({
+      id: SUPRA_PRICE_FEEDS.sui_usdt,
+      options: {
+        showContent: true,
+      }
+    });
+    const suiPrice = computeSupraPrice(suiSupraObj);
+
+    const { flowAmount, flowInterval, totalWeight } = await this.getFountain(SBUCK_BUCK_LP_REGISTRY_ID);
+    const rewardAmount = (flowAmount / 10 ** 9 / flowInterval) * 86400000;
+    const apr = ((rewardAmount * 365) / ((totalWeight / 10 ** 9) * lpPrice)) * suiPrice * 100;
+
+    return apr + bsr;
   }
 
   async getBorrowTx(
@@ -2952,7 +3039,7 @@ export class BucketClient {
       target: `${CORE_PACKAGE_ID}::buck::sbuck_to_buck`,
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
-        tx.sharedObjectRef(FLASK_OBJECT),
+        tx.sharedObjectRef(SBUCK_FLASK_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
         coinIntoBalance(tx, COINS_TYPE_LIST.sBUCK, sBuckCoin),
       ],
@@ -2968,7 +3055,7 @@ export class BucketClient {
       target: `${CORE_PACKAGE_ID}::buck::buck_to_sbuck`,
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
-        tx.sharedObjectRef(FLASK_OBJECT),
+        tx.sharedObjectRef(SBUCK_FLASK_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
         coinIntoBalance(tx, COINS_TYPE_LIST.BUCK, buckCoin),
       ],

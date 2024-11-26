@@ -75,15 +75,6 @@ export const PROTOCOL_OBJECT = {
   initialSharedVersion: 6365975,
 };
 
-export const FLASK_ID =
-  "0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8";
-
-export const FLASK_OBJECT = {
-  objectId: FLASK_ID,
-  mutable: true,
-  initialSharedVersion: 90706194,
-};
-
 export const CETUS_SUI_BUCK_LP_REGISTRY_ID =
   "0x7778d68f02810b2c002b6f40084c5f3fe0b1bcc7d7a7c64d72ba40ff9a815bac";
 
@@ -208,6 +199,12 @@ export const BUCKETUS_LP_VAULT_05 = {
 
 export const SBUCK_FLASK_OBJECT_ID =
   "0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8";
+
+export const SBUCK_FLASK_OBJECT = {
+  objectId: SBUCK_FLASK_OBJECT_ID,
+  mutable: true,
+  initialSharedVersion: 90706194,
+};
 
 export const SBUCK_APR_OBJECT_ID =
   "0x4a9c3a7f42ead76b350e268976c502eafb448ff72da02923efcd4d202e46dee4";
