@@ -202,7 +202,7 @@ export type ScallopPriceFeedResponse = {
   latest_update_ms: string;
 };
 
-export type SsuiLiquidStakingResponse = {
+export type LiquidStakingResponse = {
   id: {
     id: string;
   };

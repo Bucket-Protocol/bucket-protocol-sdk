@@ -1,5 +1,5 @@
 import { SuiObjectResponse } from "@mysten/sui/client";
-import { BucketInfo, SBUCKFlaskResponse, SsuiLiquidStakingResponse, SupraPriceFeedResponse } from "../types";
+import { BucketInfo, LiquidStakingResponse, SBUCKFlaskResponse, SupraPriceFeedResponse } from "../types";
 import { getObjectFields } from "./object";
 
 export function computeBorrowFeeRate(
@@ -31,8 +31,8 @@ export function computeSBUCKPrice(res: SuiObjectResponse): number {
   return price;
 }
 
-export function computeSpringSuiRate(res: SuiObjectResponse): number {
-  const resp = getObjectFields(res) as SsuiLiquidStakingResponse;
+export function computeLiquidStakingRate(res: SuiObjectResponse): number {
+  const resp = getObjectFields(res) as LiquidStakingResponse;
   const totalSuiSupply = Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
   const totalLstSupply = Number(resp.lst_treasury_cap.fields.total_supply.fields.value) / 10 ** 9;
   const rate = totalSuiSupply / totalLstSupply;

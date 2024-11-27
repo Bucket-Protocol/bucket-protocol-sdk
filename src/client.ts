@@ -63,6 +63,7 @@ import {
   SCABLE_VAULTS,
   LOCK_COINS,
   SSUI_LIQUID_STAKING_OBJECT_ID,
+  MSUI_LIQUID_STAKING_OBJECT_ID,
   // SSUI_LIQUID_STAKING_OBJECT_ID,
 } from "./constants";
 import {
@@ -113,7 +114,7 @@ import {
   getObjectFields,
   ObjectContentFields,
   computeSupraPrice,
-  computeSpringSuiRate,
+  computeLiquidStakingRate,
   computeSBUCKPrice,
 } from "./utils";
 
@@ -2048,6 +2049,7 @@ export class BucketClient {
     const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
       SBUCK_FLASK_OBJECT_ID,
       SSUI_LIQUID_STAKING_OBJECT_ID,
+      MSUI_LIQUID_STAKING_OBJECT_ID,
     ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
@@ -2087,6 +2089,7 @@ export class BucketClient {
     };
 
     let spSuiRate = 0;
+    let mSuiRate = 0;
 
     priceObjects.map((res, index) => {
       const objectId = res.data?.objectId;
@@ -2094,7 +2097,9 @@ export class BucketClient {
         const price = computeSBUCKPrice(res);
         prices["sBUCK"] = price;
       } else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
-        spSuiRate = computeSpringSuiRate(res);
+        spSuiRate = computeLiquidStakingRate(res);
+      } else if (objectId == MSUI_LIQUID_STAKING_OBJECT_ID) {
+        mSuiRate = computeLiquidStakingRate(res);
       } else {
         const price = computeSupraPrice(res);
         if (objectNameList[index] == "usdc_usd") {
@@ -2124,6 +2129,7 @@ export class BucketClient {
     });
 
     prices["spSUI"] = (prices["SUI"] ?? 1) * spSuiRate;
+    prices["mSUI"] = (prices["SUI"] ?? 1) * mSuiRate;
     return prices;
   }
 
