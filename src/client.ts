@@ -2069,6 +2069,7 @@ export class BucketClient {
       NAVX: 0,
       WETH: 0,
       spSUI: 0,
+      mSUI: 0,
 
       BUCK: 1,
       sBUCK: 1,

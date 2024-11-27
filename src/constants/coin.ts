@@ -38,7 +38,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   CETUS:
     "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
   AUSD: "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
-  
+
   sSUI: "0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI",
   sSCA: "0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA",
   sUSDC:
@@ -50,6 +50,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
 
   spSUI:
     "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
+  mSUI:
+    "0x922d15d7f55c13fd790f6e54397470ec592caa2b508df292a2e8553f3d3b274f::msui::MSUI",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -67,6 +69,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   vSUI: 9,
   WETH: 8,
   BUCK: 9,
+  sBUCK: 9,
   BKT: 9,
   BUCKETUS: 9,
   STAPEARL: 6,
@@ -77,7 +80,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   SCABLE: 6,
   AUSD: 6,
   spSUI: 9,
-  sBUCK: 9,
+  mSUI: 9,
 
   sUSDC: 6,
   swUSDC: 6,
