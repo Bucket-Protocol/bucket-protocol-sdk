@@ -74,4 +74,11 @@ export const STRAP_FOUNTAIN_IDS: Partial<
     mutable: true,
     rewardType: COINS_TYPE_LIST.SCA,
   },
+  mSUI: {
+    objectId:
+      "0x6683924feb18501ee6f9f6a977a686f341bcdac5190ca86d21c8182d7b46fd1c",
+    initialSharedVersion: "424587149",
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.KOTO,
+  },
 };
