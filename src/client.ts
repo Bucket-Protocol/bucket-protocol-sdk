@@ -2046,11 +2046,13 @@ export class BucketClient {
     /**
      * @description Get all prices
      */
-    const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
-      SBUCK_FLASK_OBJECT_ID,
-      SSUI_LIQUID_STAKING_OBJECT_ID,
-      MSUI_LIQUID_STAKING_OBJECT_ID,
-    ]);
+
+    const ids = Object.values(SUPRA_PRICE_FEEDS)
+      .concat([
+        SBUCK_FLASK_OBJECT_ID,
+        SSUI_LIQUID_STAKING_OBJECT_ID,
+        MSUI_LIQUID_STAKING_OBJECT_ID,
+      ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
       {
