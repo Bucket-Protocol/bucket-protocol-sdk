@@ -746,16 +746,20 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
-    } else if (token === "spSUI") {
+    } else if (token === "spSUI" || token === "mSUI") {
+      const stakingInfoObj =
+        token === "spSUI"
+          ? "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b"
+          : "0x985dd33bc2a8b5390f2c30a18d32e9a63a993a5b52750c6fe2e6ac8baeb69f48";
+      const coinType =
+        token === "spSUI" ? COINS_TYPE_LIST.spSUI : COINS_TYPE_LIST.mSUI;
       tx.moveCall({
         target:
           "0x915d11320f37ddb386367dbce81154e1b4cf83e6a3039df183ac4ae78131c786::ssui_rule::update_price",
-        typeArguments: [COINS_TYPE_LIST.spSUI],
+        typeArguments: [coinType],
         arguments: [
           tx.sharedObjectRef(ORACLE_OBJECT),
-          tx.object(
-            "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b",
-          ),
+          tx.object(stakingInfoObj),
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
@@ -1106,7 +1110,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1810,7 +1814,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -2041,11 +2045,10 @@ export class BucketClient {
     /**
      * @description Get all prices
      */
-    const ids = Object.values(SUPRA_PRICE_FEEDS)
-      .concat([
-        SBUCK_FLASK_OBJECT_ID,
-        SSUI_LIQUID_STAKING_OBJECT_ID,
-      ]);
+    const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
+      SBUCK_FLASK_OBJECT_ID,
+      SSUI_LIQUID_STAKING_OBJECT_ID,
+    ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
       {
@@ -2172,13 +2175,18 @@ export class BucketClient {
       id: SUPRA_PRICE_FEEDS.sui_usdt,
       options: {
         showContent: true,
-      }
+      },
     });
     const suiPrice = computeSupraPrice(suiSupraObj);
 
-    const { flowAmount, flowInterval, totalWeight } = await this.getFountain(SBUCK_BUCK_LP_REGISTRY_ID);
+    const { flowAmount, flowInterval, totalWeight } = await this.getFountain(
+      SBUCK_BUCK_LP_REGISTRY_ID,
+    );
     const rewardAmount = (flowAmount / 10 ** 9 / flowInterval) * 86400000;
-    const apr = ((rewardAmount * 365) / ((totalWeight / 10 ** 9) * lpPrice)) * suiPrice * 100;
+    const apr =
+      ((rewardAmount * 365) / ((totalWeight / 10 ** 9) * lpPrice)) *
+      suiPrice *
+      100;
 
     return apr + bsr;
   }
