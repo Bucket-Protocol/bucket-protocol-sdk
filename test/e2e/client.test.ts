@@ -4,7 +4,7 @@ import { BucketClient, COINS_TYPE_LIST } from '../../src';
 describe('Interacting with Bucket Client on mainnet', () => {
 
     // Instantiate BucketClient
-    const buck = new BucketClient("https://sui-mainnet.blastapi.io");
+    const buck = new BucketClient();
 
     it('tests getBucketConstants() function', async () => {
         expect(await buck.getBucketConstants()).toMatchObject({
