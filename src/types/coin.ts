@@ -34,7 +34,8 @@ export type COIN =
   //
   | "spSUI"
   | "mSUI"
-  | "KOTO";
+  | "KOTO"
+  | "SBETH";
 
 export type LstCoin = "afSUI" | "haSUI" | "vSUI";
 
