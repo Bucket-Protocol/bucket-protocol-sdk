@@ -1,7 +1,7 @@
 import { Transaction, TransactionArgument } from "@mysten/sui/transactions";
 import { bcs } from "@mysten/sui/bcs";
 
-import { BUCKET_OPERATIONS_PACKAGE_ID, BucketClient, CLOCK_OBJECT, coinFromBalance, coinIntoBalance, COINS_TYPE_LIST, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, getCoinSymbol, getInputCoins, getMainCoin, LOCKER_MAP, ORACLE_OBJECT, PROTOCOL_OBJECT, STRAP_FOUNTAIN_IDS, TREASURY_OBJECT, UserLpProof } from ".";
+import { BUCKET_OPERATIONS_PACKAGE_ID, BucketClient, CLOCK_OBJECT, coinFromBalance, coinIntoBalance, COINS_TYPE_LIST, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, getCoinSymbol, getInputCoins, getMainCoin, LOCKER_MAP, ORACLE_OBJECT, PROTOCOL_OBJECT, STRAP_FOUNTAIN_IDS, TREASURY_OBJECT } from ".";
 
 
 /* ----- Borrow/Repay Builders ----- */
@@ -712,7 +712,7 @@ export async function buildSBUCKDepositTx(
 export async function buildSBUCKUnstakeTx(
   client: BucketClient,
   tx: Transaction,
-  stakeProofs: UserLpProof[],
+  stakeProofs: string[],
   amount: string,
   recipient: string,
   isStake: boolean,
@@ -738,7 +738,7 @@ export async function buildSBUCKUnstakeTx(
 
   let proofs = [];
   // if locked, then unlock first
-  const lockedProofs = stakeProofs.filter((t) => t.digest == "");
+  const lockedProofs = stakeProofs.filter((t) => t == "");
   if (lockedProofs.length > 0) {
     proofs = client.unlockSBuckProofs(
       tx,
@@ -746,8 +746,7 @@ export async function buildSBUCKUnstakeTx(
     ) as TransactionArgument[];
   } else {
     proofs = stakeProofs
-      .filter((t) => t.objectId != "")
-      .map((t) => t.objectId);
+      .filter((t) => t != "");
   }
 
   for (const proof of proofs) {
@@ -846,7 +845,7 @@ export async function buildSBUCKWithdrawTx(
 export async function buildSBUCKClaimTx(
   client: BucketClient,
   tx: Transaction,
-  stakeProofs: UserLpProof[],
+  proofIds: string[],
   recipient: string,
 ) {
   /**
@@ -854,37 +853,46 @@ export async function buildSBUCKClaimTx(
    * @param stakeProofs
    * @param recipient
    */
+  const mainSuiRewardBalance = tx.moveCall({
+    target: "0x2::balance::zero",
+    typeArguments: [COINS_TYPE_LIST.SUI],
+  });
 
-  const nonLockProofs = stakeProofs.filter((t) => t.digest != "");
-  const lockedProofs = stakeProofs.filter((t) => t.digest == "");
-
-  if (nonLockProofs.length > 0) {
-    const mainSuiRewardBalance = tx.moveCall({
-      target: "0x2::balance::zero",
+  for (const proofId of proofIds) {
+    const reward = client.claimSBUCK(tx, proofId);
+    tx.moveCall({
+      target: "0x2::balance::join",
       typeArguments: [COINS_TYPE_LIST.SUI],
+      arguments: [mainSuiRewardBalance, reward],
     });
-
-    for (const proof of nonLockProofs) {
-      const reward = client.claimSBUCK(tx, proof.objectId);
-      tx.moveCall({
-        target: "0x2::balance::join",
-        typeArguments: [COINS_TYPE_LIST.SUI],
-        arguments: [mainSuiRewardBalance, reward],
-      });
-    }
-
-    const suiCoin = coinFromBalance(
-      tx,
-      COINS_TYPE_LIST.SUI,
-      mainSuiRewardBalance,
-    );
-    tx.transferObjects([suiCoin], tx.pure.address(recipient));
-  } else if (lockedProofs.length > 0) {
-    client.claimLockedRewards(
-      tx,
-      "sBUCK",
-      lockedProofs.length,
-      recipient
-    );
   }
+
+  const suiCoin = coinFromBalance(
+    tx,
+    COINS_TYPE_LIST.SUI,
+    mainSuiRewardBalance,
+  );
+  tx.transferObjects([suiCoin], tx.pure.address(recipient));
+}
+
+
+export async function buildLockedClaimTx(
+  client: BucketClient,
+  tx: Transaction,
+  coinType: string,
+  lockedCount: number,
+  recipient: string,
+) {
+  /**
+   * @description Claim locked rewards
+   * @param lockedObject counts
+   * @param recipient
+   */
+
+  client.claimLockedRewards(
+    tx,
+    coinType,
+    lockedCount,
+    recipient
+  );
 }

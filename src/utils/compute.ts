@@ -38,3 +38,15 @@ export function computeLiquidStakingRate(res: SuiObjectResponse): number {
   const rate = totalSuiSupply / totalLstSupply;
   return rate;
 }
+
+export function calculateRewardAmount(flowAmount: number, flowInterval: number) {
+  return (flowAmount / 10 ** 9 / flowInterval) * 86400000;
+}
+
+export function calculateAPR(rewardAmount: number, totalAmount: number, CR: number, price: number) {
+  if (totalAmount > 0) {
+    return ((rewardAmount * 365 * price) / ((totalAmount / 10 ** 9))) / (CR / 100) * 100;
+  }
+
+  return 0;
+}

@@ -116,6 +116,8 @@ import {
   computeSupraPrice,
   computeLiquidStakingRate,
   computeSBUCKPrice,
+  calculateAPR,
+  calculateRewardAmount,
 } from "./utils";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
@@ -1050,6 +1052,50 @@ export class BucketClient {
     return buckets;
   }
 
+  async getBucket(token: COIN): Promise<BucketInfo> {
+    /**
+     * @description Get bucket object from coin
+     */
+    const generalInfo = await this.client.getObject({
+      id: PROTOCOL_ID,
+      options: {
+        showContent: true,
+      },
+    });
+    const generalInfoField = generalInfo.data
+      ?.content as BucketProtocolResponse;
+    const minBottleSize = generalInfoField.fields.min_bottle_size;
+
+    const coinType = COINS_TYPE_LIST[token];
+    const res = await this.client.getDynamicFieldObject({
+      parentId: PROTOCOL_ID,
+      name: {
+        type: `${CONTRIBUTOR_TOKEN_ID}::buck::BucketType<${coinType}>`,
+        value: {
+          dummy_field: false,
+        },
+      },
+    });
+    const fields = getObjectFields(res) as BucketResponse;
+
+    const bucketInfo: BucketInfo = {
+      token,
+      baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
+      bottleTableSize: fields.bottle_table.fields.table.fields.size ?? "",
+      bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? "",
+      collateralDecimal: fields.collateral_decimal ?? 0,
+      collateralVault: fields.collateral_vault ?? "",
+      latestRedemptionTime: Number(fields.latest_redemption_time ?? 0),
+      minCollateralRatio: fields.min_collateral_ratio ?? "",
+      mintedBuckAmount: fields.minted_buck_amount ?? "",
+      maxMintAmount: fields.max_mint_amount ?? "",
+      recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
+      minBottleSize
+    };
+
+    return bucketInfo;
+  }
+
   async getAllTanks(): Promise<TankList> {
     /**
      * @description Get all tanks objects
@@ -1111,7 +1157,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) { }
 
     return tankInfoList;
   }
@@ -1815,7 +1861,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) { }
 
     return userTanks;
   }
@@ -2170,9 +2216,9 @@ export class BucketClient {
     return tvl;
   }
 
-  async getSBUCKApr(): Promise<number> {
+  async getSavingApr(): Promise<number> {
     /**
-     * @description Get sBUCK tvl
+     * @description Get saving pool's apr
      * @returns Promise<number>
      */
 
@@ -2190,13 +2236,39 @@ export class BucketClient {
     const { flowAmount, flowInterval, totalWeight } = await this.getFountain(
       SBUCK_BUCK_LP_REGISTRY_ID,
     );
-    const rewardAmount = (flowAmount / 10 ** 9 / flowInterval) * 86400000;
-    const apr =
-      ((rewardAmount * 365) / ((totalWeight / 10 ** 9) * lpPrice)) *
-      suiPrice *
-      100;
-
+    const rewardAmount = calculateRewardAmount(flowAmount, flowInterval);
+    const apr = ((rewardAmount * 365) / ((totalWeight / 10 ** 9) * lpPrice)) * suiPrice * 100;
     return apr + bsr;
+  }
+
+  async getStrapFountainApr(token: COIN): Promise<number> {
+    /**
+     * @description Get strap fountain pool's apr
+     * @returns Promise<number>
+     */
+
+    if (!STRAP_FOUNTAIN_IDS[token]) {
+      throw new Error("Strap fountain not found");
+    }
+
+    const { objectId, rewardType } = STRAP_FOUNTAIN_IDS[token];
+    const fountain = await this.getStakeProofFountain(objectId);
+    const bucket = await this.getBucket(token);
+
+    const supraObj = await this.client.getObject({
+      id: rewardType == COINS_TYPE_LIST.SUI ? SUPRA_PRICE_FEEDS.sui_usdt
+        : (rewardType == COINS_TYPE_LIST.SCA ? SUPRA_PRICE_FEEDS.sca_usd
+          : ""
+        ),
+      options: {
+        showContent: true,
+      },
+    });
+    const rewardPrice = computeSupraPrice(supraObj);
+
+    const MCR = Number(bucket.minCollateralRatio) ?? 110;
+    const rewardAmount = calculateRewardAmount(fountain.flowAmount, fountain.flowInterval);
+    return calculateAPR(rewardAmount, fountain.totalDebtAmount, MCR, rewardPrice);
   }
 
   async getBorrowTx(
