@@ -120,6 +120,7 @@ export type UserLpProof = {
   stakeAmount: number;
   stakeWeight: number;
   lockUntil: number;
+  isLocked: boolean;
 };
 
 export type UserLpList = Record<string, UserLpProof[]>;

@@ -2041,6 +2041,7 @@ export class BucketClient {
         stakeAmount: Number(fields?.stake_amount ?? 0),
         stakeWeight: Number(fields?.stake_weight ?? 0),
         lockUntil: Number(fields?.lock_until ?? 0),
+        isLocked: false,
       };
     });
 
@@ -2064,9 +2065,9 @@ export class BucketClient {
       const fields = getObjectFields(res);
       if (fields) {
         const proofInfos = fields.value as ObjectContentFields[];
-        const lockedSBUCKs = proofInfos.map((info, idx) => {
+        const lockedSBUCKs = proofInfos.map((info) => {
           return {
-            objectId: idx.toString(),
+            objectId: "",
             version: "",
             digest: "",
             typeName: info.type,
@@ -2075,6 +2076,7 @@ export class BucketClient {
             stakeAmount: Number(info.fields.stake_amount),
             stakeWeight: Number(info.fields.stake_weight),
             lockUntil: Number(info.fields.lock_until),
+            isLocked: true,
           };
         });
 
