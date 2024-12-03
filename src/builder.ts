@@ -888,10 +888,14 @@ export async function buildLockedClaimTx(
    * @param lockedObject counts
    * @param recipient
    */
+  const token = getCoinSymbol(coinType);
+  if (!token) {
+    throw new Error("Coin type not supported");
+  }
 
   client.claimLockedRewards(
     tx,
-    coinType,
+    token,
     lockedCount,
     recipient
   );
