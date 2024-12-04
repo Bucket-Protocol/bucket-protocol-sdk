@@ -46,5 +46,5 @@ export const SUPRA_ID: Record<string, number> = {
   NAVX: 408,
   CETUS: 93,
   SCA: 476,
-  SBETH: 19,
+  sbETH: 19,
 };
