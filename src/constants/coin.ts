@@ -56,7 +56,10 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   mSUI: "0x922d15d7f55c13fd790f6e54397470ec592caa2b508df292a2e8553f3d3b274f::msui::MSUI",
   KOTO: "0xa99166e802527eeb5439cbda12b0a02851bf2305d3c96a592b1440014fcb8975::koto::KOTO",
 
-  sbETH: "0xd0e89b2af5e4910726fbcd8b8dd37bb79b29e5f83f7491bca830e94f7f226d29::eth::ETH",
+  sbETH:
+    "0xd0e89b2af5e4910726fbcd8b8dd37bb79b29e5f83f7491bca830e94f7f226d29::eth::ETH",
+  FDUSD:
+    "0xf16e6b723f242ec745dfd7634ad072c42d5c1d9ac9d62a39c381303eaa57693a::fdusd::FDUSD",
 
   AF_LP_USDC_BUCK:
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
@@ -88,6 +91,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   mSUI: 9,
   KOTO: 0,
   sbETH: 8,
+  FDUSD: 6,
 
   sUSDC: 6,
   swUSDC: 6,

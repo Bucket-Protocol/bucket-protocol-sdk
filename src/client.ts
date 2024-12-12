@@ -1090,7 +1090,7 @@ export class BucketClient {
       mintedBuckAmount: fields.minted_buck_amount ?? "",
       maxMintAmount: fields.max_mint_amount ?? "",
       recoveryModeThreshold: fields.recovery_mode_threshold ?? "",
-      minBottleSize
+      minBottleSize,
     };
 
     return bucketInfo;
@@ -1157,7 +1157,7 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) { }
+    } catch (error) {}
 
     return tankInfoList;
   }
@@ -1861,7 +1861,7 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) { }
+    } catch (error) {}
 
     return userTanks;
   }
@@ -2095,12 +2095,11 @@ export class BucketClient {
      * @description Get all prices
      */
 
-    const ids = Object.values(SUPRA_PRICE_FEEDS)
-      .concat([
-        SBUCK_FLASK_OBJECT_ID,
-        SSUI_LIQUID_STAKING_OBJECT_ID,
-        MSUI_LIQUID_STAKING_OBJECT_ID,
-      ]);
+    const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
+      SBUCK_FLASK_OBJECT_ID,
+      SSUI_LIQUID_STAKING_OBJECT_ID,
+      MSUI_LIQUID_STAKING_OBJECT_ID,
+    ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
       {
@@ -2134,6 +2133,7 @@ export class BucketClient {
       wUSDT: 1,
       USDY: 1,
       AUSD: 1,
+      FDUSD: 1,
       BUCKETUS: 1,
       SCABLE: 1,
       STAPEARL: 1,
@@ -2241,7 +2241,10 @@ export class BucketClient {
       SBUCK_BUCK_LP_REGISTRY_ID,
     );
     const rewardAmount = calculateRewardAmount(flowAmount, flowInterval);
-    const apr = ((rewardAmount * 365) / ((totalWeight / 10 ** 9) * lpPrice)) * suiPrice * 100;
+    const apr =
+      ((rewardAmount * 365) / ((totalWeight / 10 ** 9) * lpPrice)) *
+      suiPrice *
+      100;
     return apr + bsr;
   }
 
@@ -2260,10 +2263,12 @@ export class BucketClient {
     const bucket = await this.getBucket(token);
 
     const supraObj = await this.client.getObject({
-      id: rewardType == COINS_TYPE_LIST.SUI ? SUPRA_PRICE_FEEDS.sui_usdt
-        : (rewardType == COINS_TYPE_LIST.SCA ? SUPRA_PRICE_FEEDS.sca_usd
-          : ""
-        ),
+      id:
+        rewardType == COINS_TYPE_LIST.SUI
+          ? SUPRA_PRICE_FEEDS.sui_usdt
+          : rewardType == COINS_TYPE_LIST.SCA
+            ? SUPRA_PRICE_FEEDS.sca_usd
+            : "",
       options: {
         showContent: true,
       },
@@ -2271,8 +2276,16 @@ export class BucketClient {
     const rewardPrice = computeSupraPrice(supraObj);
 
     const MCR = Number(bucket.minCollateralRatio) ?? 110;
-    const rewardAmount = calculateRewardAmount(fountain.flowAmount, fountain.flowInterval);
-    return calculateAPR(rewardAmount, fountain.totalDebtAmount, MCR, rewardPrice);
+    const rewardAmount = calculateRewardAmount(
+      fountain.flowAmount,
+      fountain.flowInterval,
+    );
+    return calculateAPR(
+      rewardAmount,
+      fountain.totalDebtAmount,
+      MCR,
+      rewardPrice,
+    );
   }
 
   async getBorrowTx(
