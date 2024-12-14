@@ -724,7 +724,7 @@ export class BucketClient {
       const coinType = COINS_TYPE_LIST[token];
       tx.moveCall({
         target:
-          "0xe8e2e65d77e92fee59b9027ad0e29da5d932c6a5fb46c9d4eecbcc747e33d38a::scoin_rule::update_price",
+          "0x7e64dcbb4aa2f2af0e3d13c6baeb2baf4fc375fa765cadd9483087ae70e4503d::scoin_rule::update_price",
         typeArguments: [coinType, COINS_TYPE_LIST[underlyingToke]],
         arguments: [
           tx.sharedObjectRef({
