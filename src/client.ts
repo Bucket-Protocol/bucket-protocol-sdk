@@ -2689,7 +2689,7 @@ export class BucketClient {
       });
       return tx.moveCall({
         target:
-          "0xecc3e8dec68782dbd40bdf416c7305fd5bcf203f536e49a42507934877f8706f::scable::withdraw_coin_from_spool",
+          "0x1b4b5dd782453586f2a39dbc154f9ef4ca7780ae9a31154c1c6080985a5d295e::scable::withdraw_coin_from_spool",
         typeArguments: [outCoinType],
         arguments: [
           tx.sharedObjectRef(vaultObj),
