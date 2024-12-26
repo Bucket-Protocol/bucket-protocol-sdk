@@ -65,6 +65,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0xf1b901d93cc3652ee26e8d88fff8dc7b9402b2b2e71a59b244f938a140affc5e::af_lp::AF_LP",
   AF_LP_SUI_BUCK:
     "0x62e39f5554a2badccab46bf3fab044e3f7dc889d42a567a68d3c1b2e5463001f::af_lp::AF_LP",
+  stSUI:
+    "0xd1b72982e40348d069bb1ff701e634c117bb5f741f44dff91e472d3b01461e55::stsui::STSUI",
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -107,4 +109,6 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   USDCpol: 6,
   USDCsol: 6,
   USDCbnb: 8,
+
+  stSUI: 9,
 };
