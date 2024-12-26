@@ -62,9 +62,9 @@ import {
   LOCKER_TABLE,
   SCABLE_VAULTS,
   LOCK_COINS,
-  SSUI_LIQUID_STAKING_OBJECT_ID,
+  SPSUI_LIQUID_STAKING_OBJECT_ID,
   MSUI_LIQUID_STAKING_OBJECT_ID,
-  // SSUI_LIQUID_STAKING_OBJECT_ID,
+  STSUI_LIQUID_STAKING_OBJECT_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -752,8 +752,8 @@ export class BucketClient {
     } else if (token === "spSUI" || token === "mSUI") {
       const stakingInfoObj =
         token === "spSUI"
-          ? "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b"
-          : "0x985dd33bc2a8b5390f2c30a18d32e9a63a993a5b52750c6fe2e6ac8baeb69f48";
+          ? SPSUI_LIQUID_STAKING_OBJECT_ID
+          : MSUI_LIQUID_STAKING_OBJECT_ID;
       const coinType =
         token === "spSUI" ? COINS_TYPE_LIST.spSUI : COINS_TYPE_LIST.mSUI;
       tx.moveCall({
@@ -773,9 +773,7 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST.stSUI],
         arguments: [
           tx.sharedObjectRef(ORACLE_OBJECT),
-          tx.object(
-            "0x1adb343ab351458e151bc392fbf1558b3332467f23bda45ae67cd355a57fd5f5",
-          ),
+          tx.object(STSUI_LIQUID_STAKING_OBJECT_ID),
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
@@ -2110,8 +2108,9 @@ export class BucketClient {
 
     const ids = Object.values(SUPRA_PRICE_FEEDS).concat([
       SBUCK_FLASK_OBJECT_ID,
-      SSUI_LIQUID_STAKING_OBJECT_ID,
+      SPSUI_LIQUID_STAKING_OBJECT_ID,
       MSUI_LIQUID_STAKING_OBJECT_ID,
+      STSUI_LIQUID_STAKING_OBJECT_ID,
     ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
@@ -2138,6 +2137,7 @@ export class BucketClient {
       sbETH: 0,
       spSUI: 0,
       mSUI: 0,
+      stSUI: 0,
 
       BUCK: 1,
       sBUCK: 1,
@@ -2154,16 +2154,19 @@ export class BucketClient {
 
     let spSuiRate = 0;
     let mSuiRate = 0;
+    let stSuiRate = 0;
 
     priceObjects.map((res, index) => {
       const objectId = res.data?.objectId;
       if (objectId == SBUCK_FLASK_OBJECT_ID) {
         const price = computeSBUCKPrice(res);
         prices["sBUCK"] = price;
-      } else if (objectId == SSUI_LIQUID_STAKING_OBJECT_ID) {
+      } else if (objectId == SPSUI_LIQUID_STAKING_OBJECT_ID) {
         spSuiRate = computeLiquidStakingRate(res);
       } else if (objectId == MSUI_LIQUID_STAKING_OBJECT_ID) {
         mSuiRate = computeLiquidStakingRate(res);
+      } else if (objectId == STSUI_LIQUID_STAKING_OBJECT_ID) {
+        stSuiRate = computeLiquidStakingRate(res);
       } else {
         const price = computeSupraPrice(res);
         if (objectNameList[index] == "usdc_usd") {
@@ -2195,6 +2198,7 @@ export class BucketClient {
 
     prices["spSUI"] = (prices["SUI"] ?? 1) * spSuiRate;
     prices["mSUI"] = (prices["SUI"] ?? 1) * mSuiRate;
+    prices["stSUI"] = (prices["SUI"] ?? 1) * stSuiRate;
     return prices;
   }
 

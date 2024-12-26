@@ -210,11 +210,14 @@ export const SBUCK_FLASK_OBJECT = {
 export const SBUCK_APR_OBJECT_ID =
   "0x4a9c3a7f42ead76b350e268976c502eafb448ff72da02923efcd4d202e46dee4";
 
-export const SSUI_LIQUID_STAKING_OBJECT_ID =
+export const SPSUI_LIQUID_STAKING_OBJECT_ID =
   "0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b";
 
 export const MSUI_LIQUID_STAKING_OBJECT_ID =
   "0x985dd33bc2a8b5390f2c30a18d32e9a63a993a5b52750c6fe2e6ac8baeb69f48";
+
+export const STSUI_LIQUID_STAKING_OBJECT_ID =
+  "0x1adb343ab351458e151bc392fbf1558b3332467f23bda45ae67cd355a57fd5f5";
 
 export const SCABLE_VAULTS: Record<ScableCoin, SharedObjectRef> = {
   wUSDC: {
