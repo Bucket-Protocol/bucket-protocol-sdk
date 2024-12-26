@@ -8,7 +8,7 @@ describe("Interacting with Bucket Client on mainnet", () => {
   it("tests getBucketConstants() function", async () => {
     expect(await buck.getBucketConstants()).toMatchObject({
       feePrecision: "1000000",
-      liquidationRebate: "2500",
+      liquidationRebate: "5000",
       flashLoanFee: "500",
       buckDecimal: 9,
       maxLockTime: "31104000000",
