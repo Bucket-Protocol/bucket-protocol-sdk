@@ -766,6 +766,19 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
+    } else if (token === "stSUI") {
+      tx.moveCall({
+        target:
+          "0xdfdab1daf15c8b79512001f8eff16f8b07f2c9bbb1cc277d8739eb5338722340::stsui_rule::update_price",
+        typeArguments: [COINS_TYPE_LIST.stSUI],
+        arguments: [
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.object(
+            "0x1adb343ab351458e151bc392fbf1558b3332467f23bda45ae67cd355a57fd5f5",
+          ),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+        ],
+      });
     } else {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
