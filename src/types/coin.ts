@@ -37,7 +37,8 @@ export type COIN =
   | "KOTO"
   | "sbETH"
   | "FDUSD"
-  | "stSUI";
+  | "stSUI"
+  | "BUT";
 
 export type LstCoin = "afSUI" | "haSUI" | "vSUI";
 
