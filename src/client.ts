@@ -2147,6 +2147,7 @@ export class BucketClient {
       USDY: 1,
       AUSD: 1,
       FDUSD: 1,
+      sbUSDT: 1,
       BUCKETUS: 1,
       SCABLE: 1,
       STAPEARL: 1,

@@ -69,6 +69,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0xd1b72982e40348d069bb1ff701e634c117bb5f741f44dff91e472d3b01461e55::stsui::STSUI",
 
   BUT: "0xbc858cb910b9914bee64fff0f9b38855355a040c49155a17b265d9086d256545::but::BUT",
+  sbUSDT:
+    "0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT",
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -115,4 +117,5 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   USDCbnb: 8,
 
   stSUI: 9,
+  sbUSDT: 6,
 };

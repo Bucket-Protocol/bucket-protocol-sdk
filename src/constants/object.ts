@@ -38,6 +38,7 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   AUSD: "0x5a0373b5c08f0d6a33bd88bfd89db7557613699ae88e4c0039e8f7c542551a7b",
   USDC: "0xd22388010d7bdb9f02f14805a279322a3fa3fbde42896b7fb3d1214af404c455",
   FDUSD: "0xb23092f74b7bbea45056d8564a7325be993cc2926b89f384367b9ad309dd92c5",
+  sbUSDT: "0x5c788db95a72c250ce1aaad29fefbaeed67b5b95a3a1fdd965ca94beb9352dff",
 };
 
 export const PSM_BALANCE_IDS: Record<string, string> = {
