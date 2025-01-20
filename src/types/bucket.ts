@@ -3,7 +3,7 @@ import { COIN } from "./coin";
 
 export type ProtocolInfo = {
   buckSupply: number;
-}
+};
 
 export type BucketInfo = {
   token: COIN;
@@ -36,14 +36,14 @@ export type UserBottleInfo = {
 } & BottleInfo;
 
 export interface BucketConstants {
-  feePrecision: string,
-  liquidationRebate: string,
-  flashLoanFee: string,
-  buckDecimal: number,
-  maxLockTime: string,
-  minLockTime: string,
-  minFee: string,
-  maxFee: string
+  feePrecision: string;
+  liquidationRebate: string;
+  flashLoanFee: string;
+  buckDecimal: number;
+  maxLockTime: string;
+  minLockTime: string;
+  minFee: string;
+  maxFee: string;
 }
 
 export type TankInfo = {
@@ -82,7 +82,6 @@ export type StrapFountainInfo = {
 };
 
 export type StrapFountainList = Record<string, StrapFountainInfo>;
-
 
 export type PsmInfo = {
   id: string;
@@ -140,4 +139,19 @@ export type Bottle = {
   collAmount: number;
   debtAmount: number;
   ncr: number;
+};
+
+export type DeTokenInfo = {
+  totalStakedButAmount: number;
+  totalDeButAmount: number;
+};
+
+export type DeTokenPosition = {
+  id: string;
+  stakedButAmount: number;
+  stakedPeriod: number;
+  startDate: number;
+  unlockDate: number;
+  deButAmount: number;
+  earlyUnstakable: boolean;
 };

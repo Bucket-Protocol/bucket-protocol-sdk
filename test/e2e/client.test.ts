@@ -131,4 +131,16 @@ describe("Interacting with Bucket Client on mainnet", () => {
     const apr = await buck.getSavingApr();
     expect(apr).toBeDefined();
   });
+
+  it("tests getDeTokenInfo() function", async () => {
+    const info = await buck.getDeTokenInfo();
+    console.log(info)
+    expect(info).toBeDefined();
+  });
+
+  it("tests getUserDeTokens() function", async () => {
+    const tokens = await buck.getUserDeTokens("0x93c8e48b6a2bdfd0bb581c29c4b1f95dc136fbe4898b495b62fd3a3cf1986278");
+    console.log(tokens)
+    expect(tokens).toBeDefined();
+  });
 });

@@ -15,8 +15,8 @@ export type BucketProtocolResponse = {
           type: string;
           fields: {
             value: string;
-          }
-        }
+          };
+        };
       };
     };
     id: {
@@ -151,14 +151,14 @@ export type StrapFountainResponse = {
       id: {
         id: string;
       };
-    }
+    };
   };
   surplus_table: {
     fields: {
       id: {
         id: string;
       };
-    }
+    };
   };
 };
 
@@ -174,8 +174,8 @@ export type SupraPriceFeedResponse = {
       round: string;
       timestamp: string;
       value: string;
-    }
-  }
+    };
+  };
 };
 
 export type SBUCKFlaskResponse = {
@@ -186,8 +186,8 @@ export type SBUCKFlaskResponse = {
   sbuck_supply: {
     fields: {
       value: string;
-    }
-  }
+    };
+  };
 };
 
 export type ScallopPriceFeedResponse = {
@@ -213,16 +213,16 @@ export type LiquidStakingResponse = {
       total_supply: {
         fields: {
           value: string;
-        }
-      }
-    }
+        };
+      };
+    };
   };
   storage: {
     fields: {
       last_refresh_epoch: string;
       sui_pool: string;
       total_sui_supply: string;
-    }
+    };
   };
 };
 
@@ -245,7 +245,6 @@ export type PsmBalanceResponse = {
   };
 };
 
-
 export type AprResponse = {
   id: {
     id: string;
@@ -255,6 +254,74 @@ export type AprResponse = {
     fields: {
       value: string;
     };
+    type: string;
+  };
+};
+
+export type DeCenterResponse = {
+  id: {
+    id: string;
+  };
+  locked_total: string;
+  max_time: string;
+  minted_escrow: string;
+  offset: string;
+  penalty_fee_admin: string;
+  penalty_fee_balance: string;
+  penalty_fee_bps: string;
+  penalty_reserve: string;
+
+  point: {
+    fields: {
+      bias: {
+        fields: {
+          bits: string;
+        };
+        type: string;
+      };
+
+      slope: {
+        fields: {
+          bits: string;
+        };
+        type: string;
+      };
+      timestamp: string;
+    };
+
+    type: string;
+  };
+};
+
+export type DeTokenResponse = {
+  id: {
+    id: string;
+  };
+  balance: string;
+  early_unlock: boolean;
+  end: string;
+  escrow_epoch: string;
+  max_time: string;
+  pool: string;
+
+  point: {
+    fields: {
+      bias: {
+        fields: {
+          bits: string;
+        };
+        type: string;
+      };
+
+      slope: {
+        fields: {
+          bits: string;
+        };
+        type: string;
+      };
+      timestamp: string;
+    };
+
     type: string;
   };
 };

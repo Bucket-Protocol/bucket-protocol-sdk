@@ -1,6 +1,14 @@
 import { SuiObjectResponse } from "@mysten/sui/client";
-import { BucketInfo, LiquidStakingResponse, SBUCKFlaskResponse, SupraPriceFeedResponse } from "../types";
+import {
+  BucketInfo,
+  DeCenterResponse,
+  DeTokenResponse,
+  LiquidStakingResponse,
+  SBUCKFlaskResponse,
+  SupraPriceFeedResponse,
+} from "../types";
 import { getObjectFields } from "./object";
+import { MAX_STAKING_WEEKS } from "../constants/detoken";
 
 export function computeBorrowFeeRate(
   bucketInfo: BucketInfo | null | undefined,
@@ -34,19 +42,58 @@ export function computeSBUCKPrice(res: SuiObjectResponse): number {
 export function computeLiquidStakingRate(res: SuiObjectResponse): number {
   const resp = getObjectFields(res) as LiquidStakingResponse;
   const totalSuiSupply = Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
-  const totalLstSupply = Number(resp.lst_treasury_cap.fields.total_supply.fields.value) / 10 ** 9;
+  const totalLstSupply =
+    Number(resp.lst_treasury_cap.fields.total_supply.fields.value) / 10 ** 9;
   const rate = totalSuiSupply / totalLstSupply;
   return rate;
 }
 
-export function calculateRewardAmount(flowAmount: number, flowInterval: number) {
+export function calculateRewardAmount(
+  flowAmount: number,
+  flowInterval: number,
+) {
   return (flowAmount / 10 ** 9 / flowInterval) * 86400000;
 }
 
-export function calculateAPR(rewardAmount: number, totalAmount: number, CR: number, price: number) {
+export function calculateAPR(
+  rewardAmount: number,
+  totalAmount: number,
+  CR: number,
+  price: number,
+) {
   if (totalAmount > 0) {
-    return ((rewardAmount * 365 * price) / ((totalAmount / 10 ** 9))) / (CR / 100) * 100;
+    return (
+      ((rewardAmount * 365 * price) / (totalAmount / 10 ** 9) / (CR / 100)) *
+      100
+    );
   }
 
   return 0;
 }
+
+export const getEstimatedDeButAmount = (
+  stakeAmount: number,
+  unlockDate: number,
+) => {
+  const remainingTime = Math.max(unlockDate - Date.now(), 0);
+
+  return (
+    stakeAmount *
+    Math.min(remainingTime / (MAX_STAKING_WEEKS * 7 * 86400000), 1)
+  );
+};
+
+export const getDeButAmount = (
+  deToken: DeCenterResponse | DeTokenResponse,
+  now: number,
+): number => {
+  const { timestamp, bias, slope } = deToken.point.fields;
+  if (now < Number(timestamp)) {
+    return 0;
+  }
+  return (
+    (Number(bias.fields.bits) -
+      (Number(slope.fields.bits) * (now - Number(timestamp))) / 10 ** 9) /
+    10 ** 9
+  );
+};

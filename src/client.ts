@@ -96,6 +96,10 @@ import {
   ProofObject,
   ScableCoin,
   BottlePage,
+  DeTokenInfo,
+  DeCenterResponse,
+  DeTokenResponse,
+  DeTokenPosition,
 } from "./types";
 import {
   U64FromBytes,
@@ -118,7 +122,9 @@ import {
   computeSBUCKPrice,
   calculateAPR,
   calculateRewardAmount,
+  getDeButAmount,
 } from "./utils";
+import { DETOKEN_CONFIG } from "./constants/detoken";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -2101,6 +2107,48 @@ export class BucketClient {
     return userLpList;
   }
 
+  async getUserDeTokens(address: string): Promise<DeTokenPosition[]> {
+    /**
+     * @description Get deTokens array for input address
+     * @address User address that belong to deToken type
+     * @returns Promise<DeTokenPosition>
+     */
+    if (!address) return [];
+
+    const positions: DeTokenPosition[] = [];
+
+    try {
+      const { data: deTokens } = await this.client.getOwnedObjects({
+        owner: address,
+        filter: {
+          StructType: `0x6104e610f707fe5f1b3f34aa274c113a6b0523e63d5fb2069710e1c2d1f1fd1c::de_token::DeToken`,
+        },
+        options: {
+          showContent: true,
+        },
+      });
+
+      deTokens.map((deTokenObj) => {
+        let obj = getObjectFields(deTokenObj) as DeTokenResponse;
+
+        positions.push({
+          id: obj.id.id,
+          stakedButAmount: Number(obj.balance) / 10 ** COIN_DECIMALS.BUT,
+          stakedPeriod: Number(obj.end) - Number(obj.point.fields.timestamp),
+          startDate: Number(obj.point.fields.timestamp),
+          unlockDate: Number(obj.end),
+          deButAmount: Math.min(
+            getDeButAmount(obj, Date.now()),
+            Number(obj.balance) / 10 ** COIN_DECIMALS.BUT,
+          ),
+          earlyUnstakable: obj.early_unlock,
+        });
+      });
+    } catch (error) {}
+
+    return positions;
+  }
+
   async getPrices() {
     /**
      * @description Get all prices
@@ -2304,6 +2352,29 @@ export class BucketClient {
       MCR,
       rewardPrice,
     );
+  }
+
+  async getDeTokenInfo(): Promise<DeTokenInfo> {
+    /**
+     * @description Get deBUT token information
+     * @returns Promise<DeTokenInfo>
+     */
+
+    const res = await this.client.getObject({
+      id: DETOKEN_CONFIG.objects.shared.butDeCenter.objectId,
+      options: { showContent: true },
+    });
+
+    const deCenter = getObjectFields(res) as DeCenterResponse;
+
+    const totalStakedButAmount =
+      Number(deCenter.locked_total) / 10 ** COIN_DECIMALS.BUT;
+    const totalDeButAmount = getDeButAmount(deCenter, Date.now());
+
+    return {
+      totalStakedButAmount,
+      totalDeButAmount,
+    };
   }
 
   async getBorrowTx(
