@@ -2186,6 +2186,7 @@ export class BucketClient {
       spSUI: 0,
       mSUI: 0,
       stSUI: 0,
+      DEEP: 0,
 
       BUCK: 1,
       sBUCK: 1,
@@ -2230,6 +2231,8 @@ export class BucketClient {
           prices["CETUS"] = price;
         } else if (objectNameList[index] == "sca_usd") {
           prices["SCA"] = price;
+        } else if (objectNameList[index] == "deep_usdt") {
+          prices["DEEP"] = price;
         } else if (objectNameList[index] == "eth_usdt") {
           prices["WETH"] = (prices["wUSDT"] ?? 1) * price;
           prices["sbETH"] = (prices["wUSDT"] ?? 1) * price;

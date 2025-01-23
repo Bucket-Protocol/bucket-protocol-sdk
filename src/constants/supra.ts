@@ -30,6 +30,7 @@ export const SUPRA_PRICE_FEEDS = {
   cetus_usd:
     "0xc0205c51048f09dee3d28c08d1f3dd8c8b5aca65337aac63562e8b8140b32ac6",
   sca_usd: "0x94dff56ca222ecb8b1df97596720e1d5de65e31e242067f19c8ef9544050233c",
+  deep_usdt: "0x4d3db9e6fb2e4f28d6b0e9a06f2f13a6db5f52c45f36124710a98fda9dfadd7e",
 };
 
 export const SUPRA_ID: Record<string, number> = {
@@ -47,4 +48,5 @@ export const SUPRA_ID: Record<string, number> = {
   CETUS: 93,
   SCA: 476,
   sbETH: 19,
+  DEEP: 491,
 };

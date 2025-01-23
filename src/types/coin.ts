@@ -39,7 +39,10 @@ export type COIN =
   | "FDUSD"
   | "stSUI"
   | "BUT"
-  | "sbUSDT";
+  | "sbUSDT"
+  | "DEEP"
+  | "sDEEP"
+  | "sSBUSDT";
 
 export type LstCoin = "afSUI" | "haSUI" | "vSUI";
 
