@@ -713,10 +713,16 @@ export class BucketClient {
       token === "sUSDC" ||
       token === "swUSDC" ||
       token === "swUSDT" ||
-      token === "sSBETH"
+      token === "sSBETH" ||
+      token === "sDEEP" ||
+      token === "sSBUSDT"
     ) {
       const underlyingToke =
-        token === "sSBETH" ? "WETH" : (token.slice(1) as COIN);
+        token === "sSBETH"
+          ? "WETH"
+          : token === "sSBUSDT"
+            ? "sbUSDT"
+            : (token.slice(1) as COIN);
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
         typeArguments: [COINS_TYPE_LIST[underlyingToke]],
