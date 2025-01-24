@@ -56,4 +56,6 @@ export type ScallopCoin =
   | "sSUI"
   | "sSCA"
   | "swUSDT"
-  | "sSBETH";
+  | "sSBETH"
+  | "sDEEP"
+  | "sSBUSDT";
