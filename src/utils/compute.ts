@@ -91,9 +91,10 @@ export const getDeButAmount = (
   if (now < Number(timestamp)) {
     return 0;
   }
-  return (
+  return Math.max(
     (Number(bias.fields.bits) -
       (Number(slope.fields.bits) * (now - Number(timestamp))) / 10 ** 9) /
-    10 ** 9
+      10 ** 9,
+    0,
   );
 };
