@@ -9,6 +9,13 @@ export const MAX_STAKING_WEEKS = 52;
 export const BUCKET_PROTOCOL_TYPE =
   "0x3a4b399e18cec6129723c71605378bd554f53eb63afc1039f9af9a067a8847fa::bucket::BUCKET";
 
+export const DROPS_COIN_TYPE =
+  "0x1d627cecd34128bd6fe5a067a3a590d0f62fa514fe19d2a20a31205e3d51ea55::drop::DROP";
+export const DROPS_COIN_DECIMALS = 9;
+
+export const DETOKEN_CENTER =
+  "0x959a7135a3e96868aac57bb2ae493db76714815797349384671a62d256b1f6d";
+
 export const DETOKEN_CONFIG = {
   dfParentId: {
     whitelistAllocationId:
@@ -35,6 +42,12 @@ export const DETOKEN_CONFIG = {
           "0xd1353e96992475f29da988fec46084d6950e078c0058cae6d434e9f7d2666915",
         mutable: true,
         initialSharedVersion: 469686337,
+      },
+      rewardCenter: {
+        objectId:
+          "0xddb2a941c41fff1cd02ec30c2fb9b5a672f89e3110753fae62572f8f8d7fa0a1",
+        mutable: true,
+        initialSharedVersion: 482980069,
       },
     },
   },

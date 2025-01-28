@@ -100,6 +100,9 @@ import {
   DeCenterResponse,
   DeTokenResponse,
   DeTokenPosition,
+  DeWrapperResponse,
+  DeWrapperInfo,
+  UserDeButInfo,
 } from "./types";
 import {
   U64FromBytes,
@@ -124,7 +127,13 @@ import {
   calculateRewardAmount,
   getDeButAmount,
 } from "./utils";
-import { DETOKEN_CONFIG } from "./constants/detoken";
+import {
+  BUCKET_PROTOCOL_TYPE,
+  DETOKEN_CENTER,
+  DETOKEN_CONFIG,
+  DROPS_COIN_TYPE,
+  DROPS_COIN_DECIMALS,
+} from "./constants/detoken";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -2153,6 +2162,130 @@ export class BucketClient {
     } catch (error) {}
 
     return positions;
+  }
+
+  async getUserDeWrapper(address: string): Promise<DeWrapperInfo | null> {
+    /**
+     * @description Get deWrapper array for input address
+     * @address User address that belong to deWrapper type
+     * @returns Promise<DeWrapperInfo>
+     */
+    if (!address) return null;
+
+    let id = "";
+    const positions: DeTokenPosition[] = [];
+
+    try {
+      const { data: deWrappers } = await this.client.getOwnedObjects({
+        owner: address,
+        filter: {
+          StructType: `0x959a7135a3e96868aac57bb2ae493db76714815797349384671a62d256b1f6d::de_wrapper::DeWrapper`,
+        },
+        options: {
+          showContent: true,
+        },
+      });
+
+      deWrappers.map((deWrapperObj) => {
+        const wrapperObj = getObjectFields(deWrapperObj) as DeWrapperResponse;
+        id = wrapperObj.id.id;
+
+        for (const { fields: obj } of wrapperObj.tokens) {
+          positions.push({
+            id: obj.id.id,
+            stakedButAmount: Number(obj.balance) / 10 ** COIN_DECIMALS.BUT,
+            stakedPeriod: Number(obj.end) - Number(obj.point.fields.timestamp),
+            startDate: Number(obj.point.fields.timestamp),
+            unlockDate: Number(obj.end),
+            deButAmount: Math.min(
+              getDeButAmount(obj, Date.now()),
+              Number(obj.balance) / 10 ** COIN_DECIMALS.BUT,
+            ),
+            earlyUnstakable: obj.early_unlock,
+          });
+        }
+      });
+    } catch (error) {}
+
+    return {
+      id,
+      positions,
+    };
+  }
+
+  async getUserDropsAmount(
+    address: string,
+    deWrapperId: string,
+  ): Promise<number> {
+    /**
+     * @description Get deWrapper array for input address
+     * @address User address that belong to deWrapper type
+     * @address deWrapperId
+     * @returns Promise<number>
+     */
+    try {
+      const tx = new Transaction();
+      tx.moveCall({
+        target: `${DETOKEN_CENTER}::reward_center::get_pending_rewards`,
+        typeArguments: [
+          COINS_TYPE_LIST.BUT,
+          BUCKET_PROTOCOL_TYPE,
+          DROPS_COIN_TYPE,
+        ],
+        arguments: [
+          tx.sharedObjectRef(DETOKEN_CONFIG.objects.shared.rewardCenter),
+          tx.pure.address(deWrapperId),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+        ],
+      });
+      const res = await this.client.devInspectTransactionBlock({
+        transactionBlock: tx,
+        sender: address,
+      });
+      const returnValues = res?.results?.[0]?.returnValues;
+      if (!returnValues?.[0]?.[0]) {
+        return 0;
+      }
+      const pendingRewards = bcs.U64.parse(Uint8Array.from(returnValues[0][0]));
+      if (pendingRewards === null) {
+        return 0;
+      }
+      return +pendingRewards / 10 ** DROPS_COIN_DECIMALS;
+    } catch (error) {
+      console.log(error);
+      return 0;
+    }
+  }
+
+  async getUserDeButInfo(address: string): Promise<UserDeButInfo | null> {
+    /**
+     * @description Get deBUT information for input address
+     * @address User address that belong to deToken type
+     * @returns Promise<UserDeButInfo | null>
+     */
+
+    let deWrapperId;
+    let dropsAmount = 0;
+    let positions: DeTokenPosition[] = [];
+
+    try {
+      const wrapperObj = await this.getUserDeWrapper(address);
+      if (wrapperObj) {
+        deWrapperId = wrapperObj.id;
+        positions = wrapperObj.positions;
+        dropsAmount = await this.getUserDropsAmount(address, deWrapperId);
+      } else {
+        positions = await this.getUserDeTokens(address);
+      }
+
+      return {
+        deWrapperId,
+        positions,
+        dropsAmount,
+      };
+    } catch (ex) {
+      return null;
+    }
   }
 
   async getPrices() {

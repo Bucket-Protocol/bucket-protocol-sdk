@@ -155,3 +155,14 @@ export type DeTokenPosition = {
   deButAmount: number;
   earlyUnstakable: boolean;
 };
+
+export type DeWrapperInfo = {
+  id: string;
+  positions: DeTokenPosition[];
+};
+
+export type UserDeButInfo = {
+  deWrapperId?: string;
+  positions: DeTokenPosition[];
+  dropsAmount: number;
+};

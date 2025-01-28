@@ -325,3 +325,43 @@ export type DeTokenResponse = {
     type: string;
   };
 };
+
+export type DeWrapperResponse = {
+  id: {
+    id: string;
+  };
+  tokens: {
+    fields: {
+      id: {
+        id: string;
+      };
+      name: string;
+      img_url: string;
+      balance: string;
+      early_unlock: boolean;
+      end: string;
+      escrow_epoch: string;
+      max_time: string;
+      pool: string;
+      point: {
+        fields: {
+          bias: {
+            fields: {
+              bits: string;
+            };
+            type: string;
+          };
+          slope: {
+            fields: {
+              bits: string;
+            };
+            type: string;
+          };
+          timestamp: string;
+        };
+        type: string;
+      };
+    };
+    type: string;
+  }[];
+};

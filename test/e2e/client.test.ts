@@ -143,4 +143,29 @@ describe("Interacting with Bucket Client on mainnet", () => {
     console.log(tokens)
     expect(tokens).toBeDefined();
   });
+
+  it("tests getUserDeWrappers() function", async () => {
+    const wrapperObj = await buck.getUserDeWrapper(
+      "0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc",
+    );
+    console.log(wrapperObj);
+    expect(wrapperObj).toBeDefined();
+  });
+
+  it("tests getUserDropsAmount() function", async () => {
+    const dropsAmount = await buck.getUserDropsAmount(
+      "0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc",
+      "0x663dbb1675f7186a73f67b7973431c7eb9d79bfc6687c27730db4ec56be43444",
+    );
+    console.log(dropsAmount);
+    expect(dropsAmount).toBeDefined();
+  });
+
+  it("tests getUserDeButInfo() function", async () => {
+    const deBUT = await buck.getUserDeButInfo(
+      "0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc",
+    );
+    console.log(deBUT);
+    expect(deBUT).toBeDefined();
+  });
 });
