@@ -13,7 +13,7 @@ describe("Interacting with Bucket Client on mainnet", () => {
       buckDecimal: 9,
       maxLockTime: "31104000000",
       minLockTime: "2592000000",
-      minFee: "2500",
+      minFee: "3000",
       maxFee: "50000",
     });
   });
