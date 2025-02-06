@@ -42,7 +42,8 @@ export type COIN =
   | "sbUSDT"
   | "DEEP"
   | "sDEEP"
-  | "sSBUSDT";
+  | "sSBUSDT"
+  | "gSUI";
 
 export type LstCoin = "afSUI" | "haSUI" | "vSUI";
 

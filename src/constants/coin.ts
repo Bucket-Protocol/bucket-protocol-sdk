@@ -73,8 +73,12 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT",
 
   DEEP: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
-  sDEEP: "0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP",
-  sSBUSDT: "0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT",
+  sDEEP:
+    "0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP",
+  sSBUSDT:
+    "0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT",
+
+  gSUI: "0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x2::sui::SUI>",
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -126,4 +130,6 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   DEEP: 6,
   sDEEP: 6,
   sSBUSDT: 6,
+
+  gSUI: 9,
 };
