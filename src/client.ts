@@ -129,6 +129,7 @@ import {
   calculateRewardAmount,
   getDeButAmount,
   computeUnihouseRate,
+  getCoinType,
 } from "./utils";
 import {
   BUCKET_PROTOCOL_TYPE,
@@ -1039,8 +1040,7 @@ export class BucketClient {
       response
         .filter((t) => t.data?.type?.includes("::bucket::Bucket"))
         .map((res) => {
-          const group = res.data?.type?.match(/<([^<]*(?:<[^>]*>[^<]*)*)>/);
-          const typeId = group ? group[1] : "";
+          const typeId = getCoinType(res.data?.type ?? "") ?? "";
           const token = getCoinSymbol(typeId);
           if (!token) {
             return;
