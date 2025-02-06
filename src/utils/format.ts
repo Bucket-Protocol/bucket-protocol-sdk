@@ -5,9 +5,7 @@ export function getObjectNames(objectTypes: string[]) {
   const accept_coin_type = Object.values(COINS_TYPE_LIST);
   const accept_coin_name = Object.keys(COINS_TYPE_LIST);
 
-  const coinTypeList = objectTypes.map(
-    (type) => type.split("<").pop()?.replace(">", "") ?? "",
-  );
+  const coinTypeList = objectTypes.map((type) => getCoinType(type) ?? "");
 
   const objectNameList: string[] = [];
 
