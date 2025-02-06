@@ -66,6 +66,7 @@ import {
   MSUI_LIQUID_STAKING_OBJECT_ID,
   STSUI_LIQUID_STAKING_OBJECT_ID,
   GSUI_UNIHOUSE_OBJECT_ID,
+  UNIHOUSE_OBJECT_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -797,6 +798,18 @@ export class BucketClient {
         arguments: [
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.object(STSUI_LIQUID_STAKING_OBJECT_ID),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+        ],
+      });
+    } else if (token === "gSUI") {
+      const baseToken = token.slice(1) as COIN;
+      tx.moveCall({
+        target:
+          "0x0e9acfaf47cde01d67ff5bdfe53b74df936650fd52fbde2bf71aaddd7c79b940::gcoin_rule::update_price",
+        typeArguments: [COINS_TYPE_LIST[token], COINS_TYPE_LIST[baseToken]],
+        arguments: [
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.object(UNIHOUSE_OBJECT_ID),
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });

@@ -243,3 +243,6 @@ export const SCABLE_VAULTS: Record<ScableCoin, SharedObjectRef> = {
     mutable: true,
   },
 };
+
+export const UNIHOUSE_OBJECT_ID =
+  "0x75c63644536b1a7155d20d62d9f88bf794dc847ea296288ddaf306aa320168ab";
