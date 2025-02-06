@@ -1039,8 +1039,8 @@ export class BucketClient {
       response
         .filter((t) => t.data?.type?.includes("::bucket::Bucket"))
         .map((res) => {
-          const typeId =
-            res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
+          const group = res.data?.type?.match(/<([^<]*(?:<[^>]*>[^<]*)*)>/);
+          const typeId = group ? group[1] : "";
           const token = getCoinSymbol(typeId);
           if (!token) {
             return;
