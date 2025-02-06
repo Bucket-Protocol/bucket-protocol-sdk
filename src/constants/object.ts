@@ -220,6 +220,9 @@ export const MSUI_LIQUID_STAKING_OBJECT_ID =
 export const STSUI_LIQUID_STAKING_OBJECT_ID =
   "0x1adb343ab351458e151bc392fbf1558b3332467f23bda45ae67cd355a57fd5f5";
 
+export const GSUI_UNIHOUSE_OBJECT_ID =
+  "0x811fe901ed2a5d75cd125912ad6110efdff8be00fe694601a94167e2bd545ac2";
+
 export const SCABLE_VAULTS: Record<ScableCoin, SharedObjectRef> = {
   wUSDC: {
     objectId:

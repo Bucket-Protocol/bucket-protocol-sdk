@@ -226,6 +226,34 @@ export type LiquidStakingResponse = {
   };
 };
 
+export type UnihouseResponse = {
+  id: {
+    id: string;
+  };
+  house_pool: string;
+  max_supply: string;
+  pool: string;
+  voucher_pool: string;
+  supply: {
+    fields: {
+      value: string;
+    };
+    type: string;
+  };
+  pipe_debt: {
+    fields: {
+      value: string;
+    };
+    type: string;
+  };
+  house_pipe_debt: {
+    fields: {
+      value: string;
+    };
+    type: string;
+  };
+};
+
 export type PsmPoolResponse = {
   buck_minted_amount: string;
   charge_fee_rate: string;

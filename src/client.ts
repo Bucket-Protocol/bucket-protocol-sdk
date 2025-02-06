@@ -65,6 +65,7 @@ import {
   SPSUI_LIQUID_STAKING_OBJECT_ID,
   MSUI_LIQUID_STAKING_OBJECT_ID,
   STSUI_LIQUID_STAKING_OBJECT_ID,
+  GSUI_UNIHOUSE_OBJECT_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -126,6 +127,7 @@ import {
   calculateAPR,
   calculateRewardAmount,
   getDeButAmount,
+  computeUnihouseRate,
 } from "./utils";
 import {
   BUCKET_PROTOCOL_TYPE,
@@ -2298,6 +2300,7 @@ export class BucketClient {
       SPSUI_LIQUID_STAKING_OBJECT_ID,
       MSUI_LIQUID_STAKING_OBJECT_ID,
       STSUI_LIQUID_STAKING_OBJECT_ID,
+      GSUI_UNIHOUSE_OBJECT_ID,
     ]);
     const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
     const priceObjects: SuiObjectResponse[] = await this.client.multiGetObjects(
@@ -2325,6 +2328,7 @@ export class BucketClient {
       spSUI: 0,
       mSUI: 0,
       stSUI: 0,
+      gSUI: 0,
       DEEP: 0,
 
       BUCK: 1,
@@ -2344,6 +2348,7 @@ export class BucketClient {
     let spSuiRate = 0;
     let mSuiRate = 0;
     let stSuiRate = 0;
+    let gSuiRate = 0;
 
     priceObjects.map((res, index) => {
       const objectId = res.data?.objectId;
@@ -2356,6 +2361,8 @@ export class BucketClient {
         mSuiRate = computeLiquidStakingRate(res);
       } else if (objectId == STSUI_LIQUID_STAKING_OBJECT_ID) {
         stSuiRate = computeLiquidStakingRate(res);
+      } else if (objectId == GSUI_UNIHOUSE_OBJECT_ID) {
+        gSuiRate = computeUnihouseRate(res);
       } else {
         const price = computeSupraPrice(res);
         if (objectNameList[index] == "usdc_usd") {
@@ -2390,6 +2397,7 @@ export class BucketClient {
     prices["spSUI"] = (prices["SUI"] ?? 1) * spSuiRate;
     prices["mSUI"] = (prices["SUI"] ?? 1) * mSuiRate;
     prices["stSUI"] = (prices["SUI"] ?? 1) * stSuiRate;
+    prices["gSUI"] = (prices["SUI"] ?? 1) * gSuiRate;
     return prices;
   }
 

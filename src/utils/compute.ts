@@ -6,9 +6,11 @@ import {
   LiquidStakingResponse,
   SBUCKFlaskResponse,
   SupraPriceFeedResponse,
+  UnihouseResponse,
 } from "../types";
 import { getObjectFields } from "./object";
 import { MAX_STAKING_WEEKS } from "../constants/detoken";
+import { formatUnits } from "./format";
 
 export function computeBorrowFeeRate(
   bucketInfo: BucketInfo | null | undefined,
@@ -45,6 +47,17 @@ export function computeLiquidStakingRate(res: SuiObjectResponse): number {
   const totalLstSupply =
     Number(resp.lst_treasury_cap.fields.total_supply.fields.value) / 10 ** 9;
   const rate = totalSuiSupply / totalLstSupply;
+  return rate;
+}
+
+export function computeUnihouseRate(res: SuiObjectResponse): number {
+  const resp = getObjectFields(res) as UnihouseResponse;
+  const debtAmount = Number(
+    formatUnits(BigInt(resp.pipe_debt.fields.value), 9),
+  );
+  const poolAmount = Number(formatUnits(BigInt(resp.pool), 9));
+  const gsuiSupply = Number(formatUnits(BigInt(resp.supply.fields.value), 9));
+  const rate = (debtAmount + poolAmount) / gsuiSupply;
   return rate;
 }
 
