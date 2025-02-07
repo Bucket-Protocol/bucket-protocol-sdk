@@ -1,6 +1,7 @@
 node_modules
 dist
 
+dummy.test.ts
 
 package-lock.json
 pnpm-lock.yaml

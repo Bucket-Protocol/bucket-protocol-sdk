@@ -1854,13 +1854,14 @@ export class BucketClient {
       // Split coin type from result
       const tankTypes = tankList.map((tank) => {
         const tankType = tank.objectType;
-        const splitTypeString = tankType.split("<").pop();
-        if (!splitTypeString) return;
+        const tankGroup = tankType.split("::tank::Tank");
+        if (tankGroup.length < 2) return;
 
-        const coinType = splitTypeString.replace(">", "").split(",").pop();
-        if (!coinType) return;
+        const coinGroup = (getCoinType(tankGroup[1]) ?? "").split(", ");
+        if (coinGroup.length < 2) return;
 
-        return coinType.trim();
+        const coinType = coinGroup[1].trim();
+        return coinType;
       });
 
       // Build contributor token filter
