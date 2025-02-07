@@ -126,6 +126,9 @@ import {
   calculateAPR,
   calculateRewardAmount,
   getDeButAmount,
+  getCoinType,
+  getCoinTypeFromPipe,
+  getCoinTypeFromTank,
 } from "./utils";
 import {
   BUCKET_PROTOCOL_TYPE,
@@ -1024,8 +1027,7 @@ export class BucketClient {
       response
         .filter((t) => t.data?.type?.includes("::bucket::Bucket"))
         .map((res) => {
-          const typeId =
-            res.data?.type?.split("<").pop()?.replace(">", "") ?? "";
+          const typeId = getCoinType(res.data?.type ?? "") ?? "";
           const token = getCoinSymbol(typeId);
           if (!token) {
             return;
@@ -1055,13 +1057,11 @@ export class BucketClient {
       response
         .filter((t) => t.data?.type?.includes("::pipe::Pipe"))
         .map((res) => {
-          const typeId =
-            res.data?.type
-              ?.split("<")
-              .pop()
-              ?.replace(">", "")
-              .split(", ")[0]
-              ?.trim() ?? "";
+          const typeId = getCoinTypeFromPipe(res.data?.type ?? "");
+          if (!typeId) {
+            return;
+          }
+
           const token = getCoinSymbol(typeId);
           if (!token) {
             return;
@@ -1172,12 +1172,8 @@ export class BucketClient {
         let token = "";
         const objectType = res.data?.type;
         if (objectType) {
-          const assetType = objectType
-            .split(",")?.[1]
-            ?.trim()
-            .split(">")?.[0]
-            ?.trim();
-          token = getCoinSymbol(assetType ?? "") ?? "";
+          const coinType = getCoinTypeFromTank(objectType);
+          token = getCoinSymbol(coinType ?? "") ?? "";
         }
 
         const tankInfo: TankInfo = {
@@ -1838,14 +1834,8 @@ export class BucketClient {
 
       // Split coin type from result
       const tankTypes = tankList.map((tank) => {
-        const tankType = tank.objectType;
-        const splitTypeString = tankType.split("<").pop();
-        if (!splitTypeString) return;
-
-        const coinType = splitTypeString.replace(">", "").split(",").pop();
-        if (!coinType) return;
-
-        return coinType.trim();
+        const coinType = getCoinTypeFromTank(tank.objectType);
+        return coinType;
       });
 
       // Build contributor token filter
