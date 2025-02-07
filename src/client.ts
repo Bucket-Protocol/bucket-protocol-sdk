@@ -130,6 +130,8 @@ import {
   getDeButAmount,
   computeUnihouseRate,
   getCoinType,
+  getCoinTypeFromTank,
+  getCoinTypeFromPipe,
 } from "./utils";
 import {
   BUCKET_PROTOCOL_TYPE,
@@ -1070,13 +1072,11 @@ export class BucketClient {
       response
         .filter((t) => t.data?.type?.includes("::pipe::Pipe"))
         .map((res) => {
-          const typeId =
-            res.data?.type
-              ?.split("<")
-              .pop()
-              ?.replace(">", "")
-              .split(", ")[0]
-              ?.trim() ?? "";
+          const typeId = getCoinTypeFromPipe(res.data?.type ?? "");
+          if (!typeId) {
+            return;
+          }
+
           const token = getCoinSymbol(typeId);
           if (!token) {
             return;
@@ -1187,12 +1187,8 @@ export class BucketClient {
         let token = "";
         const objectType = res.data?.type;
         if (objectType) {
-          const assetType = objectType
-            .split(",")?.[1]
-            ?.trim()
-            .split(">")?.[0]
-            ?.trim();
-          token = getCoinSymbol(assetType ?? "") ?? "";
+          const coinType = getCoinTypeFromTank(objectType);
+          token = getCoinSymbol(coinType ?? "") ?? "";
         }
 
         const tankInfo: TankInfo = {
@@ -1853,14 +1849,7 @@ export class BucketClient {
 
       // Split coin type from result
       const tankTypes = tankList.map((tank) => {
-        const tankType = tank.objectType;
-        const tankGroup = tankType.split("::tank::Tank");
-        if (tankGroup.length < 2) return;
-
-        const coinGroup = (getCoinType(tankGroup[1]) ?? "").split(", ");
-        if (coinGroup.length < 2) return;
-
-        const coinType = coinGroup[1].trim();
+        const coinType = getCoinTypeFromTank(tank.objectType);
         return coinType;
       });
 

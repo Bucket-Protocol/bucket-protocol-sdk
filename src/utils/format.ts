@@ -1,23 +1,6 @@
 import { COINS_TYPE_LIST } from "../constants";
 import { COIN, UserLpProof } from "..";
 
-export function getObjectNames(objectTypes: string[]) {
-  const accept_coin_type = Object.values(COINS_TYPE_LIST);
-  const accept_coin_name = Object.keys(COINS_TYPE_LIST);
-
-  const coinTypeList = objectTypes.map((type) => getCoinType(type) ?? "");
-
-  const objectNameList: string[] = [];
-
-  coinTypeList.forEach((type) => {
-    const typeIndex = accept_coin_type.indexOf(type);
-    const coinName = accept_coin_name[typeIndex];
-    objectNameList.push(coinName ?? "");
-  });
-
-  return objectNameList;
-}
-
 export function U64FromBytes(x: number[]) {
   let u64 = BigInt(0);
   for (let i = x.length - 1; i >= 0; i--) {
@@ -75,6 +58,66 @@ export const parseUnits = (value: number | string, decimals: number) => {
   return BigInt(`${negative ? "-" : ""}${integer}${fraction}`);
 };
 
+export function getObjectNames(objectTypes: string[]) {
+  const accept_coin_type = Object.values(COINS_TYPE_LIST);
+  const accept_coin_name = Object.keys(COINS_TYPE_LIST);
+
+  const coinTypeList = objectTypes.map((type) => getCoinType(type) ?? "");
+
+  const objectNameList: string[] = [];
+
+  coinTypeList.forEach((type) => {
+    const typeIndex = accept_coin_type.indexOf(type);
+    const coinName = accept_coin_name[typeIndex];
+    objectNameList.push(coinName ?? "");
+  });
+
+  return objectNameList;
+}
+
+export const getCoinType = (str: string) => {
+  const startIndex = str.indexOf("<");
+  const endIndex = str.lastIndexOf(">");
+
+  if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+    return str.slice(startIndex + 1, endIndex);
+  }
+
+  return null;
+};
+export const getCoinTypeFromTank = (tankType: string) => {
+  const tankGroup = tankType.split("::tank::Tank");
+  if (tankGroup.length < 2) return null;
+
+  const coinGroup = (getCoinType(tankGroup[1]) ?? "").split(", ");
+  if (coinGroup.length < 2) return null;
+
+  const coinType = coinGroup[1].trim();
+  return coinType;
+};
+
+export const getCoinTypeFromPipe = (pipeType: string) => {
+  const pipeGroup = pipeType.split("::pipe::Pipe");
+  if (pipeGroup.length < 2) return null;
+
+  const coinGroup = (getCoinType(pipeGroup[1]) ?? "").split(", ");
+  if (coinGroup.length < 2) return null;
+
+  const coinType = coinGroup[0].trim();
+  return coinType;
+};
+
+export const getCoinSymbol = (coinType: string) => {
+  const coin = Object.keys(COINS_TYPE_LIST).find(
+    (key) => COINS_TYPE_LIST[key as COIN] === coinType,
+  );
+  if (coin) {
+    return coin as COIN;
+  }
+
+  return undefined;
+};
+
 export const proofTypeToCoinType = (poolType: string): string[] => {
   const typeChunks = poolType.split("<");
   if (typeChunks[1]) {
@@ -90,26 +133,4 @@ export const lpProofToObject = (lpProof: UserLpProof) => {
     digest: lpProof.digest,
     version: lpProof.version,
   };
-};
-
-export const getCoinSymbol = (coinType: string) => {
-  const coin = Object.keys(COINS_TYPE_LIST).find(
-    (key) => COINS_TYPE_LIST[key as COIN] === coinType,
-  );
-  if (coin) {
-    return coin as COIN;
-  }
-
-  return undefined;
-};
-
-export const getCoinType = (str: string) => {
-  const startIndex = str.indexOf("<");
-  const endIndex = str.lastIndexOf(">");
-
-  if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-    return str.slice(startIndex + 1, endIndex);
-  }
-
-  return null;
 };
