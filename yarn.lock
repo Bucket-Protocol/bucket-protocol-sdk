@@ -598,20 +598,20 @@
     globby "^11.0.0"
     read-yaml-file "^1.1.0"
 
-"@mysten/bcs@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@mysten/bcs/-/bcs-1.1.0.tgz#dee28e8e4d1671f694afad471b644020b227102a"
-  integrity sha512-yy9/1Y4d0FlRywS1+9ze/T7refCbrvwFwJIOKs9M3QBK1njbcHZp+LkVeLqBvIJA5eZ3ZCzmhQ1Xq4Sed5mEBA==
+"@mysten/bcs@1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@mysten/bcs/-/bcs-1.3.0.tgz#dec03167fefde472ad9da1c5bf386a538a5878ad"
+  integrity sha512-V3V9GwIXEiUS7y8hkCwH3oseWpxs75YOOtfy7xdfyAdSftlFpTYgj5elclwYx8pgHdzg7pHdy6no77LHYGQCaQ==
   dependencies:
     bs58 "^6.0.0"
 
-"@mysten/sui@^1.8.0":
-  version "1.13.0"
-  resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.13.0.tgz#d40819bca42fca1ec22b83ade5d006123c07d3ee"
-  integrity sha512-zxRFWkb5dFjwQh6gGkswNrdSVoeBbjrL70AmRa13seNe8mfnf2lZgE8Kcj1fj4MTsDI2mGNWihQVkK99cprW+w==
+"@mysten/sui@^1.21.1":
+  version "1.21.1"
+  resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.21.1.tgz#a3f43aba5e970ff46dafabd160c4963276ef3619"
+  integrity sha512-HVrcqiUUSPToxbQtEgARFCnLr6FMkDHhhwWdy/urk8dqr8jnNZkU3Ppr6YUgg3vRE3sXPhuIjXOCEL6Wyq6Esw==
   dependencies:
     "@graphql-typed-document-node/core" "^3.2.0"
-    "@mysten/bcs" "1.1.0"
+    "@mysten/bcs" "1.3.0"
     "@noble/curves" "^1.4.2"
     "@noble/hashes" "^1.4.0"
     "@scure/bip32" "^1.4.0"
@@ -620,7 +620,8 @@
     bech32 "^2.0.0"
     gql.tada "^1.8.2"
     graphql "^16.9.0"
-    tweetnacl "^1.0.3"
+    jose "^5.6.3"
+    poseidon-lite "^0.2.0"
     valibot "^0.36.0"
 
 "@noble/curves@^1.4.2", "@noble/curves@~1.6.0":
@@ -1810,6 +1811,11 @@ jackspeak@^3.1.2:
   optionalDependencies:
     "@pkgjs/parseargs" "^0.11.0"
 
+jose@^5.6.3:
+  version "5.9.6"
+  resolved "https://registry.yarnpkg.com/jose/-/jose-5.9.6.tgz#77f1f901d88ebdc405e57cce08d2a91f47521883"
+  integrity sha512-AMlnetc9+CV9asI19zHmrgS/WYsWUwCn2R7RzlbJWD7F9eWYUTGyBmU9o6PxngtLGOiDGPRu+Uc4fhKzbpteZQ==
+
 joycon@^3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/joycon/-/joycon-3.1.1.tgz#bce8596d6ae808f8b68168f5fc69280996894f03"
@@ -2225,6 +2231,11 @@ pkg-types@^1.2.0:
     mlly "^1.7.2"
     pathe "^1.1.2"
 
+poseidon-lite@^0.2.0:
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/poseidon-lite/-/poseidon-lite-0.2.1.tgz#7ad98e3a3aa5b91a1fd3a61a87460e9e46fd76d6"
+  integrity sha512-xIr+G6HeYfOhCuswdqcFpSX47SPhm0EpisWJ6h7fHlWwaVIvH3dLnejpatrtw6Xc6HaLrpq05y7VRfvDmDGIog==
+
 postcss-load-config@^6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/postcss-load-config/-/postcss-load-config-6.0.1.tgz#6fd7dcd8ae89badcf1b2d644489cbabf83aa8096"
@@ -2450,16 +2461,7 @@ std-env@^3.3.3:
   resolved "https://registry.yarnpkg.com/std-env/-/std-env-3.7.0.tgz#c9f7386ced6ecf13360b6c6c55b8aaa4ef7481d2"
   integrity sha512-JPbdCEQLj1w5GilpiHAx3qJvFndqybBysA3qUOnznweH4QbNYUsW/ea8QzSrnh0vNsezMMw5bcVool8lM0gwzg==
 
-"string-width-cjs@npm:string-width@^4.2.0":
-  version "4.2.3"
-  resolved "https://registry.yarnpkg.com/string-width/-/string-width-4.2.3.tgz#269c7117d27b05ad2e536830a8ec895ef9c6d010"
-  integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
-  dependencies:
-    emoji-regex "^8.0.0"
-    is-fullwidth-code-point "^3.0.0"
-    strip-ansi "^6.0.1"
-
-string-width@^4.1.0:
+"string-width-cjs@npm:string-width@^4.2.0", string-width@^4.1.0:
   version "4.2.3"
   resolved "https://registry.yarnpkg.com/string-width/-/string-width-4.2.3.tgz#269c7117d27b05ad2e536830a8ec895ef9c6d010"
   integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
@@ -2477,14 +2479,7 @@ string-width@^5.0.1, string-width@^5.1.2:
     emoji-regex "^9.2.2"
     strip-ansi "^7.0.1"
 
-"strip-ansi-cjs@npm:strip-ansi@^6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/strip-ansi/-/strip-ansi-6.0.1.tgz#9e26c63d30f53443e9489495b2105d37b67a85d9"
-  integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
-  dependencies:
-    ansi-regex "^5.0.1"
-
-strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+"strip-ansi-cjs@npm:strip-ansi@^6.0.1", strip-ansi@^6.0.0, strip-ansi@^6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/strip-ansi/-/strip-ansi-6.0.1.tgz#9e26c63d30f53443e9489495b2105d37b67a85d9"
   integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
@@ -2654,11 +2649,6 @@ tsup@^8.0.2:
     sucrase "^3.35.0"
     tinyglobby "^0.2.1"
     tree-kill "^1.2.2"
-
-tweetnacl@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/tweetnacl/-/tweetnacl-1.0.3.tgz#ac0af71680458d8a6378d0d0d050ab1407d35596"
-  integrity sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==
 
 type-check@^0.4.0, type-check@~0.4.0:
   version "0.4.0"
