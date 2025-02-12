@@ -701,7 +701,7 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
-    } else if (token === "haSUI") {
+    } else if (token === "haSUI" || token === "haSUI_SUI_CETUS_VT_LP") {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
         typeArguments: [COINS_TYPE_LIST["SUI"]],
@@ -724,6 +724,27 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
+      if (token === "haSUI_SUI_CETUS_VT_LP") {
+        tx.moveCall({
+          target:
+            "0x656c6d23553950af9bc7e16e4cffa5cdfcd97705e4fddfe5f52eeb38f0cd75ad::cetus_lp_rule::update_price",
+          typeArguments: [
+            COINS_TYPE_LIST.haSUI,
+            COINS_TYPE_LIST.SUI,
+            COINS_TYPE_LIST.haSUI_SUI_CETUS_VT_LP,
+          ],
+          arguments: [
+            tx.sharedObjectRef(ORACLE_OBJECT),
+            tx.object(
+              "0xde97452e63505df696440f86f0b805263d8659b77b8c316739106009d514c270",
+            ),
+            tx.object(
+              "0x871d8a227114f375170f149f7e9d45be822dd003eba225e83c05ac80828596bc",
+            ),
+            tx.sharedObjectRef(CLOCK_OBJECT),
+          ],
+        });
+      }
     } else if (
       token === "sSUI" ||
       token === "sSCA" ||
