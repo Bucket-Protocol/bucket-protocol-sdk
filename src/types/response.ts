@@ -393,3 +393,27 @@ export type DeWrapperResponse = {
     type: string;
   }[];
 };
+
+export type CetusPoolResponse = {
+  coin_a: string;
+  coin_b: string;
+  fee_rate: string;
+  liquidity: string;
+  current_sqrt_price: string;
+};
+
+export type CetusVaultLpResponse = {
+  finish_rebalance_threshold: string;
+  liquidity: string;
+  max_quota: string;
+  pool: string;
+  status: string;
+};
+
+export type LpTokenValueEvent = {
+  lp_amount: string;
+  amount_a: string;
+  amount_b: string;
+  clmm_pool: string;
+  vault_id: string;
+};

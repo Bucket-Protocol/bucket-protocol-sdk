@@ -67,6 +67,8 @@ import {
   STSUI_LIQUID_STAKING_OBJECT_ID,
   GSUI_UNIHOUSE_OBJECT_ID,
   UNIHOUSE_OBJECT_ID,
+  CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
+  CETUS_VAULT_PACKAGE_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -105,6 +107,9 @@ import {
   DeWrapperResponse,
   DeWrapperInfo,
   UserDeButInfo,
+  LpTokenValueEvent,
+  CetusPoolResponse,
+  CetusVaultLpResponse,
 } from "./types";
 import {
   U64FromBytes,
@@ -132,6 +137,7 @@ import {
   getCoinType,
   getCoinTypeFromTank,
   getCoinTypeFromPipe,
+  calculateClmmPrice,
 } from "./utils";
 import {
   BUCKET_PROTOCOL_TYPE,
@@ -140,8 +146,6 @@ import {
   DROPS_COIN_TYPE,
   DROPS_COIN_DECIMALS,
 } from "./constants/detoken";
-import CetusVaultsSDK, { VaultsUtils } from "@cetusprotocol/vaults-sdk";
-import { d, TickMath, TickUtil } from "@cetusprotocol/cetus-sui-clmm-sdk";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 
@@ -2316,6 +2320,68 @@ export class BucketClient {
     }
   }
 
+  async getCetusVaultLpPrice(
+    lpCoin: COIN,
+    coinA: COIN,
+    coinB: COIN,
+    lpObjectId: string,
+    basePrice: number,
+  ): Promise<number> {
+    /**
+     * @description Get vault lp price with get_position_amounts
+     * @returns lpPrice
+     */
+
+    const lpObject = await this.client.getObject({
+      id: lpObjectId,
+      options: {
+        showContent: true,
+      },
+    });
+    const { pool } = getObjectFields(lpObject) as CetusVaultLpResponse;
+
+    const poolObject = await this.client.getObject({
+      id: pool,
+      options: {
+        showContent: true,
+      },
+    });
+    const { current_sqrt_price } = getObjectFields(
+      poolObject,
+    ) as CetusPoolResponse;
+    const poolPrice = calculateClmmPrice(
+      current_sqrt_price,
+      COIN_DECIMALS[coinA],
+      COIN_DECIMALS[coinB],
+    );
+
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${CETUS_VAULT_PACKAGE_ID}::fetcher::get_position_amounts`,
+      typeArguments: [
+        COINS_TYPE_LIST[coinA],
+        COINS_TYPE_LIST[coinB],
+        COINS_TYPE_LIST[lpCoin],
+      ],
+      arguments: [
+        tx.object(lpObjectId),
+        tx.object(pool),
+        tx.pure.u64("1000000000"),
+      ],
+    });
+
+    const inspectRes = await this.client.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: this.owner,
+    });
+    const { amount_a, amount_b } = inspectRes.events[0]
+      .parsedJson as LpTokenValueEvent;
+    const priceA = Number(amount_a) / 10 ** COIN_DECIMALS[coinA];
+    const priceB = Number(amount_b) / 10 ** COIN_DECIMALS[coinB];
+    const lpPrice = (priceA * poolPrice + priceB) * basePrice;
+    return lpPrice;
+  }
+
   async getPrices() {
     /**
      * @description Get all prices
@@ -2420,10 +2486,20 @@ export class BucketClient {
       }
     });
 
-    prices["spSUI"] = (prices["SUI"] ?? 1) * spSuiRate;
-    prices["mSUI"] = (prices["SUI"] ?? 1) * mSuiRate;
-    prices["stSUI"] = (prices["SUI"] ?? 1) * stSuiRate;
-    prices["gSUI"] = (prices["SUI"] ?? 1) * gSuiRate;
+    const suiPrice = prices["SUI"] ?? 1;
+    prices["spSUI"] = suiPrice * spSuiRate;
+    prices["mSUI"] = suiPrice * mSuiRate;
+    prices["stSUI"] = suiPrice * stSuiRate;
+    prices["gSUI"] = suiPrice * gSuiRate;
+
+    prices["haSUI_SUI_CETUS_VT_LP"] = await this.getCetusVaultLpPrice(
+      "haSUI_SUI_CETUS_VT_LP",
+      "haSUI",
+      "SUI",
+      CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
+      suiPrice,
+    );
+
     return prices;
   }
 

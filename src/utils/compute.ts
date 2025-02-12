@@ -1,4 +1,5 @@
 import { SuiObjectResponse } from "@mysten/sui/client";
+
 import {
   BucketInfo,
   DeCenterResponse,
@@ -11,6 +12,7 @@ import {
 import { getObjectFields } from "./object";
 import { MAX_STAKING_WEEKS } from "../constants/detoken";
 import { formatUnits } from "./format";
+import Decimal from "./decimal";
 
 export function computeBorrowFeeRate(
   bucketInfo: BucketInfo | null | undefined,
@@ -110,4 +112,14 @@ export const getDeButAmount = (
       10 ** 9,
     0,
   );
+};
+
+export const calculateClmmPrice = (
+  sqrtPrice: string,
+  decimalsA: number,
+  decimalsB: number,
+): number => {
+  const priceX64 = new Decimal(sqrtPrice).mul(Decimal.pow(2, -64));
+  const price = priceX64.pow(2).mul(Decimal.pow(10, decimalsA - decimalsB));
+  return price.toNumber();
 };
