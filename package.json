@@ -1,7 +1,7 @@
 {
   "name": "bucket-protocol-sdk",
   "author": "Bucketniper <bucketbird@outlook.com>",
-  "version": "0.10.30-alpha.4",
+  "version": "0.10.30-alpha.5",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
   "scripts": {
@@ -30,6 +30,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@cetusprotocol/cetus-sui-clmm-sdk": "^5.2.0",
     "@mysten/sui": "^1.8.0",
     "@types/superstruct": "^0.8.2",
     "superstruct": "^1.0.3"

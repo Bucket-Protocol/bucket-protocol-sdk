@@ -140,6 +140,8 @@ import {
   DROPS_COIN_TYPE,
   DROPS_COIN_DECIMALS,
 } from "./constants/detoken";
+import CetusVaultsSDK, { VaultsUtils } from "@cetusprotocol/vaults-sdk";
+import { d, TickMath, TickUtil } from "@cetusprotocol/cetus-sui-clmm-sdk";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
 

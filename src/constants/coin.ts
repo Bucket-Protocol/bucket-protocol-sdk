@@ -79,6 +79,9 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT",
 
   gSUI: "0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x2::sui::SUI>",
+
+  haSUI_SUI_CETUS_VT_LP:
+    "0x828b452d2aa239d48e4120c24f4a59f451b8cd8ac76706129f4ac3bd78ac8809::lp_token::LP_TOKEN",
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -132,4 +135,5 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   sSBUSDT: 6,
 
   gSUI: 9,
+  haSUI_SUI_CETUS_VT_LP: 9,
 };
