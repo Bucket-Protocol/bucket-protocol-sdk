@@ -82,6 +82,9 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
 
   haSUI_SUI_CETUS_VT_LP:
     "0x828b452d2aa239d48e4120c24f4a59f451b8cd8ac76706129f4ac3bd78ac8809::lp_token::LP_TOKEN",
+
+  stSUI_SUI_ALPHA_VT_LP:
+  "",
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -136,4 +139,6 @@ export const COIN_DECIMALS: Record<COIN, number> = {
 
   gSUI: 9,
   haSUI_SUI_CETUS_VT_LP: 9,
+
+  stSUI_SUI_ALPHA_VT_LP: 9,
 };
