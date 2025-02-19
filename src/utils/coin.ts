@@ -5,6 +5,7 @@ import {
   TransactionResult,
 } from "@mysten/sui/transactions";
 import { COINS_TYPE_LIST } from "../constants";
+import { normalizeType } from "./format";
 
 export function coinIntoBalance(
   tx: Transaction,
@@ -59,7 +60,7 @@ export async function getInputCoins(
     });
   }
 
-  if (coinType === COINS_TYPE_LIST.SUI) {
+  if (normalizeType(coinType) === COINS_TYPE_LIST.SUI) {
     return tx.splitCoins(
       tx.gas,
       amounts.map((amount) => tx.pure.u64(amount)),
@@ -95,7 +96,7 @@ export async function getMainCoin(
   owner: string,
   coinType: string,
 ) {
-  if (coinType === COINS_TYPE_LIST.SUI) {
+  if (normalizeType(coinType) === COINS_TYPE_LIST.SUI) {
     return undefined;
   }
 

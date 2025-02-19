@@ -2641,9 +2641,9 @@ export class BucketClient {
 
     const supraObj = await this.client.getObject({
       id:
-        rewardType == COINS_TYPE_LIST.SUI
+        rewardType === COINS_TYPE_LIST.SUI
           ? SUPRA_PRICE_FEEDS.sui_usdt
-          : rewardType == COINS_TYPE_LIST.SCA
+          : rewardType === COINS_TYPE_LIST.SCA
             ? SUPRA_PRICE_FEEDS.sca_usd
             : "",
       options: {

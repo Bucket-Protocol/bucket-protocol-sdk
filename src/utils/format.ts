@@ -1,5 +1,6 @@
 import { COINS_TYPE_LIST } from "../constants";
 import { COIN, UserLpProof } from "..";
+import { normalizeSuiAddress } from "@mysten/sui/dist/cjs/utils";
 
 export function U64FromBytes(x: number[]) {
   let u64 = BigInt(0);
@@ -133,4 +134,13 @@ export const lpProofToObject = (lpProof: UserLpProof) => {
     digest: lpProof.digest,
     version: lpProof.version,
   };
+};
+
+export const normalizeType = (type?: string) => {
+  if (!type) {
+    return "";
+  }
+  const [address, module, struct] = type.split("::");
+
+  return [normalizeSuiAddress(address), module, struct].join("::");
 };
