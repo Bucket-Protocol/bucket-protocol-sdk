@@ -45,7 +45,7 @@ export type COIN =
   | "sSBUSDT"
   | "gSUI"
   | "haSUI_SUI_CETUS_VT_LP"
-  | "stSUI_SUI_ALPHA_VT_LP";
+  | "stSUI_SUI_ALPHAFI_FT";
 
 export type LstCoin = "afSUI" | "haSUI" | "vSUI";
 

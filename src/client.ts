@@ -69,6 +69,7 @@ import {
   UNIHOUSE_OBJECT_ID,
   CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
   CETUS_VAULT_PACKAGE_ID,
+  ALPHAFI_STSUI_SUI_PACKAGE_ID,
 } from "./constants";
 import {
   BucketConstants,
@@ -2382,6 +2383,59 @@ export class BucketClient {
     return lpPrice;
   }
 
+  async getAlphafiStSUIFtPrice(
+    priceStSUI: number,
+    priceSUI: number,
+  ): Promise<number> {
+    /**
+     * @description Get vault lp price with get_fungible_token_price
+     * @returns lpPrice
+     */
+
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${ALPHAFI_STSUI_SUI_PACKAGE_ID}::alphafi_bluefin_stsui_sui_ft_pool::get_fungible_token_amounts`,
+      typeArguments: [
+        COINS_TYPE_LIST["stSUI"],
+        COINS_TYPE_LIST["SUI"],
+        COINS_TYPE_LIST["stSUI_SUI_ALPHAFI_FT"],
+      ],
+      arguments: [
+        tx.object(
+          "0x0b45d1e5889b524dc1a472f59651cdedb8e0a2678e745f27975a9b57c127acdd",
+        ), // Pool<T0, T1, T2>
+        tx.object(
+          "0xaec347c096dd7e816febd8397be4cca3aabc094a9a2a1f23d7e895564f859dc2",
+        ), // 0x59fd36210b1bf1dcd70d148cd868e059e74b22a660f84c5602cfb8501442322a::alphafi_bluefin_stsui_sui_ft_investor::Investor<T0, T1>
+        tx.object(
+          "0x73549e0918d10727e324ebeed11ab81ab46f8fadb11078a0641f117d9097b725",
+        ), // 0x3492c874c1e3b3e2984e8c41b589e642d4d0a5d6459e5a9cfc2d52fd7c89c267::pool::Pool<T0, T1>
+        tx.pure.u64(10 ** COIN_DECIMALS["stSUI_SUI_ALPHAFI_FT"]),
+      ],
+    });
+
+    let price = 0;
+    const { results } = await this.client.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: this.owner,
+    });
+
+    if (results && results.length > 0) {
+      const returnValues = results[0].returnValues;
+      if (returnValues) {
+        const amountStSUI =
+          Number(U64FromBytes(returnValues[0][0])) /
+          10 ** COIN_DECIMALS["stSUI"];
+        const amountSUI =
+          Number(U64FromBytes(returnValues[1][0])) / 10 ** COIN_DECIMALS["SUI"];
+        console.log(`stSUI: ${amountStSUI}`, `SUI: ${amountSUI}`);
+        price = amountStSUI * priceStSUI + amountSUI * priceSUI;
+      }
+    }
+
+    return price;
+  }
+
   async getPrices() {
     /**
      * @description Get all prices
@@ -2498,6 +2552,11 @@ export class BucketClient {
       "SUI",
       CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
       suiPrice,
+    );
+
+    prices["stSUI_SUI_ALPHAFI_FT"] = await this.getAlphafiStSUIFtPrice(
+      prices["stSUI"],
+      prices["SUI"],
     );
 
     return prices;
