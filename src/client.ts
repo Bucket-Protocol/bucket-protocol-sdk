@@ -821,7 +821,7 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
-    } else if (token === "stSUI") {
+    } else if (token === "stSUI" || token === "stSUI_SUI_ALPHAFI_FT") {
       tx.moveCall({
         target:
           "0xdfdab1daf15c8b79512001f8eff16f8b07f2c9bbb1cc277d8739eb5338722340::stsui_rule::update_price",
@@ -832,6 +832,30 @@ export class BucketClient {
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
+      if (token === "stSUI_SUI_ALPHAFI_FT") {
+        tx.moveCall({
+          target:
+            "0x3d078bd7af765ed2889ac67a3d0dd812341403e1f415bd9fd287a4d7f49023aa::alphafi_stsui_sui_rule::update_price",
+          typeArguments: [
+            COINS_TYPE_LIST.stSUI,
+            COINS_TYPE_LIST.SUI,
+            COINS_TYPE_LIST.stSUI_SUI_ALPHAFI_FT,
+          ],
+          arguments: [
+            tx.sharedObjectRef(ORACLE_OBJECT),
+            tx.object(
+              "0x0b45d1e5889b524dc1a472f59651cdedb8e0a2678e745f27975a9b57c127acdd",
+            ),
+            tx.object(
+              "0xaec347c096dd7e816febd8397be4cca3aabc094a9a2a1f23d7e895564f859dc2",
+            ),
+            tx.object(
+              "0xde705d4f3ded922b729d9b923be08e1391dd4caeff8496326123934d0fb1c312",
+            ),
+            tx.sharedObjectRef(CLOCK_OBJECT),
+          ],
+        });
+      }
     } else if (token === "gSUI") {
       const baseToken = token.slice(1) as COIN;
       tx.moveCall({
