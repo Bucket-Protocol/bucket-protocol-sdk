@@ -850,7 +850,7 @@ export class BucketClient {
               "0xaec347c096dd7e816febd8397be4cca3aabc094a9a2a1f23d7e895564f859dc2",
             ),
             tx.object(
-              "0xde705d4f3ded922b729d9b923be08e1391dd4caeff8496326123934d0fb1c312",
+              "0x73549e0918d10727e324ebeed11ab81ab46f8fadb11078a0641f117d9097b725",
             ),
             tx.sharedObjectRef(CLOCK_OBJECT),
           ],
