@@ -2495,6 +2495,7 @@ export class BucketClient {
       NAVX: 0,
       WETH: 0,
       sbETH: 0,
+      sbBTC: 0,
       spSUI: 0,
       mSUI: 0,
       stSUI: 0,
@@ -2549,6 +2550,8 @@ export class BucketClient {
           prices["SCA"] = price;
         } else if (objectNameList[index] == "deep_usdt") {
           prices["DEEP"] = price;
+        } else if (objectNameList[index] == "btc_usd") {
+          prices["sbBTC"] = price;
         } else if (objectNameList[index] == "eth_usdt") {
           prices["WETH"] = (prices["wUSDT"] ?? 1) * price;
           prices["sbETH"] = (prices["wUSDT"] ?? 1) * price;
