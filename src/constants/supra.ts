@@ -32,6 +32,7 @@ export const SUPRA_PRICE_FEEDS = {
   sca_usd: "0x94dff56ca222ecb8b1df97596720e1d5de65e31e242067f19c8ef9544050233c",
   deep_usdt:
     "0x4d3db9e6fb2e4f28d6b0e9a06f2f13a6db5f52c45f36124710a98fda9dfadd7e",
+  btc_usd: "0xd3eb1720c811452b3abcef9179abd0674dd8a7a9ab050f3993a6e2176671f67a",
 };
 
 export const SUPRA_ID: Record<string, number> = {
