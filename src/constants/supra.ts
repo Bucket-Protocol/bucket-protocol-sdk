@@ -51,4 +51,5 @@ export const SUPRA_ID: Record<string, number> = {
   sbETH: 19,
   DEEP: 491,
   sbUSDT: 48,
+  sbWBTC: 18,
 };
