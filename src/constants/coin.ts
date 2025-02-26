@@ -84,7 +84,10 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
     "0x828b452d2aa239d48e4120c24f4a59f451b8cd8ac76706129f4ac3bd78ac8809::lp_token::LP_TOKEN",
 
   stSUI_SUI_ALPHAFI_FT:
-  "0x96eb2012a75798ce4410392baeab9dd888bc704799b7daa468c36856c83174f3::ALPHAFI_STSUI_SUI_LP::ALPHAFI_STSUI_SUI_LP",
+    "0x96eb2012a75798ce4410392baeab9dd888bc704799b7daa468c36856c83174f3::ALPHAFI_STSUI_SUI_LP::ALPHAFI_STSUI_SUI_LP",
+
+  sbWBTC:
+    "0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC",
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -132,6 +135,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
 
   stSUI: 9,
   sbUSDT: 6,
+  sbWBTC: 8,
 
   DEEP: 6,
   sDEEP: 6,
