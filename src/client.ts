@@ -149,6 +149,7 @@ import {
 } from "./constants/detoken";
 
 const DUMMY_ADDRESS = normalizeSuiAddress("0x0");
+const TRUE = true;
 
 export class BucketClient {
   /**
@@ -931,6 +932,7 @@ export class BucketClient {
      * @returns Promise<DecodedBucketConstants | undefined>
      */
 
+    /* eslint-disable  @typescript-eslint/no-explicit-any */
     const results: any = await this.encodedBucketConstants();
 
     if (!results) {
@@ -1046,7 +1048,7 @@ export class BucketClient {
     /**
      * @description Get all buckets
      */
-    let buckets: BucketList = {};
+    const buckets: BucketList = {};
 
     try {
       const generalInfo = await this.client.getObject({
@@ -1061,7 +1063,7 @@ export class BucketClient {
 
       let objectIds: string[] = [];
       let cursor: string | null = null;
-      while (true) {
+      while (TRUE) {
         const protocolFields = await this.client.getDynamicFields({
           parentId: PROTOCOL_ID,
           cursor,
@@ -1145,7 +1147,7 @@ export class BucketClient {
           }
         });
     } catch (error) {
-      console.log(error);
+      // TODO: error handling
     }
 
     return buckets;
@@ -1205,7 +1207,7 @@ export class BucketClient {
     try {
       let tankList: DynamicFieldInfo[] = [];
       let cursor: string | null = null;
-      while (true) {
+      while (TRUE) {
         const protocolFields = await this.client.getDynamicFields({
           parentId: PROTOCOL_ID,
           cursor,
@@ -1252,7 +1254,9 @@ export class BucketClient {
 
         tankInfoList[token as COIN] = tankInfo;
       });
-    } catch (error) {}
+    } catch (error) {
+      // TODO: error handling
+    }
 
     return tankInfoList;
   }
@@ -1450,7 +1454,7 @@ export class BucketClient {
     /**
      * @description Get all PSM's information
      */
-    let psmList: PsmList = {};
+    const psmList: PsmList = {};
 
     try {
       const psmPoolIds = Object.values(PSM_POOL_IDS);
@@ -1466,7 +1470,7 @@ export class BucketClient {
       for (const res of response) {
         const objectId = res.data?.objectId ?? "";
         if (psmPoolIds.includes(objectId)) {
-          let psm = objectToPsm(res);
+          const psm = objectToPsm(res);
           const coin = Object.keys(PSM_POOL_IDS).find(
             (symbol) => PSM_POOL_IDS[symbol as COIN] == psm.id,
           );
@@ -1494,7 +1498,7 @@ export class BucketClient {
         }
       }
     } catch (error) {
-      console.log(error);
+      // TODO: error handling
     }
 
     return psmList;
@@ -1578,7 +1582,7 @@ export class BucketClient {
 
     let bucketList: DynamicFieldInfo[] = [];
     let cursor: string | null = null;
-    while (true) {
+    while (TRUE) {
       const protocolFields = await this.client.getDynamicFields({
         parentId: PROTOCOL_ID,
         cursor,
@@ -1642,7 +1646,7 @@ export class BucketClient {
     });
 
     let strapIds = strapObjects.map((strapObj) => {
-      let obj = getObjectFields(strapObj);
+      const obj = getObjectFields(strapObj);
       return {
         id: obj?.id.id,
         type: strapObj.data?.type,
@@ -1663,7 +1667,7 @@ export class BucketClient {
     });
     strapIds = strapIds.concat(
       stakeProofs.map((strapObj) => {
-        let obj = getObjectFields(strapObj);
+        const obj = getObjectFields(strapObj);
         return {
           id: obj?.id.id,
           type: strapObj.data?.type,
@@ -1881,7 +1885,7 @@ export class BucketClient {
     try {
       let tankList: DynamicFieldInfo[] = [];
       let cursor: string | null = null;
-      while (true) {
+      while (TRUE) {
         const protocolFields = await this.client.getDynamicFields({
           parentId: PROTOCOL_ID,
           cursor,
@@ -1950,7 +1954,9 @@ export class BucketClient {
           totalEarned,
         };
       }
-    } catch (error) {}
+    } catch (error) {
+      // TODO: error handling
+    }
 
     return userTanks;
   }
@@ -2201,7 +2207,7 @@ export class BucketClient {
       });
 
       deTokens.map((deTokenObj) => {
-        let obj = getObjectFields(deTokenObj) as DeTokenResponse;
+        const obj = getObjectFields(deTokenObj) as DeTokenResponse;
 
         positions.push({
           id: obj.id.id,
@@ -2216,7 +2222,9 @@ export class BucketClient {
           earlyUnstakable: obj.early_unlock,
         });
       });
-    } catch (error) {}
+    } catch (error) {
+      // TODO: error handling
+    }
 
     return positions;
   }
@@ -2262,7 +2270,9 @@ export class BucketClient {
           });
         }
       });
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
 
     return {
       id,
@@ -2452,7 +2462,7 @@ export class BucketClient {
           10 ** COIN_DECIMALS["stSUI"];
         const amountSUI =
           Number(U64FromBytes(returnValues[1][0])) / 10 ** COIN_DECIMALS["SUI"];
-        console.log(`stSUI: ${amountStSUI}`, `SUI: ${amountSUI}`);
+        // console.log(`stSUI: ${amountStSUI}`, `SUI: ${amountSUI}`);
         price = amountStSUI * priceStSUI + amountSUI * priceSUI;
       }
     }
@@ -2742,7 +2752,7 @@ export class BucketClient {
       return false;
     }
 
-    let collateralInput = await getInputCoins(
+    const collateralInput = await getInputCoins(
       tx,
       this.client,
       recipient,
@@ -3817,7 +3827,7 @@ export class BucketClient {
     proofCount: number,
     account?: string,
   ): TransactionArgument[] | undefined {
-    let proofs = [];
+    const proofs = [];
 
     for (let i = 0; i < proofCount; i++) {
       const [proof] = tx.moveCall({

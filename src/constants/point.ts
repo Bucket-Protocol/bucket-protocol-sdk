@@ -1,10 +1,6 @@
 import { LockupCoin, SharedObjectRef } from "../types";
 
-export const LOCK_COINS: LockupCoin[] = [
-  "afSUI",
-  "haSUI",
-  "vSUI",
-]
+export const LOCK_COINS: LockupCoin[] = ["afSUI", "haSUI", "vSUI"];
 
 export const BUCKET_POINT_PACKAGE_ID =
   "0x9c7289341e07dbeb09bbf805ade663a529ea12d4826a63d467f6326b8fd0c13e";
