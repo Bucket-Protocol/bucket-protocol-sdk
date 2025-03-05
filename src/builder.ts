@@ -1,8 +1,23 @@
 import { Transaction, TransactionArgument } from "@mysten/sui/transactions";
 import { bcs } from "@mysten/sui/bcs";
 
-import { BUCKET_OPERATIONS_PACKAGE_ID, BucketClient, CLOCK_OBJECT, coinFromBalance, coinIntoBalance, COINS_TYPE_LIST, CONTRIBUTOR_TOKEN_ID, CORE_PACKAGE_ID, getCoinSymbol, getInputCoins, getMainCoin, LOCKER_MAP, ORACLE_OBJECT, PROTOCOL_OBJECT, STRAP_FOUNTAIN_IDS, TREASURY_OBJECT } from ".";
-
+import {
+  BUCKET_OPERATIONS_PACKAGE_ID,
+  BucketClient,
+  CLOCK_OBJECT,
+  coinFromBalance,
+  coinIntoBalance,
+  COINS_TYPE_LIST,
+  CONTRIBUTOR_TOKEN_ID,
+  CORE_PACKAGE_ID,
+  getCoinSymbol,
+  getInputCoins,
+  getMainCoin,
+  ORACLE_OBJECT,
+  PROTOCOL_OBJECT,
+  STRAP_FOUNTAIN_IDS,
+  TREASURY_OBJECT,
+} from ".";
 
 /* ----- Borrow/Repay Builders ----- */
 export async function buildBorrowTx(
@@ -32,7 +47,6 @@ export async function buildBorrowTx(
   }
 
   const isLST = coin in STRAP_FOUNTAIN_IDS;
-  const isCountingPoint = coin in LOCKER_MAP;
 
   if (!strapId || !isLST) {
     const collInputCoin = await getInputCoins(
@@ -57,7 +71,7 @@ export async function buildBorrowTx(
 
       tx.transferObjects(
         [coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance)],
-        tx.pure.address(recipient),
+        recipient,
       );
     } else {
       client.topUp(
@@ -94,18 +108,14 @@ export async function buildBorrowTx(
 
       tx.transferObjects(
         [coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance)],
-        tx.pure.address(recipient),
+        recipient,
       );
 
       const proof = client.stakeStrapFountain(tx, collateralType, strap);
       if (!proof) return;
-      if (isCountingPoint) {
-        client.lockProofs(tx, [{ token: coin, proof }]);
-      } else {
-        tx.transferObjects([proof], recipient);
-      }
+      tx.transferObjects([proof], recipient);
     } else {
-      let strapObj =
+      const strapObj =
         strapId === "locked"
           ? client.unlockLstProof(tx, coin)
           : tx.object(strapId);
@@ -132,11 +142,7 @@ export async function buildBorrowTx(
       const proof = client.stakeStrapFountain(tx, collateralType, strap);
       if (!proof) return;
 
-      if (isCountingPoint) {
-        client.lockProofs(tx, [{ token: coin, proof }]);
-      } else {
-        tx.transferObjects([proof], recipient);
-      }
+      tx.transferObjects([proof], recipient);
       tx.transferObjects(
         [
           reward,
@@ -179,7 +185,6 @@ export async function buildRepayTx(
 
   const isClose = withdrawAmount == "0" && repayAmount == "0";
   const isLST = coin in STRAP_FOUNTAIN_IDS;
-  const isCountingPoint = coin in LOCKER_MAP;
 
   if (!strapId || !isLST) {
     if (isSurplus) {
@@ -197,7 +202,7 @@ export async function buildRepayTx(
       );
     }
   } else {
-    let strapObj =
+    const strapObj =
       strapId === "locked"
         ? client.unlockLstProof(tx, coin)
         : tx.object(strapId);
@@ -234,7 +239,7 @@ export async function buildRepayTx(
           ],
         });
 
-        tx.transferObjects([reward], tx.pure.address(recipient));
+        tx.transferObjects([reward], recipient);
       }
     } else {
       const buckCoin = await getInputCoins(
@@ -267,12 +272,7 @@ export async function buildRepayTx(
       const proof = client.stakeStrapFountain(tx, collateralType, strap);
       if (!proof) return;
 
-      if (isCountingPoint) {
-        client.lockProofs(tx, [{ token: coin, proof }]);
-      } else {
-        tx.transferObjects([proof], recipient);
-      }
-      tx.transferObjects([reward], recipient);
+      tx.transferObjects([reward, proof], recipient);
     }
   }
 }
@@ -303,7 +303,6 @@ export async function buildWithdrawTx(
   client.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? "");
 
   const isLST = coin in STRAP_FOUNTAIN_IDS;
-  const isCountingPoint = coin in LOCKER_MAP;
 
   if (!strapId || !isLST) {
     const collOut = client.withdraw(
@@ -315,10 +314,10 @@ export async function buildWithdrawTx(
     );
     tx.transferObjects(
       [coinFromBalance(tx, collateralType, collOut)],
-      tx.pure.address(recipient),
+      recipient,
     );
   } else {
-    let strapObj =
+    const strapObj =
       strapId === "locked"
         ? client.unlockLstProof(tx, coin)
         : tx.object(strapId);
@@ -342,14 +341,9 @@ export async function buildWithdrawTx(
     const proof = client.stakeStrapFountain(tx, collateralType, strap);
     if (!proof) return;
 
-    if (isCountingPoint) {
-      client.lockProofs(tx, [{ token: coin, proof }]);
-    } else {
-      tx.transferObjects([proof], recipient);
-    }
     tx.transferObjects(
-      [reward, coinFromBalance(tx, collateralType, collOut)],
-      tx.pure.address(recipient),
+      [proof, reward, coinFromBalance(tx, collateralType, collOut)],
+      recipient,
     );
   }
 }
@@ -388,7 +382,7 @@ export async function buildCloseTx(
     if (!strapOut || !reward) return;
 
     client.destroyStrapFountain(tx, collateralType, strapOut);
-    tx.transferObjects([reward], tx.pure.address(recipient));
+    tx.transferObjects([reward], recipient);
   }
 }
 
@@ -432,18 +426,18 @@ export async function buildPsmTx(
         throw new Error("Swap failed");
       }
 
-      tx.transferObjects([usdA, usdB], tx.pure.address(recipient));
+      tx.transferObjects([usdA, usdB], recipient);
     } else {
       const [usd] = client.psmSwapOut(tx, outCoinType, inputCoin);
       if (!usd) {
         throw new Error("Swap failed");
       }
 
-      tx.transferObjects([usd], tx.pure.address(recipient));
+      tx.transferObjects([usd], recipient);
     }
   } else {
     const coinOut = client.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
-    tx.transferObjects([coinOut], tx.pure.address(recipient));
+    tx.transferObjects([coinOut], recipient);
   }
 }
 
@@ -678,11 +672,7 @@ export async function buildSBUCKDepositTx(
     buckCoin = inputCoin;
   } else {
     // PSM to BUCK
-    const inputBalance = coinIntoBalance(
-      tx,
-      depositType,
-      inputCoin,
-    );
+    const inputBalance = coinIntoBalance(tx, depositType, inputCoin);
     const buckBalance = tx.moveCall({
       target: `${CORE_PACKAGE_ID}::buck::charge_reservoir`,
       typeArguments: [depositType],
@@ -695,17 +685,13 @@ export async function buildSBUCKDepositTx(
   const sBUCKBalance = client.depositSBUCK(tx, buckCoin);
   if (!sBUCKBalance) throw new Error("No sBUCK input");
 
-  const sBUCKCoin = coinFromBalance(
-    tx,
-    COINS_TYPE_LIST.sBUCK,
-    sBUCKBalance,
-  );
+  const sBUCKCoin = coinFromBalance(tx, COINS_TYPE_LIST.sBUCK, sBUCKBalance);
 
   if (isStaked) {
     const proof = client.stakeSBUCK(tx, sBUCKCoin);
-    client.lockProofs(tx, [{ token: "sBUCK", proof }]);
+    tx.transferObjects([proof], recipient);
   } else {
-    tx.transferObjects([sBUCKCoin], tx.pure.address(recipient));
+    tx.transferObjects([sBUCKCoin], recipient);
   }
 }
 
@@ -745,15 +731,11 @@ export async function buildSBUCKUnstakeTx(
       lockedProofs.length,
     ) as TransactionArgument[];
   } else {
-    proofs = stakeProofs
-      .filter((t) => t != "");
+    proofs = stakeProofs.filter((t) => t != "");
   }
 
   for (const proof of proofs) {
-    const [sBuckBalance, suiRewardBalance] = client.unstakeSBUCK(
-      tx,
-      proof,
-    );
+    const [sBuckBalance, suiRewardBalance] = client.unstakeSBUCK(tx, proof);
     tx.moveCall({
       target: "0x2::balance::join",
       typeArguments: [COINS_TYPE_LIST.SUI],
@@ -781,37 +763,25 @@ export async function buildSBUCKUnstakeTx(
     if (toBuck) {
       const buckBalance = client.withdrawSBUCK(tx, sBuckCoin);
       if (!buckBalance) return;
-      const buckCoin = coinFromBalance(
-        tx,
-        COINS_TYPE_LIST.BUCK,
-        buckBalance,
-      );
-      tx.transferObjects([suiCoin, buckCoin], tx.pure.address(recipient));
+      const buckCoin = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance);
+      tx.transferObjects([suiCoin, buckCoin], recipient);
     } else {
-      tx.transferObjects([suiCoin, sBuckCoin], tx.pure.address(recipient));
+      tx.transferObjects([suiCoin, sBuckCoin], recipient);
     }
   } else {
     const returnedSBuckCoin = tx.splitCoins(sBuckCoin, [amount]);
     if (toBuck) {
       const buckBalance = client.withdrawSBUCK(tx, returnedSBuckCoin);
       if (!buckBalance) return;
-      const buckCoin = coinFromBalance(
-        tx,
-        COINS_TYPE_LIST.BUCK,
-        buckBalance,
-      );
-      tx.transferObjects([suiCoin, buckCoin], tx.pure.address(recipient));
+      const buckCoin = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance);
+      tx.transferObjects([suiCoin, buckCoin], recipient);
     } else {
-      tx.transferObjects(
-        [suiCoin, returnedSBuckCoin],
-        tx.pure.address(recipient),
-      );
+      tx.transferObjects([suiCoin, returnedSBuckCoin], recipient);
     }
 
     // stake remaining sBUCK back to Savings Pool
     const proof = client.stakeSBUCK(tx, sBuckCoin);
-    client.lockProofs(tx, [{ token: "sBUCK", proof }]);
-    // tx.transferObjects([proof], tx.pure.address(address));
+    tx.transferObjects([proof], recipient);
   }
 }
 
@@ -839,7 +809,7 @@ export async function buildSBUCKWithdrawTx(
   if (!buckBalance) throw new Error("Withdraw sBUCK failed");
 
   const buckCoin = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance);
-  tx.transferObjects([buckCoin], tx.pure.address(recipient));
+  tx.transferObjects([buckCoin], recipient);
 }
 
 export async function buildSBUCKClaimTx(
@@ -872,9 +842,8 @@ export async function buildSBUCKClaimTx(
     COINS_TYPE_LIST.SUI,
     mainSuiRewardBalance,
   );
-  tx.transferObjects([suiCoin], tx.pure.address(recipient));
+  tx.transferObjects([suiCoin], recipient);
 }
-
 
 export async function buildLockedClaimTx(
   client: BucketClient,
@@ -893,10 +862,5 @@ export async function buildLockedClaimTx(
     throw new Error("Coin type not supported");
   }
 
-  client.claimLockedRewards(
-    tx,
-    token,
-    lockedCount,
-    recipient
-  );
+  client.claimLockedRewards(tx, token, lockedCount, recipient);
 }
