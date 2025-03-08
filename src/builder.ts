@@ -722,7 +722,7 @@ export async function buildSBUCKUnstakeTx(
     typeArguments: [COINS_TYPE_LIST.sBUCK],
   });
 
-  let proofs = [];
+  let proofs: (string | TransactionArgument)[] = [];
   // if locked, then unlock first
   const lockedProofs = stakeProofs.filter((t) => t == "");
   if (lockedProofs.length > 0) {
@@ -730,9 +730,8 @@ export async function buildSBUCKUnstakeTx(
       tx,
       lockedProofs.length,
     ) as TransactionArgument[];
-  } else {
-    proofs = stakeProofs.filter((t) => t != "");
   }
+  proofs = proofs.concat(stakeProofs.filter((t) => t != ""));
 
   for (const proof of proofs) {
     const [sBuckBalance, suiRewardBalance] = client.unstakeSBUCK(tx, proof);
