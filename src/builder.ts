@@ -420,21 +420,11 @@ export async function buildPsmTx(
   const outCoinType = psmSwitch ? psmCoin : COINS_TYPE_LIST.BUCK;
 
   if (psmSwitch) {
-    if (psmCoin === COINS_TYPE_LIST.STAPEARL) {
-      const [usdA, usdB] = client.psmSwapOut(tx, outCoinType, inputCoin);
-      if (!usdA || !usdB) {
-        throw new Error("Swap failed");
-      }
-
-      tx.transferObjects([usdA, usdB], recipient);
-    } else {
-      const [usd] = client.psmSwapOut(tx, outCoinType, inputCoin);
-      if (!usd) {
-        throw new Error("Swap failed");
-      }
-
-      tx.transferObjects([usd], recipient);
+    const [usd] = client.psmSwapOut(tx, outCoinType, inputCoin);
+    if (!usd) {
+      throw new Error("Swap failed");
     }
+    tx.transferObjects([usd], recipient);
   } else {
     const coinOut = client.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
     tx.transferObjects([coinOut], recipient);
