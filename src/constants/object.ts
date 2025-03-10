@@ -223,22 +223,16 @@ export const GSUI_UNIHOUSE_OBJECT_ID =
   "0x811fe901ed2a5d75cd125912ad6110efdff8be00fe694601a94167e2bd545ac2";
 
 export const SCABLE_VAULTS: Record<ScableCoin, SharedObjectRef> = {
-  wUSDC: {
-    objectId:
-      "0x7b16192d63e6fa111b0dac03f99c5ff965205455089f846804c10b10be55983c",
-    initialSharedVersion: "272980432",
-    mutable: true,
-  },
-  wUSDT: {
-    objectId:
-      "0x6b68b42cbb4efccd9df30466c21fff3c090279992c005c45154bd1a0d87ac725",
-    initialSharedVersion: "272980433",
-    mutable: true,
-  },
   USDC: {
     objectId:
       "0xdf91ef19f6038e662e9c89f111ffe19e808cdfb891d080208d15141932f9513b",
     initialSharedVersion: "373914575",
+    mutable: true,
+  },
+  sbUSDT: {
+    objectId:
+      "0x8471787fc69ef06f4762cb60863e1c48475d79c804a000e613306adee7b7824a",
+    initialSharedVersion: "478140939",
     mutable: true,
   },
 };

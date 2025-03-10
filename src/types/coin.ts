@@ -50,7 +50,7 @@ export type COIN =
 
 export type LstCoin = "afSUI" | "haSUI" | "vSUI";
 
-export type ScableCoin = "wUSDC" | "wUSDT" | "USDC";
+export type ScableCoin = "USDC" | "sbUSDT";
 
 export type LockupCoin = "afSUI" | "haSUI" | "vSUI" | "sBUCK";
 
