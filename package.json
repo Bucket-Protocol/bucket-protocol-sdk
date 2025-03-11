@@ -4,12 +4,10 @@
   "version": "0.10.34",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
-  "scripts": {
-    "clean": "rm -fr dist/",
-    "build": "tsup",
-    "test": "vitest"
+  "repository": {
+    "url": "https://github.com/Bucket-Protocol/bucket-protocol-sdk"
   },
-  "types": "dist/index.d.ts",
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,31 +16,41 @@
     },
     "./package.json": "./package.json"
   },
-  "repository": {
-    "url": "https://github.com/Bucket-Protocol/bucket-protocol-sdk"
-  },
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "package.json",
     "README.md"
   ],
-  "engines": {
-    "node": ">=18.0.0"
+  "scripts": {
+    "lint": "eslint --fix",
+    "build": "tsup",
+    "clean": "rm -fr dist/",
+    "test": "vitest"
   },
   "dependencies": {
-    "@mysten/sui": "^1.8.0",
-    "@types/superstruct": "^0.8.2",
+    "@mysten/sui": "^1.21.2",
     "decimal.js": "^10.5.0",
     "superstruct": "^1.0.3"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",
-    "@typescript-eslint/eslint-plugin": "^6.3.0",
-    "@typescript-eslint/parser": "^6.3.0",
-    "eslint": "^8.47.0",
-    "prettier": "^3.0.1",
+    "@eslint/eslintrc": "^3.3.0",
+    "@eslint/js": "^9.21.0",
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
+    "@types/superstruct": "^0.8.2",
+    "@typescript-eslint/eslint-plugin": "^8.26.0",
+    "@typescript-eslint/parser": "^8.26.0",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "prettier": "^3.5.3",
     "tsup": "^8.0.2",
-    "typescript": "^5.1.6",
+    "typescript": "^5.8.2",
     "vitest": "^0.34.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

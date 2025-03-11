@@ -1,1 +1,1 @@
-export type FOUNTAIN_PROVIDER = "CETUS" | "KRIYA" | "AF";
+export type FOUNTAIN_PROVIDER = 'CETUS' | 'KRIYA' | 'AF';

@@ -17,22 +17,22 @@ jobs:
         node-version: [18.x]
 
     steps:
-        - uses: actions/checkout@v3
-        - name: Use Node.js ${{ matrix.node-version }}
-          uses: actions/setup-node@v4
-          with:
-            node-version: ${{ matrix.node-version }}
-            registry-url: 'https://registry.npmjs.org'
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
 
-        - name: Install main dependencies
-          run: npm install
+      - name: Install main dependencies
+        run: npm install
 
-        - name: Compile code
-          run: npm run build
-          
-        - run: npm ci
+      - name: Compile code
+        run: npm run build
 
-        - name: Publish to npm
-          run: npm publish --provenance --access public
-          env:
-            NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm ci
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

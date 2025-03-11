@@ -1,10 +1,7 @@
-import { SuiClient } from "@mysten/sui/client";
-import {
-  Transaction,
-  TransactionArgument,
-  TransactionResult,
-} from "@mysten/sui/transactions";
-import { COINS_TYPE_LIST } from "../constants";
+import { SuiClient } from '@mysten/sui/client';
+import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
+
+import { COINS_TYPE_LIST } from '@/constants';
 
 export function coinIntoBalance(
   tx: Transaction,
@@ -13,13 +10,13 @@ export function coinIntoBalance(
 ): TransactionResult {
   if (coinInput) {
     return tx.moveCall({
-      target: "0x2::coin::into_balance",
+      target: '0x2::coin::into_balance',
       typeArguments: [coinType],
       arguments: [coinInput],
     });
   } else {
     return tx.moveCall({
-      target: "0x2::balance::zero",
+      target: '0x2::balance::zero',
       typeArguments: [coinType],
     });
   }
@@ -31,7 +28,7 @@ export function coinFromBalance(
   balanceInput: TransactionArgument,
 ): TransactionResult {
   return tx.moveCall({
-    target: "0x2::coin::from_balance",
+    target: '0x2::coin::from_balance',
     typeArguments: [coinType],
     arguments: [balanceInput],
   });
@@ -89,12 +86,7 @@ export async function getInputCoins(
   }
 }
 
-export async function getMainCoin(
-  tx: Transaction,
-  client: SuiClient,
-  owner: string,
-  coinType: string,
-) {
+export async function getMainCoin(tx: Transaction, client: SuiClient, owner: string, coinType: string) {
   if (coinType === COINS_TYPE_LIST.SUI) {
     return undefined;
   }

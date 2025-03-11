@@ -1,5 +1,6 @@
-import { TransactionArgument } from "@mysten/sui/transactions";
-import { COIN } from "./coin";
+import { TransactionArgument } from '@mysten/sui/transactions';
+
+import { COIN } from './coin';
 
 export type ProtocolInfo = {
   buckSupply: number;
