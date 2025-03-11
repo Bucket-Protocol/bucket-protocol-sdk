@@ -2524,6 +2524,7 @@ export class BucketClient {
       BUCKETUS: 1,
       SCABLE: 1,
       STAPEARL: 1,
+      bluefin_BUCK_USDC_LP: 1,
     };
 
     let spSuiRate = 0;
