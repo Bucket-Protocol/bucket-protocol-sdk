@@ -89,7 +89,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   sbWBTC:
     "0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC",
   bluefin_BUCK_USDC_LP:
-    "0x3492c874c1e3b3e2984e8c41b589e642d4d0a5d6459e5a9cfc2d52fd7c89c267::position::Position",
+    "0x6b110c792faadf8c1f928ad351bf3c9abad647b12bab83e7e075c169b0f9a2c1::bluefin_stable_lp::BLUEFIN_STABLE_LP",
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
