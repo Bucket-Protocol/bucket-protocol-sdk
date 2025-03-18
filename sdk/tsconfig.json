@@ -24,7 +24,6 @@
     "noEmit": true,
     "module": "esnext",
     "moduleResolution": "node",
-    "incremental": true,
     "declaration": true,
     "emitDeclarationOnly": true,
     "sourceMap": true,
