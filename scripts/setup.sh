@@ -1,25 +1,29 @@
 #!/bin/bash
 
-echo "setting up previews..."
+echo "Setting up previews..."
 
 GITHUB_USERNAME=bucket-bot
 ROOT_DIR=$(pwd)
 CURRENT_BRANCH=$(git branch --show-current)
 
 function sync_submodules {
-  echo "pull submodules:"
+  echo "Pull submodules:"
 
-  sed -i'.bak' "s/https:\/\/github.com\//https:\/\/oauth2:$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
+  if [ -n $GITHUB_TOKEN ]; then
+    sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
+  else
+    echo '$GITHUB_TOKEN is not set. Skip stubbing token into .gitmodules'
+  fi
 
   git submodule sync
   git submodule update --remote
 }
 
 function checkout_branches {
-  echo "checkout branches for each preview repos:"
+  echo "Checkout branches for each preview repos:"
 
   for repo in previews/*; do
-    echo "  setting up previews for repo $repo:"
+    echo "Setting up previews for repo $repo:"
 
     cd $ROOT_DIR/$repo
     git fetch --all
@@ -30,15 +34,9 @@ function checkout_branches {
       target=$(git symbolic-ref --short refs/remotes/origin/HEAD) 
     fi
 
-    echo "    set to branch $target"
+    echo "Set to branch $target"
     git checkout -f $target
   done
 }
-
-if [ -z $GITHUB_TOKEN ]; then
-  echo '$GITHUB_TOKEN is not provided. Abort.'
-  exit 1
-fi
   
-sync_submodules
-checkout_branches
+sync_submodules && checkout_branches

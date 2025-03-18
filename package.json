@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "preinstall": "sh ./scripts/setup.sh",
-    "build": "turbo run setup build"
+    "build": "turbo run build"
   },
   "engines": {
     "node": ">=18.0.0"

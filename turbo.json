@@ -1,9 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "setup": {},
     "build": {
-      "dependsOn": ["setup", "^build"],
+      "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     }
   }

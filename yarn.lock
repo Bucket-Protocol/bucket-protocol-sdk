@@ -3766,7 +3766,7 @@
   dependencies:
     "@scure/base" "^1.2.4"
 
-"@mysten/dapp-kit@^0.14.24", "@mysten/dapp-kit@^0.14.49":
+"@mysten/dapp-kit@^0.14.53":
   version "0.14.53"
   resolved "https://registry.yarnpkg.com/@mysten/dapp-kit/-/dapp-kit-0.14.53.tgz#532152d0cef35b820dc248866a8a19b385285ee8"
   integrity sha512-KLVGRsyEn401MIKe6t/GiFUO4d4cgzcdNQ8G5w2FbDM6qPnLsPuwq/oihorGimlTpTCqJWh3wbVAtq99RsG6EQ==
