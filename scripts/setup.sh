@@ -6,11 +6,10 @@ GITHUB_USERNAME=bucket-bot
 ROOT_DIR=$(pwd)
 CURRENT_BRANCH=$(git branch --show-current)
 
-ls -a $ROOT_DIR/previews/bucket-frontend-v4
-ls -a $ROOT_DIR/previews/bucket-frontend-v5
-
 function sync_submodules {
   echo "Pull submodules:"
+
+  mv previews previews.cache
 
   if [ -n $GITHUB_TOKEN ]; then
     sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
@@ -20,6 +19,8 @@ function sync_submodules {
 
   git submodule sync
   git submodule update --remote
+
+  cp -RT previews.cache previews
 }
 
 function checkout_branches {
