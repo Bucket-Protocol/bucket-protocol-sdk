@@ -6,9 +6,8 @@ GITHUB_USERNAME=bucket-bot
 ROOT_DIR=$(pwd)
 CURRENT_BRANCH=$(git branch --show-current)
 
-ls $ROOT_DIR/previews/bucket-frontend-v4
-ls $ROOT_DIR/previews/bucket-frontend-v5
-
+ls -a $ROOT_DIR/previews/bucket-frontend-v4
+ls -a $ROOT_DIR/previews/bucket-frontend-v5
 
 function sync_submodules {
   echo "Pull submodules:"
