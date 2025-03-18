@@ -6,10 +6,12 @@ GITHUB_USERNAME=bucket-bot
 ROOT_DIR=$(pwd)
 CURRENT_BRANCH=$(git branch --show-current)
 
+ls $ROOT_DIR/previews/bucket-frontend-v4
+ls $ROOT_DIR/previews/bucket-frontend-v5
+
+
 function sync_submodules {
   echo "Pull submodules:"
-
-  ls $ROOT_DIR/.gitmodules
 
   if [ -n $GITHUB_TOKEN ]; then
     sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
