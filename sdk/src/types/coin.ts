@@ -48,7 +48,8 @@ export type COIN =
   | 'sSBUSDT'
   | 'gSUI'
   | 'haSUI_SUI_CETUS_VT_LP'
-  | 'stSUI_SUI_ALPHAFI_FT';
+  | 'stSUI_SUI_ALPHAFI_FT'
+  | 'bluefin_BUCK_USDC_LP';
 
 export type LstCoin = 'afSUI' | 'haSUI' | 'vSUI';
 

@@ -1,4 +1,4 @@
-import { normalizeSuiAddress } from '@mysten/sui/dist/cjs/utils';
+import { normalizeSuiAddress } from '@mysten/sui/utils';
 
 export * from './coin';
 export * from './object';
