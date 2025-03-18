@@ -11,6 +11,8 @@ function sync_submodules {
 
   sed -i'.bak' "s/https:\/\/github.com\//https:\/\/oauth2:$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
 
+  cat $ROOT_DIR/.gitmodules
+
   git submodule update --remote
 }
 
