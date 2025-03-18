@@ -28,3 +28,7 @@ yarn-error.log*
 
 # nvm
 .nvmrc
+
+# infra
+.gitmodules*
+previews/
