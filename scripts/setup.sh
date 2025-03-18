@@ -2,13 +2,14 @@
 
 echo "setting up previews..."
 
+GITHUB_USERNAME=bucket-bot
 ROOT_DIR=$(pwd)
 CURRENT_BRANCH=$(git branch --show-current)
 
 function sync_submodules {
   echo "pull submodules:"
 
-  sed -i'.bak' "s/https:\/\/github.com\//https:\/\/${GITHUB_TOKEN}@github.com\//" "$ROOT_DIR/.gitmodules"
+  sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_USERNAME:$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
 
   git submodule update --remote
 }
