@@ -1,37 +1,41 @@
 {
-  // see https://www.typescriptlang.org/tsconfig to better understand tsconfigs
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "esnext",
-    "lib": ["dom", "esnext"],
-    // output .d.ts declaration files for consumers
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    // output .js.map sourcemap files for consumers
-    "sourceMap": true,
-    // stricter type-checking for stronger correctness. Recommended by TS
+    /* Base Options: */
+    "target": "esnext",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+
+    /* Strictness */
     "strict": true,
-    // linter checks for common issues
+    "noUncheckedIndexedAccess": false,
+    "checkJs": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    // noUnused* overlap with @typescript-eslint/no-unused-vars, can disable if duplicative
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    // use Node's module resolution algorithm, instead of the legacy TS one
-    "moduleResolution": "node",
-    // interop between ESM and CJS modules. Recommended by TS
-    "esModuleInterop": true,
-    // significant perf increase by skipping checking .d.ts files, particularly those in node_modules. Recommended by TS
-    "skipLibCheck": true,
-    // error out if import and file system have a casing mismatch. Recommended by TS
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "rootDir": "./",
+
+    /* Bundled projects */
+    "lib": ["dom", "esnext"],
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "incremental": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "sourceMap": true,
+
+    /* Path Aliases */
+    "rootDir": ".",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "include": ["src", "test"],
-  "exclude": ["dist"]
+  "exclude": ["node_modules", "dist"]
 }
