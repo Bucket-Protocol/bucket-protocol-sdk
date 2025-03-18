@@ -9,7 +9,7 @@ CURRENT_BRANCH=$(git branch --show-current)
 function sync_submodules {
   echo "pull submodules:"
 
-  sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_USERNAME:$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
+  sed -i'.bak' "s/https:\/\/github.com\//https:\/\/oauth2:$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
 
   git submodule update --remote
 }
