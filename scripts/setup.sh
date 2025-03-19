@@ -9,8 +9,6 @@ CURRENT_BRANCH=$(git branch --show-current)
 function sync_submodules {
   echo "Pull submodules:"
 
-  rm -rf .previews
-  rm -rf .preview.cache
   mv previews .previews
 
   if [ -n $GITHUB_TOKEN ]; then
@@ -24,7 +22,6 @@ function sync_submodules {
 
   cp -RT .previews previews
   rm -rf .previews
-  rm -rf .preview.cache
 }
 
 function checkout_branches {

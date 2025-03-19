@@ -915,43 +915,52 @@ export class BucketClient {
     const debtorBottles = userBottles.slice(edge0, edge1);
     const strapBottles = userBottles.slice(edge1, edge2);
     const proofBottles = userBottles.slice(edge2, edge3);
-    const debtorBottleInfos: (UserBottleInfo | undefined)[] = COLLATERAL_ASSETS.map((token, idx) => {
+
+    const debtorBottleInfos: UserBottleInfo[] = COLLATERAL_ASSETS.map((token, idx) => {
       const bottleData = debtorBottles[idx];
-      if (bottleData) {
-        return {
-          token,
-          collateralAmount: Number(bottleData.coll_amount),
-          buckAmount: Number(bottleData.debt_amount),
-          debtAmount: Number(bottleData.debt_amount),
-        };
-      }
-    });
-    const strapBottleInfos: (UserBottleInfo | undefined)[] = strapObjs.map((strap, idx) => {
-      const bottleData = strapBottles[idx];
-      if (bottleData) {
-        return {
-          token: getCoinSymbol(getObjectGenerics(strap)[0]) as COIN,
-          collateralAmount: Number(bottleData.coll_amount),
-          buckAmount: Number(bottleData.debt_amount),
-          debtAmount: Number(bottleData.debt_amount),
-          strapId: strap.data?.objectId,
-        };
-      }
-    });
-    const proofBottleInfos: (UserBottleInfo | undefined)[] = proofs.map((proof, idx) => {
-      const bottleData = proofBottles[idx];
-      const { startUnit } = proofInfos[idx];
-      if (bottleData) {
-        return {
-          token: getCoinSymbol(getObjectGenerics(proof)[0]) as COIN,
-          collateralAmount: Number(bottleData.coll_amount),
-          buckAmount: Number(bottleData.debt_amount),
-          debtAmount: Number(bottleData.debt_amount),
-          strapId: proof.data?.objectId,
-          startUnit,
-        };
-      }
-    });
+      return bottleData
+        ? {
+            token,
+            collateralAmount: Number(bottleData.coll_amount),
+            buckAmount: Number(bottleData.debt_amount),
+            debtAmount: Number(bottleData.debt_amount),
+          }
+        : null;
+    }).filter((bottleInfo) => !!bottleInfo);
+
+    const strapBottleInfos: UserBottleInfo[] = strapObjs
+      .map((strap, idx) => {
+        const bottleData = strapBottles[idx];
+
+        return bottleData
+          ? {
+              token: getCoinSymbol(getObjectGenerics(strap)[0]) as COIN,
+              collateralAmount: Number(bottleData.coll_amount),
+              buckAmount: Number(bottleData.debt_amount),
+              debtAmount: Number(bottleData.debt_amount),
+              strapId: strap.data?.objectId,
+            }
+          : null;
+      })
+      .filter((bottleInfo) => !!bottleInfo);
+
+    const proofBottleInfos: UserBottleInfo[] = proofs
+      .map((proof, idx) => {
+        const bottleData = proofBottles[idx];
+        const { startUnit } = proofInfos[idx];
+        return bottleData
+          ? {
+              token: getCoinSymbol(getObjectGenerics(proof)[0]) as COIN,
+              collateralAmount: Number(bottleData.coll_amount),
+              buckAmount: Number(bottleData.debt_amount),
+              debtAmount: Number(bottleData.debt_amount),
+              strapId: proof.data?.objectId,
+              startUnit,
+            }
+          : null;
+      })
+      .filter((bottleInfo) => !!bottleInfo);
+
     return [...debtorBottleInfos, ...strapBottleInfos, ...proofBottleInfos].filter((data) => data) as UserBottleInfo[];
   }
 
