@@ -20,7 +20,8 @@ jobs:
   remove-stale-branches:
     runs-on: ubuntu-latest
     steps:
-      - uses: crs-k/stale-branches@v7.0.0
+      - name: Remove stale branches
+        uses: crs-k/stale-branches@v7.0.0
         with:
           repo-token: '${{ secrets.GITHUB_TOKEN }}'
           days-before-stale: 60

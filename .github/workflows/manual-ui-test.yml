@@ -21,7 +21,8 @@ jobs:
     outputs:
       isApp: ${{ steps.diff.outputs.isApp }}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
       - name: Detect Changes
         uses: './.github/actions/diffs'
         id: diff
@@ -31,7 +32,8 @@ jobs:
     needs: diff
     if: needs.diff.outputs.isApp == 'true'
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # Pin v4.1.1
       - name: Check Required UI Test Label
         uses: mheap/github-action-required-labels@v5
         with:
