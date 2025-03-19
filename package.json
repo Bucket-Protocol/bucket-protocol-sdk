@@ -1,48 +1,17 @@
 {
-  "name": "bucket-protocol-sdk",
-  "author": "Bucketniper <bucketbird@outlook.com>",
-  "version": "0.10.36",
-  "license": "Apache-2.0",
-  "description": "Bucket Protocol TypeScript SDK",
-  "scripts": {
-    "clean": "rm -fr dist/",
-    "build": "tsup",
-    "test": "vitest"
-  },
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/index.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "repository": {
-    "url": "https://github.com/Bucket-Protocol/bucket-protocol-sdk"
-  },
-  "files": [
-    "dist",
-    "package.json",
-    "README.md"
+  "name": "bucket-sdk-monorepo",
+  "private": true,
+  "workspaces": [
+    "sdk",
+    "previews/*"
   ],
+  "type": "module",
+  "scripts": {
+    "preinstall": "sh ./scripts/setup.sh",
+    "build": "turbo run build"
+  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
-  "dependencies": {
-    "@mysten/sui": "^1.8.0",
-    "@types/superstruct": "^0.8.2",
-    "decimal.js": "^10.5.0",
-    "superstruct": "^1.0.3"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.26.2",
-    "@typescript-eslint/eslint-plugin": "^6.3.0",
-    "@typescript-eslint/parser": "^6.3.0",
-    "eslint": "^8.47.0",
-    "prettier": "^3.0.1",
-    "tsup": "^8.0.2",
-    "typescript": "^5.1.6",
-    "vitest": "^0.34.1"
-  }
+  "packageManager": ">=yarn@1.22.0"
 }
