@@ -322,21 +322,11 @@ export async function buildPsmTx(
   const outCoinType = psmSwitch ? psmCoin : COINS_TYPE_LIST.BUCK;
 
   if (psmSwitch) {
-    if (psmCoin === COINS_TYPE_LIST.STAPEARL) {
-      const [usdA, usdB] = client.psmSwapOut(tx, outCoinType, inputCoin);
-      if (!usdA || !usdB) {
-        throw new Error('Swap failed');
-      }
-
-      tx.transferObjects([usdA, usdB], recipient);
-    } else {
-      const [usd] = client.psmSwapOut(tx, outCoinType, inputCoin);
-      if (!usd) {
-        throw new Error('Swap failed');
-      }
-
-      tx.transferObjects([usd], recipient);
+    const [usd] = client.psmSwapOut(tx, outCoinType, inputCoin);
+    if (!usd) {
+      throw new Error('Swap failed');
     }
+    tx.transferObjects([usd], recipient);
   } else {
     const coinOut = client.psmSwapIn(tx, inputCoinType, inputCoin, referrer);
     tx.transferObjects([coinOut], recipient);
@@ -598,14 +588,13 @@ export async function buildSBUCKUnstakeTx(
     typeArguments: [COINS_TYPE_LIST.sBUCK],
   });
 
-  let proofs = [];
+  let proofs: (string | TransactionArgument)[] = [];
   // if locked, then unlock first
   const lockedProofs = stakeProofs.filter((t) => t === '');
   if (lockedProofs.length > 0) {
     proofs = client.unlockSBuckProofs(tx, lockedProofs.length) as TransactionArgument[];
-  } else {
-    proofs = stakeProofs.filter((t) => t !== '');
   }
+  proofs = proofs.concat(stakeProofs.filter((t) => t !== ''));
 
   for (const proof of proofs) {
     const [sBuckBalance, suiRewardBalance] = client.unstakeSBUCK(tx, proof);

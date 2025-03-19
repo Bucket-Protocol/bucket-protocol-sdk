@@ -3031,58 +3031,17 @@ export class BucketClient {
    * @param usdType, USDC or USDT
    */
   psmSwapOut(tx: Transaction, outCoinType: string, buckCoinInput: TransactionArgument): TransactionResult {
-    const clockObj = tx.sharedObjectRef({
-      objectId: '0x6',
-      initialSharedVersion: 1,
-      mutable: false,
-    });
+    const clockObj = tx.sharedObjectRef(CLOCK_OBJECT);
     const inputCoinBalance = coinIntoBalance(tx, COINS_TYPE_LIST.BUCK, buckCoinInput);
-    if (outCoinType === COINS_TYPE_LIST.STAPEARL) {
-      const outBalance = tx.moveCall({
-        target: `${CORE_PACKAGE_ID}::buck::discharge_reservoir`,
-        typeArguments: [outCoinType],
-        arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), inputCoinBalance],
-      });
-      const outCoin = coinFromBalance(tx, outCoinType, outBalance);
-      const vaultObj = tx.sharedObjectRef({
-        objectId: '0x614c78eabb6949b3e1e295f19f6b8476e2e62091ca66432fbb5507e7b54af0d9',
-        initialSharedVersion: 77625524,
-        mutable: true,
-      });
-      const flxContainerObj = tx.sharedObjectRef({
-        objectId: '0xb65dcbf63fd3ad5d0ebfbf334780dc9f785eff38a4459e37ab08fa79576ee511',
-        initialSharedVersion: 5665244,
-        mutable: true,
-      });
-      const flxStateObj = tx.sharedObjectRef({
-        objectId: '0xe94c179dc1644206b5e05c75674b13118be74d4540baa80599a0cbbaad4fc39c',
-        initialSharedVersion: 32553981,
-        mutable: true,
-      });
-      const [lpCoin] = tx.moveCall({
-        target: '0x83f4534f2bd62bc01affa7318ce4950857ea3a1e7c38edc4f1f111617140b8ad::stapearl::withdraw',
-        arguments: [vaultObj, flxContainerObj, flxStateObj, clockObj, outCoin],
-      });
-      if (!lpCoin) {
-        throw new Error('Withdraw not available');
-      }
-
-      return tx.moveCall({
-        target: '0x83f4534f2bd62bc01affa7318ce4950857ea3a1e7c38edc4f1f111617140b8ad::stapearl::remove_liquidity',
-        arguments: [flxContainerObj, lpCoin],
-      });
-    } else if (
-      outCoinType === COINS_TYPE_LIST.wUSDC ||
-      outCoinType === COINS_TYPE_LIST.wUSDT ||
-      outCoinType === COINS_TYPE_LIST.USDC
-    ) {
+    const outCoinSymbol = getCoinSymbol(outCoinType);
+    if (outCoinSymbol && outCoinSymbol in SCABLE_VAULTS) {
       const outBalance = tx.moveCall({
         target: `${CORE_PACKAGE_ID}::buck::discharge_reservoir`,
         typeArguments: [COINS_TYPE_LIST.SCABLE],
         arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), inputCoinBalance],
       });
       const outCoin = coinFromBalance(tx, COINS_TYPE_LIST.SCABLE, outBalance);
-      const vaultObj = SCABLE_VAULTS[getCoinSymbol(outCoinType) as ScableCoin];
+      const vaultObj = SCABLE_VAULTS[outCoinSymbol as ScableCoin];
       if (!vaultObj) throw new Error('Unspported PSM type');
       const treasuryObj = tx.sharedObjectRef({
         objectId: '0x3b9e577e96fcc0bc7a06a39f82f166417f675813a294d64833d4adb2229f6321',
