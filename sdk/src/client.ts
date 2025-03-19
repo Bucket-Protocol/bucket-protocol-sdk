@@ -814,7 +814,7 @@ export class BucketClient {
    * @address User address that belong to bottle
    * @returns Promise<BottleInfo>
    */
-  async getUserBottles(bucketClient: BucketClient, address: string): Promise<UserBottleInfo[]> {
+  async getUserBottles(address: string): Promise<UserBottleInfo[]> {
     if (!address) return [];
 
     const BottleData = bcs.struct(`${BUCKET_OPERATIONS_PACKAGE_ID}::utils::BottleData`, {
@@ -828,8 +828,6 @@ export class BucketClient {
     const debtor = tx.pure.address(address);
     const edge0 = 0;
 
-    const client = bucketClient.getSuiClient();
-
     COLLATERAL_ASSETS.map((coinSymbol) => {
       tx.moveCall({
         target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_account`,
@@ -839,7 +837,7 @@ export class BucketClient {
     });
     const edge1 = COLLATERAL_ASSETS.length;
 
-    const { data: strapObjs } = await client.getOwnedObjects({
+    const { data: strapObjs } = await this.getSuiClient().getOwnedObjects({
       owner: address,
       filter: {
         StructType: STRAP_ID,
@@ -861,7 +859,7 @@ export class BucketClient {
         });
       }
     });
-    const { data: proofs } = await client.getOwnedObjects({
+    const { data: proofs } = await this.getSuiClient().getOwnedObjects({
       owner: address,
       filter: {
         StructType: STAKE_PROOF_ID,
@@ -875,8 +873,8 @@ export class BucketClient {
     const proofInfos = await Promise.all(
       proofs.map(async (proof) => {
         const token = getCoinSymbol(getObjectGenerics(proof)[0]) as COIN;
-        const lstFountain = await bucketClient.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
-        const data = await client.getDynamicFieldObject({
+        const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
+        const data = await this.getSuiClient().getDynamicFieldObject({
           parentId: lstFountain.strapId,
           name: {
             type: 'address',
@@ -900,7 +898,7 @@ export class BucketClient {
         });
       }
     });
-    const res = await client.devInspectTransactionBlock({
+    const res = await this.getSuiClient().devInspectTransactionBlock({
       sender: address,
       transactionBlock: tx,
     });
