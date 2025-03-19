@@ -21,6 +21,7 @@ import {
   CLOCK_OBJECT,
   COIN_DECIMALS,
   COINS_TYPE_LIST,
+  COLLATERAL_ASSETS,
   CONTRIBUTOR_TOKEN_ID,
   CORE_PACKAGE_ID,
   DETOKEN_CENTER,
@@ -34,9 +35,7 @@ import {
   KRIYA_FOUNTAIN_PACKAGE_ID,
   KRIYA_SUI_BUCK_LP_REGISTRY_ID,
   KRIYA_USDC_BUCK_LP_REGISTRY_ID,
-  LOCK_COINS,
   LOCKER_MAP,
-  LOCKER_TABLE,
   MAX_LOCK_TIME,
   MSUI_LIQUID_STAKING_OBJECT_ID,
   ORACLE_OBJECT,
@@ -122,7 +121,7 @@ import {
   getInputCoins,
   getMainCoin,
   getObjectFields,
-  getObjectNames,
+  getObjectGenerics,
   lpProofToObject,
   ObjectContentFields,
   objectToFountain,
@@ -815,60 +814,32 @@ export class BucketClient {
    * @address User address that belong to bottle
    * @returns Promise<BottleInfo>
    */
-  async getUserBottles(address: string): Promise<UserBottleInfo[]> {
+  async getUserBottles(bucketClient: BucketClient, address: string): Promise<UserBottleInfo[]> {
     if (!address) return [];
 
-    let bucketList: DynamicFieldInfo[] = [];
-    let cursor: string | null = null;
-    while (true) {
-      const protocolFields = await this.client.getDynamicFields({
-        parentId: PROTOCOL_ID,
-        cursor,
-      });
-
-      bucketList = bucketList.concat(protocolFields.data.filter((item) => item.objectType.includes('Bucket')));
-
-      if (!protocolFields.hasNextPage) {
-        break;
-      }
-      cursor = protocolFields.nextCursor;
-    }
-
-    const objectTypeList = bucketList.map((item) => item.objectType);
-    const objectIdList = bucketList.map((item) => item.objectId);
-    const objectNameList = getObjectNames(objectTypeList);
-
-    const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-      ids: objectIdList,
-      options: {
-        showContent: true,
-        showType: true, //Check could we get type from response later
-      },
+    const BottleData = bcs.struct(`${BUCKET_OPERATIONS_PACKAGE_ID}::utils::BottleData`, {
+      debtor: bcs.Address,
+      coll_amount: bcs.U64,
+      debt_amount: bcs.U64,
     });
+    const tx = new Transaction();
+    const protocolObj = tx.sharedObjectRef(PROTOCOL_OBJECT);
+    const clockObj = tx.sharedObjectRef(CLOCK_OBJECT);
+    const debtor = tx.pure.address(address);
+    const edge0 = 0;
 
-    const bottleIdList: {
-      name: string;
-      id: string;
-      surplus_id: string;
-    }[] = [];
+    const client = bucketClient.getSuiClient();
 
-    response.map((res, index) => {
-      //Filter out WBTC, when we launch WBTC we need to remove this exception
-      if (objectNameList[index] === 'WBTC') return;
-
-      const bucketFields = getObjectFields(res) as BucketResponse;
-
-      bottleIdList.push({
-        name: objectNameList[index] ?? '',
-        id: bucketFields.bottle_table.fields.table.fields.id.id,
-        surplus_id: bucketFields.surplus_bottle_table.fields.id.id,
+    COLLATERAL_ASSETS.map((coinSymbol) => {
+      tx.moveCall({
+        target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_account`,
+        typeArguments: [COINS_TYPE_LIST[coinSymbol]],
+        arguments: [protocolObj, clockObj, debtor],
       });
     });
+    const edge1 = COLLATERAL_ASSETS.length;
 
-    const userBottles: UserBottleInfo[] = [];
-
-    // Get strapIds for user address
-    const { data: strapObjects } = await this.client.getOwnedObjects({
+    const { data: strapObjs } = await client.getOwnedObjects({
       owner: address,
       filter: {
         StructType: STRAP_ID,
@@ -878,18 +849,19 @@ export class BucketClient {
         showType: true,
       },
     });
+    const edge2 = edge1 + strapObjs.length;
 
-    let strapIds = strapObjects.map((strapObj) => {
-      const obj = getObjectFields(strapObj);
-      return {
-        id: obj?.id.id,
-        type: strapObj.data?.type,
-        strap_address: obj?.id.id,
-      };
+    strapObjs.map((strap) => {
+      const generics = getObjectGenerics(strap);
+      if (strap.data) {
+        tx.moveCall({
+          target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_strap`,
+          typeArguments: generics,
+          arguments: [protocolObj, clockObj, tx.objectRef(strap.data)],
+        });
+      }
     });
-
-    // Get stakeProofIds for user address
-    const { data: stakeProofs } = await this.client.getOwnedObjects({
+    const { data: proofs } = await client.getOwnedObjects({
       owner: address,
       filter: {
         StructType: STAKE_PROOF_ID,
@@ -899,189 +871,89 @@ export class BucketClient {
         showType: true,
       },
     });
-    strapIds = strapIds.concat(
-      stakeProofs.map((strapObj) => {
-        const obj = getObjectFields(strapObj);
+    const edge3 = edge2 + proofs.length;
+    const proofInfos = await Promise.all(
+      proofs.map(async (proof) => {
+        const token = getCoinSymbol(getObjectGenerics(proof)[0]) as COIN;
+        const lstFountain = await bucketClient.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
+        const data = await client.getDynamicFieldObject({
+          parentId: lstFountain.strapId,
+          name: {
+            type: 'address',
+            value: getObjectFields(proof)?.strap_address as string,
+          },
+        });
+        const ret = getObjectFields(data);
         return {
-          id: obj?.id.id,
-          type: strapObj.data?.type,
-          strap_address: obj?.strap_address,
+          debtAmount: Number(ret?.value.fields.debt_amount ?? 0),
+          startUnit: Number(ret?.value.fields.start_unit ?? 0),
         };
       }),
     );
 
-    // Loop bottles
-    for (const bottle of bottleIdList) {
-      const token = bottle.name as COIN;
-      const bottleStrapIds = strapIds.filter((t) => t.type?.includes(`<${COINS_TYPE_LIST[token]}`));
-      const addresses = [address, ...bottleStrapIds.map((t) => t.strap_address)];
-
-      let startUnit = 0;
-      let debtAmount = 0;
-
-      if (bottleStrapIds.length > 0) {
-        if (token in STRAP_FOUNTAIN_IDS) {
-          try {
-            const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
-            const data = await this.client.getDynamicFieldObject({
-              parentId: lstFountain.strapId,
-              name: {
-                type: 'address',
-                value: bottleStrapIds[0]?.strap_address,
-              },
-            });
-            const ret = getObjectFields(data);
-
-            debtAmount = Number(ret?.value.fields.debt_amount ?? 0);
-            startUnit = Number(ret?.value.fields.start_unit ?? 0);
-          } catch {
-            continue;
-          }
-        }
-      }
-
-      for (const _address of addresses) {
-        await this.client
-          .getDynamicFieldObject({
-            parentId: bottle.id ?? '',
-            name: {
-              type: 'address',
-              value: _address,
-            },
-          })
-          .then(async (bottleInfo) => {
-            const bottleInfoFields = getObjectFields(bottleInfo) as BottleInfoResponse;
-
-            if (bottleInfoFields) {
-              userBottles.push({
-                token,
-                collateralAmount: bottleInfoFields.value.fields.value.fields.collateral_amount,
-                buckAmount: bottleInfoFields.value.fields.value.fields.buck_amount,
-                strapId: bottleStrapIds.find((t) => t.strap_address === _address)?.id,
-                startUnit,
-                debtAmount,
-              });
-            } else {
-              const surplusBottleInfo = await this.client.getDynamicFieldObject({
-                parentId: bottle.surplus_id,
-                name: {
-                  type: 'address',
-                  value: _address,
-                },
-              });
-
-              const surplusBottleFields = getObjectFields(surplusBottleInfo);
-              const collateralAmount = surplusBottleFields?.value.fields.collateral_amount ?? 0;
-              if (collateralAmount) {
-                userBottles.push({
-                  token,
-                  collateralAmount,
-                  buckAmount: 0,
-                  strapId: bottleStrapIds.find((t) => t.strap_address === _address)?.id,
-                });
-              }
-            }
-          })
-          .catch((error) => {
-            console.error(error);
-          });
-      }
-
-      // We can add liquidated positions
-      const liquidatedStraps = bottleStrapIds.filter((t) => !userBottles.find((u) => u.strapId === t.id));
-      for (const strap of liquidatedStraps) {
-        userBottles.push({
-          token,
-          collateralAmount: 0,
-          buckAmount: 0,
-          strapId: strap.id,
+    proofs.map((proof) => {
+      const generics = getObjectGenerics(proof);
+      if (proof.data) {
+        tx.moveCall({
+          target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_proof`,
+          typeArguments: generics,
+          arguments: [protocolObj, clockObj, tx.objectRef(proof.data)],
         });
       }
+    });
+    const res = await client.devInspectTransactionBlock({
+      sender: address,
+      transactionBlock: tx,
+    });
+    const results = res?.results;
+    if (!results) {
+      return [];
     }
-
-    // Get locked positions
-    for (const coin of LOCK_COINS) {
-      const res = await this.client.getDynamicFieldObject({
-        parentId: LOCKER_TABLE[coin] as string,
-        name: {
-          type: 'address',
-          value: address,
-        },
-      });
-      const proofInfo = getObjectFields(res);
-      if (!proofInfo) continue;
-      const [info] = proofInfo.value;
-      if (!info) continue;
-      const strapAddress = info.fields.strap_address;
-      if (!strapAddress) continue;
-
-      const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[coin]?.objectId as string);
-      const strapRes = await this.client.getDynamicFieldObject({
-        parentId: lstFountain.strapId,
-        name: {
-          type: 'address',
-          value: strapAddress,
-        },
-      });
-      const strapData = getObjectFields(strapRes);
-      if (!strapData) continue;
-      const bottleInfo = bottleIdList.find((info) => info.name === coin);
-      if (!bottleInfo) continue;
-      const bottleRes = await this.client.getDynamicFieldObject({
-        parentId: bottleInfo.id,
-        name: {
-          type: 'address',
-          value: strapAddress,
-        },
-      });
-      const bottleData = getObjectFields(bottleRes);
+    const userBottles = results.map((r) => {
+      const bytes = r.returnValues?.[0][0];
+      return bytes ? bcs.option(BottleData).parse(Uint8Array.from(bytes)) : null;
+    });
+    const debtorBottles = userBottles.slice(edge0, edge1);
+    const strapBottles = userBottles.slice(edge1, edge2);
+    const proofBottles = userBottles.slice(edge2, edge3);
+    const debtorBottleInfos: (UserBottleInfo | undefined)[] = COLLATERAL_ASSETS.map((token, idx) => {
+      const bottleData = debtorBottles[idx];
       if (bottleData) {
-        userBottles.push({
-          token: coin,
-          strapId: strapData.value.fields.strap.fields.id.id,
-          debtAmount: Number(strapData.value.fields.debt_amount),
-          startUnit: Number(strapData.value.fields.start_unit),
-          collateralAmount: bottleData.value.fields.value.fields.collateral_amount,
-          buckAmount: bottleData.value.fields.value.fields.buck_amount,
-          isLocked: true,
-        });
-      } else {
-        const surplusBottleRes = await this.client.getDynamicFieldObject({
-          parentId: bottleInfo.surplus_id,
-          name: {
-            type: 'address',
-            value: strapAddress,
-          },
-        });
-        const surplusData = getObjectFields(surplusBottleRes);
-        if (surplusData) {
-          userBottles.push({
-            token: coin,
-            strapId: strapData.value.fields.strap.fields.id.id,
-            debtAmount: Number(strapData.value.fields.debt_amount),
-            startUnit: Number(strapData.value.fields.start_unit),
-            collateralAmount: surplusData.value.fields.collateral_amount,
-            buckAmount: surplusData.value.fields.buck_amount,
-            isLocked: true,
-          });
-        } else {
-          userBottles.push({
-            token: coin,
-            strapId: strapData.value.fields.strap.fields.id.id,
-            debtAmount: 0,
-            startUnit: Number(strapData.value.fields.start_unit),
-            collateralAmount: 0,
-            buckAmount: 0,
-            isLocked: true,
-          });
-        }
+        return {
+          token,
+          collateralAmount: Number(bottleData.coll_amount),
+          buckAmount: Number(bottleData.debt_amount),
+          debtAmount: Number(bottleData.debt_amount),
+        };
       }
-    }
-
-    // Sort liquidated positions to last
-    userBottles.sort((a, b) => b.collateralAmount - a.collateralAmount);
-
-    return userBottles;
+    });
+    const strapBottleInfos: (UserBottleInfo | undefined)[] = strapObjs.map((strap, idx) => {
+      const bottleData = strapBottles[idx];
+      if (bottleData) {
+        return {
+          token: getCoinSymbol(getObjectGenerics(strap)[0]) as COIN,
+          collateralAmount: Number(bottleData.coll_amount),
+          buckAmount: Number(bottleData.debt_amount),
+          debtAmount: Number(bottleData.debt_amount),
+          strapId: strap.data?.objectId,
+        };
+      }
+    });
+    const proofBottleInfos: (UserBottleInfo | undefined)[] = proofs.map((proof, idx) => {
+      const bottleData = proofBottles[idx];
+      const { startUnit } = proofInfos[idx];
+      if (bottleData) {
+        return {
+          token: getCoinSymbol(getObjectGenerics(proof)[0]) as COIN,
+          collateralAmount: Number(bottleData.coll_amount),
+          buckAmount: Number(bottleData.debt_amount),
+          debtAmount: Number(bottleData.debt_amount),
+          strapId: proof.data?.objectId,
+          startUnit,
+        };
+      }
+    });
+    return [...debtorBottleInfos, ...strapBottleInfos, ...proofBottleInfos].filter((data) => data) as UserBottleInfo[];
   }
 
   /**
