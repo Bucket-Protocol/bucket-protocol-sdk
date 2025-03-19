@@ -22,7 +22,7 @@ function sync_submodules {
   git submodule sync
   git submodule update --remote
 
-  cp -RT previews.cache previews
+  cp -RT .previews previews
   rm -rf .previews
   rm -rf .preview.cache
 }
