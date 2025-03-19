@@ -1,0 +1,33 @@
+name: Remove Stale Branches
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      dryrun:
+        description: 'Dryrun'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  pull-requests: write
+  contents: write
+  issues: write
+
+jobs:
+  remove-stale-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove stale branches
+        uses: crs-k/stale-branches@v7.0.0
+        with:
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
+          days-before-stale: 60
+          days-before-delete: 90
+          max-issues: 100
+          stale-branch-label: 'stale'
+          pr-check: true
+          dry-run: ${{ inputs.dryrun }}
+          ignore-issue-interaction: true
