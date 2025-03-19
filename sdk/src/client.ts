@@ -63,6 +63,7 @@ import {
   SWITCHBOARD_UPDATE_TARGET,
   UNIHOUSE_OBJECT_ID,
 } from './constants';
+import { STRUCT_BOTTLE_DATA } from './constants/sructs';
 import {
   AprResponse,
   BottleInfoResponse,
@@ -817,27 +818,20 @@ export class BucketClient {
   async getUserBottles(address: string): Promise<UserBottleInfo[]> {
     if (!address) return [];
 
-    const BottleData = bcs.struct(`${BUCKET_OPERATIONS_PACKAGE_ID}::utils::BottleData`, {
-      debtor: bcs.Address,
-      coll_amount: bcs.U64,
-      debt_amount: bcs.U64,
-    });
     const tx = new Transaction();
-    const protocolObj = tx.sharedObjectRef(PROTOCOL_OBJECT);
-    const clockObj = tx.sharedObjectRef(CLOCK_OBJECT);
-    const debtor = tx.pure.address(address);
+
     const edge0 = 0;
 
-    COLLATERAL_ASSETS.map((coinSymbol) => {
+    COLLATERAL_ASSETS.forEach((coinSymbol) => {
       tx.moveCall({
         target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_account`,
         typeArguments: [COINS_TYPE_LIST[coinSymbol]],
-        arguments: [protocolObj, clockObj, debtor],
+        arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.pure.address(address)],
       });
     });
     const edge1 = COLLATERAL_ASSETS.length;
 
-    const { data: strapObjs } = await this.getSuiClient().getOwnedObjects({
+    const { data: strapObjs } = await this.client.getOwnedObjects({
       owner: address,
       filter: {
         StructType: STRAP_ID,
@@ -855,11 +849,11 @@ export class BucketClient {
         tx.moveCall({
           target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_strap`,
           typeArguments: generics,
-          arguments: [protocolObj, clockObj, tx.objectRef(strap.data)],
+          arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.objectRef(strap.data)],
         });
       }
     });
-    const { data: proofs } = await this.getSuiClient().getOwnedObjects({
+    const { data: proofs } = await this.client.getOwnedObjects({
       owner: address,
       filter: {
         StructType: STAKE_PROOF_ID,
@@ -874,7 +868,7 @@ export class BucketClient {
       proofs.map(async (proof) => {
         const token = getCoinSymbol(getObjectGenerics(proof)[0]) as COIN;
         const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
-        const data = await this.getSuiClient().getDynamicFieldObject({
+        const data = await this.client.getDynamicFieldObject({
           parentId: lstFountain.strapId,
           name: {
             type: 'address',
@@ -894,11 +888,11 @@ export class BucketClient {
         tx.moveCall({
           target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_proof`,
           typeArguments: generics,
-          arguments: [protocolObj, clockObj, tx.objectRef(proof.data)],
+          arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.objectRef(proof.data)],
         });
       }
     });
-    const res = await this.getSuiClient().devInspectTransactionBlock({
+    const res = await this.client.devInspectTransactionBlock({
       sender: address,
       transactionBlock: tx,
     });
@@ -908,8 +902,9 @@ export class BucketClient {
     }
     const userBottles = results.map((r) => {
       const bytes = r.returnValues?.[0][0];
-      return bytes ? bcs.option(BottleData).parse(Uint8Array.from(bytes)) : null;
+      return bytes ? bcs.option(STRUCT_BOTTLE_DATA).parse(Uint8Array.from(bytes)) : null;
     });
+
     const debtorBottles = userBottles.slice(edge0, edge1);
     const strapBottles = userBottles.slice(edge1, edge2);
     const proofBottles = userBottles.slice(edge2, edge3);
@@ -1013,16 +1008,8 @@ export class BucketClient {
   }
 
   async getBottlesByStep(coinType: string, cursor: string | null, isUpward: boolean): Promise<BottlePage> {
-    const bottleStruct = bcs.struct(
-      '0xb3f10f2c9a52b615ab8b0b930ee55e019bacb407b29f5f534e6d9c3291341db8::utils::BottleData',
-      {
-        debtor: bcs.Address,
-        coll_amount: bcs.U64,
-        debt_amount: bcs.U64,
-      },
-    );
-
     const tx = new Transaction();
+
     tx.moveCall({
       target: '0x0e2e9d96beaf27fb80cacb5947f1a0fa36664fe644e968e81263ffccf979d6db::utils::get_bottles_with_direction',
       typeArguments: [coinType],
@@ -1049,7 +1036,7 @@ export class BucketClient {
 
       const [value] = bottleVec;
       const [cursor] = cursorVec;
-      const bottles = bcs.vector(bottleStruct).parse(Uint8Array.from(value));
+      const bottles = bcs.vector(STRUCT_BOTTLE_DATA).parse(Uint8Array.from(value));
       const nextCursor = bcs.option(bcs.Address).parse(Uint8Array.from(cursor));
       return {
         bottles: bottles.map((data) => {
