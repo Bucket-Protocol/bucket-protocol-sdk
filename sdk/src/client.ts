@@ -890,7 +890,6 @@ export class BucketClient {
         };
       }),
     );
-
     proofs.map((proof) => {
       const generics = getObjectGenerics(proof);
       if (proof.data) {
