@@ -9,15 +9,9 @@ CURRENT_BRANCH=$(git branch --show-current)
 function sync_submodules {
   echo "Pull submodules:"
 
-  ls -a previews
-  ls -a previews.cache
-
   rm -rf .previews
   rm -rf .preview.cache
   mv previews .previews
-
-  ls -a previews
-  ls -a previews.cache
 
   if [ -n $GITHUB_TOKEN ]; then
     sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
