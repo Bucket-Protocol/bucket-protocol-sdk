@@ -8,7 +8,8 @@
   "type": "module",
   "scripts": {
     "preinstall": "sh ./scripts/setup.sh",
-    "build": "turbo run build"
+    "build": "turbo run build",
+    "lint": "turbo lint --filter=bucket-protocol-sdk"
   },
   "engines": {
     "node": ">=20.18.0"
