@@ -30,6 +30,5 @@ yarn-error.log*
 .nvmrc
 
 # infra
-.gitmodules
 .gitmodules*
 previews/
