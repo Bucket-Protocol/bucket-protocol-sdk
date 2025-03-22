@@ -1,7 +1,7 @@
 import { COIN, ScableCoin, SharedObjectRef } from '@/types';
 
 export const BUCKET_OPERATIONS_PACKAGE_ID: string =
-  '0x2e641a878f41e34c384f52e81d76e2466349b4a436fee48a3425d45c81969537';
+  '0x9cce122becbce2288652701c8730affb28d966e751822b7f8398b66da2732f30';
 export const PROTOCOL_ID = '0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df';
 export const CONTRIBUTOR_TOKEN_ID = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2';
 export const CORE_PACKAGE_ID = '0xec01ce9920fb2a645f0dee9a8c139af837541a6073fc3e546d08299cc0276068';
