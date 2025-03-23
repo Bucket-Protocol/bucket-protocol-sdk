@@ -31,5 +31,4 @@ yarn-error.log*
 
 # infra
 /previews
-.gitmodules
 .gitmodules*
