@@ -410,7 +410,7 @@ export class BucketClient {
       });
       const coinType = COINS_TYPE_LIST[token];
       tx.moveCall({
-        target: '0xaa4f958759df1be17107e26227bf22c1cb216e7cc2b148d210d46aa0a8f6728d::scoin_rule::update_price',
+        target: '0xc3fb5907e9d8aa5cb0e866152da81f6ea9799c210b52a9d64eb3729d033e8c21::scoin_rule::update_price',
         typeArguments: [coinType, COINS_TYPE_LIST[underlyingToke]],
         arguments: [
           tx.sharedObjectRef({
@@ -2906,7 +2906,7 @@ export class BucketClient {
         mutable: true,
       });
       return tx.moveCall({
-        target: '0x1b4b5dd782453586f2a39dbc154f9ef4ca7780ae9a31154c1c6080985a5d295e::scable::withdraw_coin_from_spool',
+        target: '0x3eca32f66d6269d0a6c400a760182df74330a4cbf61548f37892c680b295b085::scable::withdraw_coin_from_spool',
         typeArguments: [outCoinType],
         arguments: [
           tx.sharedObjectRef(vaultObj),
