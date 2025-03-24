@@ -39,6 +39,5 @@ function checkout_branches {
 }
 
 if [ -n "$GITHUB_TOKEN" ]; then
-  echo shit
   sync_submodules && checkout_branches
 fi
