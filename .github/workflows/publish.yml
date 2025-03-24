@@ -35,7 +35,7 @@ jobs:
       - name: Compile
         run: yarn run build
       - name: Publish package
-        run: npm version ${{ inputs.versionBumpType }} && npm publish --provenance
+        run: npm version ${{ inputs.versionBumpType }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - id: publish
@@ -50,6 +50,8 @@ jobs:
           - https://github.com/Bucket-Protocol/bucket-frontend-v4
           - https://github.com/Bucket-Protocol/bucket-frontend-v5
     steps:
+      - name: Print variables
+        run: echo ${{ matrix.repo }} && echo ${{ needs.publish.output.latest-version }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
