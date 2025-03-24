@@ -67,5 +67,5 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           branch: bump-bucket-protocol-sdk-v${{ needs.publish.output.latest-version }}
-          title: chore: bump bucket-protocol-sdk to v${{ needs.publish.output.latest-version }}
+          title: 'chore: bump bucket-protocol-sdk to v${{ needs.publish.output.latest-version }}'
           token: ${{ secrets.ADMIN_TOKEN }}
