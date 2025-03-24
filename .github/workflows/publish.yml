@@ -35,7 +35,7 @@ jobs:
       - name: Compile
         run: yarn run build
       - name: Publish package
-        run: npm version ${{ inputs.versionBumpType }}
+        run: npm version ${{ inputs.versionBumpType }} && npm publish --dry-run --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - id: publish
