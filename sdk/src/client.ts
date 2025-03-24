@@ -810,7 +810,7 @@ export class BucketClient {
     return bucketInfo;
   }
 
-  private async getProofStartUnit(proof: SuiObjectResponse) {
+  private async getProofData(proof: SuiObjectResponse) {
     const token = getCoinSymbol(getObjectGenerics(proof)[0]) as COIN;
     const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
     const data = await this.client.getDynamicFieldObject({
@@ -822,7 +822,10 @@ export class BucketClient {
     });
     const ret = getObjectFields(data);
 
-    return Number(ret?.value.fields.start_unit ?? 0);
+    return {
+      startUnit: Number(ret?.value.fields.start_unit ?? 0),
+      debtAmount: Number(ret?.value.fields.debt_amount ?? 0),
+    };
   }
 
   private parseUserBottleInfo(
@@ -832,6 +835,7 @@ export class BucketClient {
       strap?: SuiObjectResponse;
       proof?: SuiObjectResponse;
       startUnit?: number;
+      debtAmount?: number;
     },
   ): UserBottleInfo | null {
     if (!userBottleData) {
@@ -850,7 +854,7 @@ export class BucketClient {
       token,
       collateralAmount: Number(userBottleData.coll_amount),
       buckAmount: Number(userBottleData.debt_amount),
-      debtAmount: Number(userBottleData.debt_amount),
+      debtAmount: params.debtAmount ?? Number(userBottleData.debt_amount),
       ...(!!strapId && { strapId }),
       ...(params.startUnit !== undefined && { startUnit: params.startUnit }),
     };
@@ -885,7 +889,7 @@ export class BucketClient {
         showType: true,
       },
     });
-    const proofStartUnits = await Promise.all(proofObjs.map((proof) => this.getProofStartUnit(proof)));
+    const proofDataVec = await Promise.all(proofObjs.map((proof) => this.getProofData(proof)));
 
     const tx = new Transaction();
     const parseParams: Parameters<typeof this.parseUserBottleInfo>[1][] = [];
@@ -915,7 +919,7 @@ export class BucketClient {
       if (!proof.data) {
         return;
       }
-      parseParams.push({ proof, startUnit: proofStartUnits[index] });
+      parseParams.push({ proof, startUnit: proofDataVec[index].startUnit, debtAmount: proofDataVec[index].debtAmount });
 
       tx.moveCall({
         target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_proof`,
