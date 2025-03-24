@@ -39,15 +39,9 @@ export function getObjectFields(
 
 export const getObjectGenerics = (resp: SuiObjectResponse): string[] => {
   const objType = resp.data?.type;
-  if (objType) {
-    const startIdx = objType.indexOf('<');
-    if (startIdx) {
-      const endIdx = objType.lastIndexOf('>');
-      return objType.slice(startIdx + 1, endIdx).split(', ');
-    } else {
-      return [];
-    }
-  } else {
-    return [];
-  }
+
+  const startIdx = objType?.indexOf?.('<');
+  const endIdx = objType?.lastIndexOf?.('>');
+
+  return startIdx ? objType!.slice(startIdx + 1, endIdx).split(', ') : [];
 };

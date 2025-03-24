@@ -106,7 +106,6 @@ export const getCoinSymbol = (coinType: string) => {
   if (coin) {
     return coin as COIN;
   }
-
   return undefined;
 };
 

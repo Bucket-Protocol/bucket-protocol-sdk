@@ -410,7 +410,7 @@ export class BucketClient {
       });
       const coinType = COINS_TYPE_LIST[token];
       tx.moveCall({
-        target: '0xaa4f958759df1be17107e26227bf22c1cb216e7cc2b148d210d46aa0a8f6728d::scoin_rule::update_price',
+        target: '0xc3fb5907e9d8aa5cb0e866152da81f6ea9799c210b52a9d64eb3729d033e8c21::scoin_rule::update_price',
         typeArguments: [coinType, COINS_TYPE_LIST[underlyingToke]],
         arguments: [
           tx.sharedObjectRef({
@@ -810,27 +810,65 @@ export class BucketClient {
     return bucketInfo;
   }
 
+  private async getProofData(proof: SuiObjectResponse) {
+    const token = getCoinSymbol(getObjectGenerics(proof)[0]) as COIN;
+    const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
+    const data = await this.client.getDynamicFieldObject({
+      parentId: lstFountain.strapId,
+      name: {
+        type: 'address',
+        value: getObjectFields(proof)?.strap_address as string,
+      },
+    });
+    const ret = getObjectFields(data);
+
+    return {
+      startUnit: Number(ret?.value.fields.start_unit ?? 0),
+      debtAmount: Number(ret?.value.fields.debt_amount ?? 0),
+    };
+  }
+
+  private parseUserBottleInfo(
+    userBottleData: ReturnType<typeof STRUCT_BOTTLE_DATA.parse> | null,
+    params: {
+      token?: COIN;
+      strap?: SuiObjectResponse;
+      proof?: SuiObjectResponse;
+      startUnit?: number;
+      debtAmount?: number;
+    },
+  ): UserBottleInfo | null {
+    if (!userBottleData) {
+      return null;
+    }
+    const token =
+      params.token ||
+      (params.strap && getCoinSymbol(getObjectGenerics(params.strap)[0])) ||
+      (params.proof && getCoinSymbol(getObjectGenerics(params.proof)[0]));
+    if (!token) {
+      return null;
+    }
+    const strapId = params.strap?.data?.objectId ?? params.proof?.data?.objectId;
+
+    return {
+      token,
+      collateralAmount: Number(userBottleData.coll_amount),
+      buckAmount: Number(userBottleData.debt_amount),
+      debtAmount: params.debtAmount ?? Number(userBottleData.debt_amount),
+      ...(!!strapId && { strapId }),
+      ...(params.startUnit !== undefined && { startUnit: params.startUnit }),
+    };
+  }
+
   /**
    * @description Get positions array for input address
    * @address User address that belong to bottle
    * @returns Promise<BottleInfo>
    */
   async getUserBottles(address: string): Promise<UserBottleInfo[]> {
-    if (!address) return [];
-
-    const tx = new Transaction();
-
-    const edge0 = 0;
-
-    COLLATERAL_ASSETS.forEach((coinSymbol) => {
-      tx.moveCall({
-        target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_account`,
-        typeArguments: [COINS_TYPE_LIST[coinSymbol]],
-        arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.pure.address(address)],
-      });
-    });
-    const edge1 = COLLATERAL_ASSETS.length;
-
+    if (!address) {
+      return [];
+    }
     const { data: strapObjs } = await this.client.getOwnedObjects({
       owner: address,
       filter: {
@@ -841,19 +879,7 @@ export class BucketClient {
         showType: true,
       },
     });
-    const edge2 = edge1 + strapObjs.length;
-
-    strapObjs.map((strap) => {
-      const generics = getObjectGenerics(strap);
-      if (strap.data) {
-        tx.moveCall({
-          target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_strap`,
-          typeArguments: generics,
-          arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.objectRef(strap.data)],
-        });
-      }
-    });
-    const { data: proofs } = await this.client.getOwnedObjects({
+    const { data: proofObjs } = await this.client.getOwnedObjects({
       owner: address,
       filter: {
         StructType: STAKE_PROOF_ID,
@@ -863,98 +889,59 @@ export class BucketClient {
         showType: true,
       },
     });
-    const edge3 = edge2 + proofs.length;
-    const proofInfos = await Promise.all(
-      proofs.map(async (proof) => {
-        const token = getCoinSymbol(getObjectGenerics(proof)[0]) as COIN;
-        const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
-        const data = await this.client.getDynamicFieldObject({
-          parentId: lstFountain.strapId,
-          name: {
-            type: 'address',
-            value: getObjectFields(proof)?.strap_address as string,
-          },
-        });
-        const ret = getObjectFields(data);
-        return {
-          debtAmount: Number(ret?.value.fields.debt_amount ?? 0),
-          startUnit: Number(ret?.value.fields.start_unit ?? 0),
-        };
-      }),
-    );
-    proofs.map((proof) => {
-      const generics = getObjectGenerics(proof);
-      if (proof.data) {
-        tx.moveCall({
-          target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_proof`,
-          typeArguments: generics,
-          arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.objectRef(proof.data)],
-        });
+    const proofDataVec = await Promise.all(proofObjs.map((proof) => this.getProofData(proof)));
+
+    const tx = new Transaction();
+    const parseParams: Parameters<typeof this.parseUserBottleInfo>[1][] = [];
+
+    COLLATERAL_ASSETS.forEach((token) => {
+      parseParams.push({ token });
+
+      tx.moveCall({
+        target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_account`,
+        typeArguments: [COINS_TYPE_LIST[token]],
+        arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.pure.address(address)],
+      });
+    });
+    strapObjs.forEach((strap) => {
+      if (!strap.data) {
+        return;
       }
+      parseParams.push({ strap });
+
+      tx.moveCall({
+        target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_strap`,
+        typeArguments: getObjectGenerics(strap),
+        arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.objectRef(strap.data)],
+      });
+    });
+    proofObjs.forEach((proof, index) => {
+      if (!proof.data) {
+        return;
+      }
+      parseParams.push({ proof, startUnit: proofDataVec[index].startUnit, debtAmount: proofDataVec[index].debtAmount });
+
+      tx.moveCall({
+        target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_proof`,
+        typeArguments: getObjectGenerics(proof),
+        arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), tx.sharedObjectRef(CLOCK_OBJECT), tx.objectRef(proof.data)],
+      });
     });
     const res = await this.client.devInspectTransactionBlock({
       sender: address,
       transactionBlock: tx,
     });
-    const results = res?.results;
-    if (!results) {
-      return [];
-    }
-    const userBottles = results.map((r) => {
-      const bytes = r.returnValues?.[0][0];
-      return bytes ? bcs.option(STRUCT_BOTTLE_DATA).parse(Uint8Array.from(bytes)) : null;
-    });
+    const userBottleInfo =
+      res.results?.map?.((result) => {
+        const bytes = result.returnValues?.[0]?.[0];
+        return bytes ? bcs.option(STRUCT_BOTTLE_DATA).parse(Uint8Array.from(bytes)) : null;
+      }) ?? [];
 
-    const debtorBottles = userBottles.slice(edge0, edge1);
-    const strapBottles = userBottles.slice(edge1, edge2);
-    const proofBottles = userBottles.slice(edge2, edge3);
+    const userBottles = userBottleInfo
+      .map((bottleInfo, index) => this.parseUserBottleInfo(bottleInfo, parseParams[index]))
+      .filter((userBottle) => !!userBottle);
 
-    const debtorBottleInfos: UserBottleInfo[] = COLLATERAL_ASSETS.map((token, idx) => {
-      const bottleData = debtorBottles[idx];
-      return bottleData
-        ? {
-            token,
-            collateralAmount: Number(bottleData.coll_amount),
-            buckAmount: Number(bottleData.debt_amount),
-            debtAmount: Number(bottleData.debt_amount),
-          }
-        : null;
-    }).filter((bottleInfo) => !!bottleInfo);
-
-    const strapBottleInfos: UserBottleInfo[] = strapObjs
-      .map((strap, idx) => {
-        const bottleData = strapBottles[idx];
-
-        return bottleData
-          ? {
-              token: getCoinSymbol(getObjectGenerics(strap)[0]) as COIN,
-              collateralAmount: Number(bottleData.coll_amount),
-              buckAmount: Number(bottleData.debt_amount),
-              debtAmount: Number(bottleData.debt_amount),
-              strapId: strap.data?.objectId,
-            }
-          : null;
-      })
-      .filter((bottleInfo) => !!bottleInfo);
-
-    const proofBottleInfos: UserBottleInfo[] = proofs
-      .map((proof, idx) => {
-        const bottleData = proofBottles[idx];
-        const { startUnit } = proofInfos[idx];
-        return bottleData
-          ? {
-              token: getCoinSymbol(getObjectGenerics(proof)[0]) as COIN,
-              collateralAmount: Number(bottleData.coll_amount),
-              buckAmount: Number(bottleData.debt_amount),
-              debtAmount: Number(bottleData.debt_amount),
-              strapId: proof.data?.objectId,
-              startUnit,
-            }
-          : null;
-      })
-      .filter((bottleInfo) => !!bottleInfo);
-
-    return [...debtorBottleInfos, ...strapBottleInfos, ...proofBottleInfos].filter((data) => data) as UserBottleInfo[];
+    return userBottles;
   }
 
   /**
@@ -1661,7 +1648,6 @@ export class BucketClient {
         showContent: true,
       },
     });
-
     return objectToStrapFountain(res);
   }
 
@@ -2924,7 +2910,7 @@ export class BucketClient {
         mutable: true,
       });
       return tx.moveCall({
-        target: '0x1b4b5dd782453586f2a39dbc154f9ef4ca7780ae9a31154c1c6080985a5d295e::scable::withdraw_coin_from_spool',
+        target: '0x3eca32f66d6269d0a6c400a760182df74330a4cbf61548f37892c680b295b085::scable::withdraw_coin_from_spool',
         typeArguments: [outCoinType],
         arguments: [
           tx.sharedObjectRef(vaultObj),
