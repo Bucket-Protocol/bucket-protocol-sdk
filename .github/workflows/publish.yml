@@ -61,7 +61,7 @@ jobs:
         with:
           node-version: 20
       - name: Bump version
-        runs: |
+        run: |
           yarn upgrade bucket-protocol-sdk@${{ needs.publish.output.latest-version }}  --save-exact
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
