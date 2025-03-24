@@ -13,8 +13,8 @@ jobs:
   enable-auto-merge:
     runs-on: ubuntu-latest
     steps:
-      - name: Enable auto-merge for Dependabot PRs
+      - name: Enable auto-merge for PRs
         run: gh pr merge --auto --squash "$PR_URL"
         env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.ADMIN_TOKEN}}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.ADMIN_TOKEN }}

@@ -10,13 +10,7 @@ function sync_submodules {
   echo "Pull submodules:"
 
   mv previews .previews
-
-  if [ -n $GITHUB_TOKEN ]; then
-    sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
-  else
-    echo '$GITHUB_TOKEN is not set. Skip stubbing token into .gitmodules'
-  fi
-
+  sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
   git submodule sync
   git submodule update --remote
 
@@ -43,5 +37,8 @@ function checkout_branches {
     git checkout -f $target
   done
 }
-  
-sync_submodules && checkout_branches
+
+if [ -n "$GITHUB_TOKEN" ]; then
+  echo shit
+  sync_submodules && checkout_branches
+fi

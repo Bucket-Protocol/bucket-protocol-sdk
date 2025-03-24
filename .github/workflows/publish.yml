@@ -1,0 +1,71 @@
+name: Publish package
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionBumpType:
+        descirption: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    outputs:
+      latest-version: ${{ steps.publish.outputs.isApp }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Install Dependencies
+        run: cd sdk && yarn install --frozen-lockfile
+      - name: Compile
+        run: yarn run build
+      - name: Publish package
+        run: npm version ${{ inputs.versionBumpType }} && npm publish --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - id: publish
+        name: Output version
+        runs: echo "latest-version=$(npm view bucket-protocol-sdk version)" >> "$GITHUB_OUTPUT"
+  create-pr:
+    runs-on: ubuntu-latest
+    needs: publish
+    strategy:
+      matrix:
+        repo:
+          - https://github.com/Bucket-Protocol/bucket-frontend-v4
+          - https://github.com/Bucket-Protocol/bucket-frontend-v5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: 'origin/main'
+          token: ${{ secrets.ADMIN_TOKEN }}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Bump version
+        runs: |
+          yarn upgrade bucket-protocol-sdk@${{ needs.publish.output.latest-version }}  --save-exact
+      - name: Create PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bump-bucket-protocol-sdk-v${{ needs.publish.output.latest-version }}
+          title: chore: bump bucket-protocol-sdk to v${{ needs.publish.output.latest-version }}
+          token: ${{ secrets.ADMIN_TOKEN }}
