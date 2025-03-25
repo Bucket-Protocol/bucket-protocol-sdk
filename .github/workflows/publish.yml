@@ -54,8 +54,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: Bucket-Protocol/${{ matrix.repo }}
-          ref: 'origin/main'
-          path: ${{ matrix.repo }}
           token: ${{ secrets.ADMIN_TOKEN }}
       - name: Setup Node
         uses: actions/setup-node@v4
