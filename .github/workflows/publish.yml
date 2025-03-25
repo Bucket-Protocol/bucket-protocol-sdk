@@ -22,9 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     if: contains('["zasper321715","lpoulter"]', github.actor)
     steps:
-      - run: echo ${{ github.actor }} && echo 'Permmision denied' && exit 0
+      - run: echo ${{ github.actor }} && echo 'Permmision denied' && exit 1
   publish:
     runs-on: ubuntu-latest
+    needs: check-permission
     outputs:
       latest-version: ${{ steps.publish.outputs.latest-version }}
     steps:
