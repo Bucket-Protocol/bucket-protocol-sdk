@@ -20,7 +20,7 @@ permissions:
 jobs:
   check-permission:
     runs-on: ubuntu-latest
-    if: contains('["17008875","33892812"]', github.actor_id)
+    if: ${{ !contains('["17008875","33892812"]', github.actor_id) }}
     steps:
       - run: echo 'Permmision denied' && exit 1
   publish:
