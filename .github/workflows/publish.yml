@@ -21,7 +21,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     outputs:
-      latest-version: ${{ steps.publish.outputs.isApp }}
+      latest-version: ${{ steps.publish.outputs.latest-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
           - bucket-frontend-v5
     steps:
       - name: Print variables
-        run: echo ${{ matrix.repo }} && echo ${{ needs.publish.publish.output.latest-version }}
+        run: echo ${{ matrix.repo }} && echo ${{ needs.publish.outputs.latest-version }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
