@@ -35,11 +35,11 @@ jobs:
       - name: Compile
         run: yarn run build
       - name: Publish package
-        run: npm version ${{ inputs.versionBumpType }} && npm publish --dry-run --provenance
+        run: npm version ${{ inputs.versionBumpType }} --no-git-tag-version && npm publish --dry-run --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - id: publish
-        name: Output version
+        name: Output variables
         run: echo "latest-version=$(npm view bucket-protocol-sdk version)" >> "$GITHUB_OUTPUT"
   create-pr:
     runs-on: ubuntu-latest
