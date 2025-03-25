@@ -20,9 +20,9 @@ permissions:
 jobs:
   check-permission:
     runs-on: ubuntu-latest
-    if: contains('["zasper321715","lpoulter"]', github.actor)
+    if: contains('["17008875","33892812"]', github.actor_id)
     steps:
-      - run: echo ${{ github.actor_id }} && echo 'Permmision denied' && exit 1
+      - run: echo 'Permmision denied' && exit 1
   publish:
     runs-on: ubuntu-latest
     needs: check-permission
@@ -41,7 +41,7 @@ jobs:
       - name: Compile
         run: yarn run build
       - name: Bump & publish package
-        run: npm version ${{ inputs.versionBumpType }} --no-git-tag-version && npm publish --dry-run --provenance
+        run: npm version ${{ inputs.versionBumpType }} --no-git-tag-version && npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - id: publish
