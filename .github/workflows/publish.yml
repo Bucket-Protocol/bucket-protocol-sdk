@@ -50,13 +50,12 @@ jobs:
           - bucket-frontend-v4
           - bucket-frontend-v5
     steps:
-      - name: Print variables
-        run: echo ${{ matrix.repo }} && echo ${{ needs.publish.outputs.latest-version }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
           repository: Bucket-Protocol/${{ matrix.repo }}
           ref: 'origin/main'
+          path: ${{ matrix.repo }}
           token: ${{ secrets.ADMIN_TOKEN }}
       - name: Setup Node
         uses: actions/setup-node@v4
