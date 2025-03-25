@@ -47,15 +47,15 @@ jobs:
     strategy:
       matrix:
         repo:
-          - https://github.com/Bucket-Protocol/bucket-frontend-v4
-          - https://github.com/Bucket-Protocol/bucket-frontend-v5
+          - bucket-frontend-v4
+          - bucket-frontend-v5
     steps:
       - name: Print variables
-        run: echo ${{ matrix.repo }} && echo ${{ needs.publish.output.latest-version }}
+        run: echo ${{ matrix.repo }} && echo ${{ needs.publish.publish.output.latest-version }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          repository: ${{ matrix.repo }}
+          repository: Bucket-Protocol/${{ matrix.repo }}
           ref: 'origin/main'
           token: ${{ secrets.ADMIN_TOKEN }}
       - name: Setup Node
