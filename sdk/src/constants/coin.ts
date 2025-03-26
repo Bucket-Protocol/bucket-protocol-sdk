@@ -52,6 +52,9 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   sbWBTC: '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC',
   bluefin_BUCK_USDC_LP:
     '0x6b110c792faadf8c1f928ad351bf3c9abad647b12bab83e7e075c169b0f9a2c1::bluefin_stable_lp::BLUEFIN_STABLE_LP',
+
+  WAL: '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
+  sWAL: '0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL',
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -102,6 +105,9 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   haSUI_SUI_CETUS_VT_LP: 9,
   stSUI_SUI_ALPHAFI_FT: 9,
   bluefin_BUCK_USDC_LP: 9,
+
+  WAL: 9,
+  sWAL: 9,
 };
 
 export const COLLATERAL_ASSETS: COIN[] = [
@@ -131,4 +137,7 @@ export const COLLATERAL_ASSETS: COIN[] = [
   'gSUI',
   'haSUI_SUI_CETUS_VT_LP',
   'stSUI_SUI_ALPHAFI_FT',
+
+  'WAL',
+  'sWAL',
 ];
