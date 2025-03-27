@@ -6,6 +6,8 @@ GITHUB_USERNAME=bucket-bot
 ROOT_DIR=$(pwd)
 CURRENT_BRANCH=$(git branch --show-current)
 
+echo $VERCEL_GIT_COMMIT_REF
+
 git branch --show-current
 git branch -a | cat
 
