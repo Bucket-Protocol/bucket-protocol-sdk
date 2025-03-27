@@ -27,7 +27,7 @@ function checkout_branches {
     cd $ROOT_DIR/$repo
     git fetch --all
 
-    if git show-ref --quiet origin/$branch; then
+    if git show-ref --quiet origin/$CURRENT_BRANCH; then
       target=origin/$CURRENT_BRANCH
     else
       target=$(git symbolic-ref --short refs/remotes/origin/HEAD) 
