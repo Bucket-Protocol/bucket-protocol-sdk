@@ -6,6 +6,9 @@ GITHUB_USERNAME=bucket-bot
 ROOT_DIR=$(pwd)
 CURRENT_BRANCH=$(git branch --show-current)
 
+git branch --show-current
+git branch -a | cat
+
 function sync_submodules {
   echo "Pull submodules:"
 
