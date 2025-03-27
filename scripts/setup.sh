@@ -27,7 +27,8 @@ function checkout_branches {
     cd $ROOT_DIR/$repo
     git fetch --all
 
-    echo $(git show-ref origin/$CURRENT_BRANCH)
+    echo $CURRENT_BRANCH
+    git show-ref origin/$CURRENT_BRANCH
     git branch -a | cat
 
     if git show-ref --quiet origin/$CURRENT_BRANCH; then
