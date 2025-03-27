@@ -69,4 +69,22 @@ export const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef & { reward
     mutable: true,
     rewardType: COINS_TYPE_LIST.KOTO,
   },
+  sSBUSDT: {
+    objectId: '0x47be0c2692b7d9e5c53052ac6ef0c77a64f5985e52736902db68d25fd268166b',
+    initialSharedVersion: '509764242',
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
+  },
+  sWAL: {
+    objectId: '0x66d12220faaef9bf15ab1345f4a69dfc356bf5cbb2b0e5a0f53b456147e1e74c',
+    initialSharedVersion: '509764244',
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.SCA,
+  },
+  WAL: {
+    objectId: '0xf1d6b296bf419c2a557c4b8649bd13cc35e2b6e7fefe491aeb79489509f3ac8e',
+    initialSharedVersion: '509764243',
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.WAL,
+  },
 };
