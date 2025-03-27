@@ -1,8 +1,8 @@
 [submodule "previews/bucket-frontend-v4"]
 	path = previews/bucket-frontend-v4
 	url = https://github.com/Bucket-Protocol/bucket-frontend-v4
-	branch = swal
+	branch = main
 [submodule "previews/bucket-frontend-v5"]
 	path = previews/bucket-frontend-v5
 	url = https://github.com/Bucket-Protocol/bucket-frontend-v5
-	branch = swal
+	branch = main
