@@ -471,7 +471,43 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST[token], COINS_TYPE_LIST[baseToken]],
         arguments: [tx.sharedObjectRef(ORACLE_OBJECT), tx.object(UNIHOUSE_OBJECT_ID), tx.sharedObjectRef(CLOCK_OBJECT)],
       });
-    } else {
+    } else if (token === 'WAL' || token === 'sWAL') {
+      tx.moveCall({
+        target: '0x1c2740b75e06bf7bcee49d6df216f8a069c00e86173a021da712c37de2eb84af::navi_rule::update_price',
+        typeArguments: [COINS_TYPE_LIST[token]],
+        arguments: [
+          tx.object('0x44f5343585d18d23f5e29a3c70da655c0cd11a9cc1f931c114a1e5323a229442'),
+          tx.object('0x1568865ed9a0b5ec414220e8f79b3d04c77acc82358f6e5ae4635687392ffbef'),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT)
+        ],
+      });
+      if (token === 'sWAL') {
+        tx.moveCall({
+          target: '0xc3fb5907e9d8aa5cb0e866152da81f6ea9799c210b52a9d64eb3729d033e8c21::scoin_rule::update_price',
+          typeArguments: [COINS_TYPE_LIST['sWAL'], COINS_TYPE_LIST['WAL']],
+          arguments: [
+            tx.sharedObjectRef({
+              objectId: '0x44f5343585d18d23f5e29a3c70da655c0cd11a9cc1f931c114a1e5323a229442',
+              initialSharedVersion: 389243325,
+              mutable: false,
+            }),
+            tx.sharedObjectRef(ORACLE_OBJECT),
+            tx.sharedObjectRef({
+              objectId: '0x07871c4b3c847a0f674510d4978d5cf6f960452795e8ff6f189fd2088a3f6ac7',
+              initialSharedVersion: 7765848,
+              mutable: false,
+            }),
+            tx.sharedObjectRef({
+              objectId: '0xa757975255146dc9686aa823b7838b507f315d704f428cbadad2f4ea061939d9',
+              initialSharedVersion: 7765848,
+              mutable: true,
+            }),
+            tx.sharedObjectRef(CLOCK_OBJECT),
+          ],
+        });
+      }
+    }  else {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
         typeArguments: [COINS_TYPE_LIST[token as COIN]],
