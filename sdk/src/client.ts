@@ -474,7 +474,7 @@ export class BucketClient {
     } else if (token === 'WAL' || token === 'sWAL') {
       tx.moveCall({
         target: '0x1c2740b75e06bf7bcee49d6df216f8a069c00e86173a021da712c37de2eb84af::navi_rule::update_price',
-        typeArguments: [COINS_TYPE_LIST[token]],
+        typeArguments: [COINS_TYPE_LIST['WAL']],
         arguments: [
           tx.object('0xecd074051d882c63b65468c6d9be4f23f50504a27fb09faac063097574c38464'),
           tx.object('0x1568865ed9a0b5ec414220e8f79b3d04c77acc82358f6e5ae4635687392ffbef'),
