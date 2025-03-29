@@ -2,9 +2,7 @@
 
 echo "Setting up previews..."
 
-GITHUB_USERNAME=bucket-bot
 ROOT_DIR=$(pwd)
-CURRENT_BRANCH=$(git branch --show-current)
 
 function sync_submodules {
   echo "Pull submodules:"
@@ -27,8 +25,8 @@ function checkout_branches {
     cd $ROOT_DIR/$repo
     git fetch --all
 
-    if git show-ref --quiet origin/$CURRENT_BRANCH; then
-      target=origin/$CURRENT_BRANCH
+    if git show-ref --quiet origin/$VERCEL_GIT_COMMIT_REF; then
+      target=origin/$VERCEL_GIT_COMMIT_REF
     else
       target=$(git symbolic-ref --short refs/remotes/origin/HEAD) 
     fi
