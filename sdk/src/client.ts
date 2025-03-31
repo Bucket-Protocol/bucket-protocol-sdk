@@ -207,7 +207,7 @@ export class BucketClient {
       stSUI: 0,
       gSUI: 0,
       DEEP: 0,
-
+      
       BUCK: 1,
       sBUCK: 1,
       USDC: 1,
@@ -221,6 +221,7 @@ export class BucketClient {
       SCABLE: 1,
       STAPEARL: 1,
       bluefin_BUCK_USDC_LP: 1,
+      MMT_STABLE_LP: 1,
     };
 
     prices.sBUCK = computeSBUCKPrice(sBuckFlaskObj);
@@ -479,7 +480,7 @@ export class BucketClient {
           tx.object('0xecd074051d882c63b65468c6d9be4f23f50504a27fb09faac063097574c38464'),
           tx.object('0x1568865ed9a0b5ec414220e8f79b3d04c77acc82358f6e5ae4635687392ffbef'),
           tx.sharedObjectRef(ORACLE_OBJECT),
-          tx.sharedObjectRef(CLOCK_OBJECT)
+          tx.sharedObjectRef(CLOCK_OBJECT),
         ],
       });
       if (token === 'sWAL') {
@@ -507,7 +508,7 @@ export class BucketClient {
           ],
         });
       }
-    }  else {
+    } else {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
         typeArguments: [COINS_TYPE_LIST[token as COIN]],
