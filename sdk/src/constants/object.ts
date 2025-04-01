@@ -30,6 +30,7 @@ export const PSM_POOL_IDS: Partial<Record<COIN, string>> = {
   FDUSD: '0xb23092f74b7bbea45056d8564a7325be993cc2926b89f384367b9ad309dd92c5',
   sbUSDT: '0x5c788db95a72c250ce1aaad29fefbaeed67b5b95a3a1fdd965ca94beb9352dff',
   bluefin_BUCK_USDC_LP: '0x27c3ec824df70520cb3cf9592049506167e8094a779a680b83b987519e3895b6',
+  MMT_STABLE_LP: '0x89495b14b593e91e306da3d4d7d0759b020f59563f74cae1e8597928de496b99',
 };
 
 export const PSM_BALANCE_IDS: Record<string, string> = {

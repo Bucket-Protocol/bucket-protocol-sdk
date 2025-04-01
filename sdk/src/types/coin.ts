@@ -51,7 +51,8 @@ export type COIN =
   | 'stSUI_SUI_ALPHAFI_FT'
   | 'bluefin_BUCK_USDC_LP'
   | 'WAL'
-  | 'sWAL';
+  | 'sWAL'
+  | 'MMT_STABLE_LP';
 
 export type LstCoin = 'afSUI' | 'haSUI' | 'vSUI';
 
