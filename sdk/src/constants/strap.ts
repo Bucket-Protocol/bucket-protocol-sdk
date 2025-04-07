@@ -92,5 +92,5 @@ export const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef & { reward
     initialSharedVersion: '524784045',
     mutable: true,
     rewardType: COINS_TYPE_LIST.DEEP,
-  }
+  },
 };
