@@ -207,7 +207,7 @@ export class BucketClient {
       stSUI: 0,
       gSUI: 0,
       DEEP: 0,
-      
+
       BUCK: 1,
       sBUCK: 1,
       USDC: 1,
@@ -891,7 +891,7 @@ export class BucketClient {
       token,
       collateralAmount: Number(userBottleData.coll_amount),
       buckAmount: Number(userBottleData.debt_amount),
-      debtAmount: params.debtAmount ?? Number(userBottleData.debt_amount),
+      debtAmount: params.debtAmount,
       ...(!!strapId && { strapId }),
       ...(params.startUnit !== undefined && { startUnit: params.startUnit }),
     };
