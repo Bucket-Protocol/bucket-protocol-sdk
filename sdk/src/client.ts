@@ -2191,6 +2191,18 @@ export class BucketClient {
     });
   }
 
+  transferBottle(tx: Transaction, collateralType: string, newDebtor: string | TransactionArgument) {
+    tx.moveCall({
+      target: `${CORE_PACKAGE_ID}::buck::transfer_bottle`,
+      typeArguments: [collateralType],
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        typeof newDebtor === 'string' ? tx.pure.address(newDebtor) : newDebtor,
+      ],
+    });
+  }
+
   /******************************************************
    * SBUCK                                              *
    ******************************************************/
