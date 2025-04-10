@@ -87,4 +87,10 @@ export const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef & { reward
     mutable: true,
     rewardType: COINS_TYPE_LIST.WAL,
   },
+  sbWBTC: {
+    objectId: '0xd556ee0351aa6e8f96816e7c43494a63929efd392268b1a73d6e60dd30837e62',
+    initialSharedVersion: '524784045',
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.DEEP,
+  },
 };

@@ -704,3 +704,17 @@ export async function buildLockedClaimTx(
   client.claimLockedRewards(tx, token, lockedCount, recipient);
   client.claimLockedRewards(tx, token, lockedCount, recipient);
 }
+
+export function buildStartEarnTx(client: BucketClient, tx: Transaction, coinType: string, recipient: string) {
+  const [strap] = tx.moveCall({
+    target: `${CORE_PACKAGE_ID}::strap::new`,
+    typeArguments: [coinType],
+  });
+  const [strapAddr] = tx.moveCall({
+    target: `${CORE_PACKAGE_ID}::strap::get_address`,
+    typeArguments: [coinType],
+    arguments: [strap],
+  });
+  client.transferBottle(tx, coinType, strapAddr);
+  client.stakeStrapFountain(tx, coinType, strap, recipient);
+}

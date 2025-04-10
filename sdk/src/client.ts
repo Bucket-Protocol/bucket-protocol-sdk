@@ -207,7 +207,7 @@ export class BucketClient {
       stSUI: 0,
       gSUI: 0,
       DEEP: 0,
-      
+
       BUCK: 1,
       sBUCK: 1,
       USDC: 1,
@@ -891,7 +891,7 @@ export class BucketClient {
       token,
       collateralAmount: Number(userBottleData.coll_amount),
       buckAmount: Number(userBottleData.debt_amount),
-      debtAmount: params.debtAmount ?? Number(userBottleData.debt_amount),
+      debtAmount: params.debtAmount,
       ...(!!strapId && { strapId }),
       ...(params.startUnit !== undefined && { startUnit: params.startUnit }),
     };
@@ -1035,7 +1035,7 @@ export class BucketClient {
     const tx = new Transaction();
 
     tx.moveCall({
-      target: '0x0e2e9d96beaf27fb80cacb5947f1a0fa36664fe644e968e81263ffccf979d6db::utils::get_bottles_with_direction',
+      target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::get_bottles_with_direction`,
       typeArguments: [coinType],
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
@@ -2188,6 +2188,18 @@ export class BucketClient {
       target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::destroy_empty_strap`,
       typeArguments: [collateralType],
       arguments: [tx.sharedObjectRef(PROTOCOL_OBJECT), typeof strapId === 'string' ? tx.object(strapId) : strapId],
+    });
+  }
+
+  transferBottle(tx: Transaction, collateralType: string, newDebtor: string | TransactionArgument) {
+    tx.moveCall({
+      target: `${CORE_PACKAGE_ID}::buck::transfer_bottle`,
+      typeArguments: [collateralType],
+      arguments: [
+        tx.sharedObjectRef(PROTOCOL_OBJECT),
+        tx.sharedObjectRef(CLOCK_OBJECT),
+        typeof newDebtor === 'string' ? tx.pure.address(newDebtor) : newDebtor,
+      ],
     });
   }
 
