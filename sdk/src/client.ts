@@ -1035,7 +1035,7 @@ export class BucketClient {
     const tx = new Transaction();
 
     tx.moveCall({
-      target: '0x0e2e9d96beaf27fb80cacb5947f1a0fa36664fe644e968e81263ffccf979d6db::utils::get_bottles_with_direction',
+      target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::get_bottles_with_direction`,
       typeArguments: [coinType],
       arguments: [
         tx.sharedObjectRef(PROTOCOL_OBJECT),
