@@ -3018,7 +3018,7 @@ export class BucketClient {
 
     try {
       const wrapperObj = await this.getUserDeWrapper(address);
-      if (wrapperObj) {
+      if (wrapperObj && wrapperObj.id) {
         deWrapperId = wrapperObj.id;
         positions = wrapperObj.positions;
         dropsAmount = await this.getUserDropsAmount(address, deWrapperId);
