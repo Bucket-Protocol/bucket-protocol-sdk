@@ -46,6 +46,7 @@ export const SUPRA_ID: Record<string, number> = {
   DEEP: 491,
   sbUSDT: 48,
   sbWBTC: 18,
+  WAL: 534,
 };
 
 export const SPSUI_LIQUID_STAKING_OBJECT_ID = '0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b';

@@ -52,7 +52,9 @@ export type COIN =
   | 'bluefin_BUCK_USDC_LP'
   | 'WAL'
   | 'sWAL'
-  | 'MMT_STABLE_LP';
+  | 'MMT_STABLE_LP'
+  | 'wWAL'
+  | 'haWAL';
 
 export type LstCoin = 'afSUI' | 'haSUI' | 'vSUI';
 
