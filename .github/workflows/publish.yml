@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       versionBumpType:
-        descirption: 'Version bump type'
+        description: 'Version bump type'
         required: true
         default: 'patch'
         type: choice
@@ -14,7 +14,7 @@ on:
           - patch
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Check permission
         if: ${{ !contains('["17008875","33892812"]', github.actor_id) }}
-        run: echo 'Permmision denied' && exit 1
+        run: echo 'Permission denied' && exit 1
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Node
@@ -47,6 +47,8 @@ jobs:
       - id: publish
         name: Output variables
         run: echo "latest-version=$(npm view bucket-protocol-sdk version)" >> "$GITHUB_OUTPUT"
+      - name: Commit change
+        uses: stefanzweifel/git-auto-commit-action@v5
   create-pr:
     runs-on: ubuntu-latest
     needs: publish

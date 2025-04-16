@@ -8,9 +8,12 @@ function sync_submodules {
   echo "Pull submodules:"
 
   mv previews .previews
+
   sed -i'.bak' "s/https:\/\/github.com\//https:\/\/$GITHUB_TOKEN@github.com\//" "$ROOT_DIR/.gitmodules"
   git submodule sync
-  git submodule update --remote
+  git submodule update --init --remote
+  rm .gitmodules
+  mv .gitmodules.bak .gitmodules
 
   cp -RT .previews previews
   rm -rf .previews

@@ -2,7 +2,11 @@
 	path = previews/bucket-frontend-v4
 	url = https://github.com/Bucket-Protocol/bucket-frontend-v4
 	branch = main
+	ignore = all
+	active = false
 [submodule "previews/bucket-frontend-v5"]
 	path = previews/bucket-frontend-v5
 	url = https://github.com/Bucket-Protocol/bucket-frontend-v5
 	branch = main
+	ignore = all
+	active = false
