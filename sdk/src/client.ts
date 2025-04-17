@@ -480,13 +480,13 @@ export class BucketClient {
       });
     } else if (token === 'WAL' || token === 'sWAL' || token === 'haWAL' || token === 'wWAL') {
       tx.moveCall({
-        target: '0x1c2740b75e06bf7bcee49d6df216f8a069c00e86173a021da712c37de2eb84af::navi_rule::update_price',
+        target: SUPRA_UPDATE_TARGET,
         typeArguments: [COINS_TYPE_LIST['WAL']],
         arguments: [
-          tx.object('0xecd074051d882c63b65468c6d9be4f23f50504a27fb09faac063097574c38464'),
-          tx.object('0x1568865ed9a0b5ec414220e8f79b3d04c77acc82358f6e5ae4635687392ffbef'),
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
+          tx.pure.u32(SUPRA_ID['WAL'] ?? 0),
         ],
       });
       if (token === 'sWAL') {
@@ -515,25 +515,19 @@ export class BucketClient {
         });
       }
       if (token === 'haWAL') {
-        tx.moveCall(
-          {
+        tx.moveCall({
           target: `${HAWAL_RULE_PKG_ID}::hawal_rule::update_price`,
-          arguments: [
-            tx.object(BUKCET_ORACLE_OBJECT_ID),
-            tx.object(WALRUS_STAKING_OBJECT_ID),
-            tx.object('0x6'),
-          ],
+          arguments: [tx.object(BUKCET_ORACLE_OBJECT_ID), tx.object(WALRUS_STAKING_OBJECT_ID), tx.object('0x6')],
         });
       }
       if (token === 'wWAL') {
-        tx.moveCall(
-          {
+        tx.moveCall({
           target: `${WWAL_RULE_PKG_ID}::wwal_rule::update_price`,
           arguments: [
             tx.object(BUKCET_ORACLE_OBJECT_ID),
             tx.object(BLIZZARD_STAKING_OBJECT_ID),
             tx.object(WALRUS_SYSTEM_OBJECT_ID),
-            tx.object("0x6"),
+            tx.object('0x6'),
           ],
         });
       }
