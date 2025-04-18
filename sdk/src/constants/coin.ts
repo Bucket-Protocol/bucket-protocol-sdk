@@ -55,6 +55,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   WAL: '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
   sWAL: '0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL',
   MMT_STABLE_LP: '0x375e22e22157b643553d4e327ccf59fa8149605b90ab81c3645261f8e21bc879::mmt_stable_lp::MMT_STABLE_LP',
+  wWAL: '0xb1b0650a8862e30e3f604fd6c5838bc25464b8d3d827fbd58af7cb9685b832bf::wwal::WWAL',
+  haWAL: '0x8b4d553839b219c3fd47608a0cc3d5fcc572cb25d41b7df3833208586a8d2470::hawal::HAWAL',
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -108,6 +110,8 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   WAL: 9,
   sWAL: 9,
   MMT_STABLE_LP: 9,
+  wWAL: 9,
+  haWAL: 9,
 };
 
 export const COLLATERAL_ASSETS: COIN[] = [
@@ -139,4 +143,13 @@ export const COLLATERAL_ASSETS: COIN[] = [
   'stSUI_SUI_ALPHAFI_FT',
   'WAL',
   'sWAL',
+  'haWAL',
+  'wWAL',
 ];
+
+export const HAWAL_RULE_PKG_ID = '0xb78aa952cdced6ec22196bcfc4b3224fe28aa9e34d1ed939b652b9969a55a0ac';
+export const WWAL_RULE_PKG_ID = '0x0697807e89307c7124aeb5847e817fbb49c7701e4f5b03f1d38a91bdee3e3f66';
+export const BLIZZARD_STAKING_OBJECT_ID = '0xccf034524a2bdc65295e212128f77428bb6860d757250c43323aa38b3d04df6d';
+export const WALRUS_SYSTEM_OBJECT_ID = '0x2134d52768ea07e8c43570ef975eb3e4c27a39fa6396bef985b5abc58d03ddd2';
+export const BUKCET_ORACLE_OBJECT_ID = '0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078';
+export const WALRUS_STAKING_OBJECT_ID = '0x9e5f6537be1a5b658ec7eed23160df0b28c799563f6c41e9becc9ad633cb592b';
