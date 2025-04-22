@@ -7,12 +7,14 @@ import {
   AF_SUI_BUCK_LP_REGISTRY_ID,
   AF_USDC_BUCK_LP_REGISTRY,
   AF_USDC_BUCK_LP_REGISTRY_ID,
+  BLIZZARD_STAKING_OBJECT_ID,
   BUCKET_OPERATIONS_PACKAGE_ID,
   BUCKET_POINT_CONFIG_OBJ,
   BUCKET_POINT_PACKAGE_ID,
   BUCKET_PROTOCOL_TYPE,
   BUCKETUS_LP_VAULT_05,
   BUCKETUS_TREASURY,
+  BUKCET_ORACLE_OBJECT_ID,
   CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
   CETUS_OBJS,
   CETUS_SUI_BUCK_LP_REGISTRY_ID,
@@ -32,6 +34,7 @@ import {
   FOUNTAIN_PACKAGE_ID,
   FOUNTAIN_PERIHERY_PACKAGE_ID,
   GSUI_UNIHOUSE_OBJECT_ID,
+  HAWAL_RULE_PKG_ID,
   KRIYA_FOUNTAIN_PACKAGE_ID,
   KRIYA_SUI_BUCK_LP_REGISTRY_ID,
   KRIYA_USDC_BUCK_LP_REGISTRY_ID,
@@ -62,6 +65,9 @@ import {
   SUPRA_UPDATE_TARGET,
   SWITCHBOARD_UPDATE_TARGET,
   UNIHOUSE_OBJECT_ID,
+  WALRUS_STAKING_OBJECT_ID,
+  WALRUS_SYSTEM_OBJECT_ID,
+  WWAL_RULE_PKG_ID,
 } from './constants';
 import { STRUCT_BOTTLE_DATA } from './constants/sructs';
 import {
@@ -472,15 +478,15 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST[token], COINS_TYPE_LIST[baseToken]],
         arguments: [tx.sharedObjectRef(ORACLE_OBJECT), tx.object(UNIHOUSE_OBJECT_ID), tx.sharedObjectRef(CLOCK_OBJECT)],
       });
-    } else if (token === 'WAL' || token === 'sWAL') {
+    } else if (token === 'WAL' || token === 'sWAL' || token === 'haWAL' || token === 'wWAL') {
       tx.moveCall({
-        target: '0x1c2740b75e06bf7bcee49d6df216f8a069c00e86173a021da712c37de2eb84af::navi_rule::update_price',
+        target: SUPRA_UPDATE_TARGET,
         typeArguments: [COINS_TYPE_LIST['WAL']],
         arguments: [
-          tx.object('0xecd074051d882c63b65468c6d9be4f23f50504a27fb09faac063097574c38464'),
-          tx.object('0x1568865ed9a0b5ec414220e8f79b3d04c77acc82358f6e5ae4635687392ffbef'),
           tx.sharedObjectRef(ORACLE_OBJECT),
           tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
+          tx.pure.u32(SUPRA_ID['WAL'] ?? 0),
         ],
       });
       if (token === 'sWAL') {
@@ -505,6 +511,23 @@ export class BucketClient {
               mutable: true,
             }),
             tx.sharedObjectRef(CLOCK_OBJECT),
+          ],
+        });
+      }
+      if (token === 'haWAL') {
+        tx.moveCall({
+          target: `${HAWAL_RULE_PKG_ID}::hawal_rule::update_price`,
+          arguments: [tx.object(BUKCET_ORACLE_OBJECT_ID), tx.object(WALRUS_STAKING_OBJECT_ID), tx.object('0x6')],
+        });
+      }
+      if (token === 'wWAL') {
+        tx.moveCall({
+          target: `${WWAL_RULE_PKG_ID}::wwal_rule::update_price`,
+          arguments: [
+            tx.object(BUKCET_ORACLE_OBJECT_ID),
+            tx.object(BLIZZARD_STAKING_OBJECT_ID),
+            tx.object(WALRUS_SYSTEM_OBJECT_ID),
+            tx.object('0x6'),
           ],
         });
       }
