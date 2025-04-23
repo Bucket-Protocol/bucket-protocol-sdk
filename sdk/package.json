@@ -9,16 +9,15 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/index.js"
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/index.cjs"
     },
     "./package.json": "./package.json"
   },
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "package.json",
-    "README.md"
+    "package.json"
   ],
   "scripts": {
     "lint": "eslint --fix",
@@ -45,7 +44,7 @@
     "eslint-plugin-prettier": "^5.2.3",
     "eslint-plugin-unused-imports": "^4.1.4",
     "prettier": "^3.5.3",
-    "tsup": "^8.0.2",
+    "tsup": "^8.4.0",
     "typescript": "^5.8.2",
     "vitest": "^0.34.1"
   },
