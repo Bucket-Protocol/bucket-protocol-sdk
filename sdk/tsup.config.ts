@@ -2,14 +2,13 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/index.ts'],
-  splitting: true,
-  sourcemap: true,
-  clean: true,
+  tsconfig: './tsconfig.json',
   format: ['esm', 'cjs'],
   platform: 'node',
-  tsconfig: './tsconfig.json',
-  shims: false,
+  clean: true,
+  sourcemap: true,
   dts: true,
-  legacyOutput: true,
-  onSuccess: 'echo {\\"type\\": \\"module\\"} > dist/esm/package.json',
+  splitting: true,
+  treeshake: true,
+  shims: false,
 });
