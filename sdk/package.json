@@ -1,7 +1,7 @@
 {
   "name": "bucket-protocol-sdk",
   "author": "Bucketniper <bucketbird@outlook.com>",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
   "repository": "https://github.com/Bucket-Protocol/bucket-protocol-sdk",
