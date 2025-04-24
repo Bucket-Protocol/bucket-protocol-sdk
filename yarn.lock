@@ -938,7 +938,7 @@ braces@^3.0.3:
     fill-range "^7.1.1"
 
 "bucket-protocol-sdk@file:/home/runner/work/bucket-protocol-sdk/bucket-protocol-sdk/sdk":
-  version "0.11.2"
+  version "0.11.3"
   resolved "file:sdk"
   dependencies:
     "@mysten/sui" "^1.26.1"
