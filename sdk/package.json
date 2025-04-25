@@ -28,7 +28,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@mysten/sui": "^1.26.1",
+    "@mysten/sui": "^1.28.2",
     "decimal.js": "^10.5.0",
     "superstruct": "^1.0.3"
   },
