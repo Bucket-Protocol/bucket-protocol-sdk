@@ -4,7 +4,10 @@
   "version": "0.12.0",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
-  "repository": "https://github.com/Bucket-Protocol/bucket-protocol-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bucket-Protocol/bucket-protocol-sdk.git"
+  },
   "type": "module",
   "exports": {
     ".": {
