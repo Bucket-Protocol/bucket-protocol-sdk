@@ -4,8 +4,5 @@
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
-  "editor.tabSize": 2,
-  "files.associations": {
-    "globals.css": "tailwindcss"
-  }
+  "editor.tabSize": 2
 }
