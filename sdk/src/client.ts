@@ -15,7 +15,6 @@ import {
   BUCKETUS_LP_VAULT_05,
   BUCKETUS_TREASURY,
   BUKCET_ORACLE_OBJECT_ID,
-  CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
   CETUS_OBJS,
   CETUS_SUI_BUCK_LP_REGISTRY_ID,
   CETUS_USDC_BUCK_LP_REGISTRY,
@@ -33,7 +32,6 @@ import {
   DUMMY_ADDRESS,
   FOUNTAIN_PACKAGE_ID,
   FOUNTAIN_PERIHERY_PACKAGE_ID,
-  GSUI_UNIHOUSE_OBJECT_ID,
   HAWAL_RULE_PKG_ID,
   KRIYA_FOUNTAIN_PACKAGE_ID,
   KRIYA_SUI_BUCK_LP_REGISTRY_ID,
@@ -42,6 +40,7 @@ import {
   MAX_LOCK_TIME,
   MSUI_LIQUID_STAKING_OBJECT_ID,
   ORACLE_OBJECT,
+  PRICE_MAP,
   PROTOCOL_ID,
   PROTOCOL_OBJECT,
   PSM_BALANCE_IDS,
@@ -113,13 +112,8 @@ import {
   calculateRewardAmount,
   coinFromBalance,
   coinIntoBalance,
-  computeLiquidStakingRate,
-  computeSBUCKPrice,
   computeSupraPrice,
-  computeUnihouseRate,
   formatUnits,
-  getAlphafiStSUIFtPrice,
-  getCetusVaultLpPrice,
   getCoinSymbol,
   getCoinType,
   getCoinTypeFromPipe,
@@ -172,120 +166,50 @@ export class BucketClient {
    * @description Get all prices
    */
   async getPrices() {
-    const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
+    const prices: Partial<Record<COIN, number>> = {};
 
-    const [
-      sBuckFlaskObj,
-      spSuiLiquidStakingObj,
-      mSuiRateLiquidStakingObj,
-      stSuiLiquidStakingObj,
-      gSuiUniHouseObj,
-      ...supraPriceObjs
-    ] = await this.client.multiGetObjects({
-      ids: [
-        SBUCK_FLASK_OBJECT_ID,
-        SPSUI_LIQUID_STAKING_OBJECT_ID,
-        MSUI_LIQUID_STAKING_OBJECT_ID,
-        STSUI_LIQUID_STAKING_OBJECT_ID,
-        GSUI_UNIHOUSE_OBJECT_ID,
-        ...Object.values(SUPRA_PRICE_FEEDS),
-      ],
+    const objectIds = Object.values(PRICE_MAP)
+      .map(({ objectId }) => objectId)
+      .filter((objectId) => objectId !== undefined);
+
+    const res = await this.client.multiGetObjects({
+      ids: objectIds,
       options: {
         showContent: true,
       },
     });
-
-    const prices: {
-      [key: string]: number;
-    } = {
-      SUI: 0,
-      vSUI: 0,
-      afSUI: 0,
-      haSUI: 0,
-      SCA: 0,
-      CETUS: 0,
-      NAVX: 0,
-      WETH: 0,
-      sbETH: 0,
-      sbWBTC: 0,
-      spSUI: 0,
-      mSUI: 0,
-      stSUI: 0,
-      gSUI: 0,
-      DEEP: 0,
-
-      BUCK: 1,
-      sBUCK: 1,
-      USDC: 1,
-      wUSDC: 1,
-      wUSDT: 1,
-      USDY: 1,
-      AUSD: 1,
-      FDUSD: 1,
-      sbUSDT: 1,
-      BUCKETUS: 1,
-      SCABLE: 1,
-      STAPEARL: 1,
-      bluefin_BUCK_USDC_LP: 1,
-      MMT_STABLE_LP: 1,
-    };
-
-    prices.sBUCK = computeSBUCKPrice(sBuckFlaskObj);
-
-    const spSuiRate = computeLiquidStakingRate(spSuiLiquidStakingObj);
-    const mSuiRate = computeLiquidStakingRate(mSuiRateLiquidStakingObj);
-    const stSuiRate = computeLiquidStakingRate(stSuiLiquidStakingObj);
-    const gSuiRate = computeUnihouseRate(gSuiUniHouseObj);
-
-    supraPriceObjs.map((res, index) => {
-      const price = computeSupraPrice(res);
-
-      if (objectNameList[index] === 'usdc_usd') {
-        prices.wUSDC = price;
-      } else if (objectNameList[index] === 'usdt_usd') {
-        prices.wUSDT = price;
-      } else if (objectNameList[index] === 'usdy_usd') {
-        prices.USDY = price;
-      } else if (objectNameList[index] === 'navx_usd') {
-        prices.NAVX = price;
-      } else if (objectNameList[index] === 'cetus_usd') {
-        prices.CETUS = price;
-      } else if (objectNameList[index] === 'sca_usd') {
-        prices.SCA = price;
-      } else if (objectNameList[index] === 'deep_usdt') {
-        prices.DEEP = price;
-      } else if (objectNameList[index] === 'btc_usd') {
-        prices.sbWBTC = price;
-      } else if (objectNameList[index] === 'eth_usdt') {
-        prices.WETH = (prices.wUSDT ?? 1) * price;
-        prices.sbETH = (prices.wUSDT ?? 1) * price;
-      } else if (objectNameList[index] === 'sui_usdt') {
-        prices.SUI = (prices.wUSDT ?? 1) * price;
-      } else if (objectNameList[index] === 'vsui_sui') {
-        prices.vSUI = (prices.SUI ?? 1) * price;
-      } else if (objectNameList[index] === 'hasui_sui') {
-        prices.haSUI = (prices.SUI ?? 1) * price;
-      } else if (objectNameList[index] === 'afsui_sui') {
-        prices.afSUI = (prices.SUI ?? 1) * price;
-      }
-    });
-    const suiPrice = prices.SUI ?? 0;
-
-    prices.spSUI = suiPrice * spSuiRate;
-    prices.mSUI = suiPrice * mSuiRate;
-    prices.stSUI = suiPrice * stSuiRate;
-    prices.gSUI = suiPrice * gSuiRate;
-
-    prices.haSUI_SUI_CETUS_VT_LP = await getCetusVaultLpPrice(
-      this.client,
-      'haSUI_SUI_CETUS_VT_LP',
-      'haSUI',
-      'SUI',
-      CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
-      suiPrice,
+    const objects = Object.entries(PRICE_MAP).reduce(
+      (result, [token, { objectId }]) => {
+        if (objectId) {
+          result[token as COIN] = res.shift();
+        }
+        return result;
+      },
+      {} as Partial<Record<COIN, SuiObjectResponse>>,
     );
-    prices.stSUI_SUI_ALPHAFI_FT = await getAlphafiStSUIFtPrice(this.client, prices.stSUI, prices.SUI);
+    const getPrice = async (token: COIN): Promise<number> => {
+      if (!(token in prices)) {
+        const { processFn, dependentTokens = [], defaultValue = 0 } = PRICE_MAP[token] ?? {};
 
+        const dependentObject = objects[token];
+        try {
+          const dependentPrices = await Promise.all(
+            (Array.isArray(dependentTokens) ? dependentTokens : [dependentTokens]).map((token) => getPrice(token)),
+          );
+          const price = processFn
+            ? await processFn({ suiClient: this.client, object: dependentObject, prices: dependentPrices })
+            : dependentPrices[0];
+
+          prices[token] = price ?? defaultValue;
+        } catch {
+          prices[token] = defaultValue;
+        }
+      }
+      return prices[token] as number;
+    };
+    for (const token in PRICE_MAP) {
+      await getPrice(token as COIN);
+    }
     return prices;
   }
 
