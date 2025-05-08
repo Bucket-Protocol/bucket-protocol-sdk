@@ -1,4 +1,4 @@
-import { COIN } from '@/types';
+import { COIN, CollateralInfo } from '@/types';
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
   SUI: '0x2::sui::SUI',
@@ -57,6 +57,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   MMT_STABLE_LP: '0x375e22e22157b643553d4e327ccf59fa8149605b90ab81c3645261f8e21bc879::mmt_stable_lp::MMT_STABLE_LP',
   wWAL: '0xb1b0650a8862e30e3f604fd6c5838bc25464b8d3d827fbd58af7cb9685b832bf::wwal::WWAL',
   haWAL: '0x8b4d553839b219c3fd47608a0cc3d5fcc572cb25d41b7df3833208586a8d2470::hawal::HAWAL',
+  LBTC: '0x3e8e9423d80e1774a7ca128fccd8bf5f1f7753be658c5e645929037f7c819040::lbtc::LBTC', 
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -112,40 +113,168 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   MMT_STABLE_LP: 9,
   wWAL: 9,
   haWAL: 9,
+  LBTC: 8,
 };
 
-export const COLLATERAL_ASSETS: COIN[] = [
-  'SUI',
-  'afSUI',
-  'haSUI',
-  'vSUI',
-  'WETH',
-  'USDY',
-  'NAVX',
-  'CETUS',
-  'SCA',
-  'sUSDC',
-  'swUSDC',
-  'sSUI',
-  'sSCA',
-  'swUSDT',
-  'sSBETH',
-  'spSUI',
-  'mSUI',
-  'sbETH',
-  'sbWBTC',
-  'stSUI',
-  'DEEP',
-  'sDEEP',
-  'sSBUSDT',
-  'gSUI',
-  'haSUI_SUI_CETUS_VT_LP',
-  'stSUI_SUI_ALPHAFI_FT',
-  'WAL',
-  'sWAL',
-  'haWAL',
-  'wWAL',
-];
+export const COLLATERAL_INFO: CollateralInfo[] = [
+  {
+    token: 'wWAL',
+    autoSafeBorrowRate: 2.5,
+    interestRate: 0.14,
+  },
+  {
+    token: 'haWAL',
+    autoSafeBorrowRate: 2.5,
+    interestRate: 0.14,
+  },
+  {
+    token: 'WAL',
+    autoSafeBorrowRate: 2,
+    interestRate: 0.14,
+  },
+  {
+    token: 'sWAL',
+    autoSafeBorrowRate: 2.5,
+    interestRate: 0.14,
+  },
+  {
+    token: 'stSUI_SUI_ALPHAFI_FT',
+    autoSafeBorrowRate: 2.5,
+    interestRate: 0.1,
+  },
+  {
+    token: 'sbWBTC',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'afSUI',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'haSUI',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'vSUI',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'SUI',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.08,
+  },
+  {
+    token: 'WETH',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'USDY',
+    autoSafeBorrowRate: 1.2,
+    interestRate: 0.08,
+  },
+  {
+    token: 'NAVX',
+    autoSafeBorrowRate: 2,
+    interestRate: 0.13,
+  },
+  {
+    token: 'CETUS',
+    autoSafeBorrowRate: 2,
+    interestRate: 0.13,
+  },
+  {
+    token: 'SCA',
+    autoSafeBorrowRate: 2,
+    interestRate: 0.13,
+  },
+  {
+    token: 'sUSDC',
+    autoSafeBorrowRate: 1.5,
+    interestRate: 0.11,
+  },
+  {
+    token: 'sSUI',
+    autoSafeBorrowRate: 2,
+    interestRate: 0.11,
+  },
+  {
+    token: 'sSCA',
+    autoSafeBorrowRate: 2.5,
+    interestRate: 0.14,
+  },
+  {
+    token: 'swUSDC',
+    autoSafeBorrowRate: 1.5,
+    interestRate: 0.11,
+  },
+  {
+    token: 'swUSDT',
+    autoSafeBorrowRate: 1.5,
+    interestRate: 0.11,
+  },
+  {
+    token: 'sSBETH',
+    autoSafeBorrowRate: 2,
+    interestRate: 0.11,
+  },
+  {
+    token: 'spSUI',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'sbETH',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'mSUI',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'stSUI',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+  {
+    token: 'DEEP',
+    autoSafeBorrowRate: 2,
+    interestRate: 0.13,
+  },
+  {
+    token: 'sDEEP',
+    autoSafeBorrowRate: 2.5,
+    interestRate: 0.14,
+  },
+  {
+    token: 'sSBUSDT',
+    autoSafeBorrowRate: 1.5,
+    interestRate: 0.11,
+  },
+  {
+    token: 'gSUI',
+    autoSafeBorrowRate: 2,
+    interestRate: 0.08,
+  },
+  {
+    token: 'haSUI_SUI_CETUS_VT_LP',
+    autoSafeBorrowRate: 2.5,
+    interestRate: 0.1,
+  },
+  {
+    token: 'LBTC',
+    autoSafeBorrowRate: 1.8,
+    interestRate: 0.09,
+  },
+]
+
+export const COLLATERAL_ASSETS: COIN[] = COLLATERAL_INFO.map((collateral) => collateral.token);
 
 export const HAWAL_RULE_PKG_ID = '0xb78aa952cdced6ec22196bcfc4b3224fe28aa9e34d1ed939b652b9969a55a0ac';
 export const WWAL_RULE_PKG_ID = '0x0697807e89307c7124aeb5847e817fbb49c7701e4f5b03f1d38a91bdee3e3f66';
