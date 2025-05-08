@@ -3794,7 +3794,7 @@
   dependencies:
     "@scure/base" "^1.2.4"
 
-"@mysten/bcs@1.6.1", "@mysten/bcs@^1.6.0":
+"@mysten/bcs@^1.6.0":
   version "1.6.1"
   resolved "https://registry.yarnpkg.com/@mysten/bcs/-/bcs-1.6.1.tgz#2e0a2e3f5b4afdb678b2a874cec4c4f341565b1e"
   integrity sha512-pywsl2+jxbib5CbteAjMpmJpnj1pcUco2ff+lXCK3hfppPbkyWEMbZDQn1jNngV6ADQ3IFIvPs0FaS7fKWPOLA==
@@ -3924,48 +3924,13 @@
     superstruct "^1.0.3"
     tweetnacl "^1.0.3"
 
-"@mysten/sui@1.27.1":
-  version "1.27.1"
-  resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.27.1.tgz#83ac081a2c67bde82aac6e0524e285f58d362d37"
-  integrity sha512-ByckbAvDFhPTDT42QwbQHXbGOvCkS/GyJ4ns7OwKZ4r9bAH71SsOKPnchfLdJSDRp6N1N1FORQjq4VMrFfJcqw==
-  dependencies:
-    "@graphql-typed-document-node/core" "^3.2.0"
-    "@mysten/bcs" "1.6.0"
-    "@noble/curves" "^1.8.1"
-    "@noble/hashes" "^1.7.1"
-    "@scure/base" "^1.2.4"
-    "@scure/bip32" "^1.6.2"
-    "@scure/bip39" "^1.5.4"
-    gql.tada "^1.8.2"
-    graphql "^16.9.0"
-    poseidon-lite "^0.2.0"
-    valibot "^0.36.0"
-
-"@mysten/sui@1.28.2":
+"@mysten/sui@1.27.1", "@mysten/sui@1.28.2", "@mysten/sui@^1.28.2", "@mysten/sui@^1.3.0", "@mysten/sui@^1.6.0":
   version "1.28.2"
   resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.28.2.tgz#ded2ae122c53ac3bb6f05d731b5847e447512eb2"
   integrity sha512-d+lSp3rAtuOX0taIiIv0KNILDsbmAB9koNGHBinfREraGnE9tUFW315UByuyvuZ9K53ji4i2risdtwxCQ1a8Zw==
   dependencies:
     "@graphql-typed-document-node/core" "^3.2.0"
     "@mysten/bcs" "1.6.0"
-    "@mysten/utils" "0.0.0"
-    "@noble/curves" "^1.8.1"
-    "@noble/hashes" "^1.7.1"
-    "@scure/base" "^1.2.4"
-    "@scure/bip32" "^1.6.2"
-    "@scure/bip39" "^1.5.4"
-    gql.tada "^1.8.2"
-    graphql "^16.9.0"
-    poseidon-lite "^0.2.0"
-    valibot "^0.36.0"
-
-"@mysten/sui@^1.28.2", "@mysten/sui@^1.3.0", "@mysten/sui@^1.6.0":
-  version "1.29.1"
-  resolved "https://registry.yarnpkg.com/@mysten/sui/-/sui-1.29.1.tgz#1b2af78ff2816b1b20ce2e1558a1d6d8149a24f4"
-  integrity sha512-VkmaLIgXpuRMBFe47SC0swHemDx9qfhGQyxybFr2r3dTnh42gTFi0BlyW3aLr0Y2GxWbNlLphB5C3ELR7aqacw==
-  dependencies:
-    "@graphql-typed-document-node/core" "^3.2.0"
-    "@mysten/bcs" "1.6.1"
     "@mysten/utils" "0.0.0"
     "@noble/curves" "^1.8.1"
     "@noble/hashes" "^1.7.1"
@@ -7037,9 +7002,9 @@
     undici-types "~6.19.2"
 
 "@types/node@>=13.7.0":
-  version "22.15.14"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.15.14.tgz#889fd356a04d003a6d5650ccc003ef4d712430d7"
-  integrity sha512-BL1eyu/XWsFGTtDWOYULQEs4KR0qdtYfCxYAUYRoB7JP7h9ETYLgQTww6kH8Sj2C0pFGgrpM0XKv6/kbIzYJ1g==
+  version "22.15.15"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.15.15.tgz#8877c05c18e552e738438e477d7ba22c5d73a57c"
+  integrity sha512-R5muMcZob3/Jjchn5LcO8jdKwSCbzqmPB6ruBxMcf9kbxtniZHP327s6C37iOfuw8mbKK3cAQa7sEl7afLrQ8A==
   dependencies:
     undici-types "~6.21.0"
 
@@ -7049,9 +7014,9 @@
   integrity sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==
 
 "@types/node@^20", "@types/node@^20.12.12":
-  version "20.17.43"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.17.43.tgz#66e6923e8e5a56317866c7813dc2b555c158332a"
-  integrity sha512-DnDEcDUnVAUYSa7U03QvrXbj1MZj00xoyi/a3lRGkR/c7BFUnqv+OY9EUphMqXUKdZJEOmuzu2mm+LmCisnPow==
+  version "20.17.44"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.17.44.tgz#f8b971ee3a3aea6cce4a3fc0c44c782a80744df0"
+  integrity sha512-50sE4Ibb4BgUMxHrcJQSAU0Fu7fLcTdwcXwRzEF7wnVMWvImFLg2Rxc7SW0vpvaJm4wvhoWEZaQiPpBpocZiUA==
   dependencies:
     undici-types "~6.19.2"
 
@@ -10057,9 +10022,9 @@ cross-spawn@^7.0.3, cross-spawn@^7.0.6:
     which "^2.0.1"
 
 crossws@^0.3.4:
-  version "0.3.4"
-  resolved "https://registry.yarnpkg.com/crossws/-/crossws-0.3.4.tgz#06164c6495ea99152ea7557c99310b52d9be9b29"
-  integrity sha512-uj0O1ETYX1Bh6uSgktfPvwDiPYGQ3aI4qVsaC/LWpkIzGj1nUYm5FK3K+t11oOlpN01lGbprFCH4wBlKdJjVgw==
+  version "0.3.5"
+  resolved "https://registry.yarnpkg.com/crossws/-/crossws-0.3.5.tgz#daad331d44148ea6500098bc858869f3a5ab81a6"
+  integrity sha512-ojKiDvcmByhwa8YYqbQI/hg7MEU0NC03+pSdEq4ZUnZR9xXpwk7E43SMNGkn+JxJGPFtNvQ48+vV2p+P1ml5PA==
   dependencies:
     uncrypto "^0.1.3"
 
@@ -10511,9 +10476,9 @@ ejs@^3.1.10:
     jake "^10.8.5"
 
 electron-to-chromium@^1.5.149:
-  version "1.5.150"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.5.150.tgz#3120bf34453a7a82cb4d9335df20680b2bb40649"
-  integrity sha512-rOOkP2ZUMx1yL4fCxXQKDHQ8ZXwisb2OycOQVKHgvB3ZI4CvehOd4y2tfnnLDieJ3Zs1RL1Dlp3cMkyIn7nnXA==
+  version "1.5.151"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.5.151.tgz#5edd6c17e1b2f14b4662c41b9379f96cc8c2bb7c"
+  integrity sha512-Rl6uugut2l9sLojjS4H4SAr3A4IgACMLgpuEMPYCVcKydzfyPrn5absNRju38IhQOf/NwjJY8OGWjlteqYeBCA==
 
 elliptic@6.6.1, elliptic@^6.4.0, elliptic@^6.5.3, elliptic@^6.5.4, elliptic@^6.5.5, elliptic@^6.5.7, elliptic@^6.6.1:
   version "6.6.1"
@@ -16413,9 +16378,9 @@ tslib@^2.0.0, tslib@^2.0.3, tslib@^2.1.0, tslib@^2.3.0, tslib@^2.3.1, tslib@^2.4
   integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
 
 tss-react@^4.7.7:
-  version "4.9.17"
-  resolved "https://registry.yarnpkg.com/tss-react/-/tss-react-4.9.17.tgz#c4baa3ab7b1d10a8eda99de34a1b42fb813e7975"
-  integrity sha512-dE/2ZFLMGjRSYuKpJfnDLp6Z8l02RRBXlAQqqbvmndmVxdgFF7pSOE8ivH8haurjOEjJhsA14IkDiJ7SJtaQ1A==
+  version "4.9.18"
+  resolved "https://registry.yarnpkg.com/tss-react/-/tss-react-4.9.18.tgz#34828008381f2dd3fe79f835ecd43fde5a349505"
+  integrity sha512-Uc+VvP4RXVzfEacw735xRvne1lwt5HNhvIFptpvmK+G6F/hRA5TeEr3SEzxrqTb6ixA4vANB0iXjBB6LdexxJA==
   dependencies:
     "@emotion/cache" "*"
     "@emotion/serialize" "*"
