@@ -54,7 +54,8 @@ export type COIN =
   | 'sWAL'
   | 'MMT_STABLE_LP'
   | 'wWAL'
-  | 'haWAL';
+  | 'haWAL'
+  | 'LBTC';
 
 export type LstCoin = 'afSUI' | 'haSUI' | 'vSUI';
 
@@ -63,3 +64,9 @@ export type ScableCoin = 'USDC' | 'sbUSDT';
 export type LockupCoin = 'afSUI' | 'haSUI' | 'vSUI' | 'sBUCK';
 
 export type ScallopCoin = 'sUSDC' | 'swUSDC' | 'sSUI' | 'sSCA' | 'swUSDT' | 'sSBETH' | 'sDEEP' | 'sSBUSDT' | 'sWAL';
+
+export type CollateralInfo = {
+  token: COIN;
+  autoSafeBorrowRate: number;
+  interestRate: number;
+}
