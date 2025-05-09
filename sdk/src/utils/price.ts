@@ -1,10 +1,10 @@
+import { bcs } from '@mysten/sui/bcs';
 import { SuiClient, SuiObjectResponse } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import Decimal from 'decimal.js';
 
 import {
   CetusPoolResponse,
-  CetusVaultLpResponse,
   COIN,
   LiquidStakingResponse,
   LpTokenValueEvent,
@@ -14,43 +14,101 @@ import {
 } from '@/types';
 import {
   ALPHAFI_STSUI_SUI_PACKAGE_ID,
+  BLIZZARD_STAKING_OBJECT_ID,
   CETUS_VAULT_PACKAGE_ID,
   COIN_DECIMALS,
   COINS_TYPE_LIST,
   DUMMY_ADDRESS,
+  WALRUS_SYSTEM_OBJECT_ID,
 } from '@/constants';
 
 import { formatUnits, U64FromBytes } from './format';
 import { getObjectFields } from './object';
 
-export function computeSupraPrice(res: SuiObjectResponse): number {
+export const computeSupraPrice = (res: SuiObjectResponse | undefined): number => {
+  if (!res) {
+    return 0;
+  }
   const priceFeed = getObjectFields(res) as SupraPriceFeedResponse;
   const priceBn = priceFeed.value.fields.value;
   const decimals = priceFeed.value.fields.decimal;
   const price = Number(priceBn) / Math.pow(10, decimals);
 
   return price;
-}
+};
 
-export function computeSBUCKPrice(res: SuiObjectResponse): number {
+export const computeSBUCKPrice = (res: SuiObjectResponse | undefined): number => {
+  if (!res) {
+    return 0;
+  }
   const priceFeed = getObjectFields(res) as SBUCKFlaskResponse;
   const reserves = priceFeed.reserves;
   const sBuckSupply = priceFeed.sbuck_supply.fields.value;
   const price = Number(reserves) / Number(sBuckSupply);
 
   return price;
-}
+};
 
-export function computeLiquidStakingRate(res: SuiObjectResponse): number {
+export const computeLiquidStakingRate = (res: SuiObjectResponse | undefined): number => {
+  if (!res) {
+    return 0;
+  }
   const resp = getObjectFields(res) as LiquidStakingResponse;
   const totalSuiSupply = Number(resp.storage.fields.total_sui_supply) / 10 ** 9;
   const totalLstSupply = Number(resp.lst_treasury_cap.fields.total_supply.fields.value) / 10 ** 9;
   const rate = totalSuiSupply / totalLstSupply;
 
   return rate;
-}
+};
 
-export function computeUnihouseRate(res: SuiObjectResponse): number {
+export const computeHaWalStakingRate = (res: SuiObjectResponse | undefined): number => {
+  if (!res) {
+    return 0;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const resp = getObjectFields(res) as any;
+  const totalWalSupply =
+    (Number(resp.total_staked) +
+      Number(resp.total_rewards) -
+      Number(resp.collected_protocol_fees) -
+      Number(resp.uncollected_protocol_fees) -
+      Number(resp.total_unstaked)) /
+    10 ** 9;
+  const totalHaWalSupply = Number(resp.hawal_supply) / 10 ** 9;
+  const rate = totalWalSupply / totalHaWalSupply;
+
+  return rate;
+};
+
+export const computeBlizzardStakingRate = async (client: SuiClient): Promise<number> => {
+  const tx = new Transaction();
+
+  const epoch = tx.moveCall({
+    target: '0xfdc88f7d7cf30afab2f82e8380d11ee8f70efb90e863d1de8616fae1bb09ea77::system::epoch',
+    arguments: [tx.object(WALRUS_SYSTEM_OBJECT_ID)],
+  });
+  tx.moveCall({
+    target: '0x29ba7f7bc53e776f27a6d1289555ded2f407b4b1a799224f06b26addbcd1c33d::blizzard_protocol::to_lst_at_epoch',
+    typeArguments: [COINS_TYPE_LIST.wWAL],
+    arguments: [tx.object(BLIZZARD_STAKING_OBJECT_ID), epoch, tx.pure.u64(1000000000), tx.pure.bool(false)],
+  });
+  const { results } = await client.devInspectTransactionBlock({
+    transactionBlock: tx,
+    sender: DUMMY_ADDRESS,
+  });
+  const returnValues = results?.[1]?.returnValues;
+  if (!returnValues?.[0]?.[0]) {
+    return 0;
+  }
+  const rate = bcs.option(bcs.U64).parse(Uint8Array.from(returnValues[0][0]));
+
+  return rate ? Number(rate) / 10 ** 9 : 0;
+};
+
+export const computeUnihouseRate = (res: SuiObjectResponse | undefined): number => {
+  if (!res) {
+    return 0;
+  }
   const resp = getObjectFields(res) as UnihouseResponse;
   const debtAmount = Number(formatUnits(BigInt(resp.pipe_debt.fields.value), 9));
   const poolAmount = Number(formatUnits(BigInt(resp.pool), 9));
@@ -58,7 +116,17 @@ export function computeUnihouseRate(res: SuiObjectResponse): number {
   const rate = (debtAmount + poolAmount) / gsuiSupply;
 
   return rate;
-}
+};
+
+export const getScoinRates = (res: SuiObjectResponse | undefined) => {
+  if (!res) {
+    return 0;
+  }
+  const resp = getObjectFields(res)?.value?.fields;
+  const rate = (Number(resp.cash) + Number(resp.debt) - Number(resp.revenue)) / Number(resp.market_coin_supply);
+
+  return rate;
+};
 
 export const calculateClmmPrice = (sqrtPrice: string, decimalsA: number, decimalsB: number): number => {
   const priceX64 = new Decimal(sqrtPrice).mul(Decimal.pow(2, -64));
@@ -69,26 +137,17 @@ export const calculateClmmPrice = (sqrtPrice: string, decimalsA: number, decimal
 
 export const getCetusVaultLpPrice = async (
   client: SuiClient,
+  poolObject: SuiObjectResponse | undefined,
+  poolObjectId: string,
+  lpObjectId: string,
   lpCoin: COIN,
   coinA: COIN,
   coinB: COIN,
-  lpObjectId: string,
   basePrice: number,
 ): Promise<number> => {
-  const lpObject = await client.getObject({
-    id: lpObjectId,
-    options: {
-      showContent: true,
-    },
-  });
-  const { pool } = getObjectFields(lpObject) as CetusVaultLpResponse;
-
-  const poolObject = await client.getObject({
-    id: pool,
-    options: {
-      showContent: true,
-    },
-  });
+  if (!poolObject) {
+    return 0;
+  }
   const { current_sqrt_price } = getObjectFields(poolObject) as CetusPoolResponse;
   const poolPrice = calculateClmmPrice(current_sqrt_price, COIN_DECIMALS[coinA], COIN_DECIMALS[coinB]);
 
@@ -97,7 +156,7 @@ export const getCetusVaultLpPrice = async (
   tx.moveCall({
     target: `${CETUS_VAULT_PACKAGE_ID}::fetcher::get_position_amounts`,
     typeArguments: [COINS_TYPE_LIST[coinA], COINS_TYPE_LIST[coinB], COINS_TYPE_LIST[lpCoin]],
-    arguments: [tx.object(lpObjectId), tx.object(pool), tx.pure.u64('1000000000')],
+    arguments: [tx.object(lpObjectId), tx.object(poolObjectId), tx.pure.u64('1000000000')],
   });
   const inspectRes = await client.devInspectTransactionBlock({
     transactionBlock: tx,
