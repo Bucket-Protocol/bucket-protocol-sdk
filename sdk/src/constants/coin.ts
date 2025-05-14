@@ -57,7 +57,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   MMT_STABLE_LP: '0x375e22e22157b643553d4e327ccf59fa8149605b90ab81c3645261f8e21bc879::mmt_stable_lp::MMT_STABLE_LP',
   wWAL: '0xb1b0650a8862e30e3f604fd6c5838bc25464b8d3d827fbd58af7cb9685b832bf::wwal::WWAL',
   haWAL: '0x8b4d553839b219c3fd47608a0cc3d5fcc572cb25d41b7df3833208586a8d2470::hawal::HAWAL',
-  LBTC: '0x3e8e9423d80e1774a7ca128fccd8bf5f1f7753be658c5e645929037f7c819040::lbtc::LBTC', 
+  LBTC: '0x3e8e9423d80e1774a7ca128fccd8bf5f1f7753be658c5e645929037f7c819040::lbtc::LBTC',
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -272,7 +272,7 @@ export const COLLATERAL_INFO: CollateralInfo[] = [
     autoSafeBorrowRate: 1.8,
     interestRate: 0.09,
   },
-]
+];
 
 export const COLLATERAL_ASSETS: COIN[] = COLLATERAL_INFO.map((collateral) => collateral.token);
 

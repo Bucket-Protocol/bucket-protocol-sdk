@@ -69,4 +69,4 @@ export type CollateralInfo = {
   token: COIN;
   autoSafeBorrowRate: number;
   interestRate: number;
-}
+};
