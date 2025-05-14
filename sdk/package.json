@@ -23,7 +23,7 @@
     "package.json"
   ],
   "scripts": {
-    "lint": "eslint --fix",
+    "lint": "eslint",
     "dev": "tsc --watch",
     "build": "tsup",
     "clean": "rm -fr dist/",
