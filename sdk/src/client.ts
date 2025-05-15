@@ -62,7 +62,6 @@ import {
   SUPRA_ID,
   SUPRA_PRICE_FEEDS,
   SUPRA_UPDATE_TARGET,
-  SWITCHBOARD_UPDATE_TARGET,
   UNIHOUSE_OBJECT_ID,
   WALRUS_STAKING_OBJECT_ID,
   WALRUS_SYSTEM_OBJECT_ID,
@@ -219,12 +218,13 @@ export class BucketClient {
    */
   updateSupraOracle(tx: Transaction, token: string) {
     tx.moveCall({
-      target: SWITCHBOARD_UPDATE_TARGET,
+      target: SUPRA_UPDATE_TARGET,
       typeArguments: [COINS_TYPE_LIST.SUI],
       arguments: [
         tx.sharedObjectRef(ORACLE_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.object('0xbca474133638352ba83ccf7b5c931d50f764b09550e16612c9f70f1e21f3f594'),
+        tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
+        tx.pure.u32(SUPRA_ID.SUI),
       ],
     });
 
