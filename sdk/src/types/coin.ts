@@ -1,3 +1,5 @@
+import { COLLATERAL_ASSETS } from '@/constants';
+
 export type COIN =
   | 'SUI'
   | 'wUSDC'
@@ -55,18 +57,12 @@ export type COIN =
   | 'MMT_STABLE_LP'
   | 'wWAL'
   | 'haWAL'
-  | 'LBTC';
-
-export type LstCoin = 'afSUI' | 'haSUI' | 'vSUI';
+  | 'LBTC'
+  | 'HAEDAL'
+  | 'xBTC';
 
 export type ScableCoin = 'USDC' | 'sbUSDT';
 
 export type LockupCoin = 'afSUI' | 'haSUI' | 'vSUI' | 'sBUCK';
 
-export type ScallopCoin = 'sUSDC' | 'swUSDC' | 'sSUI' | 'sSCA' | 'swUSDT' | 'sSBETH' | 'sDEEP' | 'sSBUSDT' | 'sWAL';
-
-export type CollateralInfo = {
-  token: COIN;
-  autoSafeBorrowRate: number;
-  interestRate: number;
-};
+export type CollateralCoin = (typeof COLLATERAL_ASSETS)[number];
