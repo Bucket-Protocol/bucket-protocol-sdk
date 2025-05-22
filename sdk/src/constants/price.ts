@@ -5,7 +5,7 @@ import {
   computeBlizzardStakingRate,
   computeHaWalStakingRate,
   computeLiquidStakingRate,
-  computeSBUCKPrice,
+  computeSbuckRate,
   computeSupraPrice,
   computeUnihouseRate,
   getAlphafiStSUIFtPrice,
@@ -212,7 +212,8 @@ export const PRICE_MAP: Partial<Record<COIN, PriceMapItem>> = {
   },
   sBUCK: {
     objectId: SBUCK_FLASK_OBJECT_ID,
-    processFn: ({ object }) => computeSBUCKPrice(object),
+    processFn: ({ object, prices }) => computeSbuckRate(object) * prices[0],
+    dependentTokens: 'BUCK',
   },
   spSUI: {
     objectId: SPSUI_LIQUID_STAKING_OBJECT_ID,

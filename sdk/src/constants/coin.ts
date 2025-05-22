@@ -1,4 +1,4 @@
-import { COIN, CollateralInfo } from '@/types';
+import { COIN, CollateralCoin } from '@/types';
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
   SUI: '0x2::sui::SUI',
@@ -58,6 +58,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   wWAL: '0xb1b0650a8862e30e3f604fd6c5838bc25464b8d3d827fbd58af7cb9685b832bf::wwal::WWAL',
   haWAL: '0x8b4d553839b219c3fd47608a0cc3d5fcc572cb25d41b7df3833208586a8d2470::hawal::HAWAL',
   LBTC: '0x3e8e9423d80e1774a7ca128fccd8bf5f1f7753be658c5e645929037f7c819040::lbtc::LBTC',
+  HAEDAL: '0x3a304c7feba2d819ea57c3542d68439ca2c386ba02159c740f7b406e592c62ea::haedal::HAEDAL',
+  xBTC: '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC',
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -114,167 +116,186 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   wWAL: 9,
   haWAL: 9,
   LBTC: 8,
+  HAEDAL: 9,
+  xBTC: 8,
 };
 
-export const COLLATERAL_INFO: CollateralInfo[] = [
-  {
-    token: 'wWAL',
-    autoSafeBorrowRate: 2.5,
-    interestRate: 0.14,
-  },
-  {
-    token: 'haWAL',
-    autoSafeBorrowRate: 2.5,
-    interestRate: 0.14,
-  },
-  {
-    token: 'WAL',
-    autoSafeBorrowRate: 2,
-    interestRate: 0.14,
-  },
-  {
-    token: 'sWAL',
-    autoSafeBorrowRate: 2.5,
-    interestRate: 0.14,
-  },
-  {
-    token: 'stSUI_SUI_ALPHAFI_FT',
-    autoSafeBorrowRate: 2.5,
-    interestRate: 0.1,
-  },
-  {
-    token: 'sbWBTC',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'afSUI',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'haSUI',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'vSUI',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'SUI',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.08,
-  },
-  {
-    token: 'WETH',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'USDY',
-    autoSafeBorrowRate: 1.2,
-    interestRate: 0.08,
-  },
-  {
-    token: 'NAVX',
-    autoSafeBorrowRate: 2,
-    interestRate: 0.13,
-  },
-  {
-    token: 'CETUS',
-    autoSafeBorrowRate: 2,
-    interestRate: 0.13,
-  },
-  {
-    token: 'SCA',
-    autoSafeBorrowRate: 2,
-    interestRate: 0.13,
-  },
-  {
-    token: 'sUSDC',
-    autoSafeBorrowRate: 1.5,
-    interestRate: 0.11,
-  },
-  {
-    token: 'sSUI',
-    autoSafeBorrowRate: 2,
-    interestRate: 0.11,
-  },
-  {
-    token: 'sSCA',
-    autoSafeBorrowRate: 2.5,
-    interestRate: 0.14,
-  },
-  {
-    token: 'swUSDC',
-    autoSafeBorrowRate: 1.5,
-    interestRate: 0.11,
-  },
-  {
-    token: 'swUSDT',
-    autoSafeBorrowRate: 1.5,
-    interestRate: 0.11,
-  },
-  {
-    token: 'sSBETH',
-    autoSafeBorrowRate: 2,
-    interestRate: 0.11,
-  },
-  {
-    token: 'spSUI',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'sbETH',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'mSUI',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'stSUI',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-  {
-    token: 'DEEP',
-    autoSafeBorrowRate: 2,
-    interestRate: 0.13,
-  },
-  {
-    token: 'sDEEP',
-    autoSafeBorrowRate: 2.5,
-    interestRate: 0.14,
-  },
-  {
-    token: 'sSBUSDT',
-    autoSafeBorrowRate: 1.5,
-    interestRate: 0.11,
-  },
-  {
-    token: 'gSUI',
-    autoSafeBorrowRate: 2,
-    interestRate: 0.08,
-  },
-  {
-    token: 'haSUI_SUI_CETUS_VT_LP',
-    autoSafeBorrowRate: 2.5,
-    interestRate: 0.1,
-  },
-  {
-    token: 'LBTC',
-    autoSafeBorrowRate: 1.8,
-    interestRate: 0.09,
-  },
-];
+export const COLLATERAL_ASSETS = [
+  'wWAL',
+  'haWAL',
+  'WAL',
+  'sWAL',
+  'stSUI_SUI_ALPHAFI_FT',
+  'sbWBTC',
+  'afSUI',
+  'haSUI',
+  'vSUI',
+  'SUI',
+  'WETH',
+  'USDY',
+  'CETUS',
+  'NAVX',
+  'SCA',
+  'sUSDC',
+  'sSUI',
+  'sSCA',
+  'swUSDC',
+  'swUSDT',
+  'sSBETH',
+  'spSUI',
+  'sbETH',
+  'mSUI',
+  'stSUI',
+  'DEEP',
+  'sDEEP',
+  'sSBUSDT',
+  'gSUI',
+  'haSUI_SUI_CETUS_VT_LP',
+  'LBTC',
+  'HAEDAL',
+  'xBTC',
+] as const satisfies readonly COIN[];
 
-export const COLLATERAL_ASSETS: COIN[] = COLLATERAL_INFO.map((collateral) => collateral.token);
+export const COLLATERAL_INFO: Record<
+  CollateralCoin,
+  {
+    safeCr: number;
+    interestRate: number;
+  }
+> = {
+  wWAL: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  haWAL: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  WAL: {
+    safeCr: 2,
+    interestRate: 0.14,
+  },
+  sWAL: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  stSUI_SUI_ALPHAFI_FT: {
+    safeCr: 2.5,
+    interestRate: 0.1,
+  },
+  sbWBTC: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  afSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  haSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  vSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  SUI: {
+    safeCr: 1.8,
+    interestRate: 0.08,
+  },
+  WETH: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  USDY: {
+    safeCr: 1.2,
+    interestRate: 0.08,
+  },
+  NAVX: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  CETUS: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  SCA: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  sUSDC: {
+    safeCr: 1.5,
+    interestRate: 0.11,
+  },
+  sSUI: {
+    safeCr: 2,
+    interestRate: 0.11,
+  },
+  sSCA: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  swUSDC: {
+    safeCr: 1.5,
+    interestRate: 0.11,
+  },
+  swUSDT: {
+    safeCr: 1.5,
+    interestRate: 0.11,
+  },
+  sSBETH: {
+    safeCr: 2,
+    interestRate: 0.11,
+  },
+  spSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  sbETH: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  mSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  stSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  DEEP: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  sDEEP: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  sSBUSDT: {
+    safeCr: 1.5,
+    interestRate: 0.11,
+  },
+  gSUI: {
+    safeCr: 2,
+    interestRate: 0.08,
+  },
+  haSUI_SUI_CETUS_VT_LP: {
+    safeCr: 2.5,
+    interestRate: 0.1,
+  },
+  LBTC: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  HAEDAL: {
+    safeCr: 0, // TODO
+    interestRate: 0, // TODO
+  },
+  xBTC: {
+    safeCr: 0, // TODO
+    interestRate: 0, // TODO
+  },
+};
 
 export const HAWAL_RULE_PKG_ID = '0xb78aa952cdced6ec22196bcfc4b3224fe28aa9e34d1ed939b652b9969a55a0ac';
 export const WWAL_RULE_PKG_ID = '0x0697807e89307c7124aeb5847e817fbb49c7701e4f5b03f1d38a91bdee3e3f66';

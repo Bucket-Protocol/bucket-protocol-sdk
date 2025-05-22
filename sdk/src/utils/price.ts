@@ -37,16 +37,16 @@ export const computeSupraPrice = (res: SuiObjectResponse | undefined): number =>
   return price;
 };
 
-export const computeSBUCKPrice = (res: SuiObjectResponse | undefined): number => {
+export const computeSbuckRate = (res: SuiObjectResponse | undefined): number => {
   if (!res) {
     return 0;
   }
   const priceFeed = getObjectFields(res) as SBUCKFlaskResponse;
   const reserves = priceFeed.reserves;
   const sBuckSupply = priceFeed.sbuck_supply.fields.value;
-  const price = Number(reserves) / Number(sBuckSupply);
+  const rate = Number(reserves) / Number(sBuckSupply);
 
-  return price;
+  return rate;
 };
 
 export const computeLiquidStakingRate = (res: SuiObjectResponse | undefined): number => {
