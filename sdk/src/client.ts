@@ -880,8 +880,8 @@ export class BucketClient {
         showType: true,
       },
     });
-    const proofDataVec = await Promise.all(
-      proofObjs.map((proof) => this.getProofData(proof)).filter((proof) => !!proof),
+    const proofDataVec = (await Promise.all(proofObjs.map((proof) => this.getProofData(proof)))).filter(
+      (proof) => !!proof,
     );
     const tx = new Transaction();
     const parseParams: Parameters<typeof this.parseUserBottleInfo>[1][] = [];
