@@ -5,7 +5,7 @@ import {
   computeBlizzardStakingRate,
   computeHaWalStakingRate,
   computeLiquidStakingRate,
-  computeSBUCKPrice,
+  computeSbuckRate,
   computeSupraPrice,
   computeUnihouseRate,
   getAlphafiStSUIFtPrice,
@@ -66,6 +66,7 @@ export const SUPRA_ID: Record<string, number> = {
   sbWBTC: 18,
   WAL: 534,
   LBTC: 18,
+  HAEDAL: 540,
 };
 
 export const SPSUI_LIQUID_STAKING_OBJECT_ID = '0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b';
@@ -212,7 +213,8 @@ export const PRICE_MAP: Partial<Record<COIN, PriceMapItem>> = {
   },
   sBUCK: {
     objectId: SBUCK_FLASK_OBJECT_ID,
-    processFn: ({ object }) => computeSBUCKPrice(object),
+    processFn: ({ object, prices }) => computeSbuckRate(object) * prices[0],
+    dependentTokens: 'BUCK',
   },
   spSUI: {
     objectId: SPSUI_LIQUID_STAKING_OBJECT_ID,

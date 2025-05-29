@@ -93,4 +93,10 @@ export const STRAP_FOUNTAIN_IDS: Partial<Record<COIN, SharedObjectRef & { reward
     mutable: true,
     rewardType: COINS_TYPE_LIST.DEEP,
   },
+  HAEDAL: {
+    objectId: '0x6471aaa20dac06a603f239d4193a743e7535720760317aad12aa556d52345ee8',
+    initialSharedVersion: '564498138',
+    mutable: true,
+    rewardType: COINS_TYPE_LIST.HAEDAL,
+  },
 };
