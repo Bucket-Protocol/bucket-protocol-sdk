@@ -880,9 +880,8 @@ export class BucketClient {
         showType: true,
       },
     });
-    const proofDataVec = (await Promise.all(proofObjs.map((proof) => this.getProofData(proof)))).filter(
-      (proof) => !!proof,
-    );
+    const proofDataVec = await Promise.all(proofObjs.map((proof) => this.getProofData(proof)));
+
     const tx = new Transaction();
     const parseParams: Parameters<typeof this.parseUserBottleInfo>[1][] = [];
 
@@ -908,7 +907,7 @@ export class BucketClient {
       });
     });
     proofObjs.forEach((proof, index) => {
-      if (!proof.data) {
+      if (!proof.data || !proofDataVec[index]) {
         return;
       }
       parseParams.push({ proof, startUnit: proofDataVec[index].startUnit, debtAmount: proofDataVec[index].debtAmount });
