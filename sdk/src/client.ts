@@ -796,7 +796,11 @@ export class BucketClient {
 
   private async getProofData(proof: SuiObjectResponse) {
     const token = getCoinSymbol(getObjectGenerics(proof)[0]) as COIN;
-    const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
+
+    if (!STRAP_FOUNTAIN_IDS[token]) {
+      return null;
+    }
+    const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token].objectId as string);
     const data = await this.client.getDynamicFieldObject({
       parentId: lstFountain.strapId,
       name: {
@@ -806,6 +810,9 @@ export class BucketClient {
     });
     const ret = getObjectFields(data);
 
+    if (!ret) {
+      return null;
+    }
     return {
       startUnit: Number(ret?.value.fields.start_unit ?? 0),
       debtAmount: Number(ret?.value.fields.debt_amount ?? 0),
@@ -873,8 +880,9 @@ export class BucketClient {
         showType: true,
       },
     });
-    const proofDataVec = await Promise.all(proofObjs.map((proof) => this.getProofData(proof)));
-
+    const proofDataVec = await Promise.all(
+      proofObjs.map((proof) => this.getProofData(proof)).filter((proof) => !!proof),
+    );
     const tx = new Transaction();
     const parseParams: Parameters<typeof this.parseUserBottleInfo>[1][] = [];
 
