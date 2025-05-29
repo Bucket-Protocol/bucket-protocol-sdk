@@ -288,12 +288,12 @@ export const COLLATERAL_INFO: Record<
     interestRate: 0.09,
   },
   HAEDAL: {
-    safeCr: 0, // TODO
-    interestRate: 0, // TODO
+    safeCr: 2,
+    interestRate: 0.13,
   },
   xBTC: {
-    safeCr: 0, // TODO
-    interestRate: 0, // TODO
+    safeCr: 1.8,
+    interestRate: 0.09,
   },
 };
 
