@@ -78,6 +78,7 @@ import {
   BucketProtocolResponse,
   BucketResponse,
   COIN,
+  CollateralCoin,
   DeCenterResponse,
   DeTokenInfo,
   DeTokenPosition,
@@ -619,7 +620,7 @@ export class BucketClient {
    * @description Get strap fountain pool's apr
    * @returns Promise<number>
    */
-  async getStrapFountainApr(token: COIN): Promise<number> {
+  async getStrapFountainApr(token: CollateralCoin): Promise<number> {
     if (!STRAP_FOUNTAIN_IDS[token]) {
       throw new Error('Strap fountain not found');
     }
@@ -698,15 +699,14 @@ export class BucketClient {
         .filter((t) => t.data?.type?.includes('::bucket::Bucket'))
         .map((res) => {
           const typeId = getCoinType(res.data?.type ?? '') ?? '';
-          const token = getCoinSymbol(typeId);
+          const token = getCoinSymbol(typeId) as CollateralCoin;
           if (!token) {
             return;
           }
-
           const fields = getObjectFields(res) as BucketResponse;
 
           const bucketInfo: BucketInfo = {
-            token: token as COIN,
+            token,
             baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
             bottleTableSize: fields.bottle_table.fields.table.fields.size ?? '',
             bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? '',
@@ -732,11 +732,10 @@ export class BucketClient {
             return;
           }
 
-          const token = getCoinSymbol(typeId);
+          const token = getCoinSymbol(typeId) as CollateralCoin;
           if (!token) {
             return;
           }
-
           const bucket = buckets[token];
           if (bucket) {
             const fields = getObjectFields(res) as PipeResponse;
@@ -754,7 +753,7 @@ export class BucketClient {
   /**
    * @description Get bucket object from coin
    */
-  async getBucket(token: COIN): Promise<BucketInfo> {
+  async getBucket(token: CollateralCoin): Promise<BucketInfo> {
     const generalInfo = await this.client.getObject({
       id: PROTOCOL_ID,
       options: {
@@ -822,7 +821,7 @@ export class BucketClient {
   private parseUserBottleInfo(
     userBottleData: ReturnType<typeof STRUCT_BOTTLE_DATA.parse> | null,
     params: {
-      token?: COIN;
+      token?: CollateralCoin;
       strap?: SuiObjectResponse;
       proof?: SuiObjectResponse;
       startUnit?: number;
@@ -832,10 +831,9 @@ export class BucketClient {
     if (!userBottleData) {
       return null;
     }
-    const token =
-      params.token ||
+    const token = (params.token ||
       (params.strap && getCoinSymbol(getObjectGenerics(params.strap)[0])) ||
-      (params.proof && getCoinSymbol(getObjectGenerics(params.proof)[0]));
+      (params.proof && getCoinSymbol(getObjectGenerics(params.proof)[0]))) as CollateralCoin;
     if (!token) {
       return null;
     }
@@ -2469,7 +2467,7 @@ export class BucketClient {
           currentP: fields?.current_p || '1',
         };
 
-        tankInfoList[token as COIN] = tankInfo;
+        tankInfoList[token as CollateralCoin] = tankInfo;
       });
     } catch {}
 
@@ -2532,7 +2530,7 @@ export class BucketClient {
           continue;
         }
 
-        const token = getCoinSymbol(tankType);
+        const token = getCoinSymbol(tankType) as CollateralCoin;
         if (!token) {
           continue;
         }
