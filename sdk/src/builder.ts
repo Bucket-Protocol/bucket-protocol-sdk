@@ -639,12 +639,12 @@ export async function buildSBUCKUnstakeTx(
     // stake remaining sBUCK back to Savings Pool
     const proof = client.stakeSBUCK(tx, sBuckCoin);
     tx.transferObjects([proof], recipient);
-
-    if (returnOutputCoin) {
-      return [suiCoin, coinToReturn];
-    } else {
-      tx.transferObjects([suiCoin, coinToReturn], recipient);
-    }
+  }
+  if (returnOutputCoin) {
+    return [suiCoin, coinToReturn];
+  } else {
+    tx.transferObjects([suiCoin, coinToReturn], recipient);
+    return;
   }
 }
 
