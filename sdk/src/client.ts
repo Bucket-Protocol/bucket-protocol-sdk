@@ -28,7 +28,7 @@ import {
   COLLATERAL_ASSETS,
   CONTRIBUTOR_TOKEN_ID,
   CORE_PACKAGE_ID,
-  DETOKEN_CONFIG,
+  DEBUT_CONFIG,
   DUMMY_ADDRESS,
   FOUNTAIN_PACKAGE_ID,
   FOUNTAIN_PERIHERY_PACKAGE_ID,
@@ -2946,7 +2946,7 @@ export class BucketClient {
    */
   async getDeButInfo(): Promise<DeButInfo> {
     const deCenter = await this.client.getObject({
-      id: DETOKEN_CONFIG.objects.shared.butDeCenter.objectId,
+      id: DEBUT_CONFIG.objects.shared.butDeCenter.objectId,
       options: { showBcs: true },
     });
     const circulatingSupply = await getCirculatingSupply(this.client);
@@ -2974,21 +2974,21 @@ export class BucketClient {
 
   /**
    * @description Get deBUT information for input address
-   * @address User address that belong to deToken type
+   * @address User address to get
    * @returns Promise<UserDeButInfo | null>
    */
   async getUserDeButInfo(address: string): Promise<UserDeButInfo | null> {
-    const deWrapper = await getUserDeButWrapper(this.client, address);
+    const deButWrapper = await getUserDeButWrapper(this.client, address);
 
-    const [deTokens, dropsAmount, lastDropsAmount, isCheckedIn] = await Promise.all([
-      deWrapper ? deWrapper?.deTokens : getUserDeButPositions(this.client, address),
-      deWrapper ? getUserDropsAmount(this.client, address, deWrapper.id) : 0,
-      deWrapper ? getUserDropsAmountByEpoch(this.client, address, deWrapper.id) : 0,
-      deWrapper ? getIsUserCheckedIn(this.client, address, deWrapper.id) : false,
+    const [deButPositions, dropsAmount, lastDropsAmount, isCheckedIn] = await Promise.all([
+      deButWrapper ? deButWrapper?.deButPositions : getUserDeButPositions(this.client, address),
+      deButWrapper ? getUserDropsAmount(this.client, address, deButWrapper.id) : 0,
+      deButWrapper ? getUserDropsAmountByEpoch(this.client, address, deButWrapper.id) : 0,
+      deButWrapper ? getIsUserCheckedIn(this.client, address, deButWrapper.id) : false,
     ]);
     return {
-      deWrapper,
-      deTokens,
+      deButWrapper,
+      deButPositions,
       dropsAmount,
       lastDropsAmount,
       isCheckedIn,

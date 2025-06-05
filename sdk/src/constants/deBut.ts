@@ -3,7 +3,7 @@ export const INITIAL_SUPPLY = 385_000_000;
 export const BUCKET_PROTOCOL_TYPE =
   '0x3a4b399e18cec6129723c71605378bd554f53eb63afc1039f9af9a067a8847fa::bucket::BUCKET';
 
-export const DETOKEN_CONFIG = {
+export const DEBUT_CONFIG = {
   dfParentId: {
     whitelistAllocationId: '0xb5100bbea3c46572535d321d5184b9e20937c31254d32b78357e7b3a9ce8f62e',
     publicAllocationId: '0xcc32a1ccea4acc7352a6b3f8a5e40a644bdc7f642e3cb85d91cd5a52a27cb2c1',

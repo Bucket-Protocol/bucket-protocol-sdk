@@ -4,7 +4,7 @@ import { Transaction } from '@mysten/sui/transactions';
 import { fromBase64 } from '@mysten/sui/utils';
 
 import { phantom } from '@/_generated/_framework/reified';
-import { DeWrapper as DeWrapperStruct } from '@/_generated/de-voting/de-wrapper/structs';
+import { DeWrapper as DeButWrapperStruct } from '@/_generated/de-voting/de-wrapper/structs';
 import {
   getCastedWeightByEpoch,
   getPendingRewards,
@@ -12,10 +12,11 @@ import {
   getVotingStateByEpoch,
 } from '@/_generated/de-voting/reward-center/functions';
 import { DeCenter } from '@/_generated/detoken/de-center/structs';
-import { DeToken } from '@/_generated/detoken/de-token/structs';
+import { DeToken as DeButPositionStruct } from '@/_generated/detoken/de-token/structs';
+
 import { DeButInfo, DeButPosition, DeButWrapper } from '@/types/bucket';
 import { CLOCK_OBJECT, COIN_DECIMALS, COINS_TYPE_LIST } from '@/constants';
-import { BUCKET_PROTOCOL_TYPE, DETOKEN_CONFIG, INITIAL_SUPPLY, VESTING_LOCK_IDS } from '@/constants/deBut';
+import { BUCKET_PROTOCOL_TYPE, DEBUT_CONFIG, INITIAL_SUPPLY, VESTING_LOCK_IDS } from '@/constants/deBut';
 
 type VestingLockData = {
   released_amount: string;
@@ -32,17 +33,17 @@ export const getTotalDeButAmount = (deCenter: DeCenter<string, string>): number 
   return deButAmount;
 };
 
-export const getDeButAmount = (deToken: DeToken<string, string>): number => {
+export const getDeButAmount = (position: DeButPositionStruct<string, string>): number => {
   const current = Date.now();
 
-  if (current > Number(deToken.end)) {
+  if (current > Number(position.end)) {
     return 0;
   }
   const deButAmount =
-    (Number(deToken.point.bias.bits) -
-      (Number(deToken.point.slope.bits) * (current - Number(deToken.point.timestamp))) / 10 ** 9) /
+    (Number(position.point.bias.bits) -
+      (Number(position.point.slope.bits) * (current - Number(position.point.timestamp))) / 10 ** 9) /
     10 ** 9;
-  const stakeAmount = Number(deToken.balance.value) / 10 ** COIN_DECIMALS.BUT;
+  const stakeAmount = Number(position.balance.value) / 10 ** COIN_DECIMALS.BUT;
 
   return Math.min(deButAmount, stakeAmount);
 };
@@ -73,7 +74,7 @@ export const getCirculatingSupply = async (client: SuiClient): Promise<number> =
 
 export const getDeButInfo = async (client: SuiClient): Promise<DeButInfo> => {
   const deCenter = await client.getObject({
-    id: DETOKEN_CONFIG.objects.shared.butDeCenter.objectId,
+    id: DEBUT_CONFIG.objects.shared.butDeCenter.objectId,
     options: { showBcs: true },
   });
   const circulatingSupply = await getCirculatingSupply(client);
@@ -102,7 +103,7 @@ export const getDeButInfo = async (client: SuiClient): Promise<DeButInfo> => {
 export const getUserDeButWrapper = async (client: SuiClient, address: string): Promise<DeButWrapper | null> => {
   const { data } = await client.getOwnedObjects({
     owner: address,
-    filter: { StructType: DeWrapperStruct.$typeName },
+    filter: { StructType: DeButWrapperStruct.$typeName },
     options: { showBcs: true },
   });
   if (data.length === 0) {
@@ -114,69 +115,73 @@ export const getUserDeButWrapper = async (client: SuiClient, address: string): P
   if (data[0].data?.bcs?.type === null) {
     return null;
   }
-  const deWrapperObject = DeWrapperStruct.fromBcs(
+  const deButWrapperObject = DeButWrapperStruct.fromBcs(
     [phantom(COINS_TYPE_LIST.BUT), phantom(BUCKET_PROTOCOL_TYPE)],
     fromBase64(data[0].data.bcs.bcsBytes),
   );
-  const deTokens = deWrapperObject.tokens.map((deToken) => ({
-    id: deToken.id,
-    stakedButAmount: Number(deToken.balance.value) / 10 ** COIN_DECIMALS.BUT,
-    stakedPeriod: Number(deToken.end) - Number(deToken.point.timestamp),
-    startDate: Number(deToken.point.timestamp),
-    unlockDate: Number(deToken.end),
-    deButAmount: getDeButAmount(deToken),
-    earlyUnstakable: deToken.earlyUnlock,
+  const deButPositions = deButWrapperObject.tokens.map((position) => ({
+    id: position.id,
+    stakedButAmount: Number(position.balance.value) / 10 ** COIN_DECIMALS.BUT,
+    stakedPeriod: Number(position.end) - Number(position.point.timestamp),
+    startDate: Number(position.point.timestamp),
+    unlockDate: Number(position.end),
+    deButAmount: getDeButAmount(position),
+    earlyUnstakable: position.earlyUnlock,
   }));
 
   return {
-    id: deWrapperObject.id,
-    deTokens,
+    id: deButWrapperObject.id,
+    deButPositions,
   };
 };
 
 export const getUserDeButPositions = async (client: SuiClient, address: string): Promise<DeButPosition[]> => {
   const { data } = await client.getOwnedObjects({
     owner: address,
-    filter: { StructType: DeToken.$typeName },
+    filter: { StructType: DeButPositionStruct.$typeName },
     options: { showBcs: true },
   });
-  const deTokens = data
-    .map((deToken) => {
-      if (deToken.data?.bcs?.dataType !== 'moveObject') {
+  const deButPositions = data
+    .map((position) => {
+      if (position.data?.bcs?.dataType !== 'moveObject') {
         return null;
       }
-      if (deToken.data?.bcs?.type === null) {
+      if (position.data?.bcs?.type === null) {
         return null;
       }
-      const deTokenObject = DeToken.fromBcs(
+      const positionObject = DeButPositionStruct.fromBcs(
         [phantom(COINS_TYPE_LIST.BUT), phantom(BUCKET_PROTOCOL_TYPE)],
-        fromBase64(deToken.data?.bcs.bcsBytes),
+        fromBase64(position.data?.bcs.bcsBytes),
       );
       return {
-        id: deTokenObject.id,
-        stakedButAmount: Number(deTokenObject.balance.value) / 10 ** COIN_DECIMALS.BUT,
-        stakedPeriod: Number(deTokenObject.end) - Number(deTokenObject.point.timestamp),
-        startDate: Number(deTokenObject.point.timestamp),
-        unlockDate: Number(deTokenObject.end),
+        id: positionObject.id,
+        stakedButAmount: Number(positionObject.balance.value) / 10 ** COIN_DECIMALS.BUT,
+        stakedPeriod: Number(positionObject.end) - Number(positionObject.point.timestamp),
+        startDate: Number(positionObject.point.timestamp),
+        unlockDate: Number(positionObject.end),
         deButAmount: Math.min(
-          getDeButAmount(deTokenObject),
-          Number(deTokenObject.balance.value) / 10 ** COIN_DECIMALS.BUT,
+          getDeButAmount(positionObject),
+          Number(positionObject.balance.value) / 10 ** COIN_DECIMALS.BUT,
         ),
-        earlyUnstakable: deTokenObject.earlyUnlock,
+        earlyUnstakable: positionObject.earlyUnlock,
       };
     })
-    .filter((deToken) => !!deToken)
+    .filter((position) => !!position)
     .toSorted((a, b) => a.startDate - b.startDate);
 
-  return deTokens;
+  return deButPositions;
 };
 
-export const getUserDropsAmount = async (client: SuiClient, address: string, deWrapperId: string): Promise<number> => {
+export const getUserDropsAmount = async (
+  client: SuiClient,
+  address: string,
+  deButWrapperId: string,
+): Promise<number> => {
   const tx = new Transaction();
 
   getPendingRewards(tx, [COINS_TYPE_LIST.BUT, BUCKET_PROTOCOL_TYPE, COINS_TYPE_LIST.DROP], {
-    self: tx.sharedObjectRef(DETOKEN_CONFIG.objects.shared.rewardCenter),
-    deWrapperId,
+    self: tx.sharedObjectRef(DEBUT_CONFIG.objects.shared.rewardCenter),
+    deWrapperId: deButWrapperId,
     clock: tx.sharedObjectRef(CLOCK_OBJECT),
   });
   const res = await client.devInspectTransactionBlock({
@@ -197,20 +202,20 @@ export const getUserDropsAmount = async (client: SuiClient, address: string, deW
 export const getUserDropsAmountByEpoch = async (
   client: SuiClient,
   address: string,
-  deWrapperId: string,
+  deButWrapperId: string,
 ): Promise<number> => {
   const epoch = BigInt(Math.floor((Date.now() - 388800000) / (86400000 * 7))) - 1n;
 
   const tx = new Transaction();
 
   const state = getVotingStateByEpoch(tx, [COINS_TYPE_LIST.BUT, BUCKET_PROTOCOL_TYPE, COINS_TYPE_LIST.DROP], {
-    self: tx.sharedObjectRef(DETOKEN_CONFIG.objects.shared.rewardCenter),
+    self: tx.sharedObjectRef(DEBUT_CONFIG.objects.shared.rewardCenter),
     epoch: tx.pure.u64(epoch),
   });
 
   getRewardsByEpoch(tx, COINS_TYPE_LIST.DROP, {
     state,
-    deWrapperId: tx.pure.id(deWrapperId),
+    deWrapperId: tx.pure.id(deButWrapperId),
   });
 
   const res = await client.devInspectTransactionBlock({
@@ -228,13 +233,17 @@ export const getUserDropsAmountByEpoch = async (
   return +pendingRewards / 10 ** COIN_DECIMALS.DROP;
 };
 
-export const getIsUserCheckedIn = async (client: SuiClient, address: string, deWrapperId: string): Promise<boolean> => {
+export const getIsUserCheckedIn = async (
+  client: SuiClient,
+  address: string,
+  deButWrapperId: string,
+): Promise<boolean> => {
   const epoch = BigInt(Math.floor((Date.now() - 388800000) / (86400000 * 7)));
   const tx = new Transaction();
 
   getCastedWeightByEpoch(tx, [COINS_TYPE_LIST.BUT, BUCKET_PROTOCOL_TYPE, COINS_TYPE_LIST.DROP], {
-    self: tx.sharedObjectRef(DETOKEN_CONFIG.objects.shared.rewardCenter),
-    deWrapperId,
+    self: tx.sharedObjectRef(DEBUT_CONFIG.objects.shared.rewardCenter),
+    deWrapperId: deButWrapperId,
     epoch,
   });
   const res = await client.devInspectTransactionBlock({

@@ -155,12 +155,12 @@ export type DeButPosition = {
 
 export type DeButWrapper = {
   id: string;
-  deTokens: DeButPosition[];
+  deButPositions: DeButPosition[];
 };
 
 export type UserDeButInfo = {
-  deWrapper: DeButWrapper | null;
-  deTokens: DeButPosition[];
+  deButWrapper: DeButWrapper | null;
+  deButPositions: DeButPosition[];
   dropsAmount: number;
   lastDropsAmount: number;
   isCheckedIn: boolean;
