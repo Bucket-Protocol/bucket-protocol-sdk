@@ -15,7 +15,6 @@ import {
   BUCKETUS_LP_VAULT_05,
   BUCKETUS_TREASURY,
   BUKCET_ORACLE_OBJECT_ID,
-  CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
   CETUS_OBJS,
   CETUS_SUI_BUCK_LP_REGISTRY_ID,
   CETUS_USDC_BUCK_LP_REGISTRY,
@@ -33,7 +32,6 @@ import {
   DUMMY_ADDRESS,
   FOUNTAIN_PACKAGE_ID,
   FOUNTAIN_PERIHERY_PACKAGE_ID,
-  GSUI_UNIHOUSE_OBJECT_ID,
   HAWAL_RULE_PKG_ID,
   KRIYA_FOUNTAIN_PACKAGE_ID,
   KRIYA_SUI_BUCK_LP_REGISTRY_ID,
@@ -42,6 +40,7 @@ import {
   MAX_LOCK_TIME,
   MSUI_LIQUID_STAKING_OBJECT_ID,
   ORACLE_OBJECT,
+  PRICE_MAP,
   PROTOCOL_ID,
   PROTOCOL_OBJECT,
   PSM_BALANCE_IDS,
@@ -63,7 +62,6 @@ import {
   SUPRA_ID,
   SUPRA_PRICE_FEEDS,
   SUPRA_UPDATE_TARGET,
-  SWITCHBOARD_UPDATE_TARGET,
   UNIHOUSE_OBJECT_ID,
   WALRUS_STAKING_OBJECT_ID,
   WALRUS_SYSTEM_OBJECT_ID,
@@ -80,6 +78,7 @@ import {
   BucketProtocolResponse,
   BucketResponse,
   COIN,
+  CollateralCoin,
   DeCenterResponse,
   DeTokenInfo,
   DeTokenPosition,
@@ -113,13 +112,8 @@ import {
   calculateRewardAmount,
   coinFromBalance,
   coinIntoBalance,
-  computeLiquidStakingRate,
-  computeSBUCKPrice,
   computeSupraPrice,
-  computeUnihouseRate,
   formatUnits,
-  getAlphafiStSUIFtPrice,
-  getCetusVaultLpPrice,
   getCoinSymbol,
   getCoinType,
   getCoinTypeFromPipe,
@@ -172,120 +166,50 @@ export class BucketClient {
    * @description Get all prices
    */
   async getPrices() {
-    const objectNameList = Object.keys(SUPRA_PRICE_FEEDS);
+    const prices: Partial<Record<COIN, number>> = {};
 
-    const [
-      sBuckFlaskObj,
-      spSuiLiquidStakingObj,
-      mSuiRateLiquidStakingObj,
-      stSuiLiquidStakingObj,
-      gSuiUniHouseObj,
-      ...supraPriceObjs
-    ] = await this.client.multiGetObjects({
-      ids: [
-        SBUCK_FLASK_OBJECT_ID,
-        SPSUI_LIQUID_STAKING_OBJECT_ID,
-        MSUI_LIQUID_STAKING_OBJECT_ID,
-        STSUI_LIQUID_STAKING_OBJECT_ID,
-        GSUI_UNIHOUSE_OBJECT_ID,
-        ...Object.values(SUPRA_PRICE_FEEDS),
-      ],
+    const objectIds = Object.values(PRICE_MAP)
+      .map(({ objectId }) => objectId)
+      .filter((objectId) => objectId !== undefined);
+
+    const res = await this.client.multiGetObjects({
+      ids: objectIds,
       options: {
         showContent: true,
       },
     });
-
-    const prices: {
-      [key: string]: number;
-    } = {
-      SUI: 0,
-      vSUI: 0,
-      afSUI: 0,
-      haSUI: 0,
-      SCA: 0,
-      CETUS: 0,
-      NAVX: 0,
-      WETH: 0,
-      sbETH: 0,
-      sbWBTC: 0,
-      spSUI: 0,
-      mSUI: 0,
-      stSUI: 0,
-      gSUI: 0,
-      DEEP: 0,
-
-      BUCK: 1,
-      sBUCK: 1,
-      USDC: 1,
-      wUSDC: 1,
-      wUSDT: 1,
-      USDY: 1,
-      AUSD: 1,
-      FDUSD: 1,
-      sbUSDT: 1,
-      BUCKETUS: 1,
-      SCABLE: 1,
-      STAPEARL: 1,
-      bluefin_BUCK_USDC_LP: 1,
-      MMT_STABLE_LP: 1,
-    };
-
-    prices.sBUCK = computeSBUCKPrice(sBuckFlaskObj);
-
-    const spSuiRate = computeLiquidStakingRate(spSuiLiquidStakingObj);
-    const mSuiRate = computeLiquidStakingRate(mSuiRateLiquidStakingObj);
-    const stSuiRate = computeLiquidStakingRate(stSuiLiquidStakingObj);
-    const gSuiRate = computeUnihouseRate(gSuiUniHouseObj);
-
-    supraPriceObjs.map((res, index) => {
-      const price = computeSupraPrice(res);
-
-      if (objectNameList[index] === 'usdc_usd') {
-        prices.wUSDC = price;
-      } else if (objectNameList[index] === 'usdt_usd') {
-        prices.wUSDT = price;
-      } else if (objectNameList[index] === 'usdy_usd') {
-        prices.USDY = price;
-      } else if (objectNameList[index] === 'navx_usd') {
-        prices.NAVX = price;
-      } else if (objectNameList[index] === 'cetus_usd') {
-        prices.CETUS = price;
-      } else if (objectNameList[index] === 'sca_usd') {
-        prices.SCA = price;
-      } else if (objectNameList[index] === 'deep_usdt') {
-        prices.DEEP = price;
-      } else if (objectNameList[index] === 'btc_usd') {
-        prices.sbWBTC = price;
-      } else if (objectNameList[index] === 'eth_usdt') {
-        prices.WETH = (prices.wUSDT ?? 1) * price;
-        prices.sbETH = (prices.wUSDT ?? 1) * price;
-      } else if (objectNameList[index] === 'sui_usdt') {
-        prices.SUI = (prices.wUSDT ?? 1) * price;
-      } else if (objectNameList[index] === 'vsui_sui') {
-        prices.vSUI = (prices.SUI ?? 1) * price;
-      } else if (objectNameList[index] === 'hasui_sui') {
-        prices.haSUI = (prices.SUI ?? 1) * price;
-      } else if (objectNameList[index] === 'afsui_sui') {
-        prices.afSUI = (prices.SUI ?? 1) * price;
-      }
-    });
-    const suiPrice = prices.SUI ?? 0;
-
-    prices.spSUI = suiPrice * spSuiRate;
-    prices.mSUI = suiPrice * mSuiRate;
-    prices.stSUI = suiPrice * stSuiRate;
-    prices.gSUI = suiPrice * gSuiRate;
-
-    prices.haSUI_SUI_CETUS_VT_LP = await getCetusVaultLpPrice(
-      this.client,
-      'haSUI_SUI_CETUS_VT_LP',
-      'haSUI',
-      'SUI',
-      CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID,
-      suiPrice,
+    const objects = Object.entries(PRICE_MAP).reduce(
+      (result, [token, { objectId }]) => {
+        if (objectId) {
+          result[token as COIN] = res.shift();
+        }
+        return result;
+      },
+      {} as Partial<Record<COIN, SuiObjectResponse>>,
     );
-    prices.stSUI_SUI_ALPHAFI_FT = await getAlphafiStSUIFtPrice(this.client, prices.stSUI, prices.SUI);
+    const getPrice = async (token: COIN): Promise<number> => {
+      if (!(token in prices)) {
+        const { processFn, dependentTokens = [], defaultValue = 0 } = PRICE_MAP[token] ?? {};
 
+        const dependentObject = objects[token];
+        try {
+          const dependentPrices = await Promise.all(
+            (Array.isArray(dependentTokens) ? dependentTokens : [dependentTokens]).map((token) => getPrice(token)),
+          );
+          const price = processFn
+            ? await processFn({ suiClient: this.client, object: dependentObject, prices: dependentPrices })
+            : dependentPrices[0];
+
+          prices[token] = price ?? defaultValue;
+        } catch {
+          prices[token] = defaultValue;
+        }
+      }
+      return prices[token] as number;
+    };
+    for (const token in PRICE_MAP) {
+      await getPrice(token as COIN);
+    }
     return prices;
   }
 
@@ -295,12 +219,13 @@ export class BucketClient {
    */
   updateSupraOracle(tx: Transaction, token: string) {
     tx.moveCall({
-      target: SWITCHBOARD_UPDATE_TARGET,
+      target: SUPRA_UPDATE_TARGET,
       typeArguments: [COINS_TYPE_LIST.SUI],
       arguments: [
         tx.sharedObjectRef(ORACLE_OBJECT),
         tx.sharedObjectRef(CLOCK_OBJECT),
-        tx.object('0xbca474133638352ba83ccf7b5c931d50f764b09550e16612c9f70f1e21f3f594'),
+        tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
+        tx.pure.u32(SUPRA_ID.SUI),
       ],
     });
 
@@ -354,10 +279,10 @@ export class BucketClient {
       });
       // update vSUI price
       tx.moveCall({
-        target: '0x1caed1bf0cc4ca7357989b3a08e487078c6e60277512a8799347010e9ea92e8f::vsui_rule::update_price',
+        target: '0xc952f454a2cc83ad1102ebd84306f4e7ebb3d6fcb44d2feb94911010d64e1237::vsui_rule::update_price',
         arguments: [
           tx.sharedObjectRef(ORACLE_OBJECT),
-          tx.object('0x7fa2faa111b8c65bea48a23049bfd81ca8f971a262d981dcd9a17c3825cb5baf'),
+          tx.object('0x2d914e23d82fedef1b5f56a32d5c64bdcc3087ccfea2b4d6ea51a71f587840e5'),
           tx.object('0x680cd26af32b2bde8d3361e804c53ec1d1cfe24c7f039eb7f549e8dfde389a60'),
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
@@ -695,7 +620,7 @@ export class BucketClient {
    * @description Get strap fountain pool's apr
    * @returns Promise<number>
    */
-  async getStrapFountainApr(token: COIN): Promise<number> {
+  async getStrapFountainApr(token: CollateralCoin): Promise<number> {
     if (!STRAP_FOUNTAIN_IDS[token]) {
       throw new Error('Strap fountain not found');
     }
@@ -774,15 +699,14 @@ export class BucketClient {
         .filter((t) => t.data?.type?.includes('::bucket::Bucket'))
         .map((res) => {
           const typeId = getCoinType(res.data?.type ?? '') ?? '';
-          const token = getCoinSymbol(typeId);
+          const token = getCoinSymbol(typeId) as CollateralCoin;
           if (!token) {
             return;
           }
-
           const fields = getObjectFields(res) as BucketResponse;
 
           const bucketInfo: BucketInfo = {
-            token: token as COIN,
+            token,
             baseFeeRate: Number(fields.base_fee_rate ?? 5_000),
             bottleTableSize: fields.bottle_table.fields.table.fields.size ?? '',
             bottleTableId: fields.bottle_table.fields.table.fields.id.id ?? '',
@@ -808,11 +732,10 @@ export class BucketClient {
             return;
           }
 
-          const token = getCoinSymbol(typeId);
+          const token = getCoinSymbol(typeId) as CollateralCoin;
           if (!token) {
             return;
           }
-
           const bucket = buckets[token];
           if (bucket) {
             const fields = getObjectFields(res) as PipeResponse;
@@ -830,7 +753,7 @@ export class BucketClient {
   /**
    * @description Get bucket object from coin
    */
-  async getBucket(token: COIN): Promise<BucketInfo> {
+  async getBucket(token: CollateralCoin): Promise<BucketInfo> {
     const generalInfo = await this.client.getObject({
       id: PROTOCOL_ID,
       options: {
@@ -872,7 +795,11 @@ export class BucketClient {
 
   private async getProofData(proof: SuiObjectResponse) {
     const token = getCoinSymbol(getObjectGenerics(proof)[0]) as COIN;
-    const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token]?.objectId as string);
+
+    if (!STRAP_FOUNTAIN_IDS[token]) {
+      return null;
+    }
+    const lstFountain = await this.getStakeProofFountain(STRAP_FOUNTAIN_IDS[token].objectId as string);
     const data = await this.client.getDynamicFieldObject({
       parentId: lstFountain.strapId,
       name: {
@@ -882,6 +809,9 @@ export class BucketClient {
     });
     const ret = getObjectFields(data);
 
+    if (!ret) {
+      return null;
+    }
     return {
       startUnit: Number(ret?.value.fields.start_unit ?? 0),
       debtAmount: Number(ret?.value.fields.debt_amount ?? 0),
@@ -891,7 +821,7 @@ export class BucketClient {
   private parseUserBottleInfo(
     userBottleData: ReturnType<typeof STRUCT_BOTTLE_DATA.parse> | null,
     params: {
-      token?: COIN;
+      token?: CollateralCoin;
       strap?: SuiObjectResponse;
       proof?: SuiObjectResponse;
       startUnit?: number;
@@ -901,10 +831,9 @@ export class BucketClient {
     if (!userBottleData) {
       return null;
     }
-    const token =
-      params.token ||
+    const token = (params.token ||
       (params.strap && getCoinSymbol(getObjectGenerics(params.strap)[0])) ||
-      (params.proof && getCoinSymbol(getObjectGenerics(params.proof)[0]));
+      (params.proof && getCoinSymbol(getObjectGenerics(params.proof)[0]))) as CollateralCoin;
     if (!token) {
       return null;
     }
@@ -976,7 +905,7 @@ export class BucketClient {
       });
     });
     proofObjs.forEach((proof, index) => {
-      if (!proof.data) {
+      if (!proof.data || !proofDataVec[index]) {
         return;
       }
       parseParams.push({ proof, startUnit: proofDataVec[index].startUnit, debtAmount: proofDataVec[index].debtAmount });
@@ -2538,7 +2467,7 @@ export class BucketClient {
           currentP: fields?.current_p || '1',
         };
 
-        tankInfoList[token as COIN] = tankInfo;
+        tankInfoList[token as CollateralCoin] = tankInfo;
       });
     } catch {}
 
@@ -2601,7 +2530,7 @@ export class BucketClient {
           continue;
         }
 
-        const token = getCoinSymbol(tankType);
+        const token = getCoinSymbol(tankType) as CollateralCoin;
         if (!token) {
           continue;
         }

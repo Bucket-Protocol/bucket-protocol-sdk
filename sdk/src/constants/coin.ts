@@ -1,4 +1,4 @@
-import { COIN } from '@/types';
+import { COIN, CollateralCoin } from '@/types';
 
 export const COINS_TYPE_LIST: Record<COIN, string> = {
   SUI: '0x2::sui::SUI',
@@ -57,6 +57,9 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   MMT_STABLE_LP: '0x375e22e22157b643553d4e327ccf59fa8149605b90ab81c3645261f8e21bc879::mmt_stable_lp::MMT_STABLE_LP',
   wWAL: '0xb1b0650a8862e30e3f604fd6c5838bc25464b8d3d827fbd58af7cb9685b832bf::wwal::WWAL',
   haWAL: '0x8b4d553839b219c3fd47608a0cc3d5fcc572cb25d41b7df3833208586a8d2470::hawal::HAWAL',
+  LBTC: '0x3e8e9423d80e1774a7ca128fccd8bf5f1f7753be658c5e645929037f7c819040::lbtc::LBTC',
+  HAEDAL: '0x3a304c7feba2d819ea57c3542d68439ca2c386ba02159c740f7b406e592c62ea::haedal::HAEDAL',
+  xBTC: '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC',
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -112,44 +115,189 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   MMT_STABLE_LP: 9,
   wWAL: 9,
   haWAL: 9,
+  LBTC: 8,
+  HAEDAL: 9,
+  xBTC: 8,
 };
 
-export const COLLATERAL_ASSETS: COIN[] = [
-  'SUI',
+export const COLLATERAL_ASSETS = [
+  'wWAL',
+  'haWAL',
+  'WAL',
+  'sWAL',
+  'stSUI_SUI_ALPHAFI_FT',
+  'sbWBTC',
   'afSUI',
   'haSUI',
   'vSUI',
+  'SUI',
   'WETH',
   'USDY',
-  'NAVX',
   'CETUS',
+  'NAVX',
   'SCA',
   'sUSDC',
-  'swUSDC',
   'sSUI',
   'sSCA',
+  'swUSDC',
   'swUSDT',
   'sSBETH',
   'spSUI',
-  'mSUI',
   'sbETH',
-  'sbWBTC',
+  'mSUI',
   'stSUI',
   'DEEP',
   'sDEEP',
   'sSBUSDT',
   'gSUI',
   'haSUI_SUI_CETUS_VT_LP',
-  'stSUI_SUI_ALPHAFI_FT',
-  'WAL',
-  'sWAL',
-  'haWAL',
-  'wWAL',
-];
+  'LBTC',
+  'HAEDAL',
+  'xBTC',
+] as const satisfies readonly COIN[];
+
+export const COLLATERAL_INFO: Record<
+  CollateralCoin,
+  {
+    safeCr: number;
+    interestRate: number;
+  }
+> = {
+  wWAL: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  haWAL: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  WAL: {
+    safeCr: 2,
+    interestRate: 0.14,
+  },
+  sWAL: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  stSUI_SUI_ALPHAFI_FT: {
+    safeCr: 2.5,
+    interestRate: 0.1,
+  },
+  sbWBTC: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  afSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  haSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  vSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  SUI: {
+    safeCr: 1.8,
+    interestRate: 0.08,
+  },
+  WETH: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  USDY: {
+    safeCr: 1.2,
+    interestRate: 0.08,
+  },
+  NAVX: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  CETUS: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  SCA: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  sUSDC: {
+    safeCr: 1.5,
+    interestRate: 0.11,
+  },
+  sSUI: {
+    safeCr: 2,
+    interestRate: 0.11,
+  },
+  sSCA: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  swUSDC: {
+    safeCr: 1.5,
+    interestRate: 0.11,
+  },
+  swUSDT: {
+    safeCr: 1.5,
+    interestRate: 0.11,
+  },
+  sSBETH: {
+    safeCr: 2,
+    interestRate: 0.11,
+  },
+  spSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  sbETH: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  mSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  stSUI: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  DEEP: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  sDEEP: {
+    safeCr: 2.5,
+    interestRate: 0.14,
+  },
+  sSBUSDT: {
+    safeCr: 1.5,
+    interestRate: 0.11,
+  },
+  gSUI: {
+    safeCr: 2,
+    interestRate: 0.08,
+  },
+  haSUI_SUI_CETUS_VT_LP: {
+    safeCr: 2.5,
+    interestRate: 0.1,
+  },
+  LBTC: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  HAEDAL: {
+    safeCr: 2,
+    interestRate: 0.13,
+  },
+  xBTC: {
+    safeCr: 1.8,
+    interestRate: 0.09,
+  },
+};
 
 export const HAWAL_RULE_PKG_ID = '0xb78aa952cdced6ec22196bcfc4b3224fe28aa9e34d1ed939b652b9969a55a0ac';
 export const WWAL_RULE_PKG_ID = '0x0697807e89307c7124aeb5847e817fbb49c7701e4f5b03f1d38a91bdee3e3f66';
-export const BLIZZARD_STAKING_OBJECT_ID = '0xccf034524a2bdc65295e212128f77428bb6860d757250c43323aa38b3d04df6d';
 export const WALRUS_SYSTEM_OBJECT_ID = '0x2134d52768ea07e8c43570ef975eb3e4c27a39fa6396bef985b5abc58d03ddd2';
 export const BUKCET_ORACLE_OBJECT_ID = '0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078';
-export const WALRUS_STAKING_OBJECT_ID = '0x9e5f6537be1a5b658ec7eed23160df0b28c799563f6c41e9becc9ad633cb592b';

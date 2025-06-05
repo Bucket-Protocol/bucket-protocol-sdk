@@ -43,7 +43,7 @@ jobs:
       - name: Compile
         run: yarn run build
       - name: Bump & publish package
-        run: npm version ${{ inputs.versionBumpType }} --no-git-tag-version && npm publish --provenance
+        run: yarn version --${{ inputs.versionBumpType }} --no-git-tag-version && npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - id: publish

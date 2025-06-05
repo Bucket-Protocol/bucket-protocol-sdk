@@ -1,34 +1,36 @@
 {
   "name": "bucket-protocol-sdk",
   "author": "Bucketniper <bucketbird@outlook.com>",
-  "version": "0.11.0",
+  "version": "0.13.2",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
-  "repository": "https://github.com/Bucket-Protocol/bucket-protocol-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bucket-Protocol/bucket-protocol-sdk.git"
+  },
   "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./package.json": "./package.json"
   },
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "package.json",
-    "README.md"
+    "package.json"
   ],
   "scripts": {
-    "lint": "eslint --fix",
+    "lint": "eslint",
     "dev": "tsc --watch",
     "build": "tsup",
     "clean": "rm -fr dist/",
     "test": "vitest"
   },
   "dependencies": {
-    "@mysten/sui": "^1.26.1",
+    "@mysten/sui": "1.28.2",
     "decimal.js": "^10.5.0",
     "superstruct": "^1.0.3"
   },
@@ -45,7 +47,7 @@
     "eslint-plugin-prettier": "^5.2.3",
     "eslint-plugin-unused-imports": "^4.1.4",
     "prettier": "^3.5.3",
-    "tsup": "^8.0.2",
+    "tsup": "^8.4.0",
     "typescript": "^5.8.2",
     "vitest": "^0.34.1"
   },
