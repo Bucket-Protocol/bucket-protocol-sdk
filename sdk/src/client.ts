@@ -278,10 +278,10 @@ export class BucketClient {
       });
       // update vSUI price
       tx.moveCall({
-        target: '0x1caed1bf0cc4ca7357989b3a08e487078c6e60277512a8799347010e9ea92e8f::vsui_rule::update_price',
+        target: '0xc952f454a2cc83ad1102ebd84306f4e7ebb3d6fcb44d2feb94911010d64e1237::vsui_rule::update_price',
         arguments: [
           tx.sharedObjectRef(ORACLE_OBJECT),
-          tx.object('0x7fa2faa111b8c65bea48a23049bfd81ca8f971a262d981dcd9a17c3825cb5baf'),
+          tx.object('0x2d914e23d82fedef1b5f56a32d5c64bdcc3087ccfea2b4d6ea51a71f587840e5'),
           tx.object('0x680cd26af32b2bde8d3361e804c53ec1d1cfe24c7f039eb7f549e8dfde389a60'),
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
