@@ -3009,6 +3009,7 @@ export class BucketClient {
           showContent: true,
         },
       });
+      if (!deWrappers.length) return null;
 
       deWrappers.map((deWrapperObj) => {
         const wrapperObj = getObjectFields(deWrapperObj) as DeWrapperResponse;
