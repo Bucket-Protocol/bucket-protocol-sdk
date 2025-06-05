@@ -282,7 +282,7 @@ export class BucketClient {
         target: '0xc952f454a2cc83ad1102ebd84306f4e7ebb3d6fcb44d2feb94911010d64e1237::vsui_rule::update_price',
         arguments: [
           tx.sharedObjectRef(ORACLE_OBJECT),
-          tx.object('0x2d914e23d82fedef1b5f56a32d5c64bdcc3087ccfea2b4d6ea51a71f587840e5'),
+          // tx.object('0x2d914e23d82fedef1b5f56a32d5c64bdcc3087ccfea2b4d6ea51a71f587840e5'),
           tx.object('0x680cd26af32b2bde8d3361e804c53ec1d1cfe24c7f039eb7f549e8dfde389a60'),
           tx.sharedObjectRef(CLOCK_OBJECT),
         ],
