@@ -99,7 +99,7 @@ export const getDeButInfo = async (client: SuiClient): Promise<DeButInfo> => {
   };
 };
 
-export const getUserDeWrapper = async (client: SuiClient, address: string): Promise<DeButWrapper | null> => {
+export const getUserDeButWrapper = async (client: SuiClient, address: string): Promise<DeButWrapper | null> => {
   const { data } = await client.getOwnedObjects({
     owner: address,
     filter: { StructType: DeWrapperStruct.$typeName },
@@ -134,7 +134,7 @@ export const getUserDeWrapper = async (client: SuiClient, address: string): Prom
   };
 };
 
-export const getUserDeTokens = async (client: SuiClient, address: string): Promise<DeButPosition[]> => {
+export const getUserDeButPositions = async (client: SuiClient, address: string): Promise<DeButPosition[]> => {
   const { data } = await client.getOwnedObjects({
     owner: address,
     filter: { StructType: DeToken.$typeName },

@@ -129,8 +129,8 @@ import {
   getCirculatingSupply,
   getIsUserCheckedIn,
   getTotalDeButAmount,
-  getUserDeTokens,
-  getUserDeWrapper,
+  getUserDeButPositions,
+  getUserDeButWrapper,
   getUserDropsAmount,
   getUserDropsAmountByEpoch,
 } from './utils/deBut';
@@ -2978,10 +2978,10 @@ export class BucketClient {
    * @returns Promise<UserDeButInfo | null>
    */
   async getUserDeButInfo(address: string): Promise<UserDeButInfo | null> {
-    const deWrapper = await getUserDeWrapper(this.client, address);
+    const deWrapper = await getUserDeButWrapper(this.client, address);
 
     const [deTokens, dropsAmount, lastDropsAmount, isCheckedIn] = await Promise.all([
-      deWrapper ? deWrapper?.deTokens : getUserDeTokens(this.client, address),
+      deWrapper ? deWrapper?.deTokens : getUserDeButPositions(this.client, address),
       deWrapper ? getUserDropsAmount(this.client, address, deWrapper.id) : 0,
       deWrapper ? getUserDropsAmountByEpoch(this.client, address, deWrapper.id) : 0,
       deWrapper ? getIsUserCheckedIn(this.client, address, deWrapper.id) : false,
