@@ -1,7 +1,10 @@
 import { bcs } from '@mysten/sui/bcs';
 import { DevInspectResults, DynamicFieldInfo, getFullnodeUrl, SuiClient, SuiObjectResponse } from '@mysten/sui/client';
+import { fromBase64 } from '@mysten/sui/dist/cjs/utils';
 import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
 
+import { phantom } from './_generated/_framework/reified';
+import { DeCenter } from './_generated/detoken/de-center/structs';
 import {
   AF_OBJS,
   AF_SUI_BUCK_LP_REGISTRY_ID,
@@ -25,10 +28,7 @@ import {
   COLLATERAL_ASSETS,
   CONTRIBUTOR_TOKEN_ID,
   CORE_PACKAGE_ID,
-  DETOKEN_CENTER,
   DETOKEN_CONFIG,
-  DROPS_COIN_DECIMALS,
-  DROPS_COIN_TYPE,
   DUMMY_ADDRESS,
   FOUNTAIN_PACKAGE_ID,
   FOUNTAIN_PERIHERY_PACKAGE_ID,
@@ -79,12 +79,7 @@ import {
   BucketResponse,
   COIN,
   CollateralCoin,
-  DeCenterResponse,
-  DeTokenInfo,
-  DeTokenPosition,
-  DeTokenResponse,
-  DeWrapperInfo,
-  DeWrapperResponse,
+  DeButInfo,
   FountainInfo,
   FountainList,
   PaginatedBottleSummary,
@@ -118,7 +113,6 @@ import {
   getCoinType,
   getCoinTypeFromPipe,
   getCoinTypeFromTank,
-  getDeButAmount,
   getInputCoins,
   getMainCoin,
   getObjectFields,
@@ -131,6 +125,15 @@ import {
   proofTypeToCoinType,
   U64FromBytes,
 } from './utils';
+import {
+  getCirculatingSupply,
+  getIsUserCheckedIn,
+  getTotalDeButAmount,
+  getUserDeTokens,
+  getUserDeWrapper,
+  getUserDropsAmount,
+  getUserDropsAmountByEpoch,
+} from './utils/deBut';
 
 /**
  * @description a TS wrapper over Bucket Protocol Move packages.
@@ -2939,22 +2942,33 @@ export class BucketClient {
 
   /**
    * @description Get deBUT token information
-   * @returns Promise<DeTokenInfo>
+   * @returns Promise<DeButInfo>
    */
-  async getDeTokenInfo(): Promise<DeTokenInfo> {
-    const res = await this.client.getObject({
+  async getDeButInfo(): Promise<DeButInfo> {
+    const deCenter = await this.client.getObject({
       id: DETOKEN_CONFIG.objects.shared.butDeCenter.objectId,
-      options: { showContent: true },
+      options: { showBcs: true },
     });
+    const circulatingSupply = await getCirculatingSupply(this.client);
 
-    const deCenter = getObjectFields(res) as DeCenterResponse;
-
-    const totalStakedButAmount = Number(deCenter.locked_total) / 10 ** COIN_DECIMALS.BUT;
-    const totalDeButAmount = getDeButAmount(deCenter, Date.now());
-
+    if (deCenter.data?.bcs?.dataType !== 'moveObject' || deCenter.data?.bcs?.type === null) {
+      return {
+        totalStakedButAmount: 0,
+        totalDeButAmount: 0,
+        circulatingSupply,
+      };
+    }
+    const deCenterObject = DeCenter.fromBcs(
+      [phantom(COINS_TYPE_LIST.BUT), phantom(BUCKET_PROTOCOL_TYPE)],
+      fromBase64(deCenter.data?.bcs?.bcsBytes),
+    );
     return {
-      totalStakedButAmount,
-      totalDeButAmount,
+      totalStakedButAmount: Number(deCenterObject.lockedTotal) / 10 ** COIN_DECIMALS.BUT,
+      totalDeButAmount: Math.min(
+        getTotalDeButAmount(deCenterObject),
+        Number(deCenterObject.lockedTotal) / 10 ** COIN_DECIMALS.BUT,
+      ),
+      circulatingSupply,
     };
   }
 
@@ -2964,150 +2978,20 @@ export class BucketClient {
    * @returns Promise<UserDeButInfo | null>
    */
   async getUserDeButInfo(address: string): Promise<UserDeButInfo | null> {
-    let deWrapperId;
-    let dropsAmount = 0;
-    let positions: DeTokenPosition[] = [];
+    const deWrapper = await getUserDeWrapper(this.client, address);
 
-    try {
-      const wrapperObj = await this.getUserDeWrapper(address);
-      if (wrapperObj) {
-        deWrapperId = wrapperObj.id;
-        positions = wrapperObj.positions;
-        dropsAmount = await this.getUserDropsAmount(address, deWrapperId);
-      } else {
-        positions = await this.getUserDeTokens(address);
-      }
-
-      return {
-        deWrapperId,
-        positions,
-        dropsAmount,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * @description Get deWrapper array for input address
-   * @address User address that belong to deWrapper type
-   * @returns Promise<DeWrapperInfo>
-   */
-  async getUserDeWrapper(address: string): Promise<DeWrapperInfo | null> {
-    if (!address) return null;
-
-    let id = '';
-    const positions: DeTokenPosition[] = [];
-
-    try {
-      const { data: deWrappers } = await this.client.getOwnedObjects({
-        owner: address,
-        filter: {
-          StructType: `0x959a7135a3e96868aac57bb2ae493db76714815797349384671a62d256b1f6d::de_wrapper::DeWrapper`,
-        },
-        options: {
-          showContent: true,
-        },
-      });
-
-      deWrappers.map((deWrapperObj) => {
-        const wrapperObj = getObjectFields(deWrapperObj) as DeWrapperResponse;
-        id = wrapperObj.id.id;
-
-        for (const { fields: obj } of wrapperObj.tokens) {
-          positions.push({
-            id: obj.id.id,
-            stakedButAmount: Number(obj.balance) / 10 ** COIN_DECIMALS.BUT,
-            stakedPeriod: Number(obj.end) - Number(obj.point.fields.timestamp),
-            startDate: Number(obj.point.fields.timestamp),
-            unlockDate: Number(obj.end),
-            deButAmount: Math.min(getDeButAmount(obj, Date.now()), Number(obj.balance) / 10 ** COIN_DECIMALS.BUT),
-            earlyUnstakable: obj.early_unlock,
-          });
-        }
-      });
-    } catch {}
-
+    const [deTokens, dropsAmount, lastDropsAmount, isCheckedIn] = await Promise.all([
+      deWrapper ? deWrapper?.deTokens : getUserDeTokens(this.client, address),
+      deWrapper ? getUserDropsAmount(this.client, address, deWrapper.id) : 0,
+      deWrapper ? getUserDropsAmountByEpoch(this.client, address, deWrapper.id) : 0,
+      deWrapper ? getIsUserCheckedIn(this.client, address, deWrapper.id) : false,
+    ]);
     return {
-      id,
-      positions,
+      deWrapper,
+      deTokens,
+      dropsAmount,
+      lastDropsAmount,
+      isCheckedIn,
     };
-  }
-
-  /**
-   * @description Get deTokens array for input address
-   * @address User address that belong to deToken type
-   * @returns Promise<DeTokenPosition>
-   */
-  async getUserDeTokens(address: string): Promise<DeTokenPosition[]> {
-    if (!address) return [];
-
-    const positions: DeTokenPosition[] = [];
-
-    try {
-      const { data: deTokens } = await this.client.getOwnedObjects({
-        owner: address,
-        filter: {
-          StructType: `0x6104e610f707fe5f1b3f34aa274c113a6b0523e63d5fb2069710e1c2d1f1fd1c::de_token::DeToken`,
-        },
-        options: {
-          showContent: true,
-        },
-      });
-
-      deTokens.map((deTokenObj) => {
-        const obj = getObjectFields(deTokenObj) as DeTokenResponse;
-
-        positions.push({
-          id: obj.id.id,
-          stakedButAmount: Number(obj.balance) / 10 ** COIN_DECIMALS.BUT,
-          stakedPeriod: Number(obj.end) - Number(obj.point.fields.timestamp),
-          startDate: Number(obj.point.fields.timestamp),
-          unlockDate: Number(obj.end),
-          deButAmount: Math.min(getDeButAmount(obj, Date.now()), Number(obj.balance) / 10 ** COIN_DECIMALS.BUT),
-          earlyUnstakable: obj.early_unlock,
-        });
-      });
-    } catch {}
-
-    return positions;
-  }
-
-  /**
-   * @description Get deWrapper array for input address
-   * @address User address that belong to deWrapper type
-   * @address deWrapperId
-   * @returns Promise<number>
-   */
-  async getUserDropsAmount(address: string, deWrapperId: string): Promise<number> {
-    try {
-      const tx = new Transaction();
-      tx.moveCall({
-        target: `${DETOKEN_CENTER}::reward_center::get_pending_rewards`,
-        typeArguments: [COINS_TYPE_LIST.BUT, BUCKET_PROTOCOL_TYPE, DROPS_COIN_TYPE],
-        arguments: [
-          tx.sharedObjectRef(DETOKEN_CONFIG.objects.shared.rewardCenter),
-          tx.pure.address(deWrapperId),
-          tx.sharedObjectRef(CLOCK_OBJECT),
-        ],
-      });
-      const res = await this.client.devInspectTransactionBlock({
-        transactionBlock: tx,
-        sender: address,
-      });
-      const returnValues = res?.results?.[0]?.returnValues;
-      if (!returnValues?.[0]?.[0]) {
-        return 0;
-      }
-      const pendingRewards = bcs.U64.parse(Uint8Array.from(returnValues[0][0]));
-      if (pendingRewards === null) {
-        return 0;
-      }
-      return +pendingRewards / 10 ** DROPS_COIN_DECIMALS;
-    } catch (error) {
-      console.error(error);
-
-      return 0;
-    }
   }
 }

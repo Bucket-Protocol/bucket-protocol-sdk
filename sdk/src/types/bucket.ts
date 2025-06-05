@@ -137,12 +137,13 @@ export type Bottle = {
   ncr: number;
 };
 
-export type DeTokenInfo = {
+export type DeButInfo = {
   totalStakedButAmount: number;
   totalDeButAmount: number;
+  circulatingSupply: number;
 };
 
-export type DeTokenPosition = {
+export type DeButPosition = {
   id: string;
   stakedButAmount: number;
   stakedPeriod: number;
@@ -152,13 +153,15 @@ export type DeTokenPosition = {
   earlyUnstakable: boolean;
 };
 
-export type DeWrapperInfo = {
+export type DeButWrapper = {
   id: string;
-  positions: DeTokenPosition[];
+  deTokens: DeButPosition[];
 };
 
 export type UserDeButInfo = {
-  deWrapperId?: string;
-  positions: DeTokenPosition[];
+  deWrapper: DeButWrapper | null;
+  deTokens: DeButPosition[];
   dropsAmount: number;
+  lastDropsAmount: number;
+  isCheckedIn: boolean;
 };
