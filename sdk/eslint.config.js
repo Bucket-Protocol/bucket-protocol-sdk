@@ -15,7 +15,7 @@ const compat = new FlatCompat({
 
 const config = [
   {
-    ignores: ['dist', '.turbo', 'artifacts', 'cache', 'coverage*'],
+    ignores: ['dist', '.turbo', 'artifacts', 'cache', 'coverage*', 'src/_generated'],
   },
   ...compat.extends('plugin:@typescript-eslint/recommended', 'prettier', 'plugin:prettier/recommended'),
   {

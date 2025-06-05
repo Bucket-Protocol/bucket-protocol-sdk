@@ -45,6 +45,7 @@ export type COIN =
   | 'FDUSD'
   | 'stSUI'
   | 'BUT'
+  | 'DROP'
   | 'DEEP'
   | 'sDEEP'
   | 'sSBUSDT'

@@ -13,6 +13,8 @@ const config = {
   importOrder: [
     '<THIRD_PARTY_MODULES>',
     '',
+    '^@/_generated(.*)$',
+    '',
     '^@/((?!(types|constants|utils)).*)$',
     '^@/types(.*)$',
     '^@/constants(.*)$',

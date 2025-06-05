@@ -5,7 +5,7 @@ export * from './object';
 export * from './strap';
 export * from './price';
 export * from './point';
-export * from './detoken';
+export * from './deBut';
 
 export const DUMMY_ADDRESS = normalizeSuiAddress('0x0');
 

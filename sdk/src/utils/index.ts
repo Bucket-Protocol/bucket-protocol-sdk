@@ -5,3 +5,4 @@ export * from './decimal';
 export * from './format';
 export * from './object';
 export * from './price';
+export * from './deBut';

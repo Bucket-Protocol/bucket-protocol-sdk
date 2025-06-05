@@ -133,31 +133,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(apr).toBeDefined();
   });
 
-  it('tests getDeTokenInfo() function', async () => {
-    const info = await buck.getDeTokenInfo();
-    expect(info).toBeDefined();
-  });
-
-  it('tests getUserDeTokens() function', async () => {
-    const tokens = await buck.getUserDeTokens('0x93c8e48b6a2bdfd0bb581c29c4b1f95dc136fbe4898b495b62fd3a3cf1986278');
-    expect(tokens).toBeDefined();
-  });
-
-  it('tests getUserDeWrappers() function', async () => {
-    const wrapperObj = await buck.getUserDeWrapper(
-      '0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc',
-    );
-    expect(wrapperObj).toBeDefined();
-  });
-
-  it('tests getUserDropsAmount() function', async () => {
-    const dropsAmount = await buck.getUserDropsAmount(
-      '0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc',
-      '0x663dbb1675f7186a73f67b7973431c7eb9d79bfc6687c27730db4ec56be43444',
-    );
-    expect(dropsAmount).toBeDefined();
-  });
-
   it('tests getUserDeButInfo() function', async () => {
     const deBUT = await buck.getUserDeButInfo('0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc');
     expect(deBUT).toBeDefined();
