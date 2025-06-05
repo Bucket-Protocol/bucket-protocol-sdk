@@ -569,6 +569,7 @@ export async function buildSBUCKUnstakeTx(
   recipient: string,
   isStake: boolean,
   toBuck?: boolean,
+  returnOutputCoin?: boolean,
 ) {
   /**
    * @description Unstake sBUCK from proofObjects
@@ -576,7 +577,8 @@ export async function buildSBUCKUnstakeTx(
    * @param amount
    * @param recipient
    * @param isStake
-   * @param toBuck      Optional
+   * @param toBuck                Optional
+   * @param returnOutputCoin      Optional
    */
 
   const mainSuiRewardBalance = tx.moveCall({
@@ -612,15 +614,16 @@ export async function buildSBUCKUnstakeTx(
 
   const suiCoin = coinFromBalance(tx, COINS_TYPE_LIST.SUI, mainSuiRewardBalance);
   const sBuckCoin = coinFromBalance(tx, COINS_TYPE_LIST.sBUCK, mainSBuckBalance);
+  let coinToReturn;
 
   if (!isStake) {
     if (toBuck) {
       const buckBalance = client.withdrawSBUCK(tx, sBuckCoin);
       if (!buckBalance) return;
       const buckCoin = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance);
-      tx.transferObjects([suiCoin, buckCoin], recipient);
+      coinToReturn = buckCoin;
     } else {
-      tx.transferObjects([suiCoin, sBuckCoin], recipient);
+      coinToReturn = sBuckCoin;
     }
   } else {
     const returnedSBuckCoin = tx.splitCoins(sBuckCoin, [amount]);
@@ -628,14 +631,20 @@ export async function buildSBUCKUnstakeTx(
       const buckBalance = client.withdrawSBUCK(tx, returnedSBuckCoin);
       if (!buckBalance) return;
       const buckCoin = coinFromBalance(tx, COINS_TYPE_LIST.BUCK, buckBalance);
-      tx.transferObjects([suiCoin, buckCoin], recipient);
+      coinToReturn = buckCoin;
     } else {
-      tx.transferObjects([suiCoin, returnedSBuckCoin], recipient);
+      coinToReturn = returnedSBuckCoin;
     }
 
     // stake remaining sBUCK back to Savings Pool
     const proof = client.stakeSBUCK(tx, sBuckCoin);
     tx.transferObjects([proof], recipient);
+  }
+  if (returnOutputCoin) {
+    return [suiCoin, coinToReturn];
+  } else {
+    tx.transferObjects([suiCoin, coinToReturn], recipient);
+    return;
   }
 }
 

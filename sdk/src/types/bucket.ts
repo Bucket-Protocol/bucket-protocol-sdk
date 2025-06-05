@@ -1,40 +1,10 @@
 import { TransactionArgument } from '@mysten/sui/transactions';
 
-import { COIN } from './coin';
+import { CollateralCoin } from './coin';
 
 export type ProtocolInfo = {
   buckSupply: number;
 };
-
-export type BucketInfo = {
-  token: COIN;
-  baseFeeRate: number;
-  bottleTableSize: string;
-  bottleTableId: string;
-  collateralDecimal: number;
-  collateralVault: string;
-  latestRedemptionTime: number;
-  minCollateralRatio: string;
-  mintedBuckAmount: string;
-  minBottleSize: string;
-  maxMintAmount: string;
-  recoveryModeThreshold: string;
-};
-
-export type BucketList = Partial<Record<COIN, BucketInfo>>;
-
-export type BottleInfo = {
-  token: COIN;
-  collateralAmount: number;
-  buckAmount: number;
-};
-
-export type UserBottleInfo = {
-  strapId?: string;
-  debtAmount?: number;
-  startUnit?: number;
-  isLocked?: boolean;
-} & BottleInfo;
 
 export interface BucketConstants {
   feePrecision: string;
@@ -47,14 +17,34 @@ export interface BucketConstants {
   maxFee: string;
 }
 
-export type TankInfo = {
-  buckReserve: string;
-  collateralPool: string;
-  currentS: string;
-  currentP: string;
+export type BucketInfo = {
+  token: CollateralCoin;
+  baseFeeRate: number;
+  bottleTableSize: string;
+  bottleTableId: string;
+  collateralDecimal: number;
+  collateralVault: string;
+  latestRedemptionTime: number;
+  minCollateralRatio: string;
+  mintedBuckAmount: string;
+  minBottleSize: string;
+  maxMintAmount: string;
+  recoveryModeThreshold: string;
+};
+export type BucketList = Partial<Record<CollateralCoin, BucketInfo>>;
+
+export type BottleInfo = {
+  token: CollateralCoin;
+  collateralAmount: number;
+  buckAmount: number;
 };
 
-export type TankList = Partial<Record<COIN, TankInfo>>;
+export type UserBottleInfo = {
+  strapId?: string;
+  debtAmount?: number;
+  startUnit?: number;
+  isLocked?: boolean;
+} & BottleInfo;
 
 export type FountainInfo = {
   id: string;
@@ -81,8 +71,40 @@ export type StrapFountainInfo = {
   cumulativeUnit: number;
   latestReleaseTime: number;
 };
-
 export type StrapFountainList = Record<string, StrapFountainInfo>;
+
+export type UserLpProof = {
+  objectId: string;
+  version: string;
+  digest: string;
+  typeName: string;
+  fountainId: string;
+  startUnit: number;
+  stakeAmount: number;
+  stakeWeight: number;
+  lockUntil: number;
+  isLocked: boolean;
+};
+export type UserLpList = Record<string, UserLpProof[]>;
+
+export type ProofObject = {
+  token: string;
+  proof: TransactionArgument | string;
+};
+
+export type TankInfo = {
+  buckReserve: string;
+  collateralPool: string;
+  currentS: string;
+  currentP: string;
+};
+export type TankList = Partial<Record<CollateralCoin, TankInfo>>;
+
+export type UserTankInfo = {
+  totalEarned: number;
+  totalBUCK: number;
+};
+export type UserTankList = Partial<Record<CollateralCoin, UserTankInfo>>;
 
 export type PsmInfo = {
   id: string;
@@ -101,33 +123,6 @@ export type ContributorToken = {
     objectId: string;
     version: string;
   };
-};
-
-export type UserTankInfo = {
-  totalEarned: number;
-  totalBUCK: number;
-};
-
-export type UserTankList = Partial<Record<COIN, UserTankInfo>>;
-
-export type UserLpProof = {
-  objectId: string;
-  version: string;
-  digest: string;
-  typeName: string;
-  fountainId: string;
-  startUnit: number;
-  stakeAmount: number;
-  stakeWeight: number;
-  lockUntil: number;
-  isLocked: boolean;
-};
-
-export type UserLpList = Record<string, UserLpProof[]>;
-
-export type ProofObject = {
-  token: string;
-  proof: TransactionArgument | string;
 };
 
 export type BottlePage = {
