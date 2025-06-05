@@ -1,7 +1,7 @@
 import { bcs } from '@mysten/sui/bcs';
 import { DevInspectResults, DynamicFieldInfo, getFullnodeUrl, SuiClient, SuiObjectResponse } from '@mysten/sui/client';
-import { fromBase64 } from '@mysten/sui/dist/cjs/utils';
 import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
+import { fromBase64 } from '@mysten/sui/utils';
 
 import { phantom } from './_generated/_framework/reified';
 import { DeCenter } from './_generated/detoken/de-center/structs';
