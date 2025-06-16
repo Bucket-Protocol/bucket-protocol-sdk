@@ -61,6 +61,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   LBTC: '0x3e8e9423d80e1774a7ca128fccd8bf5f1f7753be658c5e645929037f7c819040::lbtc::LBTC',
   HAEDAL: '0x3a304c7feba2d819ea57c3542d68439ca2c386ba02159c740f7b406e592c62ea::haedal::HAEDAL',
   xBTC: '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC',
+  mUSD: '0xe44df51c0b21a27ab915fa1fe2ca610cd3eaa6d9666fe5e62b988bf7f0bd8722::musd::MUSD',
+  TLP: '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP',
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -120,6 +122,8 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   LBTC: 8,
   HAEDAL: 9,
   xBTC: 8,
+  mUSD: 9,
+  TLP: 9,
 };
 
 export const COLLATERAL_ASSETS = [
@@ -156,6 +160,8 @@ export const COLLATERAL_ASSETS = [
   'LBTC',
   'HAEDAL',
   'xBTC',
+  'mUSD',
+  'TLP',
 ] as const satisfies readonly COIN[];
 
 export const COLLATERAL_INFO: Record<
@@ -295,6 +301,14 @@ export const COLLATERAL_INFO: Record<
   },
   xBTC: {
     safeCr: 1.8,
+    interestRate: 0.09,
+  },
+  mUSD: {
+    safeCr: 1.5,
+    interestRate: 0.08,
+  },
+  TLP: {
+    safeCr: 1.5,
     interestRate: 0.09,
   },
 };

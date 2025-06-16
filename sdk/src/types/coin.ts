@@ -60,7 +60,9 @@ export type COIN =
   | 'haWAL'
   | 'LBTC'
   | 'HAEDAL'
-  | 'xBTC';
+  | 'xBTC'
+  | 'mUSD'
+  | 'TLP';
 
 export type ScableCoin = 'USDC' | 'sbUSDT';
 
