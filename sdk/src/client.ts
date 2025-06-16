@@ -2,6 +2,7 @@ import { bcs } from '@mysten/sui/bcs';
 import { DevInspectResults, DynamicFieldInfo, getFullnodeUrl, SuiClient, SuiObjectResponse } from '@mysten/sui/client';
 import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
 import { fromBase64 } from '@mysten/sui/utils';
+import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import { phantom } from './_generated/_framework/reified';
 import { DeCenter } from './_generated/detoken/de-center/structs';
@@ -45,6 +46,7 @@ import {
   PROTOCOL_OBJECT,
   PSM_BALANCE_IDS,
   PSM_POOL_IDS,
+  PYTH_STATE_ID,
   SBUCK_APR_OBJECT_ID,
   SBUCK_BUCK_LP_REGISTRY,
   SBUCK_BUCK_LP_REGISTRY_ID,
@@ -65,6 +67,7 @@ import {
   UNIHOUSE_OBJECT_ID,
   WALRUS_STAKING_OBJECT_ID,
   WALRUS_SYSTEM_OBJECT_ID,
+  WORM_STATE_ID,
   WWAL_RULE_PKG_ID,
 } from './constants';
 import { STRUCT_BOTTLE_DATA } from './constants/sructs';
@@ -134,6 +137,10 @@ import {
   getUserDropsAmount,
   getUserDropsAmountByEpoch,
 } from './utils/deBut';
+
+const connection = new SuiPriceServiceConnection('https://hermes-beta.pyth.network'); // See Hermes endpoints section below for other endpoints
+
+const musdPriceId = '0x2ee09cdb656959379b9262f89de5ff3d4dfed0dd34c072b3e22518496a65249c';
 
 /**
  * @description a TS wrapper over Bucket Protocol Move packages.
@@ -470,6 +477,32 @@ export class BucketClient {
           tx.pure.u32(SUPRA_ID[token] ?? 0),
         ],
       });
+    }
+  }
+
+  async updateOracleAsync(tx: Transaction, token: string) {
+    if (token === 'mUSD') {
+      const pythClient = new SuiPythClient(this.getSuiClient(), PYTH_STATE_ID, WORM_STATE_ID);
+      const coinType = COINS_TYPE_LIST[token as COIN];
+      const priceUpdateData = await connection.getPriceFeedsUpdateData([musdPriceId]);
+      const [priceInfoObjectId] = await pythClient.updatePriceFeeds(tx, priceUpdateData, [musdPriceId]);
+      tx.moveCall({
+        target: '0xe7eddf0041f423643fd8ee2a01eba4462b1b438e88bf99653b6337f102bb3e02::pyth_rule::update_price',
+        typeArguments: [coinType],
+        arguments: [
+          tx.sharedObjectRef({
+            objectId: '0x8e1c0fb4e016773e84abc42e8ad2e7753bfc5ae0f28052621fd6f5fd224b3a75',
+            initialSharedVersion: 571407640,
+            mutable: false,
+          }),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.object(PYTH_STATE_ID),
+          tx.object(priceInfoObjectId),
+        ],
+      });
+    } else {
+      this.updateSupraOracle(tx, token);
     }
   }
 
@@ -1351,7 +1384,7 @@ export class BucketClient {
       );
     } else {
       if (isUpdateOracle) {
-        this.updateSupraOracle(tx, token);
+        await this.updateOracleAsync(tx, token);
       }
 
       const borrowRet = this.borrow(
@@ -1415,7 +1448,7 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST.BUCK],
       });
 
-    this.updateSupraOracle(tx, token);
+    await this.updateOracleAsync(tx, token);
 
     // Fully repay
     if (repayAmount === '0' && withdrawAmount === '0') {

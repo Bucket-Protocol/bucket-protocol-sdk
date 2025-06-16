@@ -68,8 +68,6 @@ export const SUPRA_ID: Record<string, number> = {
   LBTC: 18,
   HAEDAL: 540,
   xBTC: 18,
-  // musd
-  // tlp
 };
 
 export const SPSUI_LIQUID_STAKING_OBJECT_ID = '0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b';
@@ -96,6 +94,9 @@ export const CETUS_VAULT_PACKAGE_ID = '0x58e5de6e425397eeaf952d55c0f94637bee91b2
 export const CETUS_HASUI_SUI_VAULT_LP_OBJECT_ID = '0xde97452e63505df696440f86f0b805263d8659b77b8c316739106009d514c270';
 export const CETUS_HASUI_SUI_POOL_OBJECT_ID = '0x871d8a227114f375170f149f7e9d45be822dd003eba225e83c05ac80828596bc';
 export const ALPHAFI_STSUI_SUI_PACKAGE_ID = '0xbfbd59ec10e2b62c887e268a051ae84570ecf0d621480c0418300f28913d7380';
+
+export const PYTH_STATE_ID = '0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8';
+export const WORM_STATE_ID = '0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c';
 
 type PriceMapItem = {
   objectId?: string;
