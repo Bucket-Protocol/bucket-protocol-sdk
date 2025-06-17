@@ -28,6 +28,9 @@ function checkout_branches {
   for repo in previews/*; do
     echo "Setting up previews for repo $repo:"
 
+    echo $ROOT_DIR
+    echo $repo
+
     cd $ROOT_DIR/$repo
     git fetch --all
 
