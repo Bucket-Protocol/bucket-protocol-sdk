@@ -22,9 +22,9 @@ function sync_submodules {
 function checkout_branches {
   echo "Checkout branches for each preview repos:"
 
-  cd $ROOT_DIR/sdk
-  SDK_VERSION=$(npm pkg get version --workspaces=false | tr -d \")
-  cd $ROOT_DIR
+  # cd $ROOT_DIR/sdk
+  # SDK_VERSION=$(npm pkg get version --workspaces=false | tr -d \")
+  # cd $ROOT_DIR
 
   for repo in previews/*; do
     echo "Setting up previews for repo $repo:"
@@ -41,7 +41,7 @@ function checkout_branches {
     echo "Set to branch $target"
     git checkout -f $target
 
-    npm pkg set dependencies.bucket-protocol-sdk=$SDK_VERSION --workspaces=false
+    # npm pkg set dependencies.bucket-protocol-sdk=$SDK_VERSION --workspaces=false
   done
 }
 
