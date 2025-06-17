@@ -38,9 +38,11 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(buckets).toBeDefined();
   });
 
-  it('tests getBucket() function', async () => {
-    const bucket = await bucketClient.getBucket('afSUI');
+  it('tests getBucket() and findInsertionPlace() function', async () => {
+    const bucket = await bucketClient.getBucket('SUI');
     expect(bucket).toBeDefined();
+    const insertionPlace = await bucketClient.findInsertionPlace(bucket.bottleTableId, 1, 50, COINS_TYPE_LIST.SUI);
+    expect(insertionPlace).toBeDefined();
   });
 
   it('tests getPrices() function', async () => {
@@ -79,22 +81,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const psms = await bucketClient.getAllPsms();
     expect(psms).toBeDefined();
   });
-
-  it(
-    'tests findInsertionPlace() function',
-    async () => {
-      const owner = await bucketClient.findInsertionPlace(
-        `0x44529d74a43073c40963fe42c8d2e51d8a441d480ee105ea0c27f3847433ae21`,
-        1,
-        50,
-        COINS_TYPE_LIST.SUI,
-      );
-      expect(owner).toBeDefined();
-    },
-    {
-      timeout: 60 * 1000,
-    },
-  );
 
   it(
     'tests getAllFountains() function',
