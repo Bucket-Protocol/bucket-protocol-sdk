@@ -690,14 +690,24 @@ export class BucketClient {
         cursor = protocolFields.nextCursor;
       }
 
-      const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: objectIds,
-        options: {
-          showContent: true,
-          showType: true, //Check could we get type from response later
-        },
-      });
+      const slicedObjectIds: string[][] = [];
+      for (let i = 0; i < Math.ceil(objectIds.length / 50); ++i) {
+        slicedObjectIds.push(objectIds.slice(i * 50, (i + 1) * 50));
+      }
 
+      const responseVec: SuiObjectResponse[][] = await Promise.all(
+        slicedObjectIds.map((objectIds) => {
+          return this.client.multiGetObjects({
+            ids: objectIds,
+            options: {
+              showContent: true,
+              showType: true, //Check could we get type from response later
+            },
+          });
+        }),
+      );
+
+      const response: SuiObjectResponse[] = responseVec.flat();
       response
         .filter((t) => t.data?.type?.includes('::bucket::Bucket'))
         .map((res) => {
