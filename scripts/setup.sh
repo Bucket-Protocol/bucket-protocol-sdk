@@ -24,12 +24,10 @@ function checkout_branches {
 
   cd $ROOT_DIR/sdk
   SDK_VERSION=$(npm pkg get version --workspaces=false | tr -d \")
+  cd $ROOT_DIR
 
   for repo in previews/*; do
     echo "Setting up previews for repo $repo:"
-
-    echo $ROOT_DIR
-    echo $repo
 
     cd $ROOT_DIR/$repo
     git fetch --all
