@@ -5,10 +5,10 @@ import { COINS_TYPE_LIST } from '@/constants';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   // Instantiate BucketClient
-  const buck = new BucketClient();
+  const bucketClient = new BucketClient();
 
   it('tests getBucketConstants() function', async () => {
-    expect(await buck.getBucketConstants()).toMatchObject({
+    expect(await bucketClient.getBucketConstants()).toMatchObject({
       feePrecision: '1000000',
       liquidationRebate: '5000',
       flashLoanFee: '500',
@@ -21,42 +21,44 @@ describe('Interacting with Bucket Client on mainnet', () => {
   });
 
   it('tests getProtocol() function', async () => {
-    const protocol = await buck.getProtocol();
+    const protocol = await bucketClient.getProtocol();
     expect(protocol).toBeDefined();
   });
 
   it('tests getAllBottle() function', async () => {
-    expect(await buck.getAllBottles()).toBeDefined();
+    expect(await bucketClient.getAllBottles()).toBeDefined();
   });
 
   it('tests getDestroyedBottle() function', async () => {
-    expect(await buck.getDestroyedBottles()).toBeDefined();
+    expect(await bucketClient.getDestroyedBottles()).toBeDefined();
   });
 
   it('tests getAllBuckets() function', async () => {
-    const buckets = await buck.getAllBuckets();
+    const buckets = await bucketClient.getAllBuckets();
     expect(buckets).toBeDefined();
   });
 
-  it('tests getBucket() function', async () => {
-    const bucket = await buck.getBucket('afSUI');
+  it('tests getBucket() and findInsertionPlace() function', async () => {
+    const bucket = await bucketClient.getBucket('SUI');
     expect(bucket).toBeDefined();
+    const insertionPlace = await bucketClient.findInsertionPlace(bucket.bottleTableId, 1, 50, COINS_TYPE_LIST.SUI);
+    expect(insertionPlace).toBeDefined();
   });
 
   it('tests getPrices() function', async () => {
-    const prices = await buck.getPrices();
+    const prices = await bucketClient.getPrices();
     expect(prices).toBeDefined();
   });
 
   it('tests getAllTanks() function', async () => {
-    const tanks = await buck.getAllTanks();
+    const tanks = await bucketClient.getAllTanks();
     expect(tanks).toBeDefined();
   });
 
   it(
     'tests getUserTanks() function',
     async () => {
-      const tanks = await buck.getUserTanks('');
+      const tanks = await bucketClient.getUserTanks('');
       expect(tanks).toBeDefined();
     },
     {
@@ -67,7 +69,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
   it(
     'tests getUserBottle() function',
     async () => {
-      const bottles = await buck.getUserBottles('');
+      const bottles = await bucketClient.getUserBottles('');
       expect(bottles).toBeDefined();
     },
     {
@@ -76,30 +78,14 @@ describe('Interacting with Bucket Client on mainnet', () => {
   );
 
   it('tests getAllPsms() function', async () => {
-    const psms = await buck.getAllPsms();
+    const psms = await bucketClient.getAllPsms();
     expect(psms).toBeDefined();
   });
 
   it(
-    'tests findInsertionPlace() function',
-    async () => {
-      const owner = await buck.findInsertionPlace(
-        `0x44529d74a43073c40963fe42c8d2e51d8a441d480ee105ea0c27f3847433ae21`,
-        1,
-        50,
-        COINS_TYPE_LIST.SUI,
-      );
-      expect(owner).toBeDefined();
-    },
-    {
-      timeout: 60 * 1000,
-    },
-  );
-
-  it(
     'tests getAllFountains() function',
     async () => {
-      const fountains = await buck.getAllFountains();
+      const fountains = await bucketClient.getAllFountains();
       expect(fountains).toBeDefined();
     },
     {
@@ -110,7 +96,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
   it(
     'tests getAllStrapFountains() function',
     async () => {
-      const strapFountains = await buck.getAllStrapFountains();
+      const strapFountains = await bucketClient.getAllStrapFountains();
       expect(strapFountains).toBeDefined();
     },
     {
@@ -119,22 +105,24 @@ describe('Interacting with Bucket Client on mainnet', () => {
   );
 
   it('tests getStrapFountainApr() function', async () => {
-    const apr = await buck.getStrapFountainApr('afSUI');
+    const apr = await bucketClient.getStrapFountainApr('afSUI');
     expect(apr).toBeDefined();
   });
 
   it('tests getSBUCKTvl() function', async () => {
-    const tvl = await buck.getSBUCKTvl();
+    const tvl = await bucketClient.getSBUCKTvl();
     expect(tvl).toBeDefined();
   });
 
   it('tests getSavingApr() function', async () => {
-    const apr = await buck.getSavingApr();
+    const apr = await bucketClient.getSavingApr();
     expect(apr).toBeDefined();
   });
 
   it('tests getUserDeButInfo() function', async () => {
-    const deBUT = await buck.getUserDeButInfo('0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc');
+    const deBUT = await bucketClient.getUserDeButInfo(
+      '0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc',
+    );
     expect(deBUT).toBeDefined();
   });
 });
