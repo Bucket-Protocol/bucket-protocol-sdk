@@ -20,5 +20,8 @@
   },
   "devDependencies": {
     "turbo": "2.4.4"
+  },
+  "dependencies": {
+    "bucket-protocol-sdk": "./sdk"
   }
 }
