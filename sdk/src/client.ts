@@ -118,6 +118,7 @@ import {
   getCoinTypeFromTank,
   getInputCoins,
   getMainCoin,
+  getMultiGetObjects,
   getObjectFields,
   getObjectGenerics,
   lpProofToObject,
@@ -182,8 +183,9 @@ export class BucketClient {
       .map(({ objectId }) => objectId)
       .filter((objectId) => objectId !== undefined);
 
-    const res = await this.client.multiGetObjects({
-      ids: objectIds,
+    const res = await getMultiGetObjects({
+      client: this.client,
+      objectIds,
       options: {
         showContent: true,
       },
@@ -723,24 +725,15 @@ export class BucketClient {
         cursor = protocolFields.nextCursor;
       }
 
-      const slicedObjectIds: string[][] = [];
-      for (let i = 0; i < Math.ceil(objectIds.length / 50); ++i) {
-        slicedObjectIds.push(objectIds.slice(i * 50, (i + 1) * 50));
-      }
+      const response = await getMultiGetObjects({
+        client: this.client,
+        objectIds,
+        options: {
+          showContent: true,
+          showType: true,
+        },
+      });
 
-      const responseVec: SuiObjectResponse[][] = await Promise.all(
-        slicedObjectIds.map((objectIds) => {
-          return this.client.multiGetObjects({
-            ids: objectIds,
-            options: {
-              showContent: true,
-              showType: true, //Check could we get type from response later
-            },
-          });
-        }),
-      );
-
-      const response: SuiObjectResponse[] = responseVec.flat();
       response
         .filter((t) => t.data?.type?.includes('::bucket::Bucket'))
         .map((res) => {
@@ -1098,8 +1091,9 @@ export class BucketClient {
         const objectIdList = bottles.map((item) => item.objectId);
         const debtorList = bottles.map((item) => item.name.value as string);
 
-        const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-          ids: objectIdList,
+        const response: SuiObjectResponse[] = await getMultiGetObjects({
+          client: this.client,
+          objectIds: objectIdList,
           options: {
             showContent: true,
             showOwner: true,
@@ -1614,8 +1608,9 @@ export class BucketClient {
       SBUCK_BUCK_LP_REGISTRY_ID,
     ];
 
-    const fountainResults = await this.client.multiGetObjects({
-      ids: objectIds,
+    const fountainResults = await getMultiGetObjects({
+      client: this.client,
+      objectIds,
       options: {
         showContent: true,
       },
@@ -1653,8 +1648,9 @@ export class BucketClient {
   async getAllStrapFountains(): Promise<StrapFountainList> {
     const fountainIds = Object.keys(STRAP_FOUNTAIN_IDS);
     const objectIdList = Object.values(STRAP_FOUNTAIN_IDS).map((t) => t.objectId);
-    const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-      ids: objectIdList,
+    const response: SuiObjectResponse[] = await getMultiGetObjects({
+      client: this.client,
+      objectIds: objectIdList,
       options: {
         showContent: true,
         showType: true, //Check could we get type from response later
@@ -2488,8 +2484,9 @@ export class BucketClient {
 
       const objectIdList = tankList.map((item) => item.objectId);
 
-      const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: objectIdList,
+      const response: SuiObjectResponse[] = await getMultiGetObjects({
+        client: this.client,
+        objectIds: objectIdList,
         options: {
           showContent: true,
           showType: true, //Check could we get type from response later
@@ -2827,8 +2824,9 @@ export class BucketClient {
     try {
       const psmPoolIds = Object.values(PSM_POOL_IDS);
       const psmBalanceIds = Object.values(PSM_BALANCE_IDS);
-      const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: [...psmPoolIds, ...psmBalanceIds],
+      const response: SuiObjectResponse[] = await getMultiGetObjects({
+        client: this.client,
+        objectIds: [...psmPoolIds, ...psmBalanceIds],
         options: {
           showContent: true,
           showType: true, //Check could we get type from response later
