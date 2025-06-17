@@ -868,8 +868,6 @@ export class BucketClient {
    * @returns Promise<BottleInfo>
    */
   async getUserBottles(address: string): Promise<UserBottleInfo[]> {
-    console.error('shit');
-
     if (!address) {
       return [];
     }
