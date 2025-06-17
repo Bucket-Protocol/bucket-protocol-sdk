@@ -139,7 +139,7 @@ import {
   getUserDropsAmountByEpoch,
 } from './utils/deBut';
 
-const connection = new SuiPriceServiceConnection('https://hermes-beta.pyth.network'); // See Hermes endpoints section below for other endpoints
+const connection = new SuiPriceServiceConnection('https://hermes.pyth.network'); // See Hermes endpoints section below for other endpoints
 
 const musdPriceId = '0x2ee09cdb656959379b9262f89de5ff3d4dfed0dd34c072b3e22518496a65249c';
 
