@@ -161,7 +161,7 @@ export const COLLATERAL_ASSETS = [
   'HAEDAL',
   'xBTC',
   'mUSD',
-  'TLP',
+  // 'TLP',
 ] as const satisfies readonly COIN[];
 
 export const COLLATERAL_INFO: Record<
@@ -307,10 +307,10 @@ export const COLLATERAL_INFO: Record<
     safeCr: 1.5,
     interestRate: 0.08,
   },
-  TLP: {
-    safeCr: 1.5,
-    interestRate: 0.09,
-  },
+  // TLP: {
+  //   safeCr: 1.5,
+  //   interestRate: 0.09,
+  // },
 };
 
 export const HAWAL_RULE_PKG_ID = '0xb78aa952cdced6ec22196bcfc4b3224fe28aa9e34d1ed939b652b9969a55a0ac';
