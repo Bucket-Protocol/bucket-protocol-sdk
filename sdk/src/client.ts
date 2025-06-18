@@ -472,6 +472,7 @@ export class BucketClient {
     } else if (token === 'TLP') {
       tx.moveCall({
         target: `${TLP_RULE_PKG_ID}::tlp_rule::update_price`,
+        typeArguments: [COINS_TYPE_LIST.TLP],
         arguments: [
           tx.object('0x55597bb70d150f4a72223e04a11b2211918ea5ed3d485a7dcb06e490ae21f7d9'),
           tx.sharedObjectRef(ORACLE_OBJECT),
