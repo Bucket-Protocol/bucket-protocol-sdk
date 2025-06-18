@@ -18,7 +18,6 @@ import {
   BUCKET_PROTOCOL_TYPE,
   BUCKETUS_LP_VAULT_05,
   BUCKETUS_TREASURY,
-  BUKCET_ORACLE_OBJECT_ID,
   CETUS_OBJS,
   CETUS_SUI_BUCK_LP_REGISTRY_ID,
   CETUS_USDC_BUCK_LP_REGISTRY,
@@ -46,6 +45,7 @@ import {
   PROTOCOL_OBJECT,
   PSM_BALANCE_IDS,
   PSM_POOL_IDS,
+  PYTH_RULE_PKG_ID,
   PYTH_STATE_ID,
   SBUCK_APR_OBJECT_ID,
   SBUCK_BUCK_LP_REGISTRY,
@@ -64,6 +64,7 @@ import {
   SUPRA_ID,
   SUPRA_PRICE_FEEDS,
   SUPRA_UPDATE_TARGET,
+  TLP_RULE_PKG_ID,
   UNIHOUSE_OBJECT_ID,
   WALRUS_STAKING_OBJECT_ID,
   WALRUS_SYSTEM_OBJECT_ID,
@@ -454,20 +455,31 @@ export class BucketClient {
       if (token === 'haWAL') {
         tx.moveCall({
           target: `${HAWAL_RULE_PKG_ID}::hawal_rule::update_price`,
-          arguments: [tx.object(BUKCET_ORACLE_OBJECT_ID), tx.object(WALRUS_STAKING_OBJECT_ID), tx.object('0x6')],
+          arguments: [tx.sharedObjectRef(ORACLE_OBJECT), tx.object(WALRUS_STAKING_OBJECT_ID), tx.object('0x6')],
         });
       }
       if (token === 'wWAL') {
         tx.moveCall({
           target: `${WWAL_RULE_PKG_ID}::wwal_rule::update_price`,
           arguments: [
-            tx.object(BUKCET_ORACLE_OBJECT_ID),
+            tx.sharedObjectRef(ORACLE_OBJECT),
             tx.object(BLIZZARD_STAKING_OBJECT_ID),
             tx.object(WALRUS_SYSTEM_OBJECT_ID),
             tx.object('0x6'),
           ],
         });
       }
+    } else if (token === 'TLP') {
+      tx.moveCall({
+        target: `${TLP_RULE_PKG_ID}::tlp_rule::update_price`,
+        arguments: [
+          tx.object('0x55597bb70d150f4a72223e04a11b2211918ea5ed3d485a7dcb06e490ae21f7d9'),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.object('0xa12c282a068328833ec4a9109fc77803ec1f523f8da1bb0f82bac8450335f0c9'),
+          tx.object('0xfee68e535bf24702be28fa38ea2d5946e617e0035027d5ca29dbed99efd82aaa'),
+        ],
+      });
     } else {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
@@ -489,7 +501,7 @@ export class BucketClient {
       const priceUpdateData = await connection.getPriceFeedsUpdateData([musdPriceId]);
       const [priceInfoObjectId] = await pythClient.updatePriceFeeds(tx, priceUpdateData, [musdPriceId]);
       tx.moveCall({
-        target: '0xe7eddf0041f423643fd8ee2a01eba4462b1b438e88bf99653b6337f102bb3e02::pyth_rule::update_price',
+        target: `${PYTH_RULE_PKG_ID}::pyth_rule::update_price`,
         typeArguments: [coinType],
         arguments: [
           tx.sharedObjectRef({

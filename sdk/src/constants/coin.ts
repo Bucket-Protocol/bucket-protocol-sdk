@@ -161,7 +161,7 @@ export const COLLATERAL_ASSETS = [
   'HAEDAL',
   'xBTC',
   'mUSD',
-  // 'TLP',
+  'TLP',
 ] as const satisfies readonly COIN[];
 
 export const COLLATERAL_INFO: Record<
@@ -307,13 +307,14 @@ export const COLLATERAL_INFO: Record<
     safeCr: 1.5,
     interestRate: 0.08,
   },
-  // TLP: {
-  //   safeCr: 1.5,
-  //   interestRate: 0.09,
-  // },
+  TLP: {
+    safeCr: 1.5,
+    interestRate: 0.09,
+  },
 };
 
 export const HAWAL_RULE_PKG_ID = '0xb78aa952cdced6ec22196bcfc4b3224fe28aa9e34d1ed939b652b9969a55a0ac';
 export const WWAL_RULE_PKG_ID = '0x0697807e89307c7124aeb5847e817fbb49c7701e4f5b03f1d38a91bdee3e3f66';
 export const WALRUS_SYSTEM_OBJECT_ID = '0x2134d52768ea07e8c43570ef975eb3e4c27a39fa6396bef985b5abc58d03ddd2';
-export const BUKCET_ORACLE_OBJECT_ID = '0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078';
+export const PYTH_RULE_PKG_ID = '0xe7eddf0041f423643fd8ee2a01eba4462b1b438e88bf99653b6337f102bb3e02';
+export const TLP_RULE_PKG_ID = '0x1f19c4572c45f8e116a6aa6c7ffafc3569a3cea407ad839c43de5898369030ce';
