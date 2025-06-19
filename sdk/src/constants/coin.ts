@@ -308,7 +308,7 @@ export const COLLATERAL_INFO: Record<
     interestRate: 0.08,
   },
   TLP: {
-    safeCr: 1.5,
+    safeCr: 2,
     interestRate: 0.09,
   },
 };
