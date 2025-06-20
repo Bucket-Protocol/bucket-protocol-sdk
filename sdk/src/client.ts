@@ -2,6 +2,7 @@ import { bcs } from '@mysten/sui/bcs';
 import { DevInspectResults, DynamicFieldInfo, getFullnodeUrl, SuiClient, SuiObjectResponse } from '@mysten/sui/client';
 import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
 import { fromBase64 } from '@mysten/sui/utils';
+import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import { phantom } from './_generated/_framework/reified';
 import { DeCenter } from './_generated/detoken/de-center/structs';
@@ -17,7 +18,6 @@ import {
   BUCKET_PROTOCOL_TYPE,
   BUCKETUS_LP_VAULT_05,
   BUCKETUS_TREASURY,
-  BUKCET_ORACLE_OBJECT_ID,
   CETUS_OBJS,
   CETUS_SUI_BUCK_LP_REGISTRY_ID,
   CETUS_USDC_BUCK_LP_REGISTRY,
@@ -45,6 +45,8 @@ import {
   PROTOCOL_OBJECT,
   PSM_BALANCE_IDS,
   PSM_POOL_IDS,
+  PYTH_RULE_PKG_ID,
+  PYTH_STATE_ID,
   SBUCK_APR_OBJECT_ID,
   SBUCK_BUCK_LP_REGISTRY,
   SBUCK_BUCK_LP_REGISTRY_ID,
@@ -62,9 +64,11 @@ import {
   SUPRA_ID,
   SUPRA_PRICE_FEEDS,
   SUPRA_UPDATE_TARGET,
+  TLP_RULE_PKG_ID,
   UNIHOUSE_OBJECT_ID,
   WALRUS_STAKING_OBJECT_ID,
   WALRUS_SYSTEM_OBJECT_ID,
+  WORM_STATE_ID,
   WWAL_RULE_PKG_ID,
 } from './constants';
 import { STRUCT_BOTTLE_DATA } from './constants/sructs';
@@ -115,6 +119,7 @@ import {
   getCoinTypeFromTank,
   getInputCoins,
   getMainCoin,
+  getMultiGetObjects,
   getObjectFields,
   getObjectGenerics,
   lpProofToObject,
@@ -134,6 +139,10 @@ import {
   getUserDropsAmount,
   getUserDropsAmountByEpoch,
 } from './utils/deBut';
+
+const connection = new SuiPriceServiceConnection('https://hermes.pyth.network'); // See Hermes endpoints section below for other endpoints
+
+const musdPriceId = '0x2ee09cdb656959379b9262f89de5ff3d4dfed0dd34c072b3e22518496a65249c';
 
 /**
  * @description a TS wrapper over Bucket Protocol Move packages.
@@ -175,8 +184,9 @@ export class BucketClient {
       .map(({ objectId }) => objectId)
       .filter((objectId) => objectId !== undefined);
 
-    const res = await this.client.multiGetObjects({
-      ids: objectIds,
+    const res = await getMultiGetObjects({
+      client: this.client,
+      objectIds,
       options: {
         showContent: true,
       },
@@ -445,20 +455,32 @@ export class BucketClient {
       if (token === 'haWAL') {
         tx.moveCall({
           target: `${HAWAL_RULE_PKG_ID}::hawal_rule::update_price`,
-          arguments: [tx.object(BUKCET_ORACLE_OBJECT_ID), tx.object(WALRUS_STAKING_OBJECT_ID), tx.object('0x6')],
+          arguments: [tx.sharedObjectRef(ORACLE_OBJECT), tx.object(WALRUS_STAKING_OBJECT_ID), tx.object('0x6')],
         });
       }
       if (token === 'wWAL') {
         tx.moveCall({
           target: `${WWAL_RULE_PKG_ID}::wwal_rule::update_price`,
           arguments: [
-            tx.object(BUKCET_ORACLE_OBJECT_ID),
+            tx.sharedObjectRef(ORACLE_OBJECT),
             tx.object(BLIZZARD_STAKING_OBJECT_ID),
             tx.object(WALRUS_SYSTEM_OBJECT_ID),
             tx.object('0x6'),
           ],
         });
       }
+    } else if (token === 'TLP') {
+      tx.moveCall({
+        target: `${TLP_RULE_PKG_ID}::tlp_rule::update_price`,
+        typeArguments: [COINS_TYPE_LIST.TLP],
+        arguments: [
+          tx.object('0x55597bb70d150f4a72223e04a11b2211918ea5ed3d485a7dcb06e490ae21f7d9'),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.object('0xa12c282a068328833ec4a9109fc77803ec1f523f8da1bb0f82bac8450335f0c9'),
+          tx.object('0xfee68e535bf24702be28fa38ea2d5946e617e0035027d5ca29dbed99efd82aaa'),
+        ],
+      });
     } else {
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,
@@ -470,6 +492,32 @@ export class BucketClient {
           tx.pure.u32(SUPRA_ID[token] ?? 0),
         ],
       });
+    }
+  }
+
+  async updateOracleAsync(tx: Transaction, token: string) {
+    if (token === 'mUSD') {
+      const pythClient = new SuiPythClient(this.getSuiClient(), PYTH_STATE_ID, WORM_STATE_ID);
+      const coinType = COINS_TYPE_LIST[token as COIN];
+      const priceUpdateData = await connection.getPriceFeedsUpdateData([musdPriceId]);
+      const [priceInfoObjectId] = await pythClient.updatePriceFeeds(tx, priceUpdateData, [musdPriceId]);
+      tx.moveCall({
+        target: `${PYTH_RULE_PKG_ID}::pyth_rule::update_price`,
+        typeArguments: [coinType],
+        arguments: [
+          tx.sharedObjectRef({
+            objectId: '0x8e1c0fb4e016773e84abc42e8ad2e7753bfc5ae0f28052621fd6f5fd224b3a75',
+            initialSharedVersion: 571407640,
+            mutable: false,
+          }),
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.object(PYTH_STATE_ID),
+          tx.object(priceInfoObjectId),
+        ],
+      });
+    } else {
+      this.updateSupraOracle(tx, token);
     }
   }
 
@@ -690,24 +738,15 @@ export class BucketClient {
         cursor = protocolFields.nextCursor;
       }
 
-      const slicedObjectIds: string[][] = [];
-      for (let i = 0; i < Math.ceil(objectIds.length / 50); ++i) {
-        slicedObjectIds.push(objectIds.slice(i * 50, (i + 1) * 50));
-      }
+      const response = await getMultiGetObjects({
+        client: this.client,
+        objectIds,
+        options: {
+          showContent: true,
+          showType: true,
+        },
+      });
 
-      const responseVec: SuiObjectResponse[][] = await Promise.all(
-        slicedObjectIds.map((objectIds) => {
-          return this.client.multiGetObjects({
-            ids: objectIds,
-            options: {
-              showContent: true,
-              showType: true, //Check could we get type from response later
-            },
-          });
-        }),
-      );
-
-      const response: SuiObjectResponse[] = responseVec.flat();
       response
         .filter((t) => t.data?.type?.includes('::bucket::Bucket'))
         .map((res) => {
@@ -1072,8 +1111,9 @@ export class BucketClient {
         const objectIdList = bottles.map((item) => item.objectId);
         const debtorList = bottles.map((item) => item.name.value as string);
 
-        const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-          ids: objectIdList,
+        const response: SuiObjectResponse[] = await getMultiGetObjects({
+          client: this.client,
+          objectIds: objectIdList,
           options: {
             showContent: true,
             showOwner: true,
@@ -1358,7 +1398,7 @@ export class BucketClient {
       );
     } else {
       if (isUpdateOracle) {
-        this.updateSupraOracle(tx, token);
+        await this.updateOracleAsync(tx, token);
       }
 
       const borrowRet = this.borrow(
@@ -1422,7 +1462,7 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST.BUCK],
       });
 
-    this.updateSupraOracle(tx, token);
+    await this.updateOracleAsync(tx, token);
 
     // Fully repay
     if (repayAmount === '0' && withdrawAmount === '0') {
@@ -1588,8 +1628,9 @@ export class BucketClient {
       SBUCK_BUCK_LP_REGISTRY_ID,
     ];
 
-    const fountainResults = await this.client.multiGetObjects({
-      ids: objectIds,
+    const fountainResults = await getMultiGetObjects({
+      client: this.client,
+      objectIds,
       options: {
         showContent: true,
       },
@@ -1627,8 +1668,9 @@ export class BucketClient {
   async getAllStrapFountains(): Promise<StrapFountainList> {
     const fountainIds = Object.keys(STRAP_FOUNTAIN_IDS);
     const objectIdList = Object.values(STRAP_FOUNTAIN_IDS).map((t) => t.objectId);
-    const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-      ids: objectIdList,
+    const response: SuiObjectResponse[] = await getMultiGetObjects({
+      client: this.client,
+      objectIds: objectIdList,
       options: {
         showContent: true,
         showType: true, //Check could we get type from response later
@@ -2462,8 +2504,9 @@ export class BucketClient {
 
       const objectIdList = tankList.map((item) => item.objectId);
 
-      const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: objectIdList,
+      const response: SuiObjectResponse[] = await getMultiGetObjects({
+        client: this.client,
+        objectIds: objectIdList,
         options: {
           showContent: true,
           showType: true, //Check could we get type from response later
@@ -2801,8 +2844,9 @@ export class BucketClient {
     try {
       const psmPoolIds = Object.values(PSM_POOL_IDS);
       const psmBalanceIds = Object.values(PSM_BALANCE_IDS);
-      const response: SuiObjectResponse[] = await this.client.multiGetObjects({
-        ids: [...psmPoolIds, ...psmBalanceIds],
+      const response: SuiObjectResponse[] = await getMultiGetObjects({
+        client: this.client,
+        objectIds: [...psmPoolIds, ...psmBalanceIds],
         options: {
           showContent: true,
           showType: true, //Check could we get type from response later

@@ -61,6 +61,8 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   LBTC: '0x3e8e9423d80e1774a7ca128fccd8bf5f1f7753be658c5e645929037f7c819040::lbtc::LBTC',
   HAEDAL: '0x3a304c7feba2d819ea57c3542d68439ca2c386ba02159c740f7b406e592c62ea::haedal::HAEDAL',
   xBTC: '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC',
+  mUSD: '0xe44df51c0b21a27ab915fa1fe2ca610cd3eaa6d9666fe5e62b988bf7f0bd8722::musd::MUSD',
+  TLP: '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP',
 };
 
 export const COIN_DECIMALS: Record<COIN, number> = {
@@ -120,6 +122,8 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   LBTC: 8,
   HAEDAL: 9,
   xBTC: 8,
+  mUSD: 9,
+  TLP: 9,
 };
 
 export const COLLATERAL_ASSETS = [
@@ -156,6 +160,8 @@ export const COLLATERAL_ASSETS = [
   'LBTC',
   'HAEDAL',
   'xBTC',
+  'mUSD',
+  'TLP',
 ] as const satisfies readonly COIN[];
 
 export const COLLATERAL_INFO: Record<
@@ -297,9 +303,18 @@ export const COLLATERAL_INFO: Record<
     safeCr: 1.8,
     interestRate: 0.09,
   },
+  mUSD: {
+    safeCr: 1.5,
+    interestRate: 0.08,
+  },
+  TLP: {
+    safeCr: 2,
+    interestRate: 0.09,
+  },
 };
 
 export const HAWAL_RULE_PKG_ID = '0xb78aa952cdced6ec22196bcfc4b3224fe28aa9e34d1ed939b652b9969a55a0ac';
 export const WWAL_RULE_PKG_ID = '0x0697807e89307c7124aeb5847e817fbb49c7701e4f5b03f1d38a91bdee3e3f66';
 export const WALRUS_SYSTEM_OBJECT_ID = '0x2134d52768ea07e8c43570ef975eb3e4c27a39fa6396bef985b5abc58d03ddd2';
-export const BUKCET_ORACLE_OBJECT_ID = '0xf578d73f54b3068166d73c1a1edd5a105ce82f97f5a8ea1ac17d53e0132a1078';
+export const PYTH_RULE_PKG_ID = '0xe7eddf0041f423643fd8ee2a01eba4462b1b438e88bf99653b6337f102bb3e02';
+export const TLP_RULE_PKG_ID = '0x1f19c4572c45f8e116a6aa6c7ffafc3569a3cea407ad839c43de5898369030ce';
