@@ -44,6 +44,7 @@ export type UserBottleInfo = {
   debtAmount?: number;
   startUnit?: number;
   isLocked?: boolean;
+  key?: string;
 } & BottleInfo;
 
 export type FountainInfo = {

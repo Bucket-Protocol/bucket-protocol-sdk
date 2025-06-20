@@ -878,6 +878,7 @@ export class BucketClient {
       proof?: SuiObjectResponse;
       startUnit?: number;
       debtAmount?: number;
+      key?: string;
     },
   ): UserBottleInfo | null {
     if (!userBottleData) {
@@ -898,6 +899,7 @@ export class BucketClient {
       debtAmount: params.debtAmount,
       ...(!!strapId && { strapId }),
       ...(params.startUnit !== undefined && { startUnit: params.startUnit }),
+      key: params.key,
     };
   }
 
@@ -936,7 +938,7 @@ export class BucketClient {
     const parseParams: Parameters<typeof this.parseUserBottleInfo>[1][] = [];
 
     COLLATERAL_ASSETS.forEach((token) => {
-      parseParams.push({ token });
+      parseParams.push({ token, key: token });
 
       tx.moveCall({
         target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_account`,
@@ -948,7 +950,7 @@ export class BucketClient {
       if (!strap.data) {
         return;
       }
-      parseParams.push({ strap });
+      parseParams.push({ strap, key: strap.data.objectId });
 
       tx.moveCall({
         target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_strap`,
@@ -960,7 +962,12 @@ export class BucketClient {
       if (!proof.data || !proofDataVec[index]) {
         return;
       }
-      parseParams.push({ proof, startUnit: proofDataVec[index].startUnit, debtAmount: proofDataVec[index].debtAmount });
+      parseParams.push({
+        proof,
+        startUnit: proofDataVec[index].startUnit,
+        debtAmount: proofDataVec[index].debtAmount,
+        key: proof.data.objectId,
+      });
 
       tx.moveCall({
         target: `${BUCKET_OPERATIONS_PACKAGE_ID}::utils::try_get_bottle_by_proof`,
