@@ -18,6 +18,8 @@ import { DeButInfo, DeButPosition, DeButWrapper } from '@/types/bucket';
 import { CLOCK_OBJECT, COIN_DECIMALS, COINS_TYPE_LIST } from '@/constants';
 import { BUCKET_PROTOCOL_TYPE, DEBUT_CONFIG, INITIAL_SUPPLY, VESTING_LOCK_IDS } from '@/constants/deBut';
 
+import { getMultiGetObjects } from './object';
+
 type VestingLockData = {
   released_amount: string;
 };
@@ -49,8 +51,9 @@ export const getDeButAmount = (position: DeButPositionStruct<string, string>): n
 };
 
 export const getCirculatingSupply = async (client: SuiClient): Promise<number> => {
-  const lockRes = await client.multiGetObjects({
-    ids: [...VESTING_LOCK_IDS],
+  const lockRes = await getMultiGetObjects({
+    client,
+    objectIds: [...VESTING_LOCK_IDS],
     options: {
       showContent: true,
     },

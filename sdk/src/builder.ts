@@ -50,7 +50,7 @@ export async function buildBorrowTx(
 
   if (!strapId || !isLST) {
     const collInputCoin = await getInputCoins(tx, suiClient, recipient, collateralType, collateralAmount);
-    client.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? '');
+    await client.updateOracleAsync(tx, getCoinSymbol(collateralType) ?? '');
 
     if (borrowAmount !== '0') {
       const buckBalance = client.borrow(
@@ -70,7 +70,7 @@ export async function buildBorrowTx(
   } else {
     const lstInputCoin = await getInputCoins(tx, suiClient, recipient, collateralType, collateralAmount);
 
-    client.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? '');
+    await client.updateOracleAsync(tx, getCoinSymbol(collateralType) ?? '');
     if (strapId === 'new') {
       const ret = client.borrow(
         tx,
@@ -187,7 +187,7 @@ export async function buildRepayTx(
       }
     } else {
       const buckCoin = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.BUCK, repayAmount);
-      client.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? '');
+      await client.updateOracleAsync(tx, getCoinSymbol(collateralType) ?? '');
 
       tx.moveCall({
         target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::repay_and_withdraw_with_strap`,
@@ -234,7 +234,7 @@ export async function buildWithdrawTx(
     throw new Error('Collateral not supported');
   }
 
-  client.updateSupraOracle(tx, getCoinSymbol(collateralType) ?? '');
+  await client.updateOracleAsync(tx, getCoinSymbol(collateralType) ?? '');
 
   const isLST = coin in STRAP_FOUNTAIN_IDS;
 
@@ -358,7 +358,7 @@ export async function buildRedeemTx(
   const [buckCoinInput] = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.BUCK, redeemAmount);
   if (!buckCoinInput) throw new Error('No BUCK input');
 
-  client.updateSupraOracle(tx, coin);
+  await client.updateOracleAsync(tx, coin);
 
   tx.moveCall({
     target: `${BUCKET_OPERATIONS_PACKAGE_ID}::bucket_operations::redeem`,
@@ -446,7 +446,7 @@ export async function buildTankWithdrawTx(
     elements: tokens,
   });
 
-  client.updateSupraOracle(tx, coin);
+  await client.updateOracleAsync(tx, coin);
 
   tx.moveCall({
     target: `${BUCKET_OPERATIONS_PACKAGE_ID}::tank_operations::withdraw`,
