@@ -178,3 +178,5 @@ export const SCABLE_VAULTS: Record<ScableCoin, SharedObjectRef> = {
     mutable: true,
   },
 };
+
+export const G_COIN_RULE_PACKAGE_ID = '0x0e9acfaf47cde01d67ff5bdfe53b74df936650fd52fbde2bf71aaddd7c79b940';
