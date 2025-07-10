@@ -105,15 +105,15 @@ export const computeBlizzardStakingRate = async (client: SuiClient): Promise<num
   return rate ? Number(rate) / 10 ** 9 : 0;
 };
 
-export const computeUnihouseRate = (res: SuiObjectResponse | undefined): number => {
+export const computeUnihouseRate = (res: SuiObjectResponse | undefined, decimals: number): number => {
   if (!res) {
     return 0;
   }
   const resp = getObjectFields(res) as UnihouseResponse;
-  const debtAmount = Number(formatUnits(BigInt(resp.pipe_debt.fields.value), 9));
-  const poolAmount = Number(formatUnits(BigInt(resp.pool), 9));
-  const gsuiSupply = Number(formatUnits(BigInt(resp.supply.fields.value), 9));
-  const rate = (debtAmount + poolAmount) / gsuiSupply;
+  const debtAmount = Number(formatUnits(BigInt(resp.pipe_debt.fields.value), decimals));
+  const poolAmount = Number(formatUnits(BigInt(resp.pool), decimals));
+  const gTokenSupply = Number(formatUnits(BigInt(resp.supply.fields.value), decimals));
+  const rate = (debtAmount + poolAmount) / gTokenSupply;
 
   return rate;
 };
