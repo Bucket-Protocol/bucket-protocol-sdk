@@ -63,7 +63,7 @@ export type COIN =
   | 'xBTC'
   | 'mUSD'
   | 'TLP'
-  | 'gupUSD';
+  | 'gUPUSD';
 
 export type ScableCoin = 'USDC' | 'sbUSDT';
 

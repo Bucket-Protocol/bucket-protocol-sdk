@@ -417,7 +417,7 @@ export class BucketClient {
         typeArguments: [COINS_TYPE_LIST[token], COINS_TYPE_LIST[baseToken]],
         arguments: [tx.sharedObjectRef(ORACLE_OBJECT), tx.object(UNIHOUSE_OBJECT_ID), tx.sharedObjectRef(CLOCK_OBJECT)],
       });
-    } else if (token === 'gupUSD') {
+    } else if (token === 'gUPUSD') {
       const baseCoinType = '0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD';
       tx.moveCall({
         target: SUPRA_UPDATE_TARGET,

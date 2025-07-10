@@ -63,7 +63,7 @@ export const COINS_TYPE_LIST: Record<COIN, string> = {
   xBTC: '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC',
   mUSD: '0xe44df51c0b21a27ab915fa1fe2ca610cd3eaa6d9666fe5e62b988bf7f0bd8722::musd::MUSD',
   TLP: '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP',
-  gupUSD:
+  gUPUSD:
     '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD>',
 };
 
@@ -126,7 +126,7 @@ export const COIN_DECIMALS: Record<COIN, number> = {
   xBTC: 8,
   mUSD: 9,
   TLP: 9,
-  gupUSD: 6,
+  gUPUSD: 6,
 };
 
 export const COLLATERAL_ASSETS = [
@@ -165,7 +165,7 @@ export const COLLATERAL_ASSETS = [
   'xBTC',
   'mUSD',
   'TLP',
-  'gupUSD',
+  'gUPUSD',
 ] as const satisfies readonly COIN[];
 
 export const COLLATERAL_INFO: Record<
@@ -315,7 +315,7 @@ export const COLLATERAL_INFO: Record<
     safeCr: 2,
     interestRate: 0.09,
   },
-  gupUSD: {
+  gUPUSD: {
     safeCr: 1.5,
     interestRate: 0.08,
   },
