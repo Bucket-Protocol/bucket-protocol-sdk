@@ -13,6 +13,7 @@ import {
   getScoinRates,
 } from '@/utils';
 
+import { COIN_DECIMALS } from './coin';
 import { SBUCK_FLASK_OBJECT_ID } from './object';
 
 export const ORACLE_OBJECT = {
@@ -68,12 +69,14 @@ export const SUPRA_ID: Record<string, number> = {
   LBTC: 18,
   HAEDAL: 540,
   xBTC: 18,
+  upUSD: 89,
 };
 
 export const SPSUI_LIQUID_STAKING_OBJECT_ID = '0x15eda7330c8f99c30e430b4d82fd7ab2af3ead4ae17046fcb224aa9bad394f6b';
 export const MSUI_LIQUID_STAKING_OBJECT_ID = '0x985dd33bc2a8b5390f2c30a18d32e9a63a993a5b52750c6fe2e6ac8baeb69f48';
 export const STSUI_LIQUID_STAKING_OBJECT_ID = '0x1adb343ab351458e151bc392fbf1558b3332467f23bda45ae67cd355a57fd5f5';
 export const GSUI_UNIHOUSE_OBJECT_ID = '0x811fe901ed2a5d75cd125912ad6110efdff8be00fe694601a94167e2bd545ac2';
+export const GUPUSD_UNIHOUSE_OBJECT_ID = '0x13766a4d5c180f004f9bfd19e65f622fbb2b9498736131b948599054c0129f42';
 export const UNIHOUSE_OBJECT_ID = '0x75c63644536b1a7155d20d62d9f88bf794dc847ea296288ddaf306aa320168ab';
 export const WALRUS_STAKING_OBJECT_ID = '0x9e5f6537be1a5b658ec7eed23160df0b28c799563f6c41e9becc9ad633cb592b';
 export const BLIZZARD_STAKING_OBJECT_ID = '0xccf034524a2bdc65295e212128f77428bb6860d757250c43323aa38b3d04df6d';
@@ -237,7 +240,7 @@ export const PRICE_MAP: Partial<Record<COIN, PriceMapItem>> = {
   },
   gSUI: {
     objectId: GSUI_UNIHOUSE_OBJECT_ID,
-    processFn: ({ object, prices }) => computeUnihouseRate(object) * prices[0],
+    processFn: ({ object, prices }) => computeUnihouseRate(object, COIN_DECIMALS.gSUI) * prices[0],
     dependentTokens: 'SUI',
   },
   haWAL: {
@@ -313,5 +316,10 @@ export const PRICE_MAP: Partial<Record<COIN, PriceMapItem>> = {
     processFn: ({ suiClient, prices: [stSuiPrice, suiPrice] }) =>
       getAlphafiStSUIFtPrice(suiClient, stSuiPrice, suiPrice),
     dependentTokens: ['stSUI', 'SUI'],
+  },
+  gUPUSD: {
+    objectId: GUPUSD_UNIHOUSE_OBJECT_ID,
+    processFn: ({ object, prices }) => computeUnihouseRate(object, COIN_DECIMALS.gUPUSD) * prices[0],
+    dependentTokens: 'USDC',
   },
 };

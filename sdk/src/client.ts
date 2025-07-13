@@ -32,6 +32,7 @@ import {
   DUMMY_ADDRESS,
   FOUNTAIN_PACKAGE_ID,
   FOUNTAIN_PERIHERY_PACKAGE_ID,
+  G_COIN_RULE_PACKAGE_ID,
   HAWAL_RULE_PKG_ID,
   KRIYA_FOUNTAIN_PACKAGE_ID,
   KRIYA_SUI_BUCK_LP_REGISTRY_ID,
@@ -412,8 +413,25 @@ export class BucketClient {
     } else if (token === 'gSUI') {
       const baseToken = token.slice(1) as COIN;
       tx.moveCall({
-        target: '0x0e9acfaf47cde01d67ff5bdfe53b74df936650fd52fbde2bf71aaddd7c79b940::gcoin_rule::update_price',
+        target: `${G_COIN_RULE_PACKAGE_ID}::gcoin_rule::update_price`,
         typeArguments: [COINS_TYPE_LIST[token], COINS_TYPE_LIST[baseToken]],
+        arguments: [tx.sharedObjectRef(ORACLE_OBJECT), tx.object(UNIHOUSE_OBJECT_ID), tx.sharedObjectRef(CLOCK_OBJECT)],
+      });
+    } else if (token === 'gUPUSD') {
+      const baseCoinType = '0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD';
+      tx.moveCall({
+        target: SUPRA_UPDATE_TARGET,
+        typeArguments: [baseCoinType],
+        arguments: [
+          tx.sharedObjectRef(ORACLE_OBJECT),
+          tx.sharedObjectRef(CLOCK_OBJECT),
+          tx.sharedObjectRef(SUPRA_HANDLER_OBJECT),
+          tx.pure.u32(SUPRA_ID.upUSD),
+        ],
+      });
+      tx.moveCall({
+        target: `${G_COIN_RULE_PACKAGE_ID}::gcoin_rule::update_price`,
+        typeArguments: [COINS_TYPE_LIST[token], baseCoinType],
         arguments: [tx.sharedObjectRef(ORACLE_OBJECT), tx.object(UNIHOUSE_OBJECT_ID), tx.sharedObjectRef(CLOCK_OBJECT)],
       });
     } else if (token === 'WAL' || token === 'sWAL' || token === 'haWAL' || token === 'wWAL') {
