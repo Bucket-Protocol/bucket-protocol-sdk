@@ -1402,7 +1402,7 @@ export class BucketClient {
       return false;
     }
 
-    const collateralInput = await getInputCoins(tx, this.client, recipient, collateralType, collateralAmount);
+    const collateralInput = await getInputCoins(tx, this.client, recipient, collateralType, [collateralAmount]);
 
     const collateralBalance = coinIntoBalance(tx, collateralType, collateralInput);
 
@@ -1471,7 +1471,7 @@ export class BucketClient {
     if (repayAmount === '0') {
       _buckCoinInput = await getMainCoin(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK);
     } else {
-      [_buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, repayAmount);
+      [_buckCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.BUCK, [repayAmount]);
     }
     const buckCoinInput =
       _buckCoinInput ??
@@ -1886,7 +1886,7 @@ export class BucketClient {
    * @returns Promise<boolean>
    */
   async getStakeUsdcTx(tx: Transaction, isAf: boolean, stakeAmount: string, walletAddress: string): Promise<boolean> {
-    const [stakeCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.wUSDC, stakeAmount);
+    const [stakeCoinInput] = await getInputCoins(tx, this.client, walletAddress, COINS_TYPE_LIST.wUSDC, [stakeAmount]);
     if (!stakeCoinInput) return false;
 
     if (isAf) {

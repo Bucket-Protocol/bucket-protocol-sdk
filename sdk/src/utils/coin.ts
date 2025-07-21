@@ -39,51 +39,51 @@ export async function getInputCoins(
   client: SuiClient,
   owner: string,
   coinType: string,
-  ...amounts: string[]
+  amounts: string[],
+  noSplitFromGas: boolean = false,
 ) {
   let isZero = true;
+
   for (const amount of amounts) {
     if (Number(amount) > 0) {
       isZero = false;
       break;
     }
   }
-
   if (isZero) {
     return tx.moveCall({
       target: `0x2::coin::zero`,
       typeArguments: [coinType],
     });
   }
-
-  if (coinType === COINS_TYPE_LIST.SUI) {
+  if (!noSplitFromGas && coinType === COINS_TYPE_LIST.SUI) {
     return tx.splitCoins(
       tx.gas,
       amounts.map((amount) => tx.pure.u64(amount)),
     );
-  } else {
-    const { data: userCoins } = await client.getCoins({ owner, coinType });
-    const [mainCoin, ...otherCoins] = userCoins.map((coin) =>
-      tx.objectRef({
-        objectId: coin.coinObjectId,
-        version: coin.version,
-        digest: coin.digest,
-      }),
-    );
-    if (!mainCoin) {
-      return tx.moveCall({
-        target: `0x2::coin::zero`,
-        typeArguments: [coinType],
-      });
-    }
-
-    if (otherCoins.length > 0) tx.mergeCoins(mainCoin, otherCoins);
-
-    return tx.splitCoins(
-      mainCoin,
-      amounts.map((amount) => tx.pure.u64(amount)),
-    );
   }
+  const { data: userCoins } = await client.getCoins({ owner, coinType });
+
+  const [mainCoin, ...otherCoins] = userCoins.map((coin) =>
+    tx.objectRef({
+      objectId: coin.coinObjectId,
+      version: coin.version,
+      digest: coin.digest,
+    }),
+  );
+  if (!mainCoin) {
+    return tx.moveCall({
+      target: `0x2::coin::zero`,
+      typeArguments: [coinType],
+    });
+  }
+  if (otherCoins.length > 0) {
+    tx.mergeCoins(mainCoin, otherCoins);
+  }
+  return tx.splitCoins(
+    mainCoin,
+    amounts.map((amount) => tx.pure.u64(amount)),
+  );
 }
 
 export async function getMainCoin(tx: Transaction, client: SuiClient, owner: string, coinType: string) {
