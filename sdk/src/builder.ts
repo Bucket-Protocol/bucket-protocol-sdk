@@ -29,6 +29,7 @@ export async function buildBorrowTx(
   recipient: string,
   insertionPlace?: string,
   strapId?: string,
+  noSplitFromGas?: boolean = false,
 ) {
   /**
    * @description Borrow
@@ -49,7 +50,14 @@ export async function buildBorrowTx(
   const isLST = coin in STRAP_FOUNTAIN_IDS;
 
   if (!strapId || !isLST) {
-    const collInputCoin = await getInputCoins(tx, suiClient, recipient, collateralType, [collateralAmount]);
+    const collInputCoin = await getInputCoins(
+      tx,
+      suiClient,
+      recipient,
+      collateralType,
+      [collateralAmount],
+      noSplitFromGas,
+    );
     await client.updateOracleAsync(tx, getCoinSymbol(collateralType) ?? '');
 
     if (borrowAmount !== '0') {
