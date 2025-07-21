@@ -29,7 +29,7 @@ export async function buildBorrowTx(
   recipient: string,
   insertionPlace?: string,
   strapId?: string,
-  noSplitFromGas?: boolean = false,
+  noSplitFromGas: boolean = false,
 ) {
   /**
    * @description Borrow
