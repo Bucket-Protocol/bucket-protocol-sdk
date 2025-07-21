@@ -49,7 +49,7 @@ export async function buildBorrowTx(
   const isLST = coin in STRAP_FOUNTAIN_IDS;
 
   if (!strapId || !isLST) {
-    const collInputCoin = await getInputCoins(tx, suiClient, recipient, collateralType, collateralAmount);
+    const collInputCoin = await getInputCoins(tx, suiClient, recipient, collateralType, [collateralAmount]);
     await client.updateOracleAsync(tx, getCoinSymbol(collateralType) ?? '');
 
     if (borrowAmount !== '0') {
@@ -68,7 +68,7 @@ export async function buildBorrowTx(
       client.topUp(tx, collateralType, coinIntoBalance(tx, collateralType, collInputCoin), recipient, insertionPlace);
     }
   } else {
-    const lstInputCoin = await getInputCoins(tx, suiClient, recipient, collateralType, collateralAmount);
+    const lstInputCoin = await getInputCoins(tx, suiClient, recipient, collateralType, [collateralAmount]);
 
     await client.updateOracleAsync(tx, getCoinSymbol(collateralType) ?? '');
     if (strapId === 'new') {
@@ -186,7 +186,7 @@ export async function buildRepayTx(
         tx.transferObjects([reward], recipient);
       }
     } else {
-      const buckCoin = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.BUCK, repayAmount);
+      const buckCoin = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.BUCK, [repayAmount]);
       await client.updateOracleAsync(tx, getCoinSymbol(collateralType) ?? '');
 
       tx.moveCall({
@@ -314,7 +314,7 @@ export async function buildPsmTx(
   const suiClient = client.getSuiClient();
 
   const inputCoinType = psmSwitch ? COINS_TYPE_LIST.BUCK : psmCoin;
-  const [inputCoin] = await getInputCoins(tx, suiClient, recipient, inputCoinType, psmAmount);
+  const [inputCoin] = await getInputCoins(tx, suiClient, recipient, inputCoinType, [psmAmount]);
   if (!inputCoin) {
     throw new Error('Input not valid');
   }
@@ -355,7 +355,7 @@ export async function buildRedeemTx(
     throw new Error('Coin type not supported');
   }
 
-  const [buckCoinInput] = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.BUCK, redeemAmount);
+  const [buckCoinInput] = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.BUCK, [redeemAmount]);
   if (!buckCoinInput) throw new Error('No BUCK input');
 
   await client.updateOracleAsync(tx, coin);
@@ -395,7 +395,7 @@ export async function buildTankDepositTx(
     throw new Error('Coin type not supported');
   }
 
-  const [buckCoinInput] = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.BUCK, depositAmount);
+  const [buckCoinInput] = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.BUCK, [depositAmount]);
   if (!buckCoinInput) return;
 
   tx.moveCall({
@@ -531,7 +531,7 @@ export async function buildSBUCKDepositTx(
     throw new Error('Coin type not supported');
   }
 
-  const inputCoin = await getInputCoins(tx, suiClient, recipient, depositType, depositAmount);
+  const inputCoin = await getInputCoins(tx, suiClient, recipient, depositType, [depositAmount]);
 
   let buckCoin;
   if (coin === 'BUCK') {
@@ -661,7 +661,7 @@ export async function buildSBUCKWithdrawTx(
    */
   const suiClient = client.getSuiClient();
 
-  const sBuckCoin = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.sBUCK, withdrawAmount);
+  const sBuckCoin = await getInputCoins(tx, suiClient, recipient, COINS_TYPE_LIST.sBUCK, [withdrawAmount]);
   const buckBalance = client.withdrawSBUCK(tx, sBuckCoin);
   if (!buckBalance) throw new Error('Withdraw sBUCK failed');
 
