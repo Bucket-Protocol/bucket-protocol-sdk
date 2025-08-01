@@ -141,6 +141,7 @@ export type Bottle = {
 export type DeButInfo = {
   totalStakedButAmount: number;
   totalDeButAmount: number;
+  accumulatedPenaltyAmount: number;
   circulatingSupply: number;
 };
 
