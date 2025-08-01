@@ -3034,6 +3034,7 @@ export class BucketClient {
       return {
         totalStakedButAmount: 0,
         totalDeButAmount: 0,
+        accumulatedPenaltyAmount: 0,
         circulatingSupply,
       };
     }
@@ -3047,6 +3048,9 @@ export class BucketClient {
         getTotalDeButAmount(deCenterObject),
         Number(deCenterObject.lockedTotal) / 10 ** COIN_DECIMALS.BUT,
       ),
+      accumulatedPenaltyAmount:
+        (Number(deCenterObject.penaltyFeeBalance.value) + Number(deCenterObject.penaltyReserve.value)) /
+        10 ** COIN_DECIMALS.BUT,
       circulatingSupply,
     };
   }

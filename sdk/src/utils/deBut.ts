@@ -14,7 +14,7 @@ import {
 import { DeCenter } from '@/_generated/detoken/de-center/structs';
 import { DeToken as DeButPositionStruct } from '@/_generated/detoken/de-token/structs';
 
-import { DeButInfo, DeButPosition, DeButWrapper } from '@/types/bucket';
+import { DeButPosition, DeButWrapper } from '@/types/bucket';
 import { CLOCK_OBJECT, COIN_DECIMALS, COINS_TYPE_LIST } from '@/constants';
 import { BUCKET_PROTOCOL_TYPE, DEBUT_CONFIG, INITIAL_SUPPLY, VESTING_LOCK_IDS } from '@/constants/deBut';
 
@@ -73,34 +73,6 @@ export const getCirculatingSupply = async (client: SuiClient): Promise<number> =
   const circulatingSupply = INITIAL_SUPPLY + totalReleasedAmount;
 
   return circulatingSupply;
-};
-
-export const getDeButInfo = async (client: SuiClient): Promise<DeButInfo> => {
-  const deCenter = await client.getObject({
-    id: DEBUT_CONFIG.objects.shared.butDeCenter.objectId,
-    options: { showBcs: true },
-  });
-  const circulatingSupply = await getCirculatingSupply(client);
-
-  if (deCenter.data?.bcs?.dataType !== 'moveObject' || deCenter.data?.bcs?.type === null) {
-    return {
-      totalStakedButAmount: 0,
-      totalDeButAmount: 0,
-      circulatingSupply,
-    };
-  }
-  const deCenterObject = DeCenter.fromBcs(
-    [phantom(COINS_TYPE_LIST.BUT), phantom(BUCKET_PROTOCOL_TYPE)],
-    fromBase64(deCenter.data?.bcs?.bcsBytes),
-  );
-  return {
-    totalStakedButAmount: Number(deCenterObject.lockedTotal) / 10 ** COIN_DECIMALS.BUT,
-    totalDeButAmount: Math.min(
-      getTotalDeButAmount(deCenterObject),
-      Number(deCenterObject.lockedTotal) / 10 ** COIN_DECIMALS.BUT,
-    ),
-    circulatingSupply,
-  };
 };
 
 export const getUserDeButWrapper = async (client: SuiClient, address: string): Promise<DeButWrapper | null> => {
