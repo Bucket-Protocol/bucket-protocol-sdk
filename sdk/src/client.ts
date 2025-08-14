@@ -82,11 +82,18 @@ export class BucketV2Client {
   /* ----- Query ----- */
 
   /**
+   * @description Get all CDP collateral types
+   */
+  getCDPCollateralTypes(): string[] {
+    return this.config.VAULTS.map((v) => v.coinType);
+  }
+
+  /**
    * @description Get all vault objects
    */
   async getAllVaults(): Promise<VaultInfo[]> {
     // Get objectId from VAULT_MAP and get all vaults
-    const vaultObjectIds = Object.values(this.config.VAULTS).map((v) => v.vault.objectId);
+    const vaultObjectIds = this.config.VAULTS.map((v) => v.vault.objectId);
     const vaultResults = await this.suiClient.multiGetObjects({
       ids: vaultObjectIds,
       options: {

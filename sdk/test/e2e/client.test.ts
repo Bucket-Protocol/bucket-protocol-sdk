@@ -22,7 +22,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     bucketClient.resetTransaction();
     bucketClient.sender = '0x95b0ce9775382b88a4e698d31a0a7fd796922c91bb80de66e940bd4cae5a9916';
     bucketClient.tx.setSender(bucketClient.sender);
-    const coinTypes = (await bucketClient.getAllVaults()).map((v) => v.coinType);
+    const coinTypes = bucketClient.getCDPCollateralTypes();
     await Promise.all(coinTypes.map((coinType) => bucketClient.aggregatePrice({ coinType })));
     const tx = bucketClient.getTransaction();
     const dryrunRes = await suiClient.dryRunTransactionBlock({
