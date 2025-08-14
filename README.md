@@ -159,9 +159,9 @@ const [collCoin, usdbCoin, response] = client.updatePosition({
 });
 
 // Check response
-client.checkResponse({ 
-  collateralCoinType: SUI_TYPE_ARG, 
-  response 
+client.checkResponse({
+  collateralCoinType: SUI_TYPE_ARG,
+  response
 });
 
 // Get built transaction
@@ -192,11 +192,11 @@ try {
     depositAmount: 1 * 10**9,
     borrowAmount: 1 * 10**6
   });
-  
+
   const result = await client.signAndExecuteTransaction({
     signer: keypair
   });
-  
+
   console.log('Transaction successful:', result.digest);
 } catch (error) {
   if (error.message.includes('Not enough balance')) {
@@ -259,8 +259,8 @@ console.log('USDB Type:', usdbType);
 ### Price Aggregation
 ```typescript
 // Manually aggregate price for specific collateral
-const priceResult = await client.aggregatePrice({ 
-  coinType: SUI_TYPE_ARG 
+const priceResult = await client.aggregatePrice({
+  coinType: SUI_TYPE_ARG
 });
 ```
 
@@ -358,13 +358,13 @@ console.log('Supported types:', supportedTypes);
 - **GitHub**: [bucket-protocol-sdk](https://github.com/Bucket-Protocol/bucket-protocol-sdk)
 - **Issues**: Please submit issues on GitHub for bug reports or feature requests
 - **License**: Apache-2.0
-- **Maintainer**: Bucketniper <bucketbird@outlook.com>
+- **Maintainer**: JustaLiang <justa@bucketprotocol.io>
 
 ## Version Information
 
-**Current Version**: 0.15.7  
-**Node.js Requirement**: >= 20.18.0  
-**Dependencies**: 
+**Current Version**: 0.15.7
+**Node.js Requirement**: >= 20.18.0
+**Dependencies**:
 - @mysten/sui: 1.28.2
 - @pythnetwork/pyth-sui-js: ^2.1.0
 - decimal.js: ^10.5.0
