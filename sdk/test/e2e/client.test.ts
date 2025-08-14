@@ -29,6 +29,16 @@ describe('Interacting with Bucket Client on mainnet', () => {
       transactionBlock: await tx.build({ client: suiClient }),
     });
     expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.events.length).toBe(coinTypes.length * 2);
+    type PriceResult = { result: string };
+    const [suiPriceResult, btcPriceResult, walPriceResult] = dryrunRes.events.slice(coinTypes.length);
+    const pricePrecision = 10 ** 9;
+    expect(+(suiPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeGreaterThan(1);
+    expect(+(suiPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeLessThan(1000);
+    expect(+(btcPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeGreaterThan(1000);
+    expect(+(btcPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeLessThan(1000000);
+    expect(+(walPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeGreaterThan(0.01);
+    expect(+(walPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeLessThan(10);
   });
 
   it('test buildManagePositionTransaction()', async () => {
