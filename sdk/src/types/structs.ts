@@ -1,17 +1,17 @@
 export type VaultInfo = {
-  coinType: string;
-  interestRate: number;
-  positionTableSize: string;
+  collateralCoinType: string;
   collateralDecimal: number;
   collateralBalance: string;
   minCollateralRatio: number;
-  supply: string;
+  interestRate: number;
+  usdbSupply: string;
   maxSupply: string;
+  positionTableSize: string;
 };
 
 export type PositionInfo = {
-  coinType: string;
-  collAmount: string;
+  collateralCoinType: string;
+  collateralAmount: string;
   debtAmount: string;
 };
 
@@ -27,19 +27,23 @@ export type SharedObjectRef = {
   coinType?: string;
 };
 
-export type VaultObjectInfo = {
+export type AggregatorObjectInfo = {
   coinType: string;
   priceAggregater: SharedObjectRef;
-  vault: SharedObjectRef;
   pythPriceId?: string;
+};
+
+export type VaultObjectInfo = {
+  collateralCoinType: string;
+  vault: SharedObjectRef;
   rewarders?: SharedObjectRef[];
 };
 
 export type CdpPositionsResponse = {
-  coinType: string;
+  collateralCoinType: string;
   positions: {
     debtor: string;
-    collAmount: number;
+    collateralAmount: number;
     debtAmount: number;
   }[];
   nextCursor: string | null;

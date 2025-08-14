@@ -11,7 +11,14 @@ import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui
 import { normalizeStructTag, normalizeSuiAddress, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
-import { CdpPositionsResponse, PositionInfo, VaultInfo, VaultObjectInfo, VaultResponse } from '@/types';
+import {
+  AggregatorObjectInfo,
+  CdpPositionsResponse,
+  PositionInfo,
+  VaultInfo,
+  VaultObjectInfo,
+  VaultResponse,
+} from '@/types';
 import { CONFIG, ConfigType } from '@/constants';
 import { getObjectFields, parseVaultObject } from '@/utils';
 
@@ -50,10 +57,16 @@ export class BucketV2Client {
     this.tx = new Transaction();
   }
 
-  private tryGetVaultInfo(coinType: string): VaultObjectInfo {
-    const vaultInfo = this.config.VAULTS.find((v) => v.coinType === normalizeStructTag(coinType));
-    if (!vaultInfo) throw new Error('Unsupported coin type');
+  getVaultObjectInfo({ collateralCoinType }: { collateralCoinType: string }): VaultObjectInfo {
+    const vaultInfo = this.config.VAULTS.find((v) => v.collateralCoinType === normalizeStructTag(collateralCoinType));
+    if (!vaultInfo) throw new Error('Unsupported collateral type');
     return vaultInfo;
+  }
+
+  getAggregatorObjectInfo({ coinType }: { coinType: string }): AggregatorObjectInfo {
+    const aggInfo = this.config.AGGREGATORS.find((a) => a.coinType === normalizeStructTag(coinType));
+    if (!aggInfo) throw new Error('Unsupported coin type');
+    return aggInfo;
   }
 
   /* ----- Getter ----- */
@@ -85,7 +98,7 @@ export class BucketV2Client {
    * @description Get all CDP collateral types
    */
   getCDPCollateralTypes(): string[] {
-    return this.config.VAULTS.map((v) => v.coinType);
+    return this.config.VAULTS.map((v) => v.collateralCoinType);
   }
 
   /**
@@ -104,7 +117,7 @@ export class BucketV2Client {
     return vaultResults.map((res, idx) => {
       const fields = getObjectFields(res) as VaultResponse;
 
-      return parseVaultObject(this.config.VAULTS[idx].coinType, fields);
+      return parseVaultObject(this.config.VAULTS[idx].collateralCoinType, fields);
     });
   }
 
@@ -121,7 +134,7 @@ export class BucketV2Client {
     this.config.VAULTS.map((vault) => {
       tx.moveCall({
         target: `${this.config.CDP_PACKAGE_ID}::vault::try_get_position_data`,
-        typeArguments: [vault.coinType],
+        typeArguments: [vault.collateralCoinType],
         arguments: [tx.sharedObjectRef(vault.vault), tx.pure.address(debtorAddr), clockObj],
       });
     });
@@ -133,18 +146,18 @@ export class BucketV2Client {
     if (!res.results) return [];
 
     return res.results.map((value, idx) => {
-      const coinType = this.config.VAULTS[idx].coinType;
+      const collateralCoinType = this.config.VAULTS[idx].collateralCoinType;
       if (value.returnValues) {
         const [collReturn, debtReturn] = value.returnValues;
         return {
-          coinType,
-          collAmount: collReturn ? bcs.u64().parse(Uint8Array.from(collReturn[0])) : '0',
+          collateralCoinType,
+          collateralAmount: collReturn ? bcs.u64().parse(Uint8Array.from(collReturn[0])) : '0',
           debtAmount: debtReturn ? bcs.u64().parse(Uint8Array.from(debtReturn[0])) : '0',
         };
       } else {
         return {
-          coinType,
-          collAmount: '0',
+          collateralCoinType,
+          collateralAmount: '0',
           debtAmount: '0',
         };
       }
@@ -155,19 +168,19 @@ export class BucketV2Client {
    * @description Get CDP Positions
    */
   async getCdpPositions({
-    coinType,
+    collateralCoinType,
     pageSize,
     cursor,
   }: {
-    coinType: string;
+    collateralCoinType: string;
     pageSize: number;
     cursor?: string | null;
   }): Promise<CdpPositionsResponse> {
     const tx = new Transaction();
-    const vaultInfo = this.tryGetVaultInfo(coinType);
+    const vaultInfo = this.getVaultObjectInfo({ collateralCoinType });
     tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::get_positions`,
-      typeArguments: [coinType],
+      typeArguments: [collateralCoinType],
       arguments: [
         tx.sharedObjectRef(vaultInfo.vault),
         tx.sharedObjectRef(this.config.CLOCK_OBJ),
@@ -181,7 +194,7 @@ export class BucketV2Client {
     });
     if (!res.results || !res.results[0]?.returnValues) {
       return {
-        coinType,
+        collateralCoinType,
         positions: [],
         nextCursor: null,
       };
@@ -193,13 +206,13 @@ export class BucketV2Client {
       .map((pos) => {
         return {
           debtor: pos.debtor,
-          collAmount: Number(pos.coll_amount),
+          collateralAmount: Number(pos.coll_amount),
           debtAmount: Number(pos.debt_amount),
         };
       });
     const nextCursor = bcs.option(bcs.Address).parse(Uint8Array.from(nextCursorBytes ? nextCursorBytes[0] : []));
     return {
-      coinType,
+      collateralCoinType,
       positions,
       nextCursor,
     };
@@ -340,7 +353,7 @@ export class BucketV2Client {
   }
 
   vaultObj({ collateralCoinType }: { collateralCoinType: string }): TransactionArgument {
-    const vaultInfo = this.tryGetVaultInfo(collateralCoinType);
+    const vaultInfo = this.getVaultObjectInfo({ collateralCoinType });
     return this.tx.sharedObjectRef(vaultInfo.vault);
   }
 
@@ -365,7 +378,7 @@ export class BucketV2Client {
    * @param collateral coin type, e.g "0x2::sui::SUI"
    * @return PriceCollector
    */
-  newPriceCollector(coinType: string): TransactionArgument {
+  newPriceCollector({ coinType }: { coinType: string }): TransactionArgument {
     return this.tx.moveCall({
       target: `${this.config.ORACLE_PACKAGE_ID}::collector::new`,
       typeArguments: [coinType],
@@ -373,35 +386,44 @@ export class BucketV2Client {
   }
 
   /**
-   * @description Get a price result
+   * @description Get a basic (not derivative) price result
    * @param collateral coin type, e.g "0x2::sui::SUI"
    * @return [PriceResult]
    */
-  async aggregatePrice({ coinType }: { coinType: string }): Promise<TransactionArgument> {
-    const collector = this.newPriceCollector(coinType);
-    const vaultInfo = this.tryGetVaultInfo(coinType);
-    if (vaultInfo.pythPriceId) {
-      const updateData = await this.pythConnection.getPriceFeedsUpdateData([vaultInfo.pythPriceId]);
-      const [priceInfoObjId] = await this.pythClient.updatePriceFeeds(this.tx, updateData, [vaultInfo.pythPriceId]);
-      this.tx.moveCall({
-        target: `${this.config.PYTH_RULE_PACKAGE_ID}::pyth_rule::feed`,
-        typeArguments: [coinType],
-        arguments: [
-          collector,
-          this.tx.sharedObjectRef(this.config.PYTH_RULE_CONFIG_OBJ),
-          this.clockObj(),
-          this.tx.object(this.config.PYTH_STATE_ID),
-          this.tx.object(priceInfoObjId),
-        ],
-      });
-      return this.tx.moveCall({
-        target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
-        typeArguments: [coinType],
-        arguments: [this.tx.sharedObjectRef(vaultInfo.priceAggregater), collector],
-      });
-    } else {
-      return this.aggregatePrice({ coinType: SUI_TYPE_ARG });
-    }
+  async aggregateBasicPrices({ coinTypes }: { coinTypes: string[] }): Promise<TransactionArgument[]> {
+    const aggInfoList = coinTypes.map((coinType) => this.getAggregatorObjectInfo({ coinType }));
+    const pythPriceIds = aggInfoList.map((aggInfo) => aggInfo.pythPriceId ?? '');
+    const invalidIdx = pythPriceIds.findIndex((id) => id === '');
+    if (invalidIdx >= 0) throw new Error(`No price feed for ${coinTypes[invalidIdx]}`);
+    const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
+    const priceInfoObjIds = await this.pythClient.updatePriceFeeds(this.tx, updateData, pythPriceIds);
+    return Promise.all(
+      coinTypes.map(async (coinType, idx) => {
+        const collector = this.newPriceCollector({ coinType });
+        this.tx.moveCall({
+          target: `${this.config.PYTH_RULE_PACKAGE_ID}::pyth_rule::feed`,
+          typeArguments: [coinType],
+          arguments: [
+            collector,
+            this.tx.sharedObjectRef(this.config.PYTH_RULE_CONFIG_OBJ),
+            this.clockObj(),
+            this.tx.object(this.config.PYTH_STATE_ID),
+            this.tx.object(priceInfoObjIds[idx]),
+          ],
+        });
+        const [priceResult] = this.tx.moveCall({
+          target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
+          typeArguments: [coinType],
+          arguments: [this.tx.sharedObjectRef(aggInfoList[idx].priceAggregater), collector],
+        });
+        return priceResult;
+      }),
+    );
+  }
+
+  async aggregatePrices({ coinTypes }: { coinTypes: string[] }): Promise<TransactionArgument[]> {
+    // TODO: impl aggregate prices for derivatives
+    return this.aggregateBasicPrices({ coinTypes });
   }
 
   /**
@@ -541,7 +563,7 @@ export class BucketV2Client {
       amounts: [repayAmount],
     });
     if (borrowAmount > 0 || withdrawAmount > 0) {
-      const priceResult = await this.aggregatePrice({ coinType: collateralCoinType });
+      const [priceResult] = await this.aggregatePrices({ coinTypes: [collateralCoinType] });
       const updateRequest = this.debtorRequest({
         collateralCoinType,
         depositCoin,

@@ -1,6 +1,6 @@
 import { normalizeStructTag } from '@mysten/sui/utils';
 
-import { SharedObjectRef, VaultObjectInfo } from '@/types';
+import { AggregatorObjectInfo, SharedObjectRef, VaultObjectInfo } from '@/types';
 
 export type ConfigType = {
   ORIGINAL_FRAMEWORK_PACKAGE_ID: string;
@@ -21,6 +21,7 @@ export type ConfigType = {
   PYTH_RULE_PACKAGE_ID: string;
   PYTH_RULE_CONFIG_OBJ: SharedObjectRef;
 
+  AGGREGATORS: AggregatorObjectInfo[];
   VAULTS: VaultObjectInfo[];
 };
 
@@ -57,16 +58,41 @@ export const CONFIG: Record<'mainnet', ConfigType> = {
 
     VAULTS: [
       {
+        collateralCoinType: normalizeStructTag('0x2::sui::SUI'),
+        vault: {
+          objectId: '0x52aed4daa610b787cf2291f1e8e4c96aa46cbfdd90c7f2733d07048041a0730c',
+          initialSharedVersion: '18178374',
+          mutable: true,
+        },
+      },
+      {
+        collateralCoinType: normalizeStructTag(
+          '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC',
+        ),
+        vault: {
+          objectId: '0x669949a9dd88e5251bdcb3f94e207ba86fcb708bdc7d187816da5e130783eb07',
+          initialSharedVersion: '18178375',
+          mutable: true,
+        },
+      },
+      {
+        collateralCoinType: normalizeStructTag(
+          '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
+        ),
+        vault: {
+          objectId: '0x290bded45388d998a0ec8feb4cf4e3309f69de5ad13a92acfe0d9d03a7f091d9',
+          initialSharedVersion: '18178376',
+          mutable: true,
+        },
+      },
+    ],
+    AGGREGATORS: [
+      {
         coinType: normalizeStructTag('0x2::sui::SUI'),
         priceAggregater: {
           objectId: '0x3f7f16277d5fb7c3075b5237985cf91c2fbd6421c64daf780229b811e2e7058f',
           initialSharedVersion: '18178368',
           mutable: false,
-        },
-        vault: {
-          objectId: '0x52aed4daa610b787cf2291f1e8e4c96aa46cbfdd90c7f2733d07048041a0730c',
-          initialSharedVersion: '18178374',
-          mutable: true,
         },
         pythPriceId: '0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744',
       },
@@ -77,11 +103,6 @@ export const CONFIG: Record<'mainnet', ConfigType> = {
           initialSharedVersion: '18178369',
           mutable: false,
         },
-        vault: {
-          objectId: '0x669949a9dd88e5251bdcb3f94e207ba86fcb708bdc7d187816da5e130783eb07',
-          initialSharedVersion: '18178375',
-          mutable: true,
-        },
         pythPriceId: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
       },
       {
@@ -90,11 +111,6 @@ export const CONFIG: Record<'mainnet', ConfigType> = {
           objectId: '0x05905d3be7208b59f6b43382ef1dcc509f91d1bfd63fc7078b43e82951455c94',
           initialSharedVersion: '18178370',
           mutable: false,
-        },
-        vault: {
-          objectId: '0x290bded45388d998a0ec8feb4cf4e3309f69de5ad13a92acfe0d9d03a7f091d9',
-          initialSharedVersion: '18178376',
-          mutable: true,
         },
         pythPriceId: '0xeba0732395fae9dec4bae12e52760b35fc1c5671e2da8b449c9af4efe5d54341',
       },

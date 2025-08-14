@@ -23,20 +23,12 @@ describe('Interacting with Bucket Client on mainnet', () => {
     bucketClient.resetTransaction();
     bucketClient.tx.setSender(bucketClient.sender);
     const coinTypes = bucketClient.getCDPCollateralTypes();
-    await Promise.all(coinTypes.map((coinType) => bucketClient.aggregatePrice({ coinType })));
+    await bucketClient.aggregatePrices({ coinTypes });
     const tx = bucketClient.getTransaction();
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
     });
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(6);
-    // const priceResults = dryrunRes.events.map((e) => {
-    //   return {
-    //     eventType: e.type,
-    //     priceResult: (e.parsedJson as any).result,
-    //   };
-    // });
-    // console.log(priceResults);
   });
 
   it('test buildManagePositionTransaction()', async () => {
@@ -51,15 +43,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
       depositAmount,
       borrowAmount,
     });
-    // bucketClient.resetTransaction();
-    // const collateralCoinType = SUI_TYPE_ARG;
-    // const updateRequest = bucketClient.debtorRequest({ collateralCoinType });
-    // const [collCoin, usdbCoin, response] = bucketClient.updatePosition({ collateralCoinType, updateRequest });
-    // bucketClient.destroyZeroCoin({ coinType: collateralCoinType, coin: collCoin });
-    // bucketClient.destroyZeroCoin({ coinType: bucketClient.usdbCoinType(), coin: usdbCoin });
-    // bucketClient.checkResponse({ collateralCoinType, response });
-    // bucketClient.tx.setSender(bucketClient.sender);
-    // const tx = bucketClient.getTransaction();
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
     });
