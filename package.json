@@ -7,6 +7,7 @@
   ],
   "type": "module",
   "scripts": {
+    "test": "vitest",
     "preinstall": "bash ./scripts/setup.sh",
     "build": "turbo run build",
     "lint": "turbo lint --filter=bucket-protocol-sdk"

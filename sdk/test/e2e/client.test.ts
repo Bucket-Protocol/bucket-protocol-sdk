@@ -1,128 +1,64 @@
+import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import { BucketClient } from '@/index';
-import { COINS_TYPE_LIST } from '@/constants';
+import { BucketV2Client } from '@/index';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   // Instantiate BucketClient
-  const bucketClient = new BucketClient();
+  const bucketClient = new BucketV2Client();
 
-  it('tests getBucketConstants() function', async () => {
-    expect(await bucketClient.getBucketConstants()).toMatchObject({
-      feePrecision: '1000000',
-      liquidationRebate: '5000',
-      flashLoanFee: '500',
-      buckDecimal: 9,
-      maxLockTime: '31104000000',
-      minLockTime: '2592000000',
-      minFee: '3000',
-      maxFee: '50000',
+  it('test usdbCoinType()', async () => {
+    const usdbCoinType = bucketClient.usdbCoinType();
+    const usdbMetadata = await bucketClient.getSuiClient().getCoinMetadata({
+      coinType: usdbCoinType,
     });
+    expect(usdbMetadata?.decimals).toBe(6);
+    expect(usdbMetadata?.symbol).toBe('USDB');
+    expect(usdbMetadata?.name).toBe('Bucket USD');
   });
 
-  it('tests getProtocol() function', async () => {
-    const protocol = await bucketClient.getProtocol();
-    expect(protocol).toBeDefined();
+  it('test aggregatePrice()', async () => {
+    const suiClient = bucketClient.getSuiClient();
+    bucketClient.resetTransaction();
+    bucketClient.sender = '0x95b0ce9775382b88a4e698d31a0a7fd796922c91bb80de66e940bd4cae5a9916';
+    bucketClient.tx.setSender(bucketClient.sender);
+    const coinTypes = (await bucketClient.getAllVaults()).map((v) => v.coinType);
+    await Promise.all(coinTypes.map((coinType) => bucketClient.aggregatePrice({ coinType })));
+    const tx = bucketClient.getTransaction();
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.events.length).toBe(6);
+    // const priceResults = dryrunRes.events.map((e) => {
+    //   return {
+    //     eventType: e.type,
+    //     priceResult: (e.parsedJson as any).result,
+    //   };
+    // });
+    // console.log(priceResults);
   });
 
-  it('tests getAllBottle() function', async () => {
-    expect(await bucketClient.getAllBottles()).toBeDefined();
-  });
-
-  it('tests getDestroyedBottle() function', async () => {
-    expect(await bucketClient.getDestroyedBottles()).toBeDefined();
-  });
-
-  it('tests getAllBuckets() function', async () => {
-    const buckets = await bucketClient.getAllBuckets();
-    expect(buckets).toBeDefined();
-  });
-
-  it('tests getBucket() and findInsertionPlace() function', async () => {
-    const bucket = await bucketClient.getBucket('SUI');
-    expect(bucket).toBeDefined();
-    const insertionPlace = await bucketClient.findInsertionPlace(bucket.bottleTableId, 1, 50, COINS_TYPE_LIST.SUI);
-    expect(insertionPlace).toBeDefined();
-  });
-
-  it('tests getPrices() function', async () => {
-    const prices = await bucketClient.getPrices();
-    expect(prices).toBeDefined();
-  });
-
-  it('tests getAllTanks() function', async () => {
-    const tanks = await bucketClient.getAllTanks();
-    expect(tanks).toBeDefined();
-  });
-
-  it(
-    'tests getUserTanks() function',
-    async () => {
-      const tanks = await bucketClient.getUserTanks('');
-      expect(tanks).toBeDefined();
-    },
-    {
-      timeout: 1000 * 60,
-    },
-  );
-
-  it(
-    'tests getUserBottle() function',
-    async () => {
-      const bottles = await bucketClient.getUserBottles('');
-      expect(bottles).toBeDefined();
-    },
-    {
-      timeout: 60_000,
-    },
-  );
-
-  it('tests getAllPsms() function', async () => {
-    const psms = await bucketClient.getAllPsms();
-    expect(psms).toBeDefined();
-  });
-
-  it(
-    'tests getAllFountains() function',
-    async () => {
-      const fountains = await bucketClient.getAllFountains();
-      expect(fountains).toBeDefined();
-    },
-    {
-      timeout: 60_000,
-    },
-  );
-
-  it(
-    'tests getAllStrapFountains() function',
-    async () => {
-      const strapFountains = await bucketClient.getAllStrapFountains();
-      expect(strapFountains).toBeDefined();
-    },
-    {
-      timeout: 60_000,
-    },
-  );
-
-  it('tests getStrapFountainApr() function', async () => {
-    const apr = await bucketClient.getStrapFountainApr('afSUI');
-    expect(apr).toBeDefined();
-  });
-
-  it('tests getSBUCKTvl() function', async () => {
-    const tvl = await bucketClient.getSBUCKTvl();
-    expect(tvl).toBeDefined();
-  });
-
-  it('tests getSavingApr() function', async () => {
-    const apr = await bucketClient.getSavingApr();
-    expect(apr).toBeDefined();
-  });
-
-  it('tests getUserDeButInfo() function', async () => {
-    const deBUT = await bucketClient.getUserDeButInfo(
-      '0x3662e00a85fdae17d5732770b8d0658105fe9c0ca91c259790e6fb1498686abc',
-    );
-    expect(deBUT).toBeDefined();
+  it('test Borrow', async () => {
+    const suiClient = bucketClient.getSuiClient();
+    bucketClient.sender = '0x95b0ce9775382b88a4e698d31a0a7fd796922c91bb80de66e940bd4cae5a9916';
+    const tx = await bucketClient.buildManagePositionTransaction({
+      collateralCoinType: SUI_TYPE_ARG,
+      depositAmount: 1 * 10 ** 9,
+      borrowAmount: 1 * 10 ** 6,
+    });
+    // bucketClient.resetTransaction();
+    // const collateralCoinType = SUI_TYPE_ARG;
+    // const updateRequest = bucketClient.debtorRequest({ collateralCoinType });
+    // const [collCoin, usdbCoin, response] = bucketClient.updatePosition({ collateralCoinType, updateRequest });
+    // bucketClient.destroyZeroCoin({ coinType: collateralCoinType, coin: collCoin });
+    // bucketClient.destroyZeroCoin({ coinType: bucketClient.usdbCoinType(), coin: usdbCoin });
+    // bucketClient.checkResponse({ collateralCoinType, response });
+    // bucketClient.tx.setSender(bucketClient.sender);
+    // const tx = bucketClient.getTransaction();
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+    expect(dryrunRes.effects.status.status).toBe('success');
   });
 });

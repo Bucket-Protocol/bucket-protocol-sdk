@@ -1,11 +1,4 @@
-import {
-  SuiClient,
-  SuiMoveObject,
-  SuiObjectData,
-  SuiObjectDataOptions,
-  SuiObjectResponse,
-  SuiParsedData,
-} from '@mysten/sui/client';
+import { SuiMoveObject, SuiObjectData, SuiObjectResponse, SuiParsedData } from '@mysten/sui/client';
 import type { Infer } from 'superstruct';
 import { any, record, string } from 'superstruct';
 
@@ -25,13 +18,13 @@ export function getSuiObjectData(resp: SuiObjectResponse): SuiObjectData | null 
 }
 
 export function getMoveObject(data: SuiObjectResponse | SuiObjectData): SuiMoveObject | undefined {
-  const suiObject = 'data' in data ? getSuiObjectData(data) : (data as SuiObjectData);
+  const obj = 'data' in data ? getSuiObjectData(data) : (data as SuiObjectData);
 
-  if (!suiObject || !isSuiObjectDataWithContent(suiObject) || suiObject.content.dataType !== 'moveObject') {
+  if (!obj || !isSuiObjectDataWithContent(obj) || obj.content.dataType !== 'moveObject') {
     return undefined;
   }
 
-  return suiObject.content as SuiMoveObject;
+  return obj.content as SuiMoveObject;
 }
 
 export function getObjectFields(
@@ -51,35 +44,4 @@ export const getObjectGenerics = (resp: SuiObjectResponse): string[] => {
   const endIdx = objType?.lastIndexOf?.('>');
 
   return startIdx ? objType!.slice(startIdx + 1, endIdx).split(', ') : [];
-};
-
-export const getMultiGetObjects = async ({
-  client,
-  objectIds,
-  options = {
-    showContent: true,
-    showType: true,
-  },
-}: {
-  client: SuiClient;
-  objectIds: string[];
-  options: SuiObjectDataOptions;
-}): Promise<SuiObjectResponse[]> => {
-  const slicedObjectIds: string[][] = [];
-  for (let i = 0; i < Math.ceil(objectIds.length / 50); ++i) {
-    slicedObjectIds.push(objectIds.slice(i * 50, (i + 1) * 50));
-  }
-
-  const responseVec: SuiObjectResponse[][] = await Promise.all(
-    slicedObjectIds.map((objectIds) => {
-      return client.multiGetObjects({
-        ids: objectIds,
-        options,
-      });
-    }),
-  );
-
-  const response: SuiObjectResponse[] = responseVec.flat();
-
-  return response;
 };
