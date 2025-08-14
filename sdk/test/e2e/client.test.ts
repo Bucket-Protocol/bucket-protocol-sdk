@@ -41,7 +41,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
   it('test Borrow', async () => {
     const suiClient = bucketClient.getSuiClient();
-    bucketClient.sender = '0x95b0ce9775382b88a4e698d31a0a7fd796922c91bb80de66e940bd4cae5a9916';
     const tx = await bucketClient.buildManagePositionTransaction({
       collateralCoinType: SUI_TYPE_ARG,
       depositAmount: 1 * 10 ** 9,
