@@ -98,7 +98,7 @@ const result = await client.signAndExecuteTransaction({
 ```typescript
 // Query all positions for specific collateral (paginated)
 const positions = await client.getCdpPositions({
-  coinType: SUI_TYPE_ARG,
+  collateralCoinType: SUI_TYPE_ARG,
   pageSize: 50,
   cursor: null // null for first query
 });
@@ -109,7 +109,7 @@ console.log('Next cursor:', positions.nextCursor);
 // Query next page
 if (positions.nextCursor) {
   const nextPage = await client.getCdpPositions({
-    coinType: SUI_TYPE_ARG,
+    collateralCoinType: SUI_TYPE_ARG,
     pageSize: 50,
     cursor: positions.nextCursor
   });
@@ -131,6 +131,28 @@ const BTC_TYPE = '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58c
 const WAL_TYPE = '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL';
 ```
 
+## Price Aggregation Features
+
+The SDK now supports enhanced price aggregation capabilities:
+
+### Batch Price Aggregation
+
+```typescript
+// Aggregate prices for multiple coin types at once
+const coinTypes = [SUI_TYPE_ARG, BTC_TYPE, WAL_TYPE];
+const priceResults = await client.aggregatePrices({ coinTypes });
+
+// Aggregate only basic (non-derivative) prices
+const basicPrices = await client.aggregateBasicPrices({ coinTypes });
+```
+
+### Individual Price Collector Creation
+
+```typescript
+// Create a price collector
+const collector = client.newPriceCollector({ coinType: SUI_TYPE_ARG });
+```
+
 ## Advanced Usage
 
 ### Custom Transaction Building
@@ -139,11 +161,9 @@ const WAL_TYPE = '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae54
 // Reset transaction object
 client.resetTransaction();
 
-// Create price collector
-const priceCollector = client.newPriceCollector(SUI_TYPE_ARG);
-
-// Aggregate price
-const priceResult = await client.aggregatePrice({ coinType: SUI_TYPE_ARG });
+// Aggregate prices for multiple coin types
+const coinTypes = [SUI_TYPE_ARG];
+const [priceResult] = await client.aggregatePrices({ coinTypes });
 
 // Create debtor request
 const updateRequest = client.debtorRequest({
@@ -203,6 +223,10 @@ try {
     console.error('Insufficient balance');
   } else if (error.message.includes('Invalid signer')) {
     console.error('Invalid signer');
+  } else if (error.message.includes('Unsupported collateral type')) {
+    console.error('Unsupported collateral type');
+  } else if (error.message.includes('No price feed')) {
+    console.error('No price feed available');
   } else {
     console.error('Unknown error:', error.message);
   }
@@ -214,37 +238,85 @@ try {
 ### VaultInfo
 ```typescript
 type VaultInfo = {
-  coinType: string;           // Collateral type
-  interestRate: number;       // Interest rate
-  positionTableSize: string;  // Number of positions
-  collateralDecimal: number;  // Collateral decimals
-  collateralBalance: string;  // Total collateral amount
-  minCollateralRatio: number; // Minimum collateralization ratio
-  supply: string;             // Current supply
-  maxSupply: string;          // Maximum supply
+  collateralCoinType: string;   // Collateral type
+  collateralDecimal: number;    // Collateral decimals
+  collateralBalance: string;    // Total collateral amount
+  minCollateralRatio: number;   // Minimum collateralization ratio
+  interestRate: number;         // Interest rate
+  usdbSupply: string;           // Current USDB supply
+  maxSupply: string;            // Maximum supply
+  positionTableSize: string;    // Number of positions
 };
 ```
 
 ### PositionInfo
 ```typescript
 type PositionInfo = {
-  coinType: string;    // Collateral type
-  collAmount: string;  // Collateral amount
-  debtAmount: string;  // Debt amount
+  collateralCoinType: string;   // Collateral type
+  collateralAmount: string;     // Collateral amount
+  debtAmount: string;           // Debt amount
 };
 ```
 
 ### CdpPositionsResponse
 ```typescript
 type CdpPositionsResponse = {
-  coinType: string;
+  collateralCoinType: string;
   positions: {
-    debtor: string;      // Debtor address
-    collAmount: number;  // Collateral amount
-    debtAmount: number;  // Debt amount
+    debtor: string;             // Debtor address
+    collateralAmount: number;   // Collateral amount
+    debtAmount: number;         // Debt amount
   }[];
-  nextCursor: string | null; // Pagination cursor
+  nextCursor: string | null;    // Pagination cursor
 };
+```
+
+### New Data Types
+
+#### AggregatorObjectInfo
+```typescript
+type AggregatorObjectInfo = {
+  coinType: string;             // Coin type
+  priceAggregater: SharedObjectRef;  // Price aggregator object
+  pythPriceId?: string;         // Pyth price ID
+};
+```
+
+#### VaultObjectInfo
+```typescript
+type VaultObjectInfo = {
+  collateralCoinType: string;   // Collateral type
+  vault: SharedObjectRef;       // Vault object
+  rewarders?: SharedObjectRef[]; // Rewarder objects (optional)
+};
+```
+
+## Architecture Improvements
+
+### Separated Aggregator Configuration
+
+The new version separates price aggregator configuration from vault configuration, providing better modularity:
+
+```typescript
+// Get aggregator information
+const aggInfo = client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
+
+// Get vault information
+const vaultInfo = client.getVaultObjectInfo({ collateralCoinType: SUI_TYPE_ARG });
+```
+
+### Enhanced Price Aggregation
+
+```typescript
+// Batch price aggregation (will support derivative prices in the future)
+const priceResults = await client.aggregatePrices({
+  coinTypes: [SUI_TYPE_ARG, BTC_TYPE]
+});
+
+// Currently equivalent to aggregateBasicPrices
+const basicPrices = await client.aggregateBasicPrices({
+  coinTypes: [SUI_TYPE_ARG, BTC_TYPE]
+});
 ```
 
 ## Utility Functions
@@ -254,14 +326,6 @@ type CdpPositionsResponse = {
 // Get USDB token type
 const usdbType = client.usdbCoinType();
 console.log('USDB Type:', usdbType);
-```
-
-### Price Aggregation
-```typescript
-// Manually aggregate price for specific collateral
-const priceResult = await client.aggregatePrice({
-  coinType: SUI_TYPE_ARG
-});
 ```
 
 ### Account Management
@@ -284,7 +348,7 @@ const pythConnection = client.getPythConnection();
 // Get Pyth client
 const pythClient = client.getPythClient();
 
-// Price updates are automatically handled in aggregatePrice()
+// Price updates are automatically handled in aggregatePrices()
 ```
 
 ## Best Practices
@@ -295,6 +359,8 @@ const pythClient = client.getPythClient();
 4. **Testing Environment**: Test on testnet before deploying to production
 5. **Gas Management**: Consider gas costs for complex transactions
 6. **Position Monitoring**: Regularly check position health and market conditions
+7. **Batch Operations**: Use new batch price aggregation features for efficiency
+8. **Resource Management**: Properly use `keepTransaction` parameter to manage transaction objects
 
 ## Example Project
 
@@ -346,11 +412,18 @@ const { data: coins } = await client.getSuiClient().getCoins({
 console.log('Available balance:', coins);
 ```
 
-**"Unsupported coin type" Error:**
+**"Unsupported collateral type" Error:**
 ```typescript
 // Use supported collateral types
 const supportedTypes = client.getCDPCollateralTypes();
 console.log('Supported types:', supportedTypes);
+```
+
+**"No price feed" Error:**
+```typescript
+// Ensure the coin type has a valid price feed
+const aggInfo = client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
+console.log('Pyth Price ID:', aggInfo.pythPriceId);
 ```
 
 ## Support & Contributing
@@ -358,7 +431,7 @@ console.log('Supported types:', supportedTypes);
 - **GitHub**: [bucket-protocol-sdk](https://github.com/Bucket-Protocol/bucket-protocol-sdk)
 - **Issues**: Please submit issues on GitHub for bug reports or feature requests
 - **License**: Apache-2.0
-- **Maintainer**: JustaLiang <justa@bucketprotocol.io>
+- **Maintainer**: Justa Liang <justa@bucketprotocol.io>
 
 ## Version Information
 
@@ -368,11 +441,3 @@ console.log('Supported types:', supportedTypes);
 - @mysten/sui: 1.28.2
 - @pythnetwork/pyth-sui-js: ^2.1.0
 - decimal.js: ^10.5.0
-
-## Changelog
-
-### 0.15.7
-- Current stable release
-- Full mainnet support
-- Complete CDP operations
-- Pyth oracle integration
