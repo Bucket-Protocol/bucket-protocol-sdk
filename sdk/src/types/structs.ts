@@ -39,6 +39,11 @@ export type VaultObjectInfo = {
   rewarders?: SharedObjectRef[];
 };
 
+export type PSMPoolObjectInfo = {
+  collateralCoinType: string;
+  pool: SharedObjectRef;
+};
+
 export type CdpPositionsResponse = {
   collateralCoinType: string;
   positions: {

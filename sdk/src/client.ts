@@ -7,7 +7,12 @@ import {
   SuiTransactionBlockResponseOptions,
 } from '@mysten/sui/client';
 import { Keypair } from '@mysten/sui/cryptography';
-import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
+import {
+  Transaction,
+  TransactionArgument,
+  TransactionObjectArgument,
+  TransactionResult,
+} from '@mysten/sui/transactions';
 import { normalizeStructTag, normalizeSuiAddress, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
@@ -15,6 +20,7 @@ import {
   AggregatorObjectInfo,
   CdpPositionsResponse,
   PositionInfo,
+  PSMPoolObjectInfo,
   VaultInfo,
   VaultObjectInfo,
   VaultResponse,
@@ -67,6 +73,14 @@ export class BucketV2Client {
     const aggInfo = this.config.AGGREGATORS.find((a) => a.coinType === normalizeStructTag(coinType));
     if (!aggInfo) throw new Error('Unsupported coin type');
     return aggInfo;
+  }
+
+  getPsmPoolObjectInfo({ collateralCoinType }: { collateralCoinType: string }): PSMPoolObjectInfo {
+    const psmPoolInfo = this.config.PSM_POOLS.find(
+      (v) => v.collateralCoinType === normalizeStructTag(collateralCoinType),
+    );
+    if (!psmPoolInfo) throw new Error('Unsupported collateral type');
+    return psmPoolInfo;
   }
 
   /* ----- Getter ----- */
@@ -357,6 +371,15 @@ export class BucketV2Client {
     return this.tx.sharedObjectRef(vaultInfo.vault);
   }
 
+  psmPoolObj({ collateralCoinType }: { collateralCoinType: string }): TransactionArgument {
+    const vaultInfo = this.getPsmPoolObjectInfo({ collateralCoinType });
+    return this.tx.sharedObjectRef(vaultInfo.pool);
+  }
+
+  flashConfigObj(): TransactionArgument {
+    return this.tx.sharedObjectRef(this.config.FLASH_CONFIG_OBJ);
+  }
+
   /**
    * @description Create a AccountRequest
    * @param accountObj (optional): Account object or EOA if undefined
@@ -522,13 +545,99 @@ export class BucketV2Client {
     });
   }
 
+  psmSwapIn({
+    collateralCoinType,
+    priceResult,
+    collateralCoin,
+    accountObj,
+  }: {
+    collateralCoinType: string;
+    priceResult: TransactionArgument;
+    collateralCoin: TransactionObjectArgument;
+    accountObj?: string | TransactionArgument;
+  }): TransactionArgument {
+    const partner = this.tx.object.option({
+      type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
+      value: this.newAccountRequest(accountObj),
+    });
+    const usdbCoin = this.tx.moveCall({
+      target: `${this.config.PSM_PACKAGE_ID}::pool::swap_in`,
+      typeArguments: [collateralCoinType],
+      arguments: [this.psmPoolObj({ collateralCoinType }), this.treasuryObj(), priceResult, collateralCoin, partner],
+    });
+
+    return usdbCoin;
+  }
+
+  psmSwapOut({
+    collateralCoinType,
+    priceResult,
+    usdbCoin,
+    accountObj,
+  }: {
+    collateralCoinType: string;
+    priceResult: TransactionArgument;
+    usdbCoin: TransactionObjectArgument;
+    accountObj?: string | TransactionArgument;
+  }): TransactionArgument {
+    const partner = this.tx.object.option({
+      type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
+      value: this.newAccountRequest(accountObj),
+    });
+    const collateralCoin = this.tx.moveCall({
+      target: `${this.config.PSM_PACKAGE_ID}::pool::swap_out`,
+      typeArguments: [collateralCoinType],
+      arguments: [this.psmPoolObj({ collateralCoinType }), this.treasuryObj(), priceResult, usdbCoin, partner],
+    });
+
+    return collateralCoin;
+  }
+
+  flashMint({
+    amount,
+    accountObj,
+  }: {
+    amount: number | TransactionArgument;
+    accountObj?: string | TransactionArgument;
+  }) {
+    const partner = this.tx.object.option({
+      type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
+      value: this.newAccountRequest(accountObj),
+    });
+
+    const [usdbCoin, flash_mint_receipt] = this.tx.moveCall({
+      target: `${this.config.FLASH_PACKAGE_ID}::config::flash_mint`,
+      arguments: [
+        this.flashConfigObj(),
+        this.treasuryObj(),
+        partner,
+        typeof amount === 'number' ? this.tx.pure.u64(amount) : amount,
+      ],
+    });
+
+    return [usdbCoin, flash_mint_receipt];
+  }
+
+  flashBurn({
+    usdbCoin,
+    flash_mint_receipt,
+  }: {
+    usdbCoin: TransactionObjectArgument;
+    flash_mint_receipt: TransactionArgument;
+  }) {
+    this.tx.moveCall({
+      target: `${this.config.FLASH_PACKAGE_ID}::config::flash_burn`,
+      arguments: [this.flashConfigObj(), this.treasuryObj(), usdbCoin, flash_mint_receipt],
+    });
+  }
+
   /* ----- Transaction Methods ----- */
 
   /**
    * @description build and return Transaction of manage position
    * @param collateralCoinType: collateral coin type , e.g "0x2::sui::SUI"
    * @param depositAmount: how much amount to deposit (collateral)
-   * @param borrowAmount: how much amout to borrow (USDB)
+   * @param borrowAmount: how much amount to borrow (USDB)
    * @param repayAmount: how much amount to repay (USDB)
    * @param withdrawAmount: how much amount to withdraw (collateral)
    * @param accountObjId: the Account object to hold position (undefined if just use EOA)
