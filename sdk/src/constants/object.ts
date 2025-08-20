@@ -1,4 +1,3 @@
-import { getFullnodeUrl } from '@mysten/sui/client';
 import { normalizeStructTag } from '@mysten/sui/utils';
 
 import { AggregatorObjectInfo, PSMPoolObjectInfo, SharedObjectRef, VaultObjectInfo } from '@/types';
