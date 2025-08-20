@@ -1,20 +1,26 @@
+import { getFullnodeUrl } from '@mysten/sui/client';
 import { normalizeStructTag } from '@mysten/sui/utils';
 
-import { AggregatorObjectInfo, SharedObjectRef, VaultObjectInfo } from '@/types';
+import { AggregatorObjectInfo, PSMPoolObjectInfo, SharedObjectRef, VaultObjectInfo } from '@/types';
 
 export type ConfigType = {
   ORIGINAL_FRAMEWORK_PACKAGE_ID: string;
   ORIGINAL_USDB_PACKAGE_ID: string;
   ORIGINAL_ORACLE_PACKAGE_ID: string;
   ORIGINAL_CDP_PACKAGE_ID: string;
+  ORIGINAL_PSM_PACKAGE_ID: string;
+  ORIGINAL_FLASH_PACKAGE_ID: string;
 
   FRAMEWORK_PACKAGE_ID: string;
-  VUSD_PACKAGE_ID: string;
+  USDB_PACKAGE_ID: string;
   ORACLE_PACKAGE_ID: string;
   CDP_PACKAGE_ID: string;
+  PSM_PACKAGE_ID: string;
+  FLASH_PACKAGE_ID: string;
 
   CLOCK_OBJ: SharedObjectRef;
   TREASURY_OBJ: SharedObjectRef;
+  FLASH_CONFIG_OBJ: SharedObjectRef;
 
   PYTH_STATE_ID: string;
   WORMHOLE_STATE_ID: string;
@@ -23,19 +29,28 @@ export type ConfigType = {
 
   AGGREGATORS: AggregatorObjectInfo[];
   VAULTS: VaultObjectInfo[];
+  PSM_POOLS: PSMPoolObjectInfo[];
 };
 
-export const CONFIG: Record<'mainnet', ConfigType> = {
+type Network = 'mainnet' | 'testnet';
+
+export const CONFIG: Record<Network, ConfigType> = {
   mainnet: {
     ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x89495ef31f30a6edbd08f8a28f4e5419401d2c133c34a617a7983928d5697797',
     ORIGINAL_USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
     ORIGINAL_ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
     ORIGINAL_CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
+    // TODO: Jarek
+    ORIGINAL_PSM_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
+    // TODO: Jarek
+    ORIGINAL_FLASH_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
 
     FRAMEWORK_PACKAGE_ID: '0x89495ef31f30a6edbd08f8a28f4e5419401d2c133c34a617a7983928d5697797',
-    VUSD_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
+    USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
     ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
     CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
+    PSM_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
+    FLASH_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
 
     CLOCK_OBJ: {
       objectId: '0x0000000000000000000000000000000000000000000000000000000000000006',
@@ -43,6 +58,11 @@ export const CONFIG: Record<'mainnet', ConfigType> = {
       mutable: false,
     },
     TREASURY_OBJ: {
+      objectId: '0xc30d8b29ddca177f3ea934ec885cff4cfa46ae2390c8df3eca6513731e5d8ddd',
+      initialSharedVersion: '18178365',
+      mutable: true,
+    },
+    FLASH_CONFIG_OBJ: {
       objectId: '0xc30d8b29ddca177f3ea934ec885cff4cfa46ae2390c8df3eca6513731e5d8ddd',
       initialSharedVersion: '18178365',
       mutable: true,
@@ -86,6 +106,7 @@ export const CONFIG: Record<'mainnet', ConfigType> = {
         },
       },
     ],
+    PSM_POOLS: [],
     AGGREGATORS: [
       {
         coinType: normalizeStructTag('0x2::sui::SUI'),
@@ -113,6 +134,108 @@ export const CONFIG: Record<'mainnet', ConfigType> = {
           mutable: false,
         },
         pythPriceId: '0xeba0732395fae9dec4bae12e52760b35fc1c5671e2da8b449c9af4efe5d54341',
+      },
+    ],
+  },
+  testnet: {
+    ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
+    ORIGINAL_USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
+    ORIGINAL_ORACLE_PACKAGE_ID: '0x589bc31d4f89f3fc2c8c94f78ba7b234992c06408f1a1571927c971cf8fcc0ce',
+    ORIGINAL_CDP_PACKAGE_ID: '0x801a162330af18f018022faf93d781e5f2777886cac46c269ba3cc09b808c59a',
+    // TODO: Jarek
+    ORIGINAL_PSM_PACKAGE_ID: '0x1647b3b007c8b7b2260f460bc698f484baff92cc1a271c323bc1ed0b77ae43d0',
+    // TODO: Jarek
+    ORIGINAL_FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
+
+    FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
+    USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
+    ORACLE_PACKAGE_ID: '0x589bc31d4f89f3fc2c8c94f78ba7b234992c06408f1a1571927c971cf8fcc0ce',
+    CDP_PACKAGE_ID: '0x801a162330af18f018022faf93d781e5f2777886cac46c269ba3cc09b808c59a',
+    PSM_PACKAGE_ID: '0x1647b3b007c8b7b2260f460bc698f484baff92cc1a271c323bc1ed0b77ae43d0',
+    FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
+
+    CLOCK_OBJ: {
+      objectId: '0x0000000000000000000000000000000000000000000000000000000000000006',
+      initialSharedVersion: '1',
+      mutable: false,
+    },
+    TREASURY_OBJ: {
+      objectId: '',
+      initialSharedVersion: '',
+      mutable: true,
+    },
+    FLASH_CONFIG_OBJ: {
+      objectId: '',
+      initialSharedVersion: '',
+      mutable: true,
+    },
+    PYTH_STATE_ID: '',
+    WORMHOLE_STATE_ID: '',
+    PYTH_RULE_PACKAGE_ID: '',
+    PYTH_RULE_CONFIG_OBJ: {
+      objectId: '',
+      initialSharedVersion: '',
+      mutable: false,
+    },
+
+    VAULTS: [
+      {
+        collateralCoinType: normalizeStructTag('0x2::sui::SUI'),
+        vault: {
+          objectId: '',
+          initialSharedVersion: '18178374',
+          mutable: true,
+        },
+      },
+      {
+        collateralCoinType: normalizeStructTag(
+          '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC',
+        ),
+        vault: {
+          objectId: '',
+          initialSharedVersion: '18178375',
+          mutable: true,
+        },
+      },
+      {
+        collateralCoinType: normalizeStructTag(
+          '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
+        ),
+        vault: {
+          objectId: '',
+          initialSharedVersion: '18178376',
+          mutable: true,
+        },
+      },
+    ],
+    PSM_POOLS: [],
+    AGGREGATORS: [
+      {
+        coinType: normalizeStructTag('0x2::sui::SUI'),
+        priceAggregater: {
+          objectId: '',
+          initialSharedVersion: '18178368',
+          mutable: false,
+        },
+        pythPriceId: '',
+      },
+      {
+        coinType: normalizeStructTag('0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC'),
+        priceAggregater: {
+          objectId: '',
+          initialSharedVersion: '18178369',
+          mutable: false,
+        },
+        pythPriceId: '',
+      },
+      {
+        coinType: normalizeStructTag('0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL'),
+        priceAggregater: {
+          objectId: '',
+          initialSharedVersion: '18178370',
+          mutable: false,
+        },
+        pythPriceId: '',
       },
     ],
   },
