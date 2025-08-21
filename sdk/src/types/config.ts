@@ -1,6 +1,6 @@
 import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
 
-export type Network = 'mainnet' /* | 'testnet' | 'devnet' | 'localnet' */;
+export type Network = 'mainnet' | 'testnet' /* | 'testnet' | 'devnet' | 'localnet' */;
 
 export type AggregatorObjectInfo = {
   priceAggregator: SharedObjectRef;
@@ -19,18 +19,28 @@ export type CollateralObjectsInfo = {
   rewarders?: SharedObjectRef[];
 };
 
+export type PSMPoolObjectInfo = {
+  pool: SharedObjectRef;
+};
+
 export type ConfigType = {
   ORIGINAL_FRAMEWORK_PACKAGE_ID: string;
   ORIGINAL_USDB_PACKAGE_ID: string;
   ORIGINAL_ORACLE_PACKAGE_ID: string;
   ORIGINAL_CDP_PACKAGE_ID: string;
+  ORIGINAL_PSM_PACKAGE_ID: string;
+  ORIGINAL_FLASH_PACKAGE_ID: string;
 
   FRAMEWORK_PACKAGE_ID: string;
-  VUSD_PACKAGE_ID: string;
+  USDB_PACKAGE_ID: string;
   ORACLE_PACKAGE_ID: string;
   CDP_PACKAGE_ID: string;
+  PSM_PACKAGE_ID: string;
+  FLASH_PACKAGE_ID: string;
 
   TREASURY_OBJ: SharedObjectRef;
+
+  FLASH_GLOBAL_CONFIG_OBJ: SharedObjectRef;
 
   PYTH_STATE_ID: string;
   WORMHOLE_STATE_ID: string;
@@ -39,4 +49,5 @@ export type ConfigType = {
 
   VAULT_OBJS: Record<string, VaultObjectInfo>;
   AGGREGATOR_OBJS: Record<string, AggregatorObjectInfo>;
+  PSM_POOL_OBJS: Record<string, PSMPoolObjectInfo>;
 };

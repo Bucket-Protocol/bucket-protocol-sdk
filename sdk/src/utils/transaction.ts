@@ -1,6 +1,6 @@
-import { SuiClient } from '@mysten/sui/dist/cjs/client';
-import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/dist/cjs/transactions';
-import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/dist/cjs/utils';
+import { SuiClient } from '@mysten/sui/client';
+import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
+import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 
 /**
  * @description new zero coin
@@ -48,6 +48,7 @@ export const splitInputCoins = async (
       owner: sender,
       coinType,
     });
+    console.log({ userCoins });
     if (userCoins.length === 0) {
       return amounts.map((amount) => {
         if (typeof amount === 'number' && amount > 0) {

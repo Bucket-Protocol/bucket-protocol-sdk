@@ -1,39 +1,10 @@
-import { ConfigType, Network } from '@/types/config';
-
-import { AggregatorObjectInfo, PSMPoolObjectInfo, SharedObjectRef, VaultObjectInfo } from '@/types';
-
-export type ConfigType = {
-  ORIGINAL_FRAMEWORK_PACKAGE_ID: string;
-  ORIGINAL_USDB_PACKAGE_ID: string;
-  ORIGINAL_ORACLE_PACKAGE_ID: string;
-  ORIGINAL_CDP_PACKAGE_ID: string;
-  ORIGINAL_PSM_PACKAGE_ID: string;
-  ORIGINAL_FLASH_PACKAGE_ID: string;
-
-  FRAMEWORK_PACKAGE_ID: string;
-  USDB_PACKAGE_ID: string;
-  ORACLE_PACKAGE_ID: string;
-  CDP_PACKAGE_ID: string;
-  PSM_PACKAGE_ID: string;
-  FLASH_PACKAGE_ID: string;
-
-  CLOCK_OBJ: SharedObjectRef;
-  TREASURY_OBJ: SharedObjectRef;
-  FLASH_GLOBAL_CONFIG_OBJ: SharedObjectRef;
-
-  PYTH_STATE_ID: string;
-  WORMHOLE_STATE_ID: string;
-  PYTH_RULE_PACKAGE_ID: string;
-  PYTH_RULE_CONFIG_OBJ: SharedObjectRef;
-
-  AGGREGATORS: AggregatorObjectInfo[];
-  VAULTS: VaultObjectInfo[];
-  PSM_POOLS: PSMPoolObjectInfo[];
-};
+import { ConfigType } from '@/types/config';
 
 export type Network = 'mainnet' | 'testnet';
 
 export const PRICE_SERVICE_ENDPOINT = 'https://hermes.pyth.network';
+// TODO: to be merged
+export const PRICE_SERVICE_TESTNET_ENDPOINT = 'https://hermes-beta.pyth.network';
 
 export const CONFIG: Record<Network, ConfigType> = {
   mainnet: {
@@ -41,17 +12,15 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
     ORIGINAL_ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
     ORIGINAL_CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
-    // TODO: Jarek
-    ORIGINAL_PSM_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
-    // TODO: Jarek
-    ORIGINAL_FLASH_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
+    ORIGINAL_PSM_PACKAGE_ID: '',
+    ORIGINAL_FLASH_PACKAGE_ID: '',
 
     FRAMEWORK_PACKAGE_ID: '0x89495ef31f30a6edbd08f8a28f4e5419401d2c133c34a617a7983928d5697797',
     USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
     ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
     CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
-    PSM_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
-    FLASH_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
+    PSM_PACKAGE_ID: '',
+    FLASH_PACKAGE_ID: '',
 
     TREASURY_OBJ: {
       objectId: '0xc30d8b29ddca177f3ea934ec885cff4cfa46ae2390c8df3eca6513731e5d8ddd',
@@ -59,10 +28,11 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: true,
     },
     FLASH_GLOBAL_CONFIG_OBJ: {
-      objectId: '0xc30d8b29ddca177f3ea934ec885cff4cfa46ae2390c8df3eca6513731e5d8ddd',
-      initialSharedVersion: '18178365',
-      mutable: true,
+      objectId: '',
+      initialSharedVersion: 0,
+      mutable: false,
     },
+
     PYTH_STATE_ID: '0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8',
     WORMHOLE_STATE_ID: '0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c',
     PYTH_RULE_PACKAGE_ID: '0x855e2f7810fd7acbd470def555c3909ecd72e8dd3bf2989e4c223a455dd1bb33',
@@ -71,6 +41,7 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 18178367,
       mutable: false,
     },
+
     VAULT_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         vault: {
@@ -93,12 +64,6 @@ export const CONFIG: Record<Network, ConfigType> = {
           mutable: true,
         },
       },
-    ],
-    PSM_POOLS: [],
-    AGGREGATORS: [
-      {
-        coinType: normalizeStructTag('0x2::sui::SUI'),
-        priceAggregater: {
     },
     AGGREGATOR_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
@@ -126,6 +91,7 @@ export const CONFIG: Record<Network, ConfigType> = {
         pythPriceId: '0xeba0732395fae9dec4bae12e52760b35fc1c5671e2da8b449c9af4efe5d54341',
       },
     },
+    PSM_POOL_OBJS: {},
   },
   testnet: {
     ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
@@ -142,21 +108,18 @@ export const CONFIG: Record<Network, ConfigType> = {
     PSM_PACKAGE_ID: '0xb818b22a88d614c266c5f4436fb4447dee1c4fba8071c456f864851eb6dd194d',
     FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
 
-    CLOCK_OBJ: {
-      objectId: '0x0000000000000000000000000000000000000000000000000000000000000006',
-      initialSharedVersion: '1',
-      mutable: false,
-    },
     TREASURY_OBJ: {
       objectId: '0xb1bf430d03abcceed4f64b31ddf71b03bd503bea91ca64e80adaff35b22c7230',
-      initialSharedVersion: '349180351',
+      initialSharedVersion: 349180351,
       mutable: true,
     },
+
     FLASH_GLOBAL_CONFIG_OBJ: {
       objectId: '0x66c8c42e1ccf2a8eaa50f2584b990418c54349f53470004545e12333ccf1f0fc',
       initialSharedVersion: '349180354',
       mutable: true,
     },
+
     PYTH_STATE_ID: '0x2d82612a354f0b7e52809fc2845642911c7190404620cec8688f68808f8800d8',
     WORMHOLE_STATE_ID: '0xebba4cc4d614f7a7cdbe883acc76d1cc767922bc96778e7b68be0d15fce27c02',
     PYTH_RULE_PACKAGE_ID: '0x69f13c07f8cbd9511437448f3bdc91d515465e5a8bf0ea5f94a2eb6ebbecb883',
@@ -166,59 +129,26 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: false,
     },
 
-    VAULTS: [
-      {
-        collateralCoinType: normalizeStructTag('0x2::sui::SUI'),
-        vault: {
-          objectId: '',
-          initialSharedVersion: '18178374',
+    VAULT_OBJS: {},
+    AGGREGATOR_OBJS: {
+      '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
+        priceAggregator: {
+          objectId: '0x50bfd18d36bf7a9a24c83d2a16e13eb88b824fd181e71e76acb649fae3143b8a',
+          initialSharedVersion: '442159459',
           mutable: true,
         },
+        // beta price id
+        pythPriceId: '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722',
       },
-      {
-        collateralCoinType: normalizeStructTag(
-          '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC',
-        ),
-        vault: {
-          objectId: '',
-          initialSharedVersion: '18178375',
-          mutable: true,
-        },
-      },
-      {
-        collateralCoinType: normalizeStructTag(
-          '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
-        ),
-        vault: {
-          objectId: '',
-          initialSharedVersion: '18178376',
-          mutable: true,
-        },
-      },
-    ],
-    PSM_POOLS: [
-      {
-        collateralCoinType: normalizeStructTag(
-          '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC',
-        ),
+    },
+    PSM_POOL_OBJS: {
+      '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
         pool: {
           objectId: '0xdb15a165364d41257412b560487ba2325269e904a29c045ca8f3a8de97d3c6df',
           initialSharedVersion: '442159458',
           mutable: true,
         },
       },
-    ],
-    AGGREGATORS: [
-      {
-        coinType: normalizeStructTag('0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'),
-        priceAggregater: {
-          objectId: '0x50bfd18d36bf7a9a24c83d2a16e13eb88b824fd181e71e76acb649fae3143b8a',
-          initialSharedVersion: '442159459',
-          mutable: false,
-        },
-        // this should be beta price fee id
-        pythPriceId: '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722',
-      },
-    ],
+    },
   },
 };

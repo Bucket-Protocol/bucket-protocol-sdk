@@ -1,8 +1,9 @@
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { Transaction } from '@mysten/sui/transactions';
 import { describe, expect, it } from 'vitest';
 
-import { BucketV2Client } from '@/index';
-import { COIN_TYPES } from '@/constants/coin';
+import { BucketV2Client } from '@/client';
+import { COIN_TYPES } from '@/consts/coin';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   // it('test usdbCoinType()', async () => {
@@ -86,16 +87,26 @@ describe('Interacting with Bucket Client on mainnet', () => {
   // });
 
   it('test psmSwapIn() on testnet', async () => {
-    const bucketClient = new BucketV2Client({
-      sender: '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c',
-      network: 'testnet',
-    });
-    const suiClient = bucketClient.getSuiClient();
+    const network = 'testnet';
+    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
+    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+    const bucketClient = new BucketV2Client({ suiClient, network });
+
+    // tx
+    const tx = new Transaction();
+    tx.setSender(sender);
+
     const amount = 1 * 10 ** 6; // 1 USDC
-    const tx = await bucketClient.buildPSMSwapInTransaction({
-      collateralCoinType: COIN_TYPES.USDC,
-      amount,
-    });
+    const usdbCoin = await bucketClient.buildPSMSwapInTransaction(
+      tx,
+      {
+        coinType: COIN_TYPES.USDC,
+        amount,
+      },
+      sender,
+    );
+
+    tx.transferObjects([usdbCoin], sender);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),

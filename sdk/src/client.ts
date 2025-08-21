@@ -1,49 +1,13 @@
 import { bcs } from '@mysten/sui/bcs';
-import {
-  DryRunTransactionBlockResponse,
-  getFullnodeUrl,
-  SuiClient,
-  SuiTransactionBlockResponse,
-  SuiTransactionBlockResponseOptions,
-} from '@mysten/sui/client';
-import { Keypair } from '@mysten/sui/cryptography';
-import {
-  Transaction,
-  TransactionArgument,
-  TransactionObjectArgument,
-  TransactionResult,
-} from '@mysten/sui/transactions';
-import { normalizeStructTag, normalizeSuiAddress, SUI_TYPE_ARG } from '@mysten/sui/utils';
-import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
-
-import {
-  AggregatorObjectInfo,
-  CdpPositionsResponse,
-  PositionInfo,
-  PSMPoolObjectInfo,
-  VaultInfo,
-  VaultObjectInfo,
-  VaultResponse,
-} from '@/types';
-import { CONFIG, ConfigType, Network } from '@/constants';
-import { getObjectFields, parseVaultObject } from '@/utils';
-
-const DUMMY_ADDRESS = normalizeSuiAddress('0x0');
-
-const CDP_POSITION_DATA = bcs.struct('CdpPositionData', {
-  debtor: bcs.Address,
-  coll_amount: bcs.U64,
-  debt_amount: bcs.U64,
-});
 import { SuiClient } from '@mysten/sui/client';
-import { Transaction, TransactionArgument } from '@mysten/sui/transactions';
+import { Transaction, TransactionArgument, TransactionObjectArgument } from '@mysten/sui/transactions';
 import { normalizeStructTag } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import { DUMMY_SENDER } from '@/consts';
-import { CONFIG, PRICE_SERVICE_ENDPOINT } from '@/consts/config';
+import { CONFIG, PRICE_SERVICE_ENDPOINT, PRICE_SERVICE_TESTNET_ENDPOINT } from '@/consts/config';
 import { POSITION_DATA } from '@/structs';
-import { AggregatorObjectInfo, ConfigType, Network, VaultObjectInfo } from '@/types/config';
+import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObjectInfo } from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, VaultInfo, VaultResponse } from '@/types/struct';
 import { getObjectFields } from '@/utils/object';
 import { parseVaultObject } from '@/utils/parse';
@@ -60,29 +24,13 @@ export class BucketV2Client {
   private pythConnection: SuiPriceServiceConnection;
   private pythClient: SuiPythClient;
 
-  constructor(inputs?: { network?: Network; rpcUrl?: string; sender?: string }) {
-    const { network = 'mainnet', rpcUrl, sender } = inputs ?? {};
-    this.config = CONFIG[network];
-    this.usdbType = `${this.config.ORIGINAL_USDB_PACKAGE_ID}::usdb::USDB`;
-    this.rpcEndpoint = rpcUrl ?? getFullnodeUrl(network ?? 'mainnet');
-    this.sender = sender ? normalizeSuiAddress(sender) : DUMMY_ADDRESS;
-    this.suiClient = new SuiClient({ url: this.rpcEndpoint, network: network ?? 'mainnet' });
-    const hermesServiceEndpoint =
-      network === 'mainnet' ? 'https://hermes.pyth.network' : 'https://hermes-beta.pyth.network';
-    this.pythConnection = new SuiPriceServiceConnection(hermesServiceEndpoint);
   constructor({ suiClient, network = 'mainnet' }: { suiClient: SuiClient; network?: Network }) {
     this.config = CONFIG[network];
     this.suiClient = suiClient;
-    this.pythConnection = new SuiPriceServiceConnection(PRICE_SERVICE_ENDPOINT);
-    this.pythClient = new SuiPythClient(this.suiClient, this.config.PYTH_STATE_ID, this.config.WORMHOLE_STATE_ID);
-  }
-
-  getPsmPoolObjectInfo({ collateralCoinType }: { collateralCoinType: string }): PSMPoolObjectInfo {
-    const psmPoolInfo = this.config.PSM_POOLS.find(
-      (v) => v.collateralCoinType === normalizeStructTag(collateralCoinType),
+    this.pythConnection = new SuiPriceServiceConnection(
+      network === 'mainnet' ? PRICE_SERVICE_ENDPOINT : PRICE_SERVICE_TESTNET_ENDPOINT,
     );
-    if (!psmPoolInfo) throw new Error('Unsupported collateral type');
-    return psmPoolInfo;
+    this.pythClient = new SuiPythClient(this.suiClient, this.config.PYTH_STATE_ID, this.config.WORMHOLE_STATE_ID);
   }
 
   /* ----- Getter ----- */
@@ -144,6 +92,18 @@ export class BucketV2Client {
       throw new Error('Unsupported coin type');
     }
     return aggregatorInfo;
+  }
+
+  /**
+   * @description
+   */
+  getPsmPoolObjectInfo({ coinType }: { coinType: string }): PSMPoolObjectInfo {
+    const psmPoolInfo = this.config.PSM_POOL_OBJS[normalizeStructTag(coinType)];
+
+    if (!psmPoolInfo) {
+      throw new Error('Unsupported coin type');
+    }
+    return psmPoolInfo;
   }
 
   /* ----- Queries ----- */
@@ -265,6 +225,13 @@ export class BucketV2Client {
   /**
    * @description
    */
+  flashGlobalConfig(tx: Transaction): TransactionArgument {
+    return tx.sharedObjectRef(this.config.FLASH_GLOBAL_CONFIG_OBJ);
+  }
+
+  /**
+   * @description
+   */
   vault(tx: Transaction, { coinType }: { coinType: string }): TransactionArgument {
     const vaultInfo = this.getVaultObjectInfo({ coinType });
 
@@ -280,13 +247,12 @@ export class BucketV2Client {
     return tx.sharedObjectRef(vaultInfo.priceAggregator);
   }
 
-  psmPoolObj({ collateralCoinType }: { collateralCoinType: string }): TransactionArgument {
-    const vaultInfo = this.getPsmPoolObjectInfo({ collateralCoinType });
-    return this.tx.sharedObjectRef(vaultInfo.pool);
-  }
-
-  flashConfigObj(): TransactionArgument {
-    return this.tx.sharedObjectRef(this.config.FLASH_GLOBAL_CONFIG_OBJ);
+  /**
+   * @description
+   */
+  psmPoolObj(tx: Transaction, { coinType }: { coinType: string }): TransactionArgument {
+    const psmPoolInfo = this.getPsmPoolObjectInfo({ coinType });
+    return tx.sharedObjectRef(psmPoolInfo.pool);
   }
 
   /**
@@ -335,7 +301,6 @@ export class BucketV2Client {
       throw new Error(`No price feed for ${coinTypes[invalidIdx]}`);
     }
     const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
-    const priceInfoObjIds = await this.pythClient.updatePriceFeeds(this.tx, updateData, pythPriceIds);
     const priceInfoObjIds = await this.pythClient.updatePriceFeeds(tx, updateData, pythPriceIds);
 
     return Promise.all(
@@ -468,89 +433,101 @@ export class BucketV2Client {
     });
   }
 
-  psmSwapIn({
-    collateralCoinType,
-    priceResult,
-    collateralCoin,
-    accountObj,
-  }: {
-    collateralCoinType: string;
-    priceResult: TransactionArgument;
-    collateralCoin: TransactionObjectArgument;
-    accountObj?: string | TransactionArgument;
-  }): TransactionArgument {
-    const partner = this.tx.object.option({
+  psmSwapIn(
+    tx: Transaction,
+    {
+      coinType,
+      priceResult,
+      collateralCoin,
+      accountObj,
+    }: {
+      coinType: string;
+      priceResult: TransactionArgument;
+      collateralCoin: TransactionObjectArgument;
+      accountObj?: string | TransactionArgument;
+    },
+  ): TransactionArgument {
+    const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(accountObj),
+      value: this.newAccountRequest(tx, { accountObj }),
     });
-    const usdbCoin = this.tx.moveCall({
+    const usdbCoin = tx.moveCall({
       target: `${this.config.PSM_PACKAGE_ID}::pool::swap_in`,
-      typeArguments: [collateralCoinType],
-      arguments: [this.psmPoolObj({ collateralCoinType }), this.treasuryObj(), priceResult, collateralCoin, partner],
+      typeArguments: [coinType],
+      arguments: [this.psmPoolObj(tx, { coinType }), this.treasury(tx), priceResult, collateralCoin, partner],
     });
 
     return usdbCoin;
   }
 
-  psmSwapOut({
-    collateralCoinType,
-    priceResult,
-    usdbCoin,
-    accountObj,
-  }: {
-    collateralCoinType: string;
-    priceResult: TransactionArgument;
-    usdbCoin: TransactionObjectArgument;
-    accountObj?: string | TransactionArgument;
-  }): TransactionArgument {
-    const partner = this.tx.object.option({
+  psmSwapOut(
+    tx: Transaction,
+    {
+      coinType,
+      priceResult,
+      usdbCoin,
+      accountObj,
+    }: {
+      coinType: string;
+      priceResult: TransactionArgument;
+      usdbCoin: TransactionObjectArgument;
+      accountObj?: string | TransactionArgument;
+    },
+  ): TransactionArgument {
+    const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(accountObj),
+      value: this.newAccountRequest(tx, { accountObj }),
     });
-    const collateralCoin = this.tx.moveCall({
+    const collateralCoin = tx.moveCall({
       target: `${this.config.PSM_PACKAGE_ID}::pool::swap_out`,
-      typeArguments: [collateralCoinType],
-      arguments: [this.psmPoolObj({ collateralCoinType }), this.treasuryObj(), priceResult, usdbCoin, partner],
+      typeArguments: [coinType],
+      arguments: [this.psmPoolObj(tx, { coinType }), this.treasury(tx), priceResult, usdbCoin, partner],
     });
 
     return collateralCoin;
   }
 
-  flashMint({
-    amount,
-    accountObj,
-  }: {
-    amount: number | TransactionArgument;
-    accountObj?: string | TransactionArgument;
-  }) {
-    const partner = this.tx.object.option({
+  flashMint(
+    tx: Transaction,
+    {
+      amount,
+      accountObj,
+    }: {
+      amount: number | TransactionArgument;
+      accountObj?: string | TransactionArgument;
+    },
+  ) {
+    const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(accountObj),
+      value: this.newAccountRequest(tx, { accountObj }),
     });
 
-    const [usdbCoin, flash_mint_receipt] = this.tx.moveCall({
+    const [usdbCoin, flash_mint_receipt] = tx.moveCall({
       target: `${this.config.FLASH_PACKAGE_ID}::config::flash_mint`,
       arguments: [
-        this.flashConfigObj(),
-        this.treasuryObj(),
+        this.flashGlobalConfig(tx),
+        this.treasury(tx),
         partner,
-        typeof amount === 'number' ? this.tx.pure.u64(amount) : amount,
+        typeof amount === 'number' ? tx.pure.u64(amount) : amount,
       ],
     });
 
     return [usdbCoin, flash_mint_receipt];
   }
 
-  flashBurn({
-    usdbCoin,
-    flash_mint_receipt,
-  }: {
-    usdbCoin: TransactionObjectArgument;
-    flash_mint_receipt: TransactionArgument;
-  }) {
-    this.tx.moveCall({
+  flashBurn(
+    tx: Transaction,
+    {
+      usdbCoin,
+      flash_mint_receipt,
+    }: {
+      usdbCoin: TransactionObjectArgument;
+      flash_mint_receipt: TransactionArgument;
+    },
+  ) {
+    tx.moveCall({
       target: `${this.config.FLASH_PACKAGE_ID}::config::flash_burn`,
-      arguments: [this.flashConfigObj(), this.treasuryObj(), usdbCoin, flash_mint_receipt],
+      arguments: [this.flashGlobalConfig(tx), this.treasury(tx), usdbCoin, flash_mint_receipt],
     });
   }
 
@@ -675,34 +652,25 @@ export class BucketV2Client {
     return collateralCoin;
   }
 
-  async buildPSMSwapInTransaction({
-    collateralCoinType,
-    amount,
-    accountObjId,
-    recipient = this.sender,
-    keepTransaction = false,
-  }: {
-    collateralCoinType: string;
-    amount: number;
-    accountObjId?: string;
-    recipient?: string;
-    keepTransaction?: boolean;
-  }): Promise<Transaction> {
-    if (!keepTransaction) this.resetTransaction();
-    if (!this.sender) throw new Error('Sender is not set');
-    this.tx.setSender(this.sender);
+  async buildPSMSwapInTransaction(
+    tx: Transaction,
+    {
+      coinType,
+      amount,
+      accountObjId,
+      keepTransaction = false,
+    }: {
+      coinType: string;
+      amount: number;
+      accountObjId?: string;
+      recipient?: string;
+      keepTransaction?: boolean;
+    },
+    sender: string,
+  ): Promise<TransactionArgument> {
+    const [collateralCoin] = await splitInputCoins(tx, { coinType, amounts: [amount]}, this.suiClient, sender);
+    const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
-    const [collateralCoin] = await this.splitInputCoins({ coinType: collateralCoinType, amounts: [amount] });
-    const [priceResult] = await this.aggregatePrices({ coinTypes: [collateralCoinType] });
-
-    const usdbCoin = this.psmSwapIn({ collateralCoinType, priceResult, collateralCoin, accountObj: accountObjId });
-
-    this.tx.transferObjects([usdbCoin], recipient);
-
-    this.tx.blockData.transactions.forEach((tx, i) => console.log({ [i]: tx }));
-
-    const tx = this.getTransaction();
-    if (!keepTransaction) this.resetTransaction();
-    return tx;
+    return this.psmSwapIn(tx, { coinType, priceResult, collateralCoin, accountObj: accountObjId });
   }
 }
