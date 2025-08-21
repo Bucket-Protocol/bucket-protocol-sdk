@@ -25,7 +25,7 @@ import {
   VaultObjectInfo,
   VaultResponse,
 } from '@/types';
-import { CONFIG, ConfigType } from '@/constants';
+import { CONFIG, ConfigType, Network } from '@/constants';
 import { getObjectFields, parseVaultObject } from '@/utils';
 
 const DUMMY_ADDRESS = normalizeSuiAddress('0x0');
@@ -51,14 +51,16 @@ export class BucketV2Client {
   public tx: Transaction;
   public sender: string;
 
-  constructor(inputs?: { network?: 'mainnet'; rpcUrl?: string; sender?: string }) {
-    const { network, rpcUrl, sender } = inputs ?? {};
-    this.config = CONFIG['mainnet'];
+  constructor(inputs?: { network?: Network; rpcUrl?: string; sender?: string }) {
+    const { network = 'mainnet', rpcUrl, sender } = inputs ?? {};
+    this.config = CONFIG[network];
     this.usdbType = `${this.config.ORIGINAL_USDB_PACKAGE_ID}::usdb::USDB`;
     this.rpcEndpoint = rpcUrl ?? getFullnodeUrl(network ?? 'mainnet');
     this.sender = sender ? normalizeSuiAddress(sender) : DUMMY_ADDRESS;
     this.suiClient = new SuiClient({ url: this.rpcEndpoint, network: network ?? 'mainnet' });
-    this.pythConnection = new SuiPriceServiceConnection('https://hermes.pyth.network');
+    const hermesServiceEndpoint =
+      network === 'mainnet' ? 'https://hermes.pyth.network' : 'https://hermes-beta.pyth.network';
+    this.pythConnection = new SuiPriceServiceConnection(hermesServiceEndpoint);
     this.pythClient = new SuiPythClient(this.suiClient, this.config.PYTH_STATE_ID, this.config.WORMHOLE_STATE_ID);
     this.tx = new Transaction();
   }
@@ -377,7 +379,7 @@ export class BucketV2Client {
   }
 
   flashConfigObj(): TransactionArgument {
-    return this.tx.sharedObjectRef(this.config.FLASH_CONFIG_OBJ);
+    return this.tx.sharedObjectRef(this.config.FLASH_GLOBAL_CONFIG_OBJ);
   }
 
   /**
@@ -415,11 +417,13 @@ export class BucketV2Client {
    */
   async aggregateBasicPrices({ coinTypes }: { coinTypes: string[] }): Promise<TransactionArgument[]> {
     const aggInfoList = coinTypes.map((coinType) => this.getAggregatorObjectInfo({ coinType }));
+
     const pythPriceIds = aggInfoList.map((aggInfo) => aggInfo.pythPriceId ?? '');
     const invalidIdx = pythPriceIds.findIndex((id) => id === '');
     if (invalidIdx >= 0) throw new Error(`No price feed for ${coinTypes[invalidIdx]}`);
     const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
     const priceInfoObjIds = await this.pythClient.updatePriceFeeds(this.tx, updateData, pythPriceIds);
+
     return Promise.all(
       coinTypes.map(async (coinType, idx) => {
         const collector = this.newPriceCollector({ coinType });
@@ -767,6 +771,37 @@ export class BucketV2Client {
     this.checkResponse({ collateralCoinType, response });
     this.destroyZeroCoin({ coinType: this.usdbType, coin: usdbCoin });
     this.tx.transferObjects([collCoin], recipient);
+
+    const tx = this.getTransaction();
+    if (!keepTransaction) this.resetTransaction();
+    return tx;
+  }
+
+  async buildPSMSwapInTransaction({
+    collateralCoinType,
+    amount,
+    accountObjId,
+    recipient = this.sender,
+    keepTransaction = false,
+  }: {
+    collateralCoinType: string;
+    amount: number;
+    accountObjId?: string;
+    recipient?: string;
+    keepTransaction?: boolean;
+  }): Promise<Transaction> {
+    if (!keepTransaction) this.resetTransaction();
+    if (!this.sender) throw new Error('Sender is not set');
+    this.tx.setSender(this.sender);
+
+    const [collateralCoin] = await this.splitInputCoins({ coinType: collateralCoinType, amounts: [amount] });
+    const [priceResult] = await this.aggregatePrices({ coinTypes: [collateralCoinType] });
+
+    const usdbCoin = this.psmSwapIn({ collateralCoinType, priceResult, collateralCoin, accountObj: accountObjId });
+
+    this.tx.transferObjects([usdbCoin], recipient);
+
+    this.tx.blockData.transactions.forEach((tx, i) => console.log({ [i]: tx }));
 
     const tx = this.getTransaction();
     if (!keepTransaction) this.resetTransaction();

@@ -19,7 +19,7 @@ export type ConfigType = {
 
   CLOCK_OBJ: SharedObjectRef;
   TREASURY_OBJ: SharedObjectRef;
-  FLASH_CONFIG_OBJ: SharedObjectRef;
+  FLASH_GLOBAL_CONFIG_OBJ: SharedObjectRef;
 
   PYTH_STATE_ID: string;
   WORMHOLE_STATE_ID: string;
@@ -31,7 +31,7 @@ export type ConfigType = {
   PSM_POOLS: PSMPoolObjectInfo[];
 };
 
-type Network = 'mainnet' | 'testnet';
+export type Network = 'mainnet' | 'testnet';
 
 export const CONFIG: Record<Network, ConfigType> = {
   mainnet: {
@@ -61,7 +61,7 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: '18178365',
       mutable: true,
     },
-    FLASH_CONFIG_OBJ: {
+    FLASH_GLOBAL_CONFIG_OBJ: {
       objectId: '0xc30d8b29ddca177f3ea934ec885cff4cfa46ae2390c8df3eca6513731e5d8ddd',
       initialSharedVersion: '18178365',
       mutable: true,
@@ -141,16 +141,14 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
     ORIGINAL_ORACLE_PACKAGE_ID: '0x589bc31d4f89f3fc2c8c94f78ba7b234992c06408f1a1571927c971cf8fcc0ce',
     ORIGINAL_CDP_PACKAGE_ID: '0x801a162330af18f018022faf93d781e5f2777886cac46c269ba3cc09b808c59a',
-    // TODO: Jarek
-    ORIGINAL_PSM_PACKAGE_ID: '0x1647b3b007c8b7b2260f460bc698f484baff92cc1a271c323bc1ed0b77ae43d0',
-    // TODO: Jarek
+    ORIGINAL_PSM_PACKAGE_ID: '0xb818b22a88d614c266c5f4436fb4447dee1c4fba8071c456f864851eb6dd194d',
     ORIGINAL_FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
 
     FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
     USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
     ORACLE_PACKAGE_ID: '0x589bc31d4f89f3fc2c8c94f78ba7b234992c06408f1a1571927c971cf8fcc0ce',
     CDP_PACKAGE_ID: '0x801a162330af18f018022faf93d781e5f2777886cac46c269ba3cc09b808c59a',
-    PSM_PACKAGE_ID: '0x1647b3b007c8b7b2260f460bc698f484baff92cc1a271c323bc1ed0b77ae43d0',
+    PSM_PACKAGE_ID: '0xb818b22a88d614c266c5f4436fb4447dee1c4fba8071c456f864851eb6dd194d',
     FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
 
     CLOCK_OBJ: {
@@ -159,21 +157,21 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: false,
     },
     TREASURY_OBJ: {
-      objectId: '',
-      initialSharedVersion: '',
+      objectId: '0xb1bf430d03abcceed4f64b31ddf71b03bd503bea91ca64e80adaff35b22c7230',
+      initialSharedVersion: '349180351',
       mutable: true,
     },
-    FLASH_CONFIG_OBJ: {
-      objectId: '',
-      initialSharedVersion: '',
+    FLASH_GLOBAL_CONFIG_OBJ: {
+      objectId: '0x66c8c42e1ccf2a8eaa50f2584b990418c54349f53470004545e12333ccf1f0fc',
+      initialSharedVersion: '349180354',
       mutable: true,
     },
-    PYTH_STATE_ID: '',
-    WORMHOLE_STATE_ID: '',
-    PYTH_RULE_PACKAGE_ID: '',
+    PYTH_STATE_ID: '0x2d82612a354f0b7e52809fc2845642911c7190404620cec8688f68808f8800d8',
+    WORMHOLE_STATE_ID: '0xebba4cc4d614f7a7cdbe883acc76d1cc767922bc96778e7b68be0d15fce27c02',
+    PYTH_RULE_PACKAGE_ID: '0x69f13c07f8cbd9511437448f3bdc91d515465e5a8bf0ea5f94a2eb6ebbecb883',
     PYTH_RULE_CONFIG_OBJ: {
-      objectId: '',
-      initialSharedVersion: '',
+      objectId: '0xd8cc7827b9efc35c4093078b89e726a9d4a2fd56da69f29b3ba8d69e750c72fd',
+      initialSharedVersion: '442159460',
       mutable: false,
     },
 
@@ -207,34 +205,28 @@ export const CONFIG: Record<Network, ConfigType> = {
         },
       },
     ],
-    PSM_POOLS: [],
+    PSM_POOLS: [
+      {
+        collateralCoinType: normalizeStructTag(
+          '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC',
+        ),
+        pool: {
+          objectId: '0xdb15a165364d41257412b560487ba2325269e904a29c045ca8f3a8de97d3c6df',
+          initialSharedVersion: '442159458',
+          mutable: true,
+        },
+      },
+    ],
     AGGREGATORS: [
       {
-        coinType: normalizeStructTag('0x2::sui::SUI'),
+        coinType: normalizeStructTag('0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'),
         priceAggregater: {
-          objectId: '',
-          initialSharedVersion: '18178368',
+          objectId: '0x50bfd18d36bf7a9a24c83d2a16e13eb88b824fd181e71e76acb649fae3143b8a',
+          initialSharedVersion: '442159459',
           mutable: false,
         },
-        pythPriceId: '',
-      },
-      {
-        coinType: normalizeStructTag('0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC'),
-        priceAggregater: {
-          objectId: '',
-          initialSharedVersion: '18178369',
-          mutable: false,
-        },
-        pythPriceId: '',
-      },
-      {
-        coinType: normalizeStructTag('0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL'),
-        priceAggregater: {
-          objectId: '',
-          initialSharedVersion: '18178370',
-          mutable: false,
-        },
-        pythPriceId: '',
+        // this should be beta price fee id
+        pythPriceId: '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722',
       },
     ],
   },
