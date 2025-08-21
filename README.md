@@ -22,7 +22,7 @@ const client = new BucketV2Client();
 const client = new BucketV2Client({
   network: 'mainnet',
   rpcUrl: 'your-custom-rpc-url', // Optional
-  sender: '0x...your-address'     // Optional
+  sender: '0x...your-address', // Optional
 });
 ```
 
@@ -57,15 +57,15 @@ client.sender = '0x...your-address';
 
 // Build transaction: deposit 1 SUI, borrow 1 USDB
 const tx = await client.buildManagePositionTransaction({
-  collateralCoinType: SUI_TYPE_ARG,  // SUI as collateral
-  depositAmount: 1 * 10**9,          // 1 SUI (9 decimals)
-  borrowAmount: 1 * 10**6,           // 1 USDB (6 decimals)
+  collateralCoinType: SUI_TYPE_ARG, // SUI as collateral
+  depositAmount: 1 * 10 ** 9, // 1 SUI (9 decimals)
+  borrowAmount: 1 * 10 ** 6, // 1 USDB (6 decimals)
 });
 
 // Sign and execute transaction
 const keypair = Ed25519Keypair.fromSecretKey('your-private-key');
 const result = await client.signAndExecuteTransaction({
-  signer: keypair
+  signer: keypair,
 });
 ```
 
@@ -74,8 +74,8 @@ const result = await client.signAndExecuteTransaction({
 ```typescript
 const tx = await client.buildManagePositionTransaction({
   collateralCoinType: SUI_TYPE_ARG,
-  repayAmount: 1 * 10**6,     // Repay 1 USDB
-  withdrawAmount: 0.5 * 10**9  // Withdraw 0.5 SUI
+  repayAmount: 1 * 10 ** 6, // Repay 1 USDB
+  withdrawAmount: 0.5 * 10 ** 9, // Withdraw 0.5 SUI
 });
 ```
 
@@ -85,11 +85,11 @@ const tx = await client.buildManagePositionTransaction({
 // Close entire position (repay all debt, withdraw all collateral)
 const tx = await client.buildClosePositionTransaction({
   collateralCoinType: SUI_TYPE_ARG,
-  recipient: '0x...recipient-address' // Optional, defaults to sender
+  recipient: '0x...recipient-address', // Optional, defaults to sender
 });
 
 const result = await client.signAndExecuteTransaction({
-  signer: keypair
+  signer: keypair,
 });
 ```
 
@@ -100,7 +100,7 @@ const result = await client.signAndExecuteTransaction({
 const positions = await client.getCdpPositions({
   collateralCoinType: SUI_TYPE_ARG,
   pageSize: 50,
-  cursor: null // null for first query
+  cursor: null, // null for first query
 });
 
 console.log('Position list:', positions.positions);
@@ -111,7 +111,7 @@ if (positions.nextCursor) {
   const nextPage = await client.getCdpPositions({
     collateralCoinType: SUI_TYPE_ARG,
     pageSize: 50,
-    cursor: positions.nextCursor
+    cursor: positions.nextCursor,
   });
 }
 ```
@@ -168,20 +168,20 @@ const [priceResult] = await client.aggregatePrices({ coinTypes });
 // Create debtor request
 const updateRequest = client.debtorRequest({
   collateralCoinType: SUI_TYPE_ARG,
-  borrowAmount: 1 * 10**6
+  borrowAmount: 1 * 10 ** 6,
 });
 
 // Update position
 const [collCoin, usdbCoin, response] = client.updatePosition({
   collateralCoinType: SUI_TYPE_ARG,
   updateRequest,
-  priceResult
+  priceResult,
 });
 
 // Check response
 client.checkResponse({
   collateralCoinType: SUI_TYPE_ARG,
-  response
+  response,
 });
 
 // Get built transaction
@@ -194,8 +194,8 @@ const transaction = client.getTransaction();
 // Build transaction
 const tx = await client.buildManagePositionTransaction({
   collateralCoinType: SUI_TYPE_ARG,
-  depositAmount: 1 * 10**9,
-  borrowAmount: 1 * 10**6
+  depositAmount: 1 * 10 ** 9,
+  borrowAmount: 1 * 10 ** 6,
 });
 
 // Simulate execution (won't actually execute on-chain)
@@ -209,12 +209,12 @@ console.log('Simulation result:', dryRunResult.effects.status);
 try {
   const tx = await client.buildManagePositionTransaction({
     collateralCoinType: SUI_TYPE_ARG,
-    depositAmount: 1 * 10**9,
-    borrowAmount: 1 * 10**6
+    depositAmount: 1 * 10 ** 9,
+    borrowAmount: 1 * 10 ** 6,
   });
 
   const result = await client.signAndExecuteTransaction({
-    signer: keypair
+    signer: keypair,
   });
 
   console.log('Transaction successful:', result.digest);
@@ -236,57 +236,62 @@ try {
 ## Data Types
 
 ### VaultInfo
+
 ```typescript
 type VaultInfo = {
-  collateralCoinType: string;   // Collateral type
-  collateralDecimal: number;    // Collateral decimals
-  collateralBalance: string;    // Total collateral amount
-  minCollateralRatio: number;   // Minimum collateralization ratio
-  interestRate: number;         // Interest rate
-  usdbSupply: string;           // Current USDB supply
-  maxSupply: string;            // Maximum supply
-  positionTableSize: string;    // Number of positions
+  collateralCoinType: string; // Collateral type
+  collateralDecimal: number; // Collateral decimals
+  collateralBalance: string; // Total collateral amount
+  minCollateralRatio: number; // Minimum collateralization ratio
+  interestRate: number; // Interest rate
+  usdbSupply: string; // Current USDB supply
+  maxSupply: string; // Maximum supply
+  positionTableSize: string; // Number of positions
 };
 ```
 
 ### PositionInfo
+
 ```typescript
 type PositionInfo = {
-  collateralCoinType: string;   // Collateral type
-  collateralAmount: string;     // Collateral amount
-  debtAmount: string;           // Debt amount
+  collateralCoinType: string; // Collateral type
+  collateralAmount: string; // Collateral amount
+  debtAmount: string; // Debt amount
 };
 ```
 
 ### CdpPositionsResponse
+
 ```typescript
 type CdpPositionsResponse = {
   collateralCoinType: string;
   positions: {
-    debtor: string;             // Debtor address
-    collateralAmount: number;   // Collateral amount
-    debtAmount: number;         // Debt amount
+    debtor: string; // Debtor address
+    collateralAmount: number; // Collateral amount
+    debtAmount: number; // Debt amount
   }[];
-  nextCursor: string | null;    // Pagination cursor
+  nextCursor: string | null; // Pagination cursor
 };
 ```
 
 ### New Data Types
 
 #### AggregatorObjectInfo
+
 ```typescript
 type AggregatorObjectInfo = {
-  coinType: string;             // Coin type
-  priceAggregater: SharedObjectRef;  // Price aggregator object
-  pythPriceId?: string;         // Pyth price ID
+  coinType: string; // Coin type
+  priceAggregator: SharedObjectRef; // Price aggregator object
+  pythPriceId?: string; // Pyth price ID
 };
 ```
 
 #### VaultObjectInfo
+
 ```typescript
 type VaultObjectInfo = {
-  collateralCoinType: string;   // Collateral type
-  vault: SharedObjectRef;       // Vault object
+  collateralCoinType: string; // Collateral type
+  vault: SharedObjectRef; // Vault object
   rewarders?: SharedObjectRef[]; // Rewarder objects (optional)
 };
 ```
@@ -310,18 +315,19 @@ const vaultInfo = client.getVaultObjectInfo({ collateralCoinType: SUI_TYPE_ARG }
 ```typescript
 // Batch price aggregation (will support derivative prices in the future)
 const priceResults = await client.aggregatePrices({
-  coinTypes: [SUI_TYPE_ARG, BTC_TYPE]
+  coinTypes: [SUI_TYPE_ARG, BTC_TYPE],
 });
 
 // Currently equivalent to aggregateBasicPrices
 const basicPrices = await client.aggregateBasicPrices({
-  coinTypes: [SUI_TYPE_ARG, BTC_TYPE]
+  coinTypes: [SUI_TYPE_ARG, BTC_TYPE],
 });
 ```
 
 ## Utility Functions
 
 ### USDB Token Type
+
 ```typescript
 // Get USDB token type
 const usdbType = client.usdbCoinType();
@@ -329,6 +335,7 @@ console.log('USDB Type:', usdbType);
 ```
 
 ### Account Management
+
 ```typescript
 // Create account request for EOA (Externally Owned Account)
 const accountRequest = client.newAccountRequest();
@@ -369,25 +376,27 @@ For complete usage examples, refer to [test/e2e/client.test.ts](./test/e2e/clien
 ## API Reference
 
 ### Constructor Options
+
 ```typescript
 interface BucketV2ClientOptions {
-  network?: 'mainnet';        // Network selection
-  rpcUrl?: string;           // Custom RPC URL
-  sender?: string;           // Default sender address
+  network?: 'mainnet'; // Network selection
+  rpcUrl?: string; // Custom RPC URL
+  sender?: string; // Default sender address
 }
 ```
 
 ### Transaction Options
+
 ```typescript
 interface ManagePositionOptions {
-  collateralCoinType: string;  // Collateral token type
-  depositAmount?: number;      // Amount to deposit
-  borrowAmount?: number;       // Amount to borrow
-  repayAmount?: number;        // Amount to repay
-  withdrawAmount?: number;     // Amount to withdraw
-  accountObjId?: string;       // Account object ID (optional)
-  recipient?: string;          // Recipient address
-  keepTransaction?: boolean;   // Keep transaction object
+  collateralCoinType: string; // Collateral token type
+  depositAmount?: number; // Amount to deposit
+  borrowAmount?: number; // Amount to borrow
+  repayAmount?: number; // Amount to repay
+  withdrawAmount?: number; // Amount to withdraw
+  accountObjId?: string; // Account object ID (optional)
+  recipient?: string; // Recipient address
+  keepTransaction?: boolean; // Keep transaction object
 }
 ```
 
@@ -396,6 +405,7 @@ interface ManagePositionOptions {
 ### Common Issues
 
 **"Invalid debtor address" Error:**
+
 ```typescript
 // Ensure sender is set before querying positions
 client.sender = '0x...your-address';
@@ -403,16 +413,18 @@ const positions = await client.getDebtorPositions();
 ```
 
 **"Not enough balance" Error:**
+
 ```typescript
 // Check balance before attempting transactions
 const { data: coins } = await client.getSuiClient().getCoins({
   owner: client.sender,
-  coinType: SUI_TYPE_ARG
+  coinType: SUI_TYPE_ARG,
 });
 console.log('Available balance:', coins);
 ```
 
 **"Unsupported collateral type" Error:**
+
 ```typescript
 // Use supported collateral types
 const supportedTypes = client.getCDPCollateralTypes();
@@ -420,6 +432,7 @@ console.log('Supported types:', supportedTypes);
 ```
 
 **"No price feed" Error:**
+
 ```typescript
 // Ensure the coin type has a valid price feed
 const aggInfo = client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
@@ -438,6 +451,7 @@ console.log('Pyth Price ID:', aggInfo.pythPriceId);
 **Current Version**: 0.15.7
 **Node.js Requirement**: >= 20.18.0
 **Dependencies**:
+
 - @mysten/sui: 1.28.2
 - @pythnetwork/pyth-sui-js: ^2.1.0
 - decimal.js: ^10.5.0

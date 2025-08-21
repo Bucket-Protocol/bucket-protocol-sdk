@@ -33,7 +33,6 @@ export function getObjectFields(
   if ('fields' in resp) {
     return resp.fields;
   }
-
   return getMoveObject(resp)?.fields;
 }
 
