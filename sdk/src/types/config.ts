@@ -12,13 +12,6 @@ export type VaultObjectInfo = {
   rewarders?: SharedObjectRef[];
 };
 
-export type CollateralObjectsInfo = {
-  vault: SharedObjectRef;
-  priceAggregator: SharedObjectRef;
-  pythPriceId?: string;
-  rewarders?: SharedObjectRef[];
-};
-
 export type ConfigType = {
   ORIGINAL_FRAMEWORK_PACKAGE_ID: string;
   ORIGINAL_USDB_PACKAGE_ID: string;
