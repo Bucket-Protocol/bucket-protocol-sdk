@@ -1,4 +1,4 @@
-import { SharedObjectRef } from "@mysten/sui/bcs/types";
+import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
 
 export type Network = 'mainnet' | 'testnet' /* | 'testnet' | 'devnet' | 'localnet' */;
 
@@ -23,6 +23,7 @@ export type ConfigType = {
   ORIGINAL_CDP_PACKAGE_ID: string;
   ORIGINAL_PSM_PACKAGE_ID: string;
   ORIGINAL_FLASH_PACKAGE_ID: string;
+  ORIGINAL_SAVING_PACKAGE_ID: string;
 
   FRAMEWORK_PACKAGE_ID: string;
   USDB_PACKAGE_ID: string;
@@ -30,6 +31,7 @@ export type ConfigType = {
   CDP_PACKAGE_ID: string;
   PSM_PACKAGE_ID: string;
   FLASH_PACKAGE_ID: string;
+  SAVING_PACKAGE_ID: string;
 
   TREASURY_OBJ: SharedObjectRef;
 

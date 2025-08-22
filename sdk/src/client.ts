@@ -8,7 +8,13 @@ import { POSITION_DATA, VAULT } from '@/structs';
 import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObjectInfo } from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
 import { DUMMY_SENDER } from '@/consts';
-import { CONFIG, PRICE_SERVICE_ENDPOINT, PRICE_SERVICE_TESTNET_ENDPOINT } from '@/consts/config';
+import {
+  CONFIG,
+  PRICE_SERVICE_ENDPOINT,
+  PRICE_SERVICE_TESTNET_ENDPOINT,
+  SupportedSavingPoolType,
+  TESTNET_SAVING_POOL,
+} from '@/consts/config';
 import { destroyZeroCoin, getZeroCoin, splitInputCoins } from '@/utils/transaction';
 
 import { COIN_TYPES } from './consts/coin';
@@ -515,7 +521,7 @@ export class BucketV2Client {
       value: partnerAccountObj ? this.newAccountRequest(tx, { accountObj: partnerAccountObj }) : null,
     });
 
-    const [usdbCoin, flash_mint_receipt] = tx.moveCall({
+    const [usdbCoin, flashMintReceipt] = tx.moveCall({
       target: `${this.config.FLASH_PACKAGE_ID}::config::flash_mint`,
       arguments: [
         this.flashGlobalConfig(tx),
@@ -525,22 +531,111 @@ export class BucketV2Client {
       ],
     });
 
-    return [usdbCoin, flash_mint_receipt];
+    return [usdbCoin, flashMintReceipt];
   }
 
   flashBurn(
     tx: Transaction,
     {
       usdbCoin,
-      flash_mint_receipt,
+      flashMintReceipt,
     }: {
       usdbCoin: TransactionObjectArgument;
-      flash_mint_receipt: TransactionArgument;
+      flashMintReceipt: TransactionArgument;
     },
   ) {
     tx.moveCall({
       target: `${this.config.FLASH_PACKAGE_ID}::config::flash_burn`,
-      arguments: [this.flashGlobalConfig(tx), this.treasury(tx), usdbCoin, flash_mint_receipt],
+      arguments: [this.flashGlobalConfig(tx), this.treasury(tx), usdbCoin, flashMintReceipt],
+    });
+  }
+
+  savingPoolDeposit(
+    tx: Transaction,
+    {
+      savingPoolType,
+      usdbCoin,
+      account,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      usdbCoin: TransactionObjectArgument;
+      account: string;
+    },
+  ): TransactionArgument {
+    const depositResponse = tx.moveCall({
+      target: `${this.config.SAVING_PACKAGE_ID}::saving::deposit`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      arguments: [
+        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+        this.treasury(tx),
+        tx.pure.address(account),
+        usdbCoin,
+        tx.object.clock(),
+      ],
+    });
+
+    return depositResponse;
+  }
+
+  checkDepositResponse(
+    tx: Transaction,
+    {
+      savingPoolType,
+      depositResponse,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      depositResponse: TransactionArgument;
+    },
+  ) {
+    tx.moveCall({
+      target: `${this.config.SAVING_PACKAGE_ID}::saving::check_deposit_response`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      arguments: [depositResponse, tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool), this.treasury(tx)],
+    });
+  }
+
+  savingPoolWithdraw(
+    tx: Transaction,
+    {
+      savingPoolType,
+      amount,
+      accountObj,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      amount: number;
+      accountObj?: string | TransactionArgument;
+    },
+  ): [TransactionArgument, TransactionArgument] {
+    const accountReq = this.newAccountRequest(tx, { accountObj });
+    const [usdbCoin, withdrawResponse] = tx.moveCall({
+      target: `${this.config.SAVING_PACKAGE_ID}::saving::withdraw`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      arguments: [
+        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+        this.treasury(tx),
+        accountReq,
+        tx.pure.u64(amount),
+        tx.object.clock(),
+      ],
+    });
+
+    return [usdbCoin, withdrawResponse];
+  }
+
+  checkWithdrawResponse(
+    tx: Transaction,
+    {
+      savingPoolType,
+      withdrawResponse,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      withdrawResponse: TransactionArgument;
+    },
+  ) {
+    tx.moveCall({
+      target: `${this.config.SAVING_PACKAGE_ID}::saving::check_withdraw_response`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      arguments: [withdrawResponse, tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool), this.treasury(tx)],
     });
   }
 
@@ -708,5 +803,57 @@ export class BucketV2Client {
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
     return this.psmSwapOut(tx, { coinType, priceResult, usdbCoin, accountObj: accountObjId });
+  }
+
+  async buildDepositToSavingPoolTransaction(
+    tx: Transaction,
+    {
+      savingPoolType,
+      amount,
+      account,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      amount: number;
+      account: string;
+    },
+    sender: string,
+  ) {
+    const [usdbCoin] = await splitInputCoins(
+      tx,
+      { coinType: COIN_TYPES.USDB, amounts: [amount] },
+      this.suiClient,
+      sender,
+    );
+
+    const depositResponse = this.savingPoolDeposit(tx, {
+      savingPoolType,
+      usdbCoin,
+      account,
+    });
+
+    this.checkDepositResponse(tx, { savingPoolType, depositResponse });
+  }
+
+  async buildWithdrawFromSavingPoolTransaction(
+    tx: Transaction,
+    {
+      savingPoolType,
+      amount,
+      accountObjId,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      amount: number;
+      accountObjId?: string;
+    },
+  ): Promise<TransactionArgument> {
+    const [usdbCoin, withdrawResponse] = this.savingPoolWithdraw(tx, {
+      savingPoolType,
+      amount,
+      accountObj: accountObjId,
+    });
+
+    this.checkWithdrawResponse(tx, { savingPoolType, withdrawResponse });
+
+    return usdbCoin;
   }
 }

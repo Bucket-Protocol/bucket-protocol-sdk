@@ -1,4 +1,6 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 import { describe, expect, it } from 'vitest';
 
@@ -96,7 +98,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const tx = new Transaction();
     tx.setSender(sender);
 
-    const amount = 1 * 10 ** 6; // 1 USDC
+    const amount = 0.1 * 10 ** 6; // 1 USDC
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(
       tx,
       {
@@ -125,7 +127,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const tx = new Transaction();
     tx.setSender(sender);
 
-    const amount = 1 * 10 ** 6; // 1 USDB
+    const amount = 0.1 * 10 ** 6; // 1 USDB
     const usdbCoin = await bucketClient.buildPSMSwapOutTransaction(
       tx,
       {
@@ -155,10 +157,10 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const tx = new Transaction();
     tx.setSender(sender);
 
-    const amount = 1 * 10 ** 6; // 1 USDB
+    const amount = 0.1 * 10 ** 6; // 1 USDB
 
     // flash mint
-    const [usdbCoin, flash_mint_receipt] = bucketClient.flashMint(tx, { amount });
+    const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
     const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(
       tx,
       {
@@ -168,7 +170,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
       sender,
     );
     tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
-    bucketClient.flashBurn(tx, { usdbCoin, flash_mint_receipt });
+    bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
@@ -176,5 +178,62 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     expect(dryrunRes.effects.status.status).toBe('success');
     expect(dryrunRes.events.length).toBe(8);
+  });
+
+  it('test deposit to saving pool', async () => {
+    const network = 'testnet';
+    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
+    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+    const bucketClient = new BucketV2Client({ suiClient, network });
+
+    // tx
+    const tx = new Transaction();
+    tx.setSender(sender);
+
+    const amount = 0.5 * 10 ** 6; // 0.1 USDB
+
+    await bucketClient.buildDepositToSavingPoolTransaction(
+      tx,
+      {
+        savingPoolType: 'Allen',
+        account: sender,
+        amount,
+      },
+      sender,
+    );
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.events.length).toBe(2);
+  });
+
+  it('test withdraw from saving pool', async () => {
+    const network = 'testnet';
+    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
+    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+    const bucketClient = new BucketV2Client({ suiClient, network });
+
+    // tx
+    const tx = new Transaction();
+    tx.setSender(sender);
+
+    const amount = 0.1 * 10 ** 6; // 0.1 SUSDB
+
+    const usdbCoin = await bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+      savingPoolType: 'Allen',
+      amount,
+    });
+
+    tx.transferObjects([usdbCoin], sender);
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.events.length).toBe(2);
   });
 });
