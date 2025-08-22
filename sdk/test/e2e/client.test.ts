@@ -114,4 +114,34 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(dryrunRes.effects.status.status).toBe('success');
     expect(dryrunRes.events.length).toBe(4);
   });
+
+  it('test psmSwapOut() on testnet', async () => {
+    const network = 'testnet';
+    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
+    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+    const bucketClient = new BucketV2Client({ suiClient, network });
+
+    // tx
+    const tx = new Transaction();
+    tx.setSender(sender);
+
+    const amount = 1 * 10 ** 6; // 1 USDB
+    const usdbCoin = await bucketClient.buildPSMSwapOutTransaction(
+      tx,
+      {
+        coinType: COIN_TYPES.USDC,
+        amount,
+      },
+      sender,
+    );
+
+    tx.transferObjects([usdbCoin], sender);
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.events.length).toBe(5);
+  });
 });

@@ -4,18 +4,14 @@ import { Transaction, TransactionArgument, TransactionObjectArgument } from '@my
 import { normalizeStructTag } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
+import { POSITION_DATA, VAULT } from '@/structs';
+import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObjectInfo } from '@/types/config';
+import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
 import { DUMMY_SENDER } from '@/consts';
 import { CONFIG, PRICE_SERVICE_ENDPOINT, PRICE_SERVICE_TESTNET_ENDPOINT } from '@/consts/config';
-import { POSITION_DATA } from '@/structs';
-import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObjectInfo } from '@/types/config';
-import { PaginatedPositionsResult, PositionInfo, VaultInfo, VaultResponse } from '@/types/struct';
-import { getObjectFields } from '@/utils/object';
-import { parseVaultObject } from '@/utils/parse';
-import { CONFIG, PRICE_SERVICE_ENDPOINT } from '@/consts/config';
-import { POSITION_DATA, VAULT } from '@/structs';
-import { AggregatorObjectInfo, ConfigType, Network, VaultObjectInfo } from '@/types/config';
-import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
 import { destroyZeroCoin, getZeroCoin, splitInputCoins } from '@/utils/transaction';
+
+import { COIN_TYPES } from './consts/coin';
 
 export class BucketV2Client {
   /**
@@ -675,19 +671,42 @@ export class BucketV2Client {
       coinType,
       amount,
       accountObjId,
-      keepTransaction = false,
     }: {
       coinType: string;
       amount: number;
       accountObjId?: string;
       recipient?: string;
-      keepTransaction?: boolean;
     },
     sender: string,
   ): Promise<TransactionArgument> {
-    const [collateralCoin] = await splitInputCoins(tx, { coinType, amounts: [amount]}, this.suiClient, sender);
+    const [collateralCoin] = await splitInputCoins(tx, { coinType, amounts: [amount] }, this.suiClient, sender);
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
     return this.psmSwapIn(tx, { coinType, priceResult, collateralCoin, accountObj: accountObjId });
+  }
+
+  async buildPSMSwapOutTransaction(
+    tx: Transaction,
+    {
+      coinType,
+      amount,
+      accountObjId,
+    }: {
+      coinType: string;
+      amount: number;
+      accountObjId?: string;
+      recipient?: string;
+    },
+    sender: string,
+  ): Promise<TransactionArgument> {
+    const [usdbCoin] = await splitInputCoins(
+      tx,
+      { coinType: COIN_TYPES.USDB, amounts: [amount] },
+      this.suiClient,
+      sender,
+    );
+    const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
+
+    return this.psmSwapOut(tx, { coinType, priceResult, usdbCoin, accountObj: accountObjId });
   }
 }
