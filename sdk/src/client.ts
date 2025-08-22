@@ -735,6 +735,36 @@ export class BucketV2Client {
     return withdrawResponse_;
   }
 
+  claimPoolIncentive(
+    tx: Transaction,
+    {
+      savingPoolType,
+      rewardType,
+      accountObj,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      rewardType: string;
+      accountObj?: string | TransactionArgument;
+    },
+  ): TransactionArgument {
+    if (!TESTNET_SAVING_POOL[savingPoolType].reward) return getZeroCoin(tx, { coinType: rewardType });
+
+    const accountReq = this.newAccountRequest(tx, { accountObj });
+    const rewardCoin = tx.moveCall({
+      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::claim`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType, rewardType],
+      arguments: [
+        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
+        tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
+        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+        accountReq,
+        tx.object.clock(),
+      ],
+    });
+
+    return rewardCoin;
+  }
+
   /* ----- Transaction Methods ----- */
   /* ----- Transaction Builders ----- */
 
@@ -962,5 +992,26 @@ export class BucketV2Client {
     this.checkWithdrawResponse(tx, { savingPoolType, withdrawResponse });
 
     return usdbCoin;
+  }
+
+  async buildClaimRewardsFromSavingPoolTransaction(
+    tx: Transaction,
+    {
+      savingPoolType,
+      accountObjId,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      accountObjId?: string;
+    },
+  ): Promise<TransactionArgument[]> {
+    const rewards = [];
+
+    for (const rewardType of TESTNET_SAVING_POOL[savingPoolType].reward?.rewardTypes || []) {
+      const rewardCoin = this.claimPoolIncentive(tx, { savingPoolType, rewardType, accountObj: accountObjId });
+
+      rewards.push(rewardCoin);
+    }
+
+    return rewards;
   }
 }
