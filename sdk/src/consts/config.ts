@@ -1,4 +1,5 @@
 import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
+import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 
 import { ConfigType } from '@/types/config';
 
@@ -17,6 +18,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_PSM_PACKAGE_ID: '',
     ORIGINAL_FLASH_PACKAGE_ID: '',
     ORIGINAL_SAVING_PACKAGE_ID: '',
+    ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '',
 
     FRAMEWORK_PACKAGE_ID: '0x89495ef31f30a6edbd08f8a28f4e5419401d2c133c34a617a7983928d5697797',
     USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
@@ -25,6 +27,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     PSM_PACKAGE_ID: '',
     FLASH_PACKAGE_ID: '',
     SAVING_PACKAGE_ID: '',
+    SAVING_INCENTIVE_PACKAGE_ID: '',
 
     TREASURY_OBJ: {
       objectId: '0xc30d8b29ddca177f3ea934ec885cff4cfa46ae2390c8df3eca6513731e5d8ddd',
@@ -32,6 +35,12 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: true,
     },
     FLASH_GLOBAL_CONFIG_OBJ: {
+      objectId: '',
+      initialSharedVersion: 0,
+      mutable: false,
+    },
+
+    SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
       objectId: '',
       initialSharedVersion: 0,
       mutable: false,
@@ -105,6 +114,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_PSM_PACKAGE_ID: '0xb818b22a88d614c266c5f4436fb4447dee1c4fba8071c456f864851eb6dd194d',
     ORIGINAL_FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
     ORIGINAL_SAVING_PACKAGE_ID: '0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f',
+    ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '0x11e03be85d2b5f1ddef785fe1dfa129551f69913c41324ac0cad116031579588',
 
     FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
     USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
@@ -113,6 +123,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     PSM_PACKAGE_ID: '0xb818b22a88d614c266c5f4436fb4447dee1c4fba8071c456f864851eb6dd194d',
     FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
     SAVING_PACKAGE_ID: '0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f',
+    SAVING_INCENTIVE_PACKAGE_ID: '0x11e03be85d2b5f1ddef785fe1dfa129551f69913c41324ac0cad116031579588',
 
     TREASURY_OBJ: {
       objectId: '0xb1bf430d03abcceed4f64b31ddf71b03bd503bea91ca64e80adaff35b22c7230',
@@ -124,6 +135,11 @@ export const CONFIG: Record<Network, ConfigType> = {
       objectId: '0x66c8c42e1ccf2a8eaa50f2584b990418c54349f53470004545e12333ccf1f0fc',
       initialSharedVersion: '349180354',
       mutable: true,
+    },
+    SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
+      objectId: '0xdfdfe9c7bdd63113a5c57f3d1c7c425d2b85b73c7ef7d974b98db8584837c5b6',
+      initialSharedVersion: 349180418,
+      mutable: false,
     },
 
     PYTH_STATE_ID: '0x2d82612a354f0b7e52809fc2845642911c7190404620cec8688f68808f8800d8',
@@ -159,9 +175,19 @@ export const CONFIG: Record<Network, ConfigType> = {
   },
 };
 
-// To be optimized
+// To be refactored
 export type SupportedSavingPoolType = 'Allen';
-export const TESTNET_SAVING_POOL: Record<SupportedSavingPoolType, { pool: SharedObjectRef; coinType: string }> = {
+export const TESTNET_SAVING_POOL: Record<
+  SupportedSavingPoolType,
+  {
+    pool: SharedObjectRef;
+    coinType: string;
+    reward?: {
+      rewardManager: SharedObjectRef;
+      rewardTypes: string[];
+    };
+  }
+> = {
   Allen: {
     pool: {
       objectId: '0x8a2b3f7e26050c9ed4b9a60d25dfc205e2541b6c05509295769511b0e13b7b25',
@@ -169,5 +195,13 @@ export const TESTNET_SAVING_POOL: Record<SupportedSavingPoolType, { pool: Shared
       mutable: true,
     },
     coinType: '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB',
+    reward: {
+      rewardManager: {
+        objectId: '0x70d52865febce4e0b5f6c0a53f772f735e178eb03a80d3b764dd3e365a7bf3f1',
+        initialSharedVersion: '546934688',
+        mutable: true,
+      },
+      rewardTypes: [SUI_TYPE_ARG],
+    },
   },
 };

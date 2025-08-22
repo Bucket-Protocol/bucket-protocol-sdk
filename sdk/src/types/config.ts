@@ -24,6 +24,7 @@ export type ConfigType = {
   ORIGINAL_PSM_PACKAGE_ID: string;
   ORIGINAL_FLASH_PACKAGE_ID: string;
   ORIGINAL_SAVING_PACKAGE_ID: string;
+  ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: string;
 
   FRAMEWORK_PACKAGE_ID: string;
   USDB_PACKAGE_ID: string;
@@ -32,10 +33,11 @@ export type ConfigType = {
   PSM_PACKAGE_ID: string;
   FLASH_PACKAGE_ID: string;
   SAVING_PACKAGE_ID: string;
+  SAVING_INCENTIVE_PACKAGE_ID: string;
 
   TREASURY_OBJ: SharedObjectRef;
-
   FLASH_GLOBAL_CONFIG_OBJ: SharedObjectRef;
+  SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: SharedObjectRef;
 
   PYTH_STATE_ID: string;
   WORMHOLE_STATE_ID: string;

@@ -639,6 +639,102 @@ export class BucketV2Client {
     });
   }
 
+  updateSavingPoolIncentiveDepositAction(
+    tx: Transaction,
+    {
+      savingPoolType,
+      depositResponse,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      depositResponse: TransactionArgument;
+    },
+  ): TransactionArgument {
+    if (!TESTNET_SAVING_POOL[savingPoolType].reward) {
+      throw new Error(`No Rewards to handle for ${savingPoolType}`);
+    }
+
+    const depositChecker = tx.moveCall({
+      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::new_checker_for_deposit_action`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      arguments: [
+        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
+        tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
+        depositResponse,
+      ],
+    });
+    const rewards = TESTNET_SAVING_POOL[savingPoolType].reward.rewardTypes;
+
+    for (const rewardType of rewards) {
+      tx.moveCall({
+        target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::update_deposit_action`,
+        typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType, rewardType],
+        arguments: [
+          depositChecker,
+          tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
+          tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
+          tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+          tx.object.clock(),
+        ],
+      });
+    }
+
+    const depositResponse_ = tx.moveCall({
+      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::destroy_deposit_checker`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      arguments: [depositChecker, tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ)],
+    });
+
+    return depositResponse_;
+  }
+
+  updateSavingPoolIncentiveWithdrawAction(
+    tx: Transaction,
+    {
+      savingPoolType,
+      withdrawResponse,
+    }: {
+      savingPoolType: SupportedSavingPoolType;
+      withdrawResponse: TransactionArgument;
+    },
+  ): TransactionArgument {
+    if (!TESTNET_SAVING_POOL[savingPoolType].reward) {
+      throw new Error(`No Rewards to handle for ${savingPoolType}`);
+    }
+
+    const withdrawChecker = tx.moveCall({
+      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::new_checker_for_withdraw_action`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      arguments: [
+        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
+        tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
+        withdrawResponse,
+      ],
+    });
+    const rewards = TESTNET_SAVING_POOL[savingPoolType].reward.rewardTypes;
+
+    for (const rewardType of rewards) {
+      tx.moveCall({
+        target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::update_withdraw_action`,
+        typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType, rewardType],
+        arguments: [
+          withdrawChecker,
+          tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
+          tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
+          tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+          tx.object.clock(),
+        ],
+      });
+    }
+
+    const withdrawResponse_ = tx.moveCall({
+      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::destroy_withdraw_checker`,
+      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      arguments: [withdrawChecker, tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ)],
+    });
+
+    return withdrawResponse_;
+  }
+
   /* ----- Transaction Methods ----- */
   /* ----- Transaction Builders ----- */
 
@@ -825,11 +921,15 @@ export class BucketV2Client {
       sender,
     );
 
-    const depositResponse = this.savingPoolDeposit(tx, {
+    let depositResponse = this.savingPoolDeposit(tx, {
       savingPoolType,
       usdbCoin,
       account,
     });
+
+    if (TESTNET_SAVING_POOL[savingPoolType].reward) {
+      depositResponse = this.updateSavingPoolIncentiveDepositAction(tx, { savingPoolType, depositResponse });
+    }
 
     this.checkDepositResponse(tx, { savingPoolType, depositResponse });
   }
@@ -846,11 +946,18 @@ export class BucketV2Client {
       accountObjId?: string;
     },
   ): Promise<TransactionArgument> {
-    const [usdbCoin, withdrawResponse] = this.savingPoolWithdraw(tx, {
+    const withdrawResult = this.savingPoolWithdraw(tx, {
       savingPoolType,
       amount,
       accountObj: accountObjId,
     });
+
+    const usdbCoin = withdrawResult[0];
+    let withdrawResponse = withdrawResult[1];
+
+    if (TESTNET_SAVING_POOL[savingPoolType].reward) {
+      withdrawResponse = this.updateSavingPoolIncentiveWithdrawAction(tx, { savingPoolType, withdrawResponse });
+    }
 
     this.checkWithdrawResponse(tx, { savingPoolType, withdrawResponse });
 
