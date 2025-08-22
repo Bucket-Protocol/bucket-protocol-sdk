@@ -144,4 +144,37 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(dryrunRes.effects.status.status).toBe('success');
     expect(dryrunRes.events.length).toBe(5);
   });
+
+  it('test flashMint 1 USDB with default fee config on testnet', async () => {
+    const network = 'testnet';
+    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
+    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+    const bucketClient = new BucketV2Client({ suiClient, network });
+
+    // tx
+    const tx = new Transaction();
+    tx.setSender(sender);
+
+    const amount = 1 * 10 ** 6; // 1 USDB
+
+    // flash mint
+    const [usdbCoin, flash_mint_receipt] = bucketClient.flashMint(tx, { amount });
+    const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(
+      tx,
+      {
+        coinType: COIN_TYPES.USDC,
+        amount: (amount * 30) / 10000, // fee rate at 30bps
+      },
+      sender,
+    );
+    tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
+    bucketClient.flashBurn(tx, { usdbCoin, flash_mint_receipt });
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.events.length).toBe(8);
+  });
 });

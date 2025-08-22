@@ -504,15 +504,15 @@ export class BucketV2Client {
     tx: Transaction,
     {
       amount,
-      accountObj,
+      partnerAccountObj,
     }: {
       amount: number | TransactionArgument;
-      accountObj?: string | TransactionArgument;
+      partnerAccountObj?: string | TransactionArgument;
     },
   ) {
     const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(tx, { accountObj }),
+      value: partnerAccountObj ? this.newAccountRequest(tx, { accountObj: partnerAccountObj }) : null,
     });
 
     const [usdbCoin, flash_mint_receipt] = tx.moveCall({
