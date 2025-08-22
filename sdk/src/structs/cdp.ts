@@ -1,4 +1,4 @@
-import { bcs } from '@mysten/sui/dist/cjs/bcs';
+import { bcs } from '@mysten/sui/bcs';
 
 import { VEC_MAP } from '@/structs/dependencies';
 

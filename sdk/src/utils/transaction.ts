@@ -48,7 +48,6 @@ export const splitInputCoins = async (
       owner: sender,
       coinType,
     });
-    console.log({ userCoins });
     if (userCoins.length === 0) {
       return amounts.map((amount) => {
         if (typeof amount === 'number' && amount > 0) {

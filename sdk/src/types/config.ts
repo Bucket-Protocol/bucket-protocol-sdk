@@ -1,4 +1,4 @@
-import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
+import { SharedObjectRef } from "@mysten/sui/bcs/types";
 
 export type Network = 'mainnet' | 'testnet' /* | 'testnet' | 'devnet' | 'localnet' */;
 
@@ -9,13 +9,6 @@ export type AggregatorObjectInfo = {
 
 export type VaultObjectInfo = {
   vault: SharedObjectRef;
-  rewarders?: SharedObjectRef[];
-};
-
-export type CollateralObjectsInfo = {
-  vault: SharedObjectRef;
-  priceAggregator: SharedObjectRef;
-  pythPriceId?: string;
   rewarders?: SharedObjectRef[];
 };
 
