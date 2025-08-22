@@ -68,22 +68,18 @@ export const splitInputCoins = async (
     if (!mainCoin) {
       throw new Error('Not enough balance');
     }
-
     const ifMerge = otherCoins.length > 0;
 
     if (ifMerge) {
       tx.mergeCoins(mainCoin, otherCoins);
     }
-
     const out = tx.splitCoins(
       mainCoin,
       amounts.map((amount) => (typeof amount === 'string' ? tx.pure.u64(amount) : amount)),
     );
-
     if (ifMerge) {
       tx.transferObjects([mainCoin], sender);
     }
-
     return out;
   }
 };

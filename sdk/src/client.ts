@@ -11,6 +11,10 @@ import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObje
 import { PaginatedPositionsResult, PositionInfo, VaultInfo, VaultResponse } from '@/types/struct';
 import { getObjectFields } from '@/utils/object';
 import { parseVaultObject } from '@/utils/parse';
+import { CONFIG, PRICE_SERVICE_ENDPOINT } from '@/consts/config';
+import { POSITION_DATA, VAULT } from '@/structs';
+import { AggregatorObjectInfo, ConfigType, Network, VaultObjectInfo } from '@/types/config';
+import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
 import { destroyZeroCoin, getZeroCoin, splitInputCoins } from '@/utils/transaction';
 
 export class BucketV2Client {
@@ -117,14 +121,27 @@ export class BucketV2Client {
     const res = await this.suiClient.multiGetObjects({
       ids: vaultObjectIds,
       options: {
-        showContent: true,
+        showBcs: true,
       },
     });
     return Object.keys(this.config.VAULT_OBJS).map((collateralType, index) => {
-      const fields = getObjectFields(res[index]) as VaultResponse;
+      const data = res[index].data;
 
-      // TODO: move to bsc parsing
-      return parseVaultObject(collateralType, fields);
+      if (data?.bcs?.dataType !== 'moveObject') {
+        throw new Error(`Failed to parse vault object`);
+      }
+      const vault = VAULT.parse(Uint8Array.from(data.bcs.bcsBytes));
+
+      return {
+        collateralType,
+        positionTableSize: +vault.position_table.size,
+        collateralDecimal: +vault.decimal,
+        collateralBalance: +vault.balance,
+        usdbSupply: +vault.limited_supply.supply,
+        maxSupply: +vault.limited_supply.limit,
+        interestRate: +vault.interest_rate.value,
+        minCollateralRatio: +vault.min_collateral_ratio.value,
+      };
     });
   }
 
