@@ -56,7 +56,7 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: false,
     },
 
-    CDP_VAULT_OBJS: {
+    VAULT_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         vault: {
           objectId: '0x52aed4daa610b787cf2291f1e8e4c96aa46cbfdd90c7f2733d07048041a0730c',
@@ -139,7 +139,6 @@ export const CONFIG: Record<Network, ConfigType> = {
       },
     },
   },
-
   testnet: {
     ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
     ORIGINAL_USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
@@ -198,7 +197,7 @@ export const CONFIG: Record<Network, ConfigType> = {
       },
     },
 
-    CDP_VAULT_OBJS: {},
+    VAULT_OBJS: {},
 
     PSM_POOL_OBJS: {
       '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {

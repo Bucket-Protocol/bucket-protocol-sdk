@@ -15,7 +15,7 @@ import {
   SupportedSavingPoolType,
   TESTNET_SAVING_POOL,
 } from '@/consts/config';
-import { destroyZeroCoin, getZeroCoin, splitInputCoins } from '@/utils/transaction';
+import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction';
 
 export class BucketV2Client {
   /**
@@ -71,14 +71,14 @@ export class BucketV2Client {
    * @description Get all CDP collateral types
    */
   getAllCollateralTypes(): string[] {
-    return Object.keys(this.config.CDP_VAULT_OBJS);
+    return Object.keys(this.config.VAULT_OBJS);
   }
 
   /**
    * @description
    */
   getVaultObjectInfo({ coinType }: { coinType: string }): VaultObjectInfo {
-    const vaultInfo = this.config.CDP_VAULT_OBJS[normalizeStructTag(coinType)];
+    const vaultInfo = this.config.VAULT_OBJS[normalizeStructTag(coinType)];
 
     if (!vaultInfo) {
       throw new Error('Unsupported collateral type');
@@ -116,7 +116,7 @@ export class BucketV2Client {
    * @description Get all vault objects
    */
   async getAllVaultObjects(): Promise<VaultInfo[]> {
-    const vaultObjectIds = Object.values(this.config.CDP_VAULT_OBJS).map((v) => v.vault.objectId);
+    const vaultObjectIds = Object.values(this.config.VAULT_OBJS).map((v) => v.vault.objectId);
 
     const res = await this.suiClient.multiGetObjects({
       ids: vaultObjectIds,
@@ -124,7 +124,7 @@ export class BucketV2Client {
         showBcs: true,
       },
     });
-    return Object.keys(this.config.CDP_VAULT_OBJS).map((collateralType, index) => {
+    return Object.keys(this.config.VAULT_OBJS).map((collateralType, index) => {
       const data = res[index].data;
 
       if (data?.bcs?.dataType !== 'moveObject') {
@@ -201,7 +201,7 @@ export class BucketV2Client {
   async getDebtorPositions(debtor: string): Promise<PositionInfo[]> {
     const tx = new Transaction();
 
-    Object.entries(this.config.CDP_VAULT_OBJS).map(([coinType, { vault }]) => {
+    Object.entries(this.config.VAULT_OBJS).map(([coinType, { vault }]) => {
       tx.moveCall({
         target: `${this.config.CDP_PACKAGE_ID}::vault::get_position_data`,
         typeArguments: [coinType],
@@ -215,8 +215,7 @@ export class BucketV2Client {
     if (!res.results) {
       return [];
     }
-    // TODO: move to bsc parsing
-    return Object.keys(this.config.CDP_VAULT_OBJS).reduce((result, collateralType, index) => {
+    return Object.keys(this.config.VAULT_OBJS).reduce((result, collateralType, index) => {
       if (!res.results || !res.results[index] || !res.results[index].returnValues) {
         return result;
       }
@@ -312,11 +311,7 @@ export class BucketV2Client {
     const aggInfoList = coinTypes.map((coinType) => this.getAggregatorObjectInfo({ coinType }));
 
     const pythPriceIds = aggInfoList.map((aggInfo) => aggInfo.pythPriceId ?? '');
-    const invalidIdx = pythPriceIds.findIndex((id) => id === '');
 
-    if (invalidIdx >= 0) {
-      throw new Error(`No price feed for ${coinTypes[invalidIdx]}`);
-    }
     const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
     const priceInfoObjIds = await this.pythClient.updatePriceFeeds(tx, updateData, pythPriceIds);
 
@@ -356,7 +351,7 @@ export class BucketV2Client {
    * @param coinType: collateral coin type , e.g "0x2::sui::SUI"
    * @param depositCoin: collateral input coin
    * @param borrowAmount: the amount to borrow
-   * @param repaymentCoin: repyment input coin (always USDB)
+   * @param repaymentCoin: repayment input coin (always USDB)
    * @param withdrawAmount: the amount to withdraw
    * @param accountObj (optional): account object id or transaction argument
    * @returns UpdateRequest
@@ -405,7 +400,6 @@ export class BucketV2Client {
    */
   updatePosition(
     tx: Transaction,
-
     {
       coinType,
       updateRequest,
@@ -794,12 +788,10 @@ export class BucketV2Client {
       withdrawAmount?: number;
       accountObjId?: string;
     },
-    sender: string,
   ): Promise<[TransactionArgument, TransactionArgument]> {
-    const [[depositCoin], [repaymentCoin]] = await Promise.all([
-      splitInputCoins(tx, { coinType: coinType, amounts: [depositAmount] }, this.suiClient, sender),
-      splitInputCoins(tx, { coinType: this.getUsdbCoinType(), amounts: [repayAmount] }, this.suiClient, sender),
-    ]);
+    const depositCoin = coinWithBalance({ balance: depositAmount, type: coinType });
+    const repaymentCoin = coinWithBalance({ balance: repayAmount, type: this.getUsdbCoinType() });
+
     const updateRequest = this.debtorRequest(tx, {
       coinType,
       depositCoin,
@@ -853,19 +845,14 @@ export class BucketV2Client {
       accountObjId?: string;
       debtor: string;
     },
-    sender: string,
   ): Promise<TransactionArgument> {
     const [collateralAmount, debtAmount] = tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::get_position_data`,
       typeArguments: [coinType],
       arguments: [this.vault(tx, { coinType }), tx.pure.address(debtor), tx.object.clock()],
     });
-    const [repaymentCoin] = await splitInputCoins(
-      tx,
-      { coinType: this.getUsdbCoinType(), amounts: [debtAmount] },
-      this.suiClient,
-      sender,
-    );
+    const repaymentCoin = coinWithBalance({ balance: debtAmount, type: this.getUsdbCoinType() });
+
     const updateRequest = this.debtorRequest(tx, {
       coinType,
       depositCoin: getZeroCoin(tx, { coinType: coinType }),

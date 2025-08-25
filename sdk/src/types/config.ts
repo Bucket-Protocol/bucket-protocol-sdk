@@ -4,7 +4,7 @@ export type Network = 'mainnet' | 'testnet' /* | 'testnet' | 'devnet' | 'localne
 
 export type AggregatorObjectInfo = {
   priceAggregator: SharedObjectRef;
-  pythPriceId?: string;
+  pythPriceId: string;
 };
 
 export type VaultObjectInfo = {
@@ -44,7 +44,7 @@ export type ConfigType = {
   PYTH_RULE_PACKAGE_ID: string;
   PYTH_RULE_CONFIG_OBJ: SharedObjectRef;
 
-  CDP_VAULT_OBJS: Record<string, VaultObjectInfo>;
+  VAULT_OBJS: Record<string, VaultObjectInfo>;
   AGGREGATOR_OBJS: Record<string, AggregatorObjectInfo>;
   PSM_POOL_OBJS: Record<string, PSMPoolObjectInfo>;
 };
