@@ -890,17 +890,16 @@ export class BucketV2Client {
     tx: Transaction,
     {
       coinType,
-      amount,
+      collateralCoin,
       accountObjId,
     }: {
       coinType: string;
-      amount: number;
+      collateralCoin: TransactionArgument;
       accountObjId?: string;
       recipient?: string;
     },
     sender: string,
   ): Promise<TransactionArgument> {
-    const [collateralCoin] = await splitInputCoins(tx, { coinType, amounts: [amount] }, this.suiClient, sender);
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
     return this.psmSwapIn(tx, { coinType, priceResult, collateralCoin, accountObj: accountObjId });
@@ -910,22 +909,16 @@ export class BucketV2Client {
     tx: Transaction,
     {
       coinType,
-      amount,
+      usdbCoin,
       accountObjId,
     }: {
       coinType: string;
-      amount: number;
+      usdbCoin: TransactionArgument;
       accountObjId?: string;
       recipient?: string;
     },
     sender: string,
   ): Promise<TransactionArgument> {
-    const [usdbCoin] = await splitInputCoins(
-      tx,
-      { coinType: COIN_TYPES.USDB, amounts: [amount] },
-      this.suiClient,
-      sender,
-    );
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
     return this.psmSwapOut(tx, { coinType, priceResult, usdbCoin, accountObj: accountObjId });
@@ -935,22 +928,15 @@ export class BucketV2Client {
     tx: Transaction,
     {
       savingPoolType,
-      amount,
+      usdbCoin,
       account,
     }: {
       savingPoolType: SupportedSavingPoolType;
-      amount: number;
+      usdbCoin: TransactionArgument;
       account: string;
     },
     sender: string,
   ) {
-    const [usdbCoin] = await splitInputCoins(
-      tx,
-      { coinType: COIN_TYPES.USDB, amounts: [amount] },
-      this.suiClient,
-      sender,
-    );
-
     let depositResponse = this.savingPoolDeposit(tx, {
       savingPoolType,
       usdbCoin,

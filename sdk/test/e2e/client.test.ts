@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { BucketV2Client } from '@/client';
 import { COIN_TYPES } from '@/consts/coin';
+import { splitInputCoins } from '@/utils/transaction';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   // it('test usdbCoinType()', async () => {
@@ -97,11 +98,13 @@ describe('Interacting with Bucket Client on mainnet', () => {
     tx.setSender(sender);
 
     const amount = 0.1 * 10 ** 6; // 1 USDC
+    const coinType = COIN_TYPES.USDC;
+    const [collateralCoin] = await splitInputCoins(tx, { coinType, amounts: [amount] }, suiClient, sender);
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(
       tx,
       {
-        coinType: COIN_TYPES.USDC,
-        amount,
+        coinType,
+        collateralCoin,
       },
       sender,
     );
@@ -126,16 +129,18 @@ describe('Interacting with Bucket Client on mainnet', () => {
     tx.setSender(sender);
 
     const amount = 0.1 * 10 ** 6; // 1 USDB
-    const usdbCoin = await bucketClient.buildPSMSwapOutTransaction(
+    const [usdbCoin] = await splitInputCoins(tx, { coinType: COIN_TYPES.USDB, amounts: [amount] }, suiClient, sender);
+
+    const collateralCoin = await bucketClient.buildPSMSwapOutTransaction(
       tx,
       {
         coinType: COIN_TYPES.USDC,
-        amount,
+        usdbCoin,
       },
       sender,
     );
 
-    tx.transferObjects([usdbCoin], sender);
+    tx.transferObjects([collateralCoin], sender);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
@@ -156,14 +161,17 @@ describe('Interacting with Bucket Client on mainnet', () => {
     tx.setSender(sender);
 
     const amount = 0.1 * 10 ** 6; // 1 USDB
+    const feeAmount = (amount * 30) / 10000;
+    const coinType = COIN_TYPES.USDC;
 
     // flash mint
     const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
+    const [feeCollateralCoin] = await splitInputCoins(tx, { coinType, amounts: [feeAmount] }, suiClient, sender);
     const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(
       tx,
       {
-        coinType: COIN_TYPES.USDC,
-        amount: (amount * 30) / 10000, // fee rate at 30bps
+        coinType,
+        collateralCoin: feeCollateralCoin,
       },
       sender,
     );
@@ -178,6 +186,48 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(dryrunRes.events.length).toBe(8);
   });
 
+  it('test psmSwapIn then deposit to saving pool', async () => {
+    const network = 'testnet';
+    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
+    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+    const bucketClient = new BucketV2Client({ suiClient, network });
+
+    // tx
+    const tx = new Transaction();
+    tx.setSender(sender);
+
+    const amount = 0.1 * 10 ** 6; // 0.1 USDB
+    const coinType = COIN_TYPES.USDC;
+    const [collateralCoin] = await splitInputCoins(tx, { coinType, amounts: [amount] }, suiClient, sender);
+
+    // psmSwapIn
+    const usdbCoin = await bucketClient.buildPSMSwapInTransaction(
+      tx,
+      {
+        coinType,
+        collateralCoin,
+      },
+      sender,
+    );
+
+    await bucketClient.buildDepositToSavingPoolTransaction(
+      tx,
+      {
+        savingPoolType: 'Allen',
+        account: sender,
+        usdbCoin,
+      },
+      sender,
+    );
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.events.length).toBe(6);
+  });
+
   it('test deposit to saving pool', async () => {
     const network = 'testnet';
     const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
@@ -190,12 +240,13 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
 
+    const [usdbCoin] = await splitInputCoins(tx, { coinType: COIN_TYPES.USDB, amounts: [amount] }, suiClient, sender);
     await bucketClient.buildDepositToSavingPoolTransaction(
       tx,
       {
         savingPoolType: 'Allen',
         account: sender,
-        amount,
+        usdbCoin,
       },
       sender,
     );
