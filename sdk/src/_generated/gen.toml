@@ -1,0 +1,6 @@
+[config]
+# will be set to mainnet by default if omitted
+rpc = "https://fullnode.testnet.sui.io:443"
+
+[packages]
+BucketV2PSM = {local = "../../../../../move/v2-move-contracts/bucket_psm/"}

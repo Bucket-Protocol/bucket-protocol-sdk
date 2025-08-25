@@ -4,6 +4,7 @@ import { Transaction, TransactionArgument, TransactionObjectArgument } from '@my
 import { normalizeStructTag } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
+import { Pool as SavingPool } from '@/_generated/bucket-psm/pool/structs';
 import { POSITION_DATA, VAULT } from '@/structs';
 import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObjectInfo } from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
@@ -16,6 +17,9 @@ import {
   TESTNET_SAVING_POOL,
 } from '@/consts/config';
 import { destroyZeroCoin, getZeroCoin, splitInputCoins } from '@/utils/transaction';
+
+import { phantom } from './_generated/_framework/reified';
+import { parseTypeName } from './_generated/_framework/util';
 
 export class BucketV2Client {
   /**
@@ -228,6 +232,33 @@ export class BucketV2Client {
       });
       return result;
     }, [] as PositionInfo[]);
+  }
+
+  // >>> PSM
+  async getAllPSMPool() {
+    const psmPoolObjectIds = Object.values(this.config.PSM_POOL_OBJS).map((p) => p.pool.objectId);
+
+    const psmPoolObjResponse = await this.suiClient.multiGetObjects({
+      ids: psmPoolObjectIds,
+      options: {
+        showBcs: true,
+      },
+    });
+
+    return Object.keys(this.config.PSM_POOL_OBJS).map((collateralType, idx) => {
+      const pool = psmPoolObjResponse[idx];
+
+      if (pool.data?.bcs?.dataType !== 'moveObject') {
+        throw new Error(`Failed to parse psm pool object`);
+      }
+      const { typeArgs } = parseTypeName(pool.data.bcs.type);
+
+      return SavingPool.fromBcs(phantom(typeArgs[0]), Uint8Array.from(pool.data?.bcs.bcsBytes));
+    });
+  }
+
+  async getAllSavingPool() {
+    // TODO
   }
 
   /* ----- Transaction Methods ----- */
