@@ -1,11 +1,12 @@
 import { bcs } from '@mysten/sui/bcs';
 import { SuiClient } from '@mysten/sui/client';
 import { Transaction, TransactionArgument, TransactionObjectArgument } from '@mysten/sui/transactions';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag, normalizeSuiAddress } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import { Pool as PSMPool } from '@/_generated/bucket-psm/pool/structs';
 import { Rewarder } from '@/_generated/bucket-saving-incentive/saving-incentive/structs';
+import { lpBalanceOf, lpTokenValueOf } from '@/_generated/bucket-saving/saving/functions';
 import { SavingPool } from '@/_generated/bucket-saving/saving/structs';
 import { POSITION_DATA, VAULT } from '@/structs';
 import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObjectInfo } from '@/types/config';
@@ -283,7 +284,7 @@ export class BucketV2Client {
 
   async getSavingPoolRewards(savingPoolType: SupportedSavingPoolType) {
     const pool = TESTNET_SAVING_POOL[savingPoolType];
-    if (!pool.reward) return {};
+    if (!pool.reward) return [];
 
     const rewardObjectIds = await this.suiClient
       .getDynamicFields({ parentId: pool.reward.rewardManager.objectId })
@@ -308,6 +309,56 @@ export class BucketV2Client {
         Uint8Array.from(rewarder.data?.bcs.bcsBytes),
       );
     });
+  }
+
+  async getUserSavingPoolBalance(savingPoolType: SupportedSavingPoolType, account: string) {
+    const pool = TESTNET_SAVING_POOL[savingPoolType];
+    if (!pool.reward) return 0;
+
+    const tx = new Transaction();
+    lpBalanceOf(tx, pool.coinType, {
+      self: tx.sharedObjectRef(pool.pool),
+      accountAddress: account,
+    });
+
+    const devInspectResponse = await this.suiClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: normalizeSuiAddress(DUMMY_SENDER),
+    });
+
+    const results = devInspectResponse.results;
+
+    if (!results || !results.length) return 0;
+
+    const value = devInspectResponse?.results?.[0]?.returnValues?.[0][0];
+    return value ? +bcs.u64().parse(new Uint8Array(value)) : 0;
+  }
+
+  /**
+   * @this is the value quoted in USDB
+   */
+  async getUserSavingPoolValue(savingPoolType: SupportedSavingPoolType, account: string) {
+    const pool = TESTNET_SAVING_POOL[savingPoolType];
+    if (!pool.reward) return 0;
+
+    const tx = new Transaction();
+    lpTokenValueOf(tx, pool.coinType, {
+      self: tx.sharedObjectRef(pool.pool),
+      accountAddress: account,
+      clock: tx.object.clock(),
+    });
+
+    const devInspectResponse = await this.suiClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: normalizeSuiAddress(DUMMY_SENDER),
+    });
+
+    const results = devInspectResponse.results;
+
+    if (!results || !results.length) return 0;
+
+    const value = devInspectResponse?.results?.[0]?.returnValues?.[0][0];
+    return value ? +bcs.u64().parse(new Uint8Array(value)) : 0;
   }
 
   /* ----- Transaction Methods ----- */

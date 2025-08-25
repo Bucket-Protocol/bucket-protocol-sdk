@@ -405,12 +405,15 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const network = 'testnet';
     const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
     const bucketClient = new BucketV2Client({ suiClient, network });
+    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
 
     // const psmPools = await bucketClient.getAllPSMPool();
     // const savingPools = await bucketClient.getAllSavingPool();
-    const rewards = await bucketClient.getSavingPoolRewards('Allen');
+    // const rewards = await bucketClient.getSavingPoolRewards('Allen');
+    const lpBalance = await bucketClient.getUserSavingPoolBalance('Allen', sender);
+    const lpValue = await bucketClient.getUserSavingPoolValue('Allen', sender);
 
-    console.log({ rewards });
+    console.log({ lpBalance, lpValue });
   });
 
   // it('test psmSwapIn() on testnet', async () => {
