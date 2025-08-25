@@ -1,10 +1,9 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
 import { describe, expect, it } from 'vitest';
 
 import { BucketV2Client } from '@/client';
 import { COIN_TYPES } from '@/consts/coin';
-import { splitInputCoins } from '@/utils/transaction';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   // it('test usdbCoinType()', async () => {
@@ -99,7 +98,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     const amount = 0.1 * 10 ** 6; // 1 USDC
     const coinType = COIN_TYPES.USDC;
-    const [collateralCoin] = await splitInputCoins(tx, { coinType, amounts: [amount] }, suiClient, sender);
+
+    const collateralCoin = coinWithBalance({ type: coinType, useGasCoin: false, balance: amount });
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(
       tx,
       {
@@ -129,7 +129,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     tx.setSender(sender);
 
     const amount = 0.1 * 10 ** 6; // 1 USDB
-    const [usdbCoin] = await splitInputCoins(tx, { coinType: COIN_TYPES.USDB, amounts: [amount] }, suiClient, sender);
+    const usdbCoin = coinWithBalance({ type: COIN_TYPES.USDB, useGasCoin: false, balance: amount });
 
     const collateralCoin = await bucketClient.buildPSMSwapOutTransaction(
       tx,
@@ -166,7 +166,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     // flash mint
     const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
-    const [feeCollateralCoin] = await splitInputCoins(tx, { coinType, amounts: [feeAmount] }, suiClient, sender);
+    const feeCollateralCoin = coinWithBalance({ type: coinType, useGasCoin: false, balance: feeAmount });
     const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(
       tx,
       {
@@ -198,7 +198,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
     const coinType = COIN_TYPES.USDC;
-    const [collateralCoin] = await splitInputCoins(tx, { coinType, amounts: [amount] }, suiClient, sender);
+    const collateralCoin = coinWithBalance({type: coinType, useGasCoin: false, balance: amount})
 
     // psmSwapIn
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(
@@ -240,7 +240,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
 
-    const [usdbCoin] = await splitInputCoins(tx, { coinType: COIN_TYPES.USDB, amounts: [amount] }, suiClient, sender);
+    const usdbCoin = coinWithBalance({type: COIN_TYPES.USDB, useGasCoin: false, balance: amount})
     await bucketClient.buildDepositToSavingPoolTransaction(
       tx,
       {
