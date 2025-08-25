@@ -1,10 +1,11 @@
 import { bcs } from '@mysten/sui/bcs';
 import { SuiClient } from '@mysten/sui/client';
 import { Transaction, TransactionArgument, TransactionObjectArgument } from '@mysten/sui/transactions';
-import { normalizeStructTag, normalizeSuiAddress } from '@mysten/sui/utils';
+import { normalizeStructTag, normalizeSuiAddress, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import { Pool as PSMPool } from '@/_generated/bucket-psm/pool/structs';
+import { getRewarder, realtimeRewardAmount } from '@/_generated/bucket-saving-incentive/saving-incentive/functions';
 import { Rewarder } from '@/_generated/bucket-saving-incentive/saving-incentive/structs';
 import { lpBalanceOf, lpTokenValueOf } from '@/_generated/bucket-saving/saving/functions';
 import { SavingPool } from '@/_generated/bucket-saving/saving/structs';
@@ -23,6 +24,7 @@ import { destroyZeroCoin, getZeroCoin, splitInputCoins } from '@/utils/transacti
 
 import { phantom } from './_generated/_framework/reified';
 import { parseTypeName } from './_generated/_framework/util';
+import { splitIntoChunks } from './utils';
 
 export class BucketV2Client {
   /**
@@ -282,9 +284,9 @@ export class BucketV2Client {
     });
   }
 
-  async getSavingPoolRewards(savingPoolType: SupportedSavingPoolType) {
+  async getSavingPoolRewarders(savingPoolType: SupportedSavingPoolType) {
     const pool = TESTNET_SAVING_POOL[savingPoolType];
-    if (!pool.reward) return [];
+    if (!pool.reward) return {};
 
     const rewardObjectIds = await this.suiClient
       .getDynamicFields({ parentId: pool.reward.rewardManager.objectId })
@@ -297,18 +299,24 @@ export class BucketV2Client {
       },
     });
 
-    return savingPoolRewards.map((rewarder) => {
+    const rewarders = savingPoolRewards.map((rewarder) => {
       if (rewarder.data?.bcs?.dataType !== 'moveObject') {
         throw new Error(`Failed to parse reward object for ${savingPoolType} SavingPool`);
       }
 
-      const { typeArgs } = parseTypeName(rewarder.data.bcs.type);
-
+      // parse from dynamicField key
+      const { typeArgs: rewardType } = parseTypeName(rewarder.data.bcs.type);
+      const { typeArgs } = parseTypeName(rewardType[1]);
       return Rewarder.fromBcs(
         [phantom(typeArgs[0]), phantom(typeArgs[1])],
         Uint8Array.from(rewarder.data?.bcs.bcsBytes),
       );
     });
+
+    return rewarders.reduce(
+      (acc, rewarder) => ({ ...acc, [rewarder.$typeArgs[1]]: rewarder }),
+      {} as Record<string, Rewarder<string, string>>,
+    );
   }
 
   async getUserSavingPoolBalance(savingPoolType: SupportedSavingPoolType, account: string) {
@@ -335,7 +343,7 @@ export class BucketV2Client {
   }
 
   /**
-   * @this is the value quoted in USDB
+   * @this value is quoted in USDB
    */
   async getUserSavingPoolValue(savingPoolType: SupportedSavingPoolType, account: string) {
     const pool = TESTNET_SAVING_POOL[savingPoolType];
@@ -359,6 +367,51 @@ export class BucketV2Client {
 
     const value = devInspectResponse?.results?.[0]?.returnValues?.[0][0];
     return value ? +bcs.u64().parse(new Uint8Array(value)) : 0;
+  }
+
+  /**
+   * @this value is quoted in USDB
+   */
+  async getUserSavingPoolRealtimeRewards(savingPoolType: SupportedSavingPoolType, account: string) {
+    const rewarders = await this.getSavingPoolRewarders(savingPoolType);
+    const pool = TESTNET_SAVING_POOL[savingPoolType];
+    if (!Object.keys(rewarders).length || !pool.reward) return {};
+    const tx = new Transaction();
+
+    for (const rewardType of pool.reward.rewardTypes) {
+      const rewarder = rewarders[rewardType];
+      const typeArgs = rewarder.$typeArgs;
+      const rewarder_ref = getRewarder(tx, typeArgs, tx.sharedObjectRef(pool.reward.rewardManager));
+
+      realtimeRewardAmount(tx, typeArgs, {
+        rewarder: rewarder_ref,
+        savingPool: tx.sharedObjectRef(pool.pool),
+        account,
+        clock: tx.object.clock(),
+      });
+    }
+
+    const devInspectResponse = await this.suiClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: normalizeSuiAddress(DUMMY_SENDER),
+    });
+
+    const results = devInspectResponse.results;
+
+    if (!results || !results.length) return 0;
+
+    const chunks = splitIntoChunks(results, 2);
+
+    return pool.reward.rewardTypes.reduce(
+      (acc, rewardType, idx) => {
+        const chunk = chunks[idx];
+        const value = chunk[1]?.returnValues?.[0][0];
+        const realtimeReward = value ? +bcs.u64().parse(new Uint8Array(value)) : 0;
+
+        return { ...acc, [rewardType]: realtimeReward };
+      },
+      {} as Record<string, number>,
+    );
   }
 
   /* ----- Transaction Methods ----- */

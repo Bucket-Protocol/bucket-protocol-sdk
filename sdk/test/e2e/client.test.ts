@@ -3,6 +3,7 @@ import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
+import { realtimeRewardAmount } from '@/_generated/bucket-saving-incentive/saving-incentive/functions';
 import { BucketV2Client } from '@/client';
 import { COIN_TYPES } from '@/consts/coin';
 
@@ -409,11 +410,11 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     // const psmPools = await bucketClient.getAllPSMPool();
     // const savingPools = await bucketClient.getAllSavingPool();
-    // const rewards = await bucketClient.getSavingPoolRewards('Allen');
-    const lpBalance = await bucketClient.getUserSavingPoolBalance('Allen', sender);
-    const lpValue = await bucketClient.getUserSavingPoolValue('Allen', sender);
+    // const rewards = await bucketClient.getSavingPoolRewarders('Allen');
+    // const lpBalance = await bucketClient.getUserSavingPoolBalance('Allen', sender);
+    // const lpValue = await bucketClient.getUserSavingPoolValue('Allen', sender);
+    const realtimeRewards = await bucketClient.getUserSavingPoolRealtimeRewards('Allen', sender);
 
-    console.log({ lpBalance, lpValue });
   });
 
   // it('test psmSwapIn() on testnet', async () => {
