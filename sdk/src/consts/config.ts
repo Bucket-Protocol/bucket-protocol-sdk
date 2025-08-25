@@ -15,7 +15,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
     ORIGINAL_ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
     ORIGINAL_CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
-    ORIGINAL_PSM_PACKAGE_ID: '',
+    ORIGINAL_PSM_PACKAGE_ID: '0xa563ace20f247f966b1819909d6cf24a52cc18c2ba14a72890c88d44be066545',
     ORIGINAL_FLASH_PACKAGE_ID: '',
     ORIGINAL_SAVING_PACKAGE_ID: '',
     ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '',
@@ -24,7 +24,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
     ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
     CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
-    PSM_PACKAGE_ID: '',
+    PSM_PACKAGE_ID: '0xa563ace20f247f966b1819909d6cf24a52cc18c2ba14a72890c88d44be066545',
     FLASH_PACKAGE_ID: '',
     SAVING_PACKAGE_ID: '',
     SAVING_INCENTIVE_PACKAGE_ID: '',
@@ -34,6 +34,7 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 18178365,
       mutable: true,
     },
+
     FLASH_GLOBAL_CONFIG_OBJ: {
       objectId: '',
       initialSharedVersion: 0,
@@ -55,7 +56,7 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: false,
     },
 
-    VAULT_OBJS: {
+    CDP_VAULT_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         vault: {
           objectId: '0x52aed4daa610b787cf2291f1e8e4c96aa46cbfdd90c7f2733d07048041a0730c',
@@ -78,6 +79,7 @@ export const CONFIG: Record<Network, ConfigType> = {
         },
       },
     },
+
     AGGREGATOR_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         priceAggregator: {
@@ -103,9 +105,41 @@ export const CONFIG: Record<Network, ConfigType> = {
         },
         pythPriceId: '0xeba0732395fae9dec4bae12e52760b35fc1c5671e2da8b449c9af4efe5d54341',
       },
+      '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC': {
+        priceAggregator: {
+          objectId: '0x13c1f7b9fe0fca2092ab3b4c59aa404dc8b2b277858e9b7a3fb89be9a7723a21',
+          initialSharedVersion: 610893664,
+          mutable: false,
+        },
+        pythPriceId: '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a',
+      },
+      '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT': {
+        priceAggregator: {
+          objectId: '0x5e5aa6a03a13d28c6ea37157bcc05f073a375eaab233bc1c13df39ffe20c7561',
+          initialSharedVersion: 610893672,
+          mutable: false,
+        },
+        pythPriceId: '0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b',
+      },
     },
-    PSM_POOL_OBJS: {},
+    PSM_POOL_OBJS: {
+      '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC': {
+        pool: {
+          objectId: '0x56671d5a4e69f1b847786ba32b5bcb3a611728f9dd06f992cf9f5f849e81a667',
+          initialSharedVersion: '610893670',
+          mutable: true,
+        },
+      },
+      '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT': {
+        pool: {
+          objectId: '0x254f2f21979928b4a14f43804a295dbd858f538084082c4ee68fedceb426b580',
+          initialSharedVersion: '610893671',
+          mutable: true,
+        },
+      },
+    },
   },
+
   testnet: {
     ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
     ORIGINAL_USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
@@ -151,7 +185,6 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: false,
     },
 
-    VAULT_OBJS: {},
     AGGREGATOR_OBJS: {
       '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
         priceAggregator: {
@@ -163,6 +196,9 @@ export const CONFIG: Record<Network, ConfigType> = {
         pythPriceId: '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722',
       },
     },
+
+    CDP_VAULT_OBJS: {},
+
     PSM_POOL_OBJS: {
       '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
         pool: {

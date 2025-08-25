@@ -44,7 +44,7 @@ export type ConfigType = {
   PYTH_RULE_PACKAGE_ID: string;
   PYTH_RULE_CONFIG_OBJ: SharedObjectRef;
 
-  VAULT_OBJS: Record<string, VaultObjectInfo>;
+  CDP_VAULT_OBJS: Record<string, VaultObjectInfo>;
   AGGREGATOR_OBJS: Record<string, AggregatorObjectInfo>;
   PSM_POOL_OBJS: Record<string, PSMPoolObjectInfo>;
 };

@@ -17,8 +17,6 @@ import {
 } from '@/consts/config';
 import { destroyZeroCoin, getZeroCoin, splitInputCoins } from '@/utils/transaction';
 
-import { COIN_TYPES } from './consts/coin';
-
 export class BucketV2Client {
   /**
    * @description a TypeScript wrapper over Bucket V2 client.
@@ -73,14 +71,14 @@ export class BucketV2Client {
    * @description Get all CDP collateral types
    */
   getAllCollateralTypes(): string[] {
-    return Object.keys(this.config.VAULT_OBJS);
+    return Object.keys(this.config.CDP_VAULT_OBJS);
   }
 
   /**
    * @description
    */
   getVaultObjectInfo({ coinType }: { coinType: string }): VaultObjectInfo {
-    const vaultInfo = this.config.VAULT_OBJS[normalizeStructTag(coinType)];
+    const vaultInfo = this.config.CDP_VAULT_OBJS[normalizeStructTag(coinType)];
 
     if (!vaultInfo) {
       throw new Error('Unsupported collateral type');
@@ -118,7 +116,7 @@ export class BucketV2Client {
    * @description Get all vault objects
    */
   async getAllVaultObjects(): Promise<VaultInfo[]> {
-    const vaultObjectIds = Object.values(this.config.VAULT_OBJS).map((v) => v.vault.objectId);
+    const vaultObjectIds = Object.values(this.config.CDP_VAULT_OBJS).map((v) => v.vault.objectId);
 
     const res = await this.suiClient.multiGetObjects({
       ids: vaultObjectIds,
@@ -126,7 +124,7 @@ export class BucketV2Client {
         showBcs: true,
       },
     });
-    return Object.keys(this.config.VAULT_OBJS).map((collateralType, index) => {
+    return Object.keys(this.config.CDP_VAULT_OBJS).map((collateralType, index) => {
       const data = res[index].data;
 
       if (data?.bcs?.dataType !== 'moveObject') {
@@ -203,7 +201,7 @@ export class BucketV2Client {
   async getDebtorPositions(debtor: string): Promise<PositionInfo[]> {
     const tx = new Transaction();
 
-    Object.entries(this.config.VAULT_OBJS).map(([coinType, { vault }]) => {
+    Object.entries(this.config.CDP_VAULT_OBJS).map(([coinType, { vault }]) => {
       tx.moveCall({
         target: `${this.config.CDP_PACKAGE_ID}::vault::get_position_data`,
         typeArguments: [coinType],
@@ -218,7 +216,7 @@ export class BucketV2Client {
       return [];
     }
     // TODO: move to bsc parsing
-    return Object.keys(this.config.VAULT_OBJS).reduce((result, collateralType, index) => {
+    return Object.keys(this.config.CDP_VAULT_OBJS).reduce((result, collateralType, index) => {
       if (!res.results || !res.results[index] || !res.results[index].returnValues) {
         return result;
       }
@@ -429,12 +427,12 @@ export class BucketV2Client {
           target: `0x1::option::none`,
           typeArguments: [priceResultType],
         });
-    const [collateralCoin, usdbCoin, response] = tx.moveCall({
+    const [inputCoin, usdbCoin, response] = tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::update_position`,
       typeArguments: [coinType],
       arguments: [this.vault(tx, { coinType }), this.treasury(tx), tx.object.clock(), priceResultOpt, updateRequest],
     });
-    return [collateralCoin, usdbCoin, response];
+    return [inputCoin, usdbCoin, response];
   }
 
   /**
@@ -457,12 +455,12 @@ export class BucketV2Client {
     {
       coinType,
       priceResult,
-      collateralCoin,
+      inputCoin,
       accountObj,
     }: {
       coinType: string;
       priceResult: TransactionArgument;
-      collateralCoin: TransactionObjectArgument;
+      inputCoin: TransactionObjectArgument;
       accountObj?: string | TransactionArgument;
     },
   ): TransactionArgument {
@@ -473,7 +471,7 @@ export class BucketV2Client {
     const usdbCoin = tx.moveCall({
       target: `${this.config.PSM_PACKAGE_ID}::pool::swap_in`,
       typeArguments: [coinType],
-      arguments: [this.psmPoolObj(tx, { coinType }), this.treasury(tx), priceResult, collateralCoin, partner],
+      arguments: [this.psmPoolObj(tx, { coinType }), this.treasury(tx), priceResult, inputCoin, partner],
     });
 
     return usdbCoin;
@@ -497,13 +495,13 @@ export class BucketV2Client {
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
       value: this.newAccountRequest(tx, { accountObj }),
     });
-    const collateralCoin = tx.moveCall({
+    const inputCoin = tx.moveCall({
       target: `${this.config.PSM_PACKAGE_ID}::pool::swap_out`,
       typeArguments: [coinType],
       arguments: [this.psmPoolObj(tx, { coinType }), this.treasury(tx), priceResult, usdbCoin, partner],
     });
 
-    return collateralCoin;
+    return inputCoin;
   }
 
   flashMint(
@@ -798,7 +796,7 @@ export class BucketV2Client {
     },
     sender: string,
   ): Promise<[TransactionArgument, TransactionArgument]> {
-    const [depositCoin, repaymentCoin] = await Promise.all([
+    const [[depositCoin], [repaymentCoin]] = await Promise.all([
       splitInputCoins(tx, { coinType: coinType, amounts: [depositAmount] }, this.suiClient, sender),
       splitInputCoins(tx, { coinType: this.getUsdbCoinType(), amounts: [repayAmount] }, this.suiClient, sender),
     ]);
@@ -810,18 +808,18 @@ export class BucketV2Client {
       withdrawAmount,
       accountObj: accountObjId,
     });
-    let collateralCoin, usdbCoin, response;
+    let inputCoin, usdbCoin, response;
 
     if (borrowAmount > 0 || withdrawAmount > 0) {
       const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
-      [collateralCoin, usdbCoin, response] = this.updatePosition(tx, {
+      [inputCoin, usdbCoin, response] = this.updatePosition(tx, {
         coinType,
         updateRequest,
         priceResult,
       });
     } else {
-      [collateralCoin, usdbCoin, response] = this.updatePosition(tx, {
+      [inputCoin, usdbCoin, response] = this.updatePosition(tx, {
         coinType,
         updateRequest,
       });
@@ -829,12 +827,12 @@ export class BucketV2Client {
     this.checkResponse(tx, { coinType, response });
 
     if (withdrawAmount === 0) {
-      destroyZeroCoin(tx, { coinType: coinType, coin: collateralCoin });
+      destroyZeroCoin(tx, { coinType: coinType, coin: inputCoin });
     }
     if (borrowAmount === 0) {
       destroyZeroCoin(tx, { coinType: this.getUsdbCoinType(), coin: usdbCoin });
     }
-    return [collateralCoin, usdbCoin];
+    return [inputCoin, usdbCoin];
   }
 
   /**
@@ -876,33 +874,32 @@ export class BucketV2Client {
       withdrawAmount: collateralAmount,
       accountObj: accountObjId,
     });
-    const [collateralCoin, usdbCoin, response] = this.updatePosition(tx, {
+    const [inputCoin, usdbCoin, response] = this.updatePosition(tx, {
       coinType,
       updateRequest,
     });
     this.checkResponse(tx, { coinType, response });
     destroyZeroCoin(tx, { coinType: this.getUsdbCoinType(), coin: usdbCoin });
 
-    return collateralCoin;
+    return inputCoin;
   }
 
   async buildPSMSwapInTransaction(
     tx: Transaction,
     {
       coinType,
-      collateralCoin,
+      inputCoin,
       accountObjId,
     }: {
       coinType: string;
-      collateralCoin: TransactionArgument;
+      inputCoin: TransactionArgument;
       accountObjId?: string;
       recipient?: string;
     },
-    sender: string,
   ): Promise<TransactionArgument> {
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
-    return this.psmSwapIn(tx, { coinType, priceResult, collateralCoin, accountObj: accountObjId });
+    return this.psmSwapIn(tx, { coinType, priceResult, inputCoin, accountObj: accountObjId });
   }
 
   async buildPSMSwapOutTransaction(
@@ -917,7 +914,6 @@ export class BucketV2Client {
       accountObjId?: string;
       recipient?: string;
     },
-    sender: string,
   ): Promise<TransactionArgument> {
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
@@ -935,7 +931,6 @@ export class BucketV2Client {
       usdbCoin: TransactionArgument;
       account: string;
     },
-    sender: string,
   ) {
     let depositResponse = this.savingPoolDeposit(tx, {
       savingPoolType,
