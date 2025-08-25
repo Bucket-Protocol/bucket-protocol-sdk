@@ -16,7 +16,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
     ORIGINAL_CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
     ORIGINAL_PSM_PACKAGE_ID: '0xa563ace20f247f966b1819909d6cf24a52cc18c2ba14a72890c88d44be066545',
-    ORIGINAL_FLASH_PACKAGE_ID: '',
+    ORIGINAL_FLASH_PACKAGE_ID: '0x4f3ae969f16389f668debcdc84105025e046d90f4f5b79e5e639b0a47f2c43e4',
     ORIGINAL_SAVING_PACKAGE_ID: '',
     ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '',
 
@@ -25,7 +25,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
     CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
     PSM_PACKAGE_ID: '0xa563ace20f247f966b1819909d6cf24a52cc18c2ba14a72890c88d44be066545',
-    FLASH_PACKAGE_ID: '',
+    FLASH_PACKAGE_ID: '0x4f3ae969f16389f668debcdc84105025e046d90f4f5b79e5e639b0a47f2c43e4',
     SAVING_PACKAGE_ID: '',
     SAVING_INCENTIVE_PACKAGE_ID: '',
 
@@ -36,9 +36,9 @@ export const CONFIG: Record<Network, ConfigType> = {
     },
 
     FLASH_GLOBAL_CONFIG_OBJ: {
-      objectId: '',
-      initialSharedVersion: 0,
-      mutable: false,
+      objectId: '0x82520bf42d8806bb7adcd3410d6287f5ca34bf2b5c05c57ef8a7ab3092b52e78',
+      initialSharedVersion: 610893675,
+      mutable: true,
     },
 
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
@@ -170,6 +170,7 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: '349180354',
       mutable: true,
     },
+
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
       objectId: '0xdfdfe9c7bdd63113a5c57f3d1c7c425d2b85b73c7ef7d974b98db8584837c5b6',
       initialSharedVersion: 349180418,

@@ -11,10 +11,12 @@ describe('Interacting with Bucket Client on mainnet', () => {
   const testAccount = '0x26266b1381bcf03ab3acc37c1e87beffb52d49f345248bc3efb9114176990ae4';
   const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
   const bucketClient = new BucketV2Client({ suiClient, network });
+  const usdbCoinType = bucketClient.getUsdbCoinType();
+  const usdcCoinType = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
+  const usdtCoinType = '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT';
 
   it('test usdbCoinType()', async () => {
-    const usdbCoinType = bucketClient.getUsdbCoinType();
-    const usdbMetadata = await bucketClient.getSuiClient().getCoinMetadata({
+    const usdbMetadata = await suiClient.getCoinMetadata({
       coinType: usdbCoinType,
     });
     expect(usdbMetadata?.decimals).toBe(6);
@@ -100,9 +102,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     tx.setSender(testAccount);
 
     const amount = 1 * 10 ** 6; // 1 USDC
-    const usdbCoinType = bucketClient.getUsdbCoinType();
-    const usdcCoinType = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
-    const usdtCoinType = '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT';
 
     const usdcCoin = coinWithBalance({ type: usdcCoinType, useGasCoin: false, balance: amount });
     const usdtCoin = coinWithBalance({ type: usdtCoinType, useGasCoin: false, balance: amount });
@@ -124,6 +123,32 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdcCoinType)?.amount).toBe('-1000000');
     expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdtCoinType)?.amount).toBe('-1000000');
     expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdbCoinType)?.amount).toBe('1997000');
+  });
+
+  it('test flashMint 1000 USDB with default fee config', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 1_000 * 10 ** 6; // 1000 USDB
+    const feeAmount = amount * 0.0005;
+
+    // flash mint
+    const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
+    const feeCollateralCoin = coinWithBalance({ type: usdcCoinType, useGasCoin: false, balance: feeAmount });
+    const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
+      coinType: usdcCoinType,
+      inputCoin: feeCollateralCoin,
+    });
+    tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
+    bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.events.length).toBe(8);
   });
 });
 
@@ -157,14 +182,9 @@ describe('Interacting with Bucket Client on testnet', () => {
   });
 
   it('test psmSwapOut()', async () => {
-    const network = 'testnet';
-    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
-    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
-    const bucketClient = new BucketV2Client({ suiClient, network });
-
     // tx
     const tx = new Transaction();
-    tx.setSender(sender);
+    tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 1 USDB
     const usdbCoin = coinWithBalance({ type: COIN_TYPES.USDB, useGasCoin: false, balance: amount });
@@ -174,7 +194,7 @@ describe('Interacting with Bucket Client on testnet', () => {
       usdbCoin,
     });
 
-    tx.transferObjects([inputCoin], sender);
+    tx.transferObjects([inputCoin], testAccount);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
@@ -185,14 +205,9 @@ describe('Interacting with Bucket Client on testnet', () => {
   });
 
   it('test flashMint 1 USDB with default fee config', async () => {
-    const network = 'testnet';
-    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
-    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
-    const bucketClient = new BucketV2Client({ suiClient, network });
-
     // tx
     const tx = new Transaction();
-    tx.setSender(sender);
+    tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 1 USDB
     const feeAmount = (amount * 30) / 10000;
@@ -217,14 +232,9 @@ describe('Interacting with Bucket Client on testnet', () => {
   });
 
   it('test psmSwapIn then deposit to saving pool', async () => {
-    const network = 'testnet';
-    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
-    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
-    const bucketClient = new BucketV2Client({ suiClient, network });
-
     // tx
     const tx = new Transaction();
-    tx.setSender(sender);
+    tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
     const coinType = COIN_TYPES.USDC;
@@ -238,7 +248,7 @@ describe('Interacting with Bucket Client on testnet', () => {
 
     await bucketClient.buildDepositToSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
-      account: sender,
+      account: testAccount,
       usdbCoin,
     });
 
@@ -251,21 +261,16 @@ describe('Interacting with Bucket Client on testnet', () => {
   });
 
   it('test deposit to saving pool', async () => {
-    const network = 'testnet';
-    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
-    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
-    const bucketClient = new BucketV2Client({ suiClient, network });
-
     // tx
     const tx = new Transaction();
-    tx.setSender(sender);
+    tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
 
     const usdbCoin = coinWithBalance({ type: COIN_TYPES.USDB, useGasCoin: false, balance: amount });
     await bucketClient.buildDepositToSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
-      account: sender,
+      account: testAccount,
       usdbCoin,
     });
 
@@ -278,14 +283,9 @@ describe('Interacting with Bucket Client on testnet', () => {
   });
 
   it('test withdraw from saving pool', async () => {
-    const network = 'testnet';
-    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
-    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
-    const bucketClient = new BucketV2Client({ suiClient, network });
-
     // tx
     const tx = new Transaction();
-    tx.setSender(sender);
+    tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 0.1 SUSDB
 
@@ -294,7 +294,7 @@ describe('Interacting with Bucket Client on testnet', () => {
       amount,
     });
 
-    tx.transferObjects([usdbCoin], sender);
+    tx.transferObjects([usdbCoin], testAccount);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
@@ -305,20 +305,15 @@ describe('Interacting with Bucket Client on testnet', () => {
   });
 
   it('test claim from saving pool', async () => {
-    const network = 'testnet';
-    const sender = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
-    const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
-    const bucketClient = new BucketV2Client({ suiClient, network });
-
     // tx
     const tx = new Transaction();
-    tx.setSender(sender);
+    tx.setSender(testAccount);
 
     const rewardCoins = await bucketClient.buildClaimRewardsFromSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
     });
 
-    tx.transferObjects([...rewardCoins], sender);
+    tx.transferObjects([...rewardCoins], testAccount);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
