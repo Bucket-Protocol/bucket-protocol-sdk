@@ -77,6 +77,78 @@ export class AccumulatorRoot implements StructClass { __StructClass = true as co
 
  }
 
+/* ============================== U128 =============================== */
+
+export function isU128(type: string): boolean { type = compressSuiType(type); return type === `0x2::accumulator::U128`; }
+
+export interface U128Fields { value: ToField<"u128"> }
+
+export type U128Reified = Reified< U128, U128Fields >;
+
+export class U128 implements StructClass { __StructClass = true as const;
+
+ static readonly $typeName = `0x2::accumulator::U128`; static readonly $numTypeParams = 0; static readonly $isPhantom = [] as const;
+
+ readonly $typeName = U128.$typeName; readonly $fullTypeName: `0x2::accumulator::U128`; readonly $typeArgs: []; readonly $isPhantom = U128.$isPhantom;
+
+ readonly value: ToField<"u128">
+
+ private constructor(typeArgs: [], fields: U128Fields, ) { this.$fullTypeName = composeSuiType( U128.$typeName, ...typeArgs ) as `0x2::accumulator::U128`; this.$typeArgs = typeArgs;
+
+ this.value = fields.value; }
+
+ static reified( ): U128Reified { const reifiedBcs = U128.bcs; return { typeName: U128.$typeName, fullTypeName: composeSuiType( U128.$typeName, ...[] ) as `0x2::accumulator::U128`, typeArgs: [ ] as [], isPhantom: U128.$isPhantom, reifiedTypeArgs: [], fromFields: (fields: Record<string, any>) => U128.fromFields( fields, ), fromFieldsWithTypes: (item: FieldsWithTypes) => U128.fromFieldsWithTypes( item, ), fromBcs: (data: Uint8Array) => U128.fromFields( reifiedBcs.parse(data) ), bcs: reifiedBcs, fromJSONField: (field: any) => U128.fromJSONField( field, ), fromJSON: (json: Record<string, any>) => U128.fromJSON( json, ), fromSuiParsedData: (content: SuiParsedData) => U128.fromSuiParsedData( content, ), fromSuiObjectData: (content: SuiObjectData) => U128.fromSuiObjectData( content, ), fetch: async (client: SuiClient, id: string) => U128.fetch( client, id, ), new: ( fields: U128Fields, ) => { return new U128( [], fields ) }, kind: "StructClassReified", } }
+
+ static get r() { return U128.reified() }
+
+ static phantom( ): PhantomReified<ToTypeStr<U128>> { return phantom(U128.reified( )); } static get p() { return U128.phantom() }
+
+ private static instantiateBcs() { return bcs.struct("U128", {
+
+ value: bcs.u128()
+
+}) };
+
+ private static cachedBcs: ReturnType<typeof U128.instantiateBcs> | null = null;
+
+ static get bcs() { if (!U128.cachedBcs) { U128.cachedBcs = U128.instantiateBcs() } return U128.cachedBcs };
+
+ static fromFields( fields: Record<string, any> ): U128 { return U128.reified( ).new( { value: decodeFromFields("u128", fields.value) } ) }
+
+ static fromFieldsWithTypes( item: FieldsWithTypes ): U128 { if (!isU128(item.type)) { throw new Error("not a U128 type");
+
+ }
+
+ return U128.reified( ).new( { value: decodeFromFieldsWithTypes("u128", item.fields.value) } ) }
+
+ static fromBcs( data: Uint8Array ): U128 { return U128.fromFields( U128.bcs.parse(data) ) }
+
+ toJSONField() { return {
+
+ value: this.value.toString(),
+
+} }
+
+ toJSON() { return { $typeName: this.$typeName, $typeArgs: this.$typeArgs, ...this.toJSONField() } }
+
+ static fromJSONField( field: any ): U128 { return U128.reified( ).new( { value: decodeFromJSONField("u128", field.value) } ) }
+
+ static fromJSON( json: Record<string, any> ): U128 { if (json.$typeName !== U128.$typeName) { throw new Error("not a WithTwoGenerics json object") };
+
+ return U128.fromJSONField( json, ) }
+
+ static fromSuiParsedData( content: SuiParsedData ): U128 { if (content.dataType !== "moveObject") { throw new Error("not an object"); } if (!isU128(content.type)) { throw new Error(`object at ${(content.fields as any).id} is not a U128 object`); } return U128.fromFieldsWithTypes( content ); }
+
+ static fromSuiObjectData( data: SuiObjectData ): U128 { if (data.bcs) { if (data.bcs.dataType !== "moveObject" || !isU128(data.bcs.type)) { throw new Error(`object at is not a U128 object`); }
+
+ return U128.fromBcs( fromB64(data.bcs.bcsBytes) ); } if (data.content) { return U128.fromSuiParsedData( data.content ) } throw new Error( "Both `bcs` and `content` fields are missing from the data. Include `showBcs` or `showContent` in the request." ); }
+
+ static async fetch( client: SuiClient, id: string ): Promise<U128> { const res = await client.getObject({ id, options: { showBcs: true, }, }); if (res.error) { throw new Error(`error fetching U128 object at id ${id}: ${res.error.code}`); } if (res.data?.bcs?.dataType !== "moveObject" || !isU128(res.data.bcs.type)) { throw new Error(`object at id ${id} is not a U128 object`); }
+
+ return U128.fromSuiObjectData( res.data ); }
+
+ }
+
 /* ============================== Key =============================== */
 
 export function isKey(type: string): boolean { type = compressSuiType(type); return type.startsWith(`0x2::accumulator::Key` + '<'); }
@@ -148,77 +220,5 @@ export class Key<T extends PhantomTypeArgument> implements StructClass { __Struc
  static async fetch<T extends PhantomReified<PhantomTypeArgument>>( client: SuiClient, typeArg: T, id: string ): Promise<Key<ToPhantomTypeArgument<T>>> { const res = await client.getObject({ id, options: { showBcs: true, }, }); if (res.error) { throw new Error(`error fetching Key object at id ${id}: ${res.error.code}`); } if (res.data?.bcs?.dataType !== "moveObject" || !isKey(res.data.bcs.type)) { throw new Error(`object at id ${id} is not a Key object`); }
 
  return Key.fromSuiObjectData( typeArg, res.data ); }
-
- }
-
-/* ============================== U128 =============================== */
-
-export function isU128(type: string): boolean { type = compressSuiType(type); return type === `0x2::accumulator::U128`; }
-
-export interface U128Fields { value: ToField<"u128"> }
-
-export type U128Reified = Reified< U128, U128Fields >;
-
-export class U128 implements StructClass { __StructClass = true as const;
-
- static readonly $typeName = `0x2::accumulator::U128`; static readonly $numTypeParams = 0; static readonly $isPhantom = [] as const;
-
- readonly $typeName = U128.$typeName; readonly $fullTypeName: `0x2::accumulator::U128`; readonly $typeArgs: []; readonly $isPhantom = U128.$isPhantom;
-
- readonly value: ToField<"u128">
-
- private constructor(typeArgs: [], fields: U128Fields, ) { this.$fullTypeName = composeSuiType( U128.$typeName, ...typeArgs ) as `0x2::accumulator::U128`; this.$typeArgs = typeArgs;
-
- this.value = fields.value; }
-
- static reified( ): U128Reified { const reifiedBcs = U128.bcs; return { typeName: U128.$typeName, fullTypeName: composeSuiType( U128.$typeName, ...[] ) as `0x2::accumulator::U128`, typeArgs: [ ] as [], isPhantom: U128.$isPhantom, reifiedTypeArgs: [], fromFields: (fields: Record<string, any>) => U128.fromFields( fields, ), fromFieldsWithTypes: (item: FieldsWithTypes) => U128.fromFieldsWithTypes( item, ), fromBcs: (data: Uint8Array) => U128.fromFields( reifiedBcs.parse(data) ), bcs: reifiedBcs, fromJSONField: (field: any) => U128.fromJSONField( field, ), fromJSON: (json: Record<string, any>) => U128.fromJSON( json, ), fromSuiParsedData: (content: SuiParsedData) => U128.fromSuiParsedData( content, ), fromSuiObjectData: (content: SuiObjectData) => U128.fromSuiObjectData( content, ), fetch: async (client: SuiClient, id: string) => U128.fetch( client, id, ), new: ( fields: U128Fields, ) => { return new U128( [], fields ) }, kind: "StructClassReified", } }
-
- static get r() { return U128.reified() }
-
- static phantom( ): PhantomReified<ToTypeStr<U128>> { return phantom(U128.reified( )); } static get p() { return U128.phantom() }
-
- private static instantiateBcs() { return bcs.struct("U128", {
-
- value: bcs.u128()
-
-}) };
-
- private static cachedBcs: ReturnType<typeof U128.instantiateBcs> | null = null;
-
- static get bcs() { if (!U128.cachedBcs) { U128.cachedBcs = U128.instantiateBcs() } return U128.cachedBcs };
-
- static fromFields( fields: Record<string, any> ): U128 { return U128.reified( ).new( { value: decodeFromFields("u128", fields.value) } ) }
-
- static fromFieldsWithTypes( item: FieldsWithTypes ): U128 { if (!isU128(item.type)) { throw new Error("not a U128 type");
-
- }
-
- return U128.reified( ).new( { value: decodeFromFieldsWithTypes("u128", item.fields.value) } ) }
-
- static fromBcs( data: Uint8Array ): U128 { return U128.fromFields( U128.bcs.parse(data) ) }
-
- toJSONField() { return {
-
- value: this.value.toString(),
-
-} }
-
- toJSON() { return { $typeName: this.$typeName, $typeArgs: this.$typeArgs, ...this.toJSONField() } }
-
- static fromJSONField( field: any ): U128 { return U128.reified( ).new( { value: decodeFromJSONField("u128", field.value) } ) }
-
- static fromJSON( json: Record<string, any> ): U128 { if (json.$typeName !== U128.$typeName) { throw new Error("not a WithTwoGenerics json object") };
-
- return U128.fromJSONField( json, ) }
-
- static fromSuiParsedData( content: SuiParsedData ): U128 { if (content.dataType !== "moveObject") { throw new Error("not an object"); } if (!isU128(content.type)) { throw new Error(`object at ${(content.fields as any).id} is not a U128 object`); } return U128.fromFieldsWithTypes( content ); }
-
- static fromSuiObjectData( data: SuiObjectData ): U128 { if (data.bcs) { if (data.bcs.dataType !== "moveObject" || !isU128(data.bcs.type)) { throw new Error(`object at is not a U128 object`); }
-
- return U128.fromBcs( fromB64(data.bcs.bcsBytes) ); } if (data.content) { return U128.fromSuiParsedData( data.content ) } throw new Error( "Both `bcs` and `content` fields are missing from the data. Include `showBcs` or `showContent` in the request." ); }
-
- static async fetch( client: SuiClient, id: string ): Promise<U128> { const res = await client.getObject({ id, options: { showBcs: true, }, }); if (res.error) { throw new Error(`error fetching U128 object at id ${id}: ${res.error.code}`); } if (res.data?.bcs?.dataType !== "moveObject" || !isU128(res.data.bcs.type)) { throw new Error(`object at id ${id} is not a U128 object`); }
-
- return U128.fromSuiObjectData( res.data ); }
 
  }

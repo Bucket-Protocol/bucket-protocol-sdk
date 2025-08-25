@@ -1,3 +1,4 @@
+import * as accumulatorMetadata from "./accumulator-metadata/structs";
 import * as accumulator from "./accumulator/structs";
 import * as authenticatorState from "./authenticator-state/structs";
 import * as bag from "./bag/structs";
@@ -41,8 +42,12 @@ import * as zkloginVerifiedIssuer from "./zklogin-verified-issuer/structs";
 import {StructClassLoader} from "../../../_framework/loader";
 
 export function registerClasses(loader: StructClassLoader) { loader.register(accumulator.AccumulatorRoot);
-loader.register(accumulator.Key);
 loader.register(accumulator.U128);
+loader.register(accumulator.Key);
+loader.register(accumulatorMetadata.OwnerKey);
+loader.register(accumulatorMetadata.Owner);
+loader.register(accumulatorMetadata.MetadataKey);
+loader.register(accumulatorMetadata.Metadata);
 loader.register(authenticatorState.AuthenticatorState);
 loader.register(authenticatorState.AuthenticatorStateInner);
 loader.register(authenticatorState.JWK);

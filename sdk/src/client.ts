@@ -4,7 +4,9 @@ import { Transaction, TransactionArgument, TransactionObjectArgument } from '@my
 import { normalizeStructTag } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
-import { Pool as SavingPool } from '@/_generated/bucket-psm/pool/structs';
+import { Pool as PSMPool } from '@/_generated/bucket-psm/pool/structs';
+import { Rewarder } from '@/_generated/bucket-saving-incentive/saving-incentive/structs';
+import { SavingPool } from '@/_generated/bucket-saving/saving/structs';
 import { POSITION_DATA, VAULT } from '@/structs';
 import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObjectInfo } from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
@@ -253,12 +255,59 @@ export class BucketV2Client {
       }
       const { typeArgs } = parseTypeName(pool.data.bcs.type);
 
-      return SavingPool.fromBcs(phantom(typeArgs[0]), Uint8Array.from(pool.data?.bcs.bcsBytes));
+      return PSMPool.fromBcs(phantom(typeArgs[0]), Uint8Array.from(pool.data?.bcs.bcsBytes));
     });
   }
 
   async getAllSavingPool() {
-    // TODO
+    const savingPoolObjectIds = Object.values(TESTNET_SAVING_POOL).map((pool) => pool.pool.objectId);
+
+    const savingPoolObjResponse = await this.suiClient.multiGetObjects({
+      ids: savingPoolObjectIds,
+      options: {
+        showBcs: true,
+      },
+    });
+
+    return Object.keys(TESTNET_SAVING_POOL).map((savingPoolSymbol, idx) => {
+      const savingPool = savingPoolObjResponse[idx];
+
+      if (savingPool.data?.bcs?.dataType !== 'moveObject') {
+        throw new Error(`Failed to parse saving pool object`);
+      }
+      const { typeArgs } = parseTypeName(savingPool.data.bcs.type);
+
+      return SavingPool.fromBcs(phantom(typeArgs[0]), Uint8Array.from(savingPool.data?.bcs.bcsBytes));
+    });
+  }
+
+  async getSavingPoolRewards(savingPoolType: SupportedSavingPoolType) {
+    const pool = TESTNET_SAVING_POOL[savingPoolType];
+    if (!pool.reward) return {};
+
+    const rewardObjectIds = await this.suiClient
+      .getDynamicFields({ parentId: pool.reward.rewardManager.objectId })
+      .then((res) => res.data.map((df) => df.objectId));
+
+    const savingPoolRewards = await this.suiClient.multiGetObjects({
+      ids: rewardObjectIds,
+      options: {
+        showBcs: true,
+      },
+    });
+
+    return savingPoolRewards.map((rewarder) => {
+      if (rewarder.data?.bcs?.dataType !== 'moveObject') {
+        throw new Error(`Failed to parse reward object for ${savingPoolType} SavingPool`);
+      }
+
+      const { typeArgs } = parseTypeName(rewarder.data.bcs.type);
+
+      return Rewarder.fromBcs(
+        [phantom(typeArgs[0]), phantom(typeArgs[1])],
+        Uint8Array.from(rewarder.data?.bcs.bcsBytes),
+      );
+    });
   }
 
   /* ----- Transaction Methods ----- */
