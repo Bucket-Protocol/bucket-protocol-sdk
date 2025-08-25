@@ -454,4 +454,3 @@ console.log('Pyth Price ID:', aggInfo.pythPriceId);
 
 - @mysten/sui: 1.28.2
 - @pythnetwork/pyth-sui-js: ^2.1.0
-- decimal.js: ^10.5.0
