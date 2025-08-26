@@ -398,7 +398,7 @@ export class BucketV2Client {
 
     const results = devInspectResponse.results;
 
-    if (!results || !results.length) return 0;
+    if (!results || !results.length) return {};
 
     const chunks = splitIntoChunks(results, 2);
 
