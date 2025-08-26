@@ -5,12 +5,18 @@ import { ConfigType } from '@/types/config';
 
 export type Network = 'mainnet' | 'testnet';
 
-export const PRICE_SERVICE_ENDPOINT = 'https://hermes.pyth.network';
-// TODO: to be merged
-export const PRICE_SERVICE_TESTNET_ENDPOINT = 'https://hermes-beta.pyth.network';
-
 export const CONFIG: Record<Network, ConfigType> = {
   mainnet: {
+    PRICE_SERVICE_ENDPOINT: 'https://hermes.pyth.network',
+    PYTH_STATE_ID: '0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8',
+    WORMHOLE_STATE_ID: '0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c',
+    PYTH_RULE_PACKAGE_ID: '0x855e2f7810fd7acbd470def555c3909ecd72e8dd3bf2989e4c223a455dd1bb33',
+    PYTH_RULE_CONFIG_OBJ: {
+      objectId: '0xeb3083af696c6c9b104f459ded2060dd6cdb35367d936255cc9e7d4885e0171c',
+      initialSharedVersion: 18178367,
+      mutable: false,
+    },
+
     ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x89495ef31f30a6edbd08f8a28f4e5419401d2c133c34a617a7983928d5697797',
     ORIGINAL_USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
     ORIGINAL_ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
@@ -34,28 +40,16 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 18178365,
       mutable: true,
     },
-
     FLASH_GLOBAL_CONFIG_OBJ: {
       objectId: '0x82520bf42d8806bb7adcd3410d6287f5ca34bf2b5c05c57ef8a7ab3092b52e78',
       initialSharedVersion: 610893675,
       mutable: true,
     },
-
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
       objectId: '',
       initialSharedVersion: 0,
       mutable: false,
     },
-
-    PYTH_STATE_ID: '0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8',
-    WORMHOLE_STATE_ID: '0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c',
-    PYTH_RULE_PACKAGE_ID: '0x855e2f7810fd7acbd470def555c3909ecd72e8dd3bf2989e4c223a455dd1bb33',
-    PYTH_RULE_CONFIG_OBJ: {
-      objectId: '0xeb3083af696c6c9b104f459ded2060dd6cdb35367d936255cc9e7d4885e0171c',
-      initialSharedVersion: 18178367,
-      mutable: false,
-    },
-
     VAULT_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         vault: {
@@ -79,7 +73,6 @@ export const CONFIG: Record<Network, ConfigType> = {
         },
       },
     },
-
     AGGREGATOR_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         priceAggregator: {
@@ -140,6 +133,16 @@ export const CONFIG: Record<Network, ConfigType> = {
     },
   },
   testnet: {
+    PRICE_SERVICE_ENDPOINT: 'https://hermes-beta.pyth.network',
+    PYTH_STATE_ID: '0x2d82612a354f0b7e52809fc2845642911c7190404620cec8688f68808f8800d8',
+    WORMHOLE_STATE_ID: '0xebba4cc4d614f7a7cdbe883acc76d1cc767922bc96778e7b68be0d15fce27c02',
+    PYTH_RULE_PACKAGE_ID: '0x69f13c07f8cbd9511437448f3bdc91d515465e5a8bf0ea5f94a2eb6ebbecb883',
+    PYTH_RULE_CONFIG_OBJ: {
+      objectId: '0xd8cc7827b9efc35c4093078b89e726a9d4a2fd56da69f29b3ba8d69e750c72fd',
+      initialSharedVersion: '442159460',
+      mutable: false,
+    },
+
     ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
     ORIGINAL_USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
     ORIGINAL_ORACLE_PACKAGE_ID: '0x589bc31d4f89f3fc2c8c94f78ba7b234992c06408f1a1571927c971cf8fcc0ce',
@@ -163,7 +166,6 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 349180351,
       mutable: true,
     },
-
     FLASH_GLOBAL_CONFIG_OBJ: {
       objectId: '0x66c8c42e1ccf2a8eaa50f2584b990418c54349f53470004545e12333ccf1f0fc',
       initialSharedVersion: '349180354',
@@ -175,16 +177,6 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 349180418,
       mutable: false,
     },
-
-    PYTH_STATE_ID: '0x2d82612a354f0b7e52809fc2845642911c7190404620cec8688f68808f8800d8',
-    WORMHOLE_STATE_ID: '0xebba4cc4d614f7a7cdbe883acc76d1cc767922bc96778e7b68be0d15fce27c02',
-    PYTH_RULE_PACKAGE_ID: '0x69f13c07f8cbd9511437448f3bdc91d515465e5a8bf0ea5f94a2eb6ebbecb883',
-    PYTH_RULE_CONFIG_OBJ: {
-      objectId: '0xd8cc7827b9efc35c4093078b89e726a9d4a2fd56da69f29b3ba8d69e750c72fd',
-      initialSharedVersion: '442159460',
-      mutable: false,
-    },
-
     AGGREGATOR_OBJS: {
       '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
         priceAggregator: {
@@ -196,9 +188,7 @@ export const CONFIG: Record<Network, ConfigType> = {
         pythPriceId: '0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722',
       },
     },
-
     VAULT_OBJS: {},
-
     PSM_POOL_OBJS: {
       '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
         pool: {
