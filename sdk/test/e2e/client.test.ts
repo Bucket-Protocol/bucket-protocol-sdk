@@ -335,6 +335,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     const lpBalance = await bucketClient.getUserSavingPoolBalance('Allen', sender);
     const lpValue = await bucketClient.getUserSavingPoolValue('Allen', sender);
     const realtimeRewards = await bucketClient.getUserSavingPoolRealtimeRewards('Allen', sender);
+    console.log({ realtimeRewards, lpBalance, lpValue });
 
     expect(!!psmPools.length);
     expect(!!savingPools.length);
@@ -479,14 +480,11 @@ describe('Interacting with Bucket Client on testnet', () => {
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
 
     const usdbCoin = coinWithBalance({ type: COIN_TYPES.USDB, useGasCoin: false, balance: amount });
-    await bucketClient.buildDepositToSavingPoolTransaction(
-      tx,
-      {
-        savingPoolType: 'Allen',
-        account: sender,
-        usdbCoin,
-      },
-    );
+    await bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      savingPoolType: 'Allen',
+      account: sender,
+      usdbCoin,
+    });
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),

@@ -1,8 +1,0 @@
-[config]
-# will be set to mainnet by default if omitted
-rpc = "https://fullnode.testnet.sui.io:443"
-
-[packages]
-#BucketV2PSM = {local = "../../../../../move/v2-move-contracts/bucket_psm/"}
-#BucketV2Saving = {local = "../../../../../move/v2-move-contracts/bucket_saving/"}
-BucketV2SavingIncentive = {local = "../../../../../move/v2-move-contracts/bucket_incentives/saving_incentive/"}

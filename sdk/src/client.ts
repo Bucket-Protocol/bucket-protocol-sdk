@@ -1,14 +1,17 @@
 import { bcs } from '@mysten/sui/bcs';
 import { SuiClient } from '@mysten/sui/client';
-import { Transaction, TransactionArgument, TransactionObjectArgument } from '@mysten/sui/transactions';
-import { normalizeStructTag, normalizeSuiAddress, SUI_TYPE_ARG } from '@mysten/sui/utils';
+import {
+  Transaction,
+  TransactionArgument,
+  TransactionObjectArgument,
+  TransactionObjectInput,
+} from '@mysten/sui/transactions';
+import { normalizeStructTag, normalizeSuiAddress } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
-import { Pool as PSMPool } from '@/_generated/bucket-psm/pool/structs';
-import { getRewarder, realtimeRewardAmount } from '@/_generated/bucket-saving-incentive/saving-incentive/functions';
-import { Rewarder } from '@/_generated/bucket-saving-incentive/saving-incentive/structs';
-import { lpBalanceOf, lpTokenValueOf } from '@/_generated/bucket-saving/saving/functions';
-import { SavingPool } from '@/_generated/bucket-saving/saving/structs';
+import { getRewarder, realtimeRewardAmount, Rewarder } from '@/generated/bucket_saving_incentive/saving_incentive';
+import { Pool as PSMPool } from '@/generated/bucket_v2_psm/pool';
+import { lpBalanceOf, lpTokenValueOf, SavingPool } from '@/generated/bucket_v2_saving/saving';
 import { POSITION_DATA, VAULT } from '@/structs';
 import { AggregatorObjectInfo, ConfigType, Network, PSMPoolObjectInfo, VaultObjectInfo } from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
@@ -22,8 +25,6 @@ import {
 } from '@/consts/config';
 import { destroyZeroCoin, getZeroCoin, splitInputCoins } from '@/utils/transaction';
 
-import { phantom } from './_generated/_framework/reified';
-import { parseTypeName } from './_generated/_framework/util';
 import { splitIntoChunks } from './utils';
 
 export class BucketV2Client {
@@ -256,9 +257,7 @@ export class BucketV2Client {
       if (pool.data?.bcs?.dataType !== 'moveObject') {
         throw new Error(`Failed to parse psm pool object`);
       }
-      const { typeArgs } = parseTypeName(pool.data.bcs.type);
-
-      return PSMPool.fromBcs(phantom(typeArgs[0]), Uint8Array.from(pool.data?.bcs.bcsBytes));
+      return PSMPool.fromBase64(pool.data?.bcs.bcsBytes);
     });
   }
 
@@ -278,9 +277,7 @@ export class BucketV2Client {
       if (savingPool.data?.bcs?.dataType !== 'moveObject') {
         throw new Error(`Failed to parse saving pool object`);
       }
-      const { typeArgs } = parseTypeName(savingPool.data.bcs.type);
-
-      return SavingPool.fromBcs(phantom(typeArgs[0]), Uint8Array.from(savingPool.data?.bcs.bcsBytes));
+      return SavingPool.fromBase64(savingPool.data?.bcs.bcsBytes);
     });
   }
 
@@ -304,18 +301,12 @@ export class BucketV2Client {
         throw new Error(`Failed to parse reward object for ${savingPoolType} SavingPool`);
       }
 
-      // parse from dynamicField key
-      const { typeArgs: rewardType } = parseTypeName(rewarder.data.bcs.type);
-      const { typeArgs } = parseTypeName(rewardType[1]);
-      return Rewarder.fromBcs(
-        [phantom(typeArgs[0]), phantom(typeArgs[1])],
-        Uint8Array.from(rewarder.data?.bcs.bcsBytes),
-      );
+      return Rewarder.fromBase64(rewarder.data?.bcs.bcsBytes);
     });
 
-    return rewarders.reduce(
-      (acc, rewarder) => ({ ...acc, [rewarder.$typeArgs[1]]: rewarder }),
-      {} as Record<string, Rewarder<string, string>>,
+    return pool.reward.rewardTypes.reduce(
+      (acc, rewardType, idx) => ({ ...acc, [rewardType]: rewarders[idx] }),
+      {} as Record<string, (typeof rewarders)[number]>,
     );
   }
 
@@ -324,10 +315,13 @@ export class BucketV2Client {
     if (!pool.reward) return 0;
 
     const tx = new Transaction();
-    lpBalanceOf(tx, pool.coinType, {
-      self: tx.sharedObjectRef(pool.pool),
-      accountAddress: account,
-    });
+    tx.add(
+      lpBalanceOf({
+        package: this.config.SAVING_PACKAGE_ID,
+        arguments: [tx.sharedObjectRef(pool.pool), account],
+        typeArguments: [pool.coinType],
+      }),
+    );
 
     const devInspectResponse = await this.suiClient.devInspectTransactionBlock({
       transactionBlock: tx,
@@ -350,11 +344,14 @@ export class BucketV2Client {
     if (!pool.reward) return 0;
 
     const tx = new Transaction();
-    lpTokenValueOf(tx, pool.coinType, {
-      self: tx.sharedObjectRef(pool.pool),
-      accountAddress: account,
-      clock: tx.object.clock(),
-    });
+
+    tx.add(
+      lpTokenValueOf({
+        package: this.config.SAVING_PACKAGE_ID,
+        arguments: [tx.sharedObjectRef(pool.pool), account],
+        typeArguments: [pool.coinType],
+      }),
+    );
 
     const devInspectResponse = await this.suiClient.devInspectTransactionBlock({
       transactionBlock: tx,
@@ -379,16 +376,19 @@ export class BucketV2Client {
     const tx = new Transaction();
 
     for (const rewardType of pool.reward.rewardTypes) {
-      const rewarder = rewarders[rewardType];
-      const typeArgs = rewarder.$typeArgs;
-      const rewarder_ref = getRewarder(tx, typeArgs, tx.sharedObjectRef(pool.reward.rewardManager));
-
-      realtimeRewardAmount(tx, typeArgs, {
-        rewarder: rewarder_ref,
-        savingPool: tx.sharedObjectRef(pool.pool),
-        account,
-        clock: tx.object.clock(),
+      const rewarder_ref = getRewarder({
+        package: this.config.SAVING_INCENTIVE_PACKAGE_ID,
+        arguments: [tx.sharedObjectRef(pool.reward.rewardManager)],
+        typeArguments: [pool.coinType, rewardType],
       });
+
+      tx.add(
+        realtimeRewardAmount({
+          package: this.config.SAVING_INCENTIVE_PACKAGE_ID,
+          arguments: [rewarder_ref(tx), tx.sharedObjectRef(pool.pool), account],
+          typeArguments: [pool.coinType, rewardType],
+        }),
+      );
     }
 
     const devInspectResponse = await this.suiClient.devInspectTransactionBlock({
@@ -647,10 +647,10 @@ export class BucketV2Client {
       inputCoin: TransactionObjectArgument;
       accountObj?: string | TransactionArgument;
     },
-  ): TransactionArgument {
+  ): TransactionObjectArgument {
     const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(tx, { accountObj }),
+      value: this.newAccountRequest(tx, { accountObj }) as TransactionObjectInput,
     });
     const usdbCoin = tx.moveCall({
       target: `${this.config.PSM_PACKAGE_ID}::pool::swap_in`,
@@ -674,10 +674,10 @@ export class BucketV2Client {
       usdbCoin: TransactionObjectArgument;
       accountObj?: string | TransactionArgument;
     },
-  ): TransactionArgument {
+  ): TransactionObjectArgument {
     const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(tx, { accountObj }),
+      value: this.newAccountRequest(tx, { accountObj }) as TransactionObjectInput,
     });
     const inputCoin = tx.moveCall({
       target: `${this.config.PSM_PACKAGE_ID}::pool::swap_out`,
@@ -700,7 +700,9 @@ export class BucketV2Client {
   ) {
     const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: partnerAccountObj ? this.newAccountRequest(tx, { accountObj: partnerAccountObj }) : null,
+      value: partnerAccountObj
+        ? (this.newAccountRequest(tx, { accountObj: partnerAccountObj }) as TransactionObjectInput)
+        : null,
     });
 
     const [usdbCoin, flashMintReceipt] = tx.moveCall({
@@ -1076,11 +1078,11 @@ export class BucketV2Client {
       accountObjId,
     }: {
       coinType: string;
-      inputCoin: TransactionArgument;
+      inputCoin: TransactionObjectArgument;
       accountObjId?: string;
       recipient?: string;
     },
-  ): Promise<TransactionArgument> {
+  ): Promise<TransactionObjectArgument> {
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
     return this.psmSwapIn(tx, { coinType, priceResult, inputCoin, accountObj: accountObjId });
@@ -1094,11 +1096,11 @@ export class BucketV2Client {
       accountObjId,
     }: {
       coinType: string;
-      usdbCoin: TransactionArgument;
+      usdbCoin: TransactionObjectArgument;
       accountObjId?: string;
       recipient?: string;
     },
-  ): Promise<TransactionArgument> {
+  ): Promise<TransactionObjectArgument> {
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
     return this.psmSwapOut(tx, { coinType, priceResult, usdbCoin, accountObj: accountObjId });
@@ -1112,7 +1114,7 @@ export class BucketV2Client {
       account,
     }: {
       savingPoolType: SupportedSavingPoolType;
-      usdbCoin: TransactionArgument;
+      usdbCoin: TransactionObjectArgument;
       account: string;
     },
   ) {
@@ -1140,7 +1142,7 @@ export class BucketV2Client {
       amount: number;
       accountObjId?: string;
     },
-  ): Promise<TransactionArgument> {
+  ): Promise<TransactionObjectArgument> {
     const withdrawResult = this.savingPoolWithdraw(tx, {
       savingPoolType,
       amount,
@@ -1156,7 +1158,7 @@ export class BucketV2Client {
 
     this.checkWithdrawResponse(tx, { savingPoolType, withdrawResponse });
 
-    return usdbCoin;
+    return usdbCoin as TransactionObjectArgument;
   }
 
   async buildClaimRewardsFromSavingPoolTransaction(
@@ -1168,13 +1170,13 @@ export class BucketV2Client {
       savingPoolType: SupportedSavingPoolType;
       accountObjId?: string;
     },
-  ): Promise<TransactionArgument[]> {
+  ): Promise<TransactionObjectArgument[]> {
     const rewards = [];
 
     for (const rewardType of TESTNET_SAVING_POOL[savingPoolType].reward?.rewardTypes || []) {
       const rewardCoin = this.claimPoolIncentive(tx, { savingPoolType, rewardType, accountObj: accountObjId });
 
-      rewards.push(rewardCoin);
+      rewards.push(rewardCoin as TransactionObjectArgument);
     }
 
     return rewards;

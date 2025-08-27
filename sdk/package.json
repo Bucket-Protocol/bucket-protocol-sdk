@@ -30,7 +30,8 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@mysten/sui": "1.28.2",
+    "@mysten/bcs": "1.7.0",
+    "@mysten/sui": "1.37.4",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
     "decimal.js": "^10.5.0",
     "superstruct": "^1.0.3"
