@@ -55,7 +55,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const tx = new Transaction();
     const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
       coinType: SUI_TYPE_ARG,
-      depositCoinOrAmount: coinWithBalance({ balance: depositAmount }),
+      depositCoinOrAmount: depositAmount,
       borrowAmount,
     });
     tx.transferObjects([usdbCoin], testAccount);
@@ -98,8 +98,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     const amount = 1 * 10 ** 6; // 1 USDC
 
-    const usdcCoin = coinWithBalance({ type: usdcCoinType, useGasCoin: false, balance: amount });
-    const usdtCoin = coinWithBalance({ type: usdtCoinType, useGasCoin: false, balance: amount });
+    const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
+    const usdtCoin = coinWithBalance({ type: usdtCoinType, balance: amount });
     const usdbCoin1 = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType: usdcCoinType,
       inputCoin: usdcCoin,
@@ -130,7 +130,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     // flash mint
     const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
-    const feeCollateralCoin = coinWithBalance({ type: usdcCoinType, useGasCoin: false, balance: feeAmount });
+    const feeCollateralCoin = coinWithBalance({ type: usdcCoinType, balance: feeAmount });
     const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType: usdcCoinType,
       inputCoin: feeCollateralCoin,
@@ -163,7 +163,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     const amount = 0.1 * 10 ** 6; // 1 USDC
     const coinType = usdcCoinType;
 
-    const inputCoin = coinWithBalance({ type: coinType, useGasCoin: false, balance: amount });
+    const inputCoin = coinWithBalance({ type: coinType, balance: amount });
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType,
       inputCoin,
@@ -184,7 +184,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 1 USDB
-    const usdbCoin = coinWithBalance({ type: usdbCoinType, useGasCoin: false, balance: amount });
+    const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
 
     const inputCoin = await bucketClient.buildPSMSwapOutTransaction(tx, {
       coinType: usdcCoinType,
@@ -212,7 +212,7 @@ describe('Interacting with Bucket Client on testnet', () => {
 
     // flash mint
     const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
-    const feeCollateralCoin = coinWithBalance({ type: coinType, useGasCoin: false, balance: feeAmount });
+    const feeCollateralCoin = coinWithBalance({ type: coinType, balance: feeAmount });
     const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType,
       inputCoin: feeCollateralCoin,
@@ -234,7 +234,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
-    const usdcCoin = coinWithBalance({ type: usdcCoinType, useGasCoin: false, balance: amount });
+    const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
 
     // psmSwapIn
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
@@ -263,7 +263,7 @@ describe('Interacting with Bucket Client on testnet', () => {
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
 
-    const usdbCoin = coinWithBalance({ type: usdbCoinType, useGasCoin: false, balance: amount });
+    const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
     bucketClient.buildDepositToSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
       account: testAccount,

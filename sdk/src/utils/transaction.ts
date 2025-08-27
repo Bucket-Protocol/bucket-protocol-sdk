@@ -87,7 +87,7 @@ export const coinWithBalance = ({
         name: COIN_WITH_BALANCE_RESOLVER,
         inputs: {},
         data: {
-          type: coinType === SUI_TYPE_ARG && useGasCoin ? 'gas' : coinType,
+          type: coinType === normalizeStructTag(SUI_TYPE_ARG) && useGasCoin ? 'gas' : coinType,
           balance: typeof balance === 'number' ? BigInt(balance) : balance,
         },
       }),
