@@ -1,16 +1,17 @@
 import { bcs } from '@mysten/sui/bcs';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { fromBase64, normalizeStructTag } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
-import { POSITION_DATA, VAULT } from '@/structs/vault';
 import { TransactionNestedResult } from '@/types';
 import { AggregatorObjectInfo, ConfigType, Network, PsmPoolObjectInfo, VaultObjectInfo } from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
 import { DUMMY_ADDRESS } from '@/consts';
 import { CONFIG, SupportedSavingPoolType, TESTNET_SAVING_POOL } from '@/consts/config';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction';
+
+import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
 
 export class BucketClient {
   /**
@@ -130,11 +131,7 @@ export class BucketClient {
       if (data?.bcs?.dataType !== 'moveObject') {
         throw new Error(`Failed to parse vault object`);
       }
-      const vault = VAULT.parse(Uint8Array.from(data.bcs.bcsBytes));
-
-      // console.dir(data.bcs.bcsBytes);
-      // console.dir(data.content.fields, { depth: null });
-      // console.dir(vault, { depth: null });
+      const vault = Vault.parse(fromBase64(data.bcs.bcsBytes));
 
       return {
         collateralType,
@@ -187,12 +184,12 @@ export class BucketClient {
 
     return {
       positions: bcs
-        .vector(POSITION_DATA)
+        .vector(PositionData)
         .parse(Uint8Array.from(positionBytes ? positionBytes[0] : []))
         .map((pos) => ({
           collateralType: coinType,
-          collateralAmount: pos.coll_amount,
-          debtAmount: pos.debt_amount,
+          collateralAmount: +pos.coll_amount,
+          debtAmount: +pos.debt_amount,
           debtor: pos.debtor,
         })),
       nextCursor: bcs.option(bcs.Address).parse(Uint8Array.from(nextCursorBytes ? nextCursorBytes[0] : [])),
@@ -223,12 +220,17 @@ export class BucketClient {
       if (!res.results || !res.results[index] || !res.results[index].returnValues) {
         return result;
       }
-      result.push({
-        collateralType,
-        collateralAmount: bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])),
-        debtAmount: bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[1][0])),
-        debtor,
-      });
+      const collateralAmount = +bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0]));
+      const debtAmount = +bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[1][0]));
+
+      if (collateralAmount || debtAmount) {
+        result.push({
+          collateralType,
+          collateralAmount,
+          debtAmount,
+          debtor,
+        });
+      }
       return result;
     }, [] as PositionInfo[]);
   }

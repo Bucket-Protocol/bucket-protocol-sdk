@@ -14,8 +14,8 @@ export type VaultInfo = {
 
 export type PositionInfo = {
   collateralType: string;
-  collateralAmount: string;
-  debtAmount: string;
+  collateralAmount: number;
+  debtAmount: number;
   debtor: string;
 };
 

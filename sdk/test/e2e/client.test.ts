@@ -1,9 +1,10 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@mysten/sui/transactions';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
 import { BucketClient } from '@/client';
+import { coinWithBalance } from '@/utils/transaction';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   const network = 'mainnet';
@@ -53,13 +54,14 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const depositAmount = 1 * 10 ** 9; // 1 SUI
     const borrowAmount = 1 * 10 ** 6; // 1 USDB
     const tx = new Transaction();
+    tx.setSender(testAccount);
+
     const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
       coinType: SUI_TYPE_ARG,
       depositCoinOrAmount: depositAmount,
       borrowAmount,
     });
     tx.transferObjects([usdbCoin], testAccount);
-    tx.setSender(testAccount);
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
     });
