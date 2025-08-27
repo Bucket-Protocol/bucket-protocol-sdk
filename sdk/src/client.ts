@@ -216,7 +216,6 @@ export class BucketClient {
       transactionBlock: tx,
       sender: DUMMY_ADDRESS,
     });
-    console.log(res);
     if (!res.results) {
       return [];
     }
