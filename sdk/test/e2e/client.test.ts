@@ -4,7 +4,6 @@ import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
 import { BucketClient } from '@/client';
-import { COIN_TYPES } from '@/consts/coin';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   const network = 'mainnet';
@@ -56,7 +55,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const tx = new Transaction();
     const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
       coinType: SUI_TYPE_ARG,
-      depositCoinOrAmount: depositAmount,
+      depositCoinOrAmount: coinWithBalance({ balance: depositAmount }),
       borrowAmount,
     });
     tx.transferObjects([usdbCoin], testAccount);
@@ -153,6 +152,8 @@ describe('Interacting with Bucket Client on testnet', () => {
   const testAccount = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
   const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
   const bucketClient = new BucketClient({ suiClient, network });
+  const usdbCoinType = bucketClient.getUsdbCoinType();
+  const usdcCoinType = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC';
 
   it('test psmSwapIn()', async () => {
     // tx
@@ -160,7 +161,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 1 USDC
-    const coinType = COIN_TYPES.USDC;
+    const coinType = usdcCoinType;
 
     const inputCoin = coinWithBalance({ type: coinType, useGasCoin: false, balance: amount });
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
@@ -183,10 +184,10 @@ describe('Interacting with Bucket Client on testnet', () => {
     tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 1 USDB
-    const usdbCoin = coinWithBalance({ type: COIN_TYPES.USDB, useGasCoin: false, balance: amount });
+    const usdbCoin = coinWithBalance({ type: usdbCoinType, useGasCoin: false, balance: amount });
 
     const inputCoin = await bucketClient.buildPSMSwapOutTransaction(tx, {
-      coinType: COIN_TYPES.USDC,
+      coinType: usdcCoinType,
       usdbCoin,
     });
 
@@ -207,7 +208,7 @@ describe('Interacting with Bucket Client on testnet', () => {
 
     const amount = 0.1 * 10 ** 6; // 1 USDB
     const feeAmount = (amount * 30) / 10000;
-    const coinType = COIN_TYPES.USDC;
+    const coinType = usdcCoinType;
 
     // flash mint
     const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
@@ -227,22 +228,21 @@ describe('Interacting with Bucket Client on testnet', () => {
     expect(dryrunRes.events.length).toBe(8);
   });
 
-  it('test psmSwapIn then deposit to saving pool', async () => {
+  it('test psmSwapIn() then deposit to saving pool', async () => {
     // tx
     const tx = new Transaction();
     tx.setSender(testAccount);
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
-    const coinType = COIN_TYPES.USDC;
-    const inputCoin = coinWithBalance({ type: coinType, useGasCoin: false, balance: amount });
+    const usdcCoin = coinWithBalance({ type: usdcCoinType, useGasCoin: false, balance: amount });
 
     // psmSwapIn
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
-      coinType,
-      inputCoin,
+      coinType: usdcCoinType,
+      inputCoin: usdcCoin,
     });
 
-    await bucketClient.buildDepositToSavingPoolTransaction(tx, {
+    bucketClient.buildDepositToSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
       account: testAccount,
       usdbCoin,
@@ -263,8 +263,8 @@ describe('Interacting with Bucket Client on testnet', () => {
 
     const amount = 0.1 * 10 ** 6; // 0.1 USDB
 
-    const usdbCoin = coinWithBalance({ type: COIN_TYPES.USDB, useGasCoin: false, balance: amount });
-    await bucketClient.buildDepositToSavingPoolTransaction(tx, {
+    const usdbCoin = coinWithBalance({ type: usdbCoinType, useGasCoin: false, balance: amount });
+    bucketClient.buildDepositToSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
       account: testAccount,
       usdbCoin,
@@ -285,7 +285,7 @@ describe('Interacting with Bucket Client on testnet', () => {
 
     const amount = 0.1 * 10 ** 6; // 0.1 SUSDB
 
-    const usdbCoin = await bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+    const usdbCoin = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
       amount,
     });
@@ -305,7 +305,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     const tx = new Transaction();
     tx.setSender(testAccount);
 
-    const rewardCoins = await bucketClient.buildClaimRewardsFromSavingPoolTransaction(tx, {
+    const rewardCoins = bucketClient.buildClaimRewardsFromSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
     });
 
