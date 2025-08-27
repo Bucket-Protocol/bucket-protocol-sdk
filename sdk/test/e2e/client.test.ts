@@ -3,14 +3,14 @@ import { coinWithBalance, Transaction } from '@mysten/sui/transactions';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import { BucketV2Client } from '@/client';
+import { BucketClient } from '@/client';
 import { COIN_TYPES } from '@/consts/coin';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   const network = 'mainnet';
   const testAccount = '0x26266b1381bcf03ab3acc37c1e87beffb52d49f345248bc3efb9114176990ae4';
   const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
-  const bucketClient = new BucketV2Client({ suiClient, network });
+  const bucketClient = new BucketClient({ suiClient, network });
   const usdbCoinType = bucketClient.getUsdbCoinType();
   const usdcCoinType = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
   const usdtCoinType = '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT';
@@ -54,15 +54,11 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const depositAmount = 1 * 10 ** 9; // 1 SUI
     const borrowAmount = 1 * 10 ** 6; // 1 USDB
     const tx = new Transaction();
-    const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(
-      tx,
-      {
-        coinType: SUI_TYPE_ARG,
-        depositAmount,
-        borrowAmount,
-      },
-      testAccount,
-    );
+    const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
+      coinType: SUI_TYPE_ARG,
+      depositCoinOrAmount: depositAmount,
+      borrowAmount,
+    });
     tx.transferObjects([usdbCoin], testAccount);
     tx.setSender(testAccount);
     const dryrunRes = await suiClient.dryRunTransactionBlock({
@@ -156,7 +152,7 @@ describe('Interacting with Bucket Client on testnet', () => {
   const network = 'testnet';
   const testAccount = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
   const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
-  const bucketClient = new BucketV2Client({ suiClient, network });
+  const bucketClient = new BucketClient({ suiClient, network });
 
   it('test psmSwapIn()', async () => {
     // tx

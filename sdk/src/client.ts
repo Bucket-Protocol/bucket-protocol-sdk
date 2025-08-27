@@ -908,7 +908,7 @@ export class BucketClient {
       accountObjId,
     }: {
       coinType: string;
-      inputCoin: TransactionResult;
+      inputCoin: TransactionArgument;
       accountObjId?: string;
       recipient?: string;
     },
@@ -929,7 +929,7 @@ export class BucketClient {
       accountObjId,
     }: {
       coinType: string;
-      usdbCoin: TransactionResult;
+      usdbCoin: TransactionArgument;
       accountObjId?: string;
       recipient?: string;
     },
