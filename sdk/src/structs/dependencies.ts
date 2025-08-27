@@ -1,8 +1,7 @@
 import { bcs, BcsType } from '@mysten/sui/bcs';
-import { fromHex, toHex } from '@mysten/sui/utils';
 
 export const STRING = bcs.struct('String', {
-  bytes: bcs.vector(bcs.u8()),
+  bytes: bcs.vector(bcs.U8),
 });
 
 export const TYPE_NAME = bcs.struct('TypeName', {
@@ -10,7 +9,7 @@ export const TYPE_NAME = bcs.struct('TypeName', {
 });
 
 export const ID = bcs.struct('UID', {
-  bytes: bcs.bytes(32).transform({ input: (val: string) => fromHex(val), output: (val: Uint8Array) => toHex(val) }),
+  bytes: bcs.Address,
 });
 
 export const UID = bcs.struct('UID', {
@@ -18,7 +17,7 @@ export const UID = bcs.struct('UID', {
 });
 
 export const BALANCE = bcs.struct('Balance', {
-  value: bcs.u64(),
+  value: bcs.U64,
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

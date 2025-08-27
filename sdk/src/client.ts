@@ -4,7 +4,7 @@ import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui
 import { normalizeStructTag } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
-import { POSITION_DATA, VAULT } from '@/structs';
+import { POSITION_DATA, VAULT } from '@/structs/vault';
 import { TransactionNestedResult } from '@/types';
 import { AggregatorObjectInfo, ConfigType, Network, PsmPoolObjectInfo, VaultObjectInfo } from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
@@ -132,6 +132,10 @@ export class BucketClient {
       }
       const vault = VAULT.parse(Uint8Array.from(data.bcs.bcsBytes));
 
+      // console.dir(data.bcs.bcsBytes);
+      // console.dir(data.content.fields, { depth: null });
+      // console.dir(vault, { depth: null });
+
       return {
         collateralType,
         positionTableSize: +vault.position_table.size,
@@ -198,12 +202,12 @@ export class BucketClient {
   /**
    * @description Get debtor's position data
    */
-  async getDebtorPositions(debtor: string): Promise<PositionInfo[]> {
+  async getDebtorPositions({ debtor }: { debtor: string }): Promise<PositionInfo[]> {
     const tx = new Transaction();
 
     Object.entries(this.config.VAULT_OBJS).map(([coinType, { vault }]) => {
       tx.moveCall({
-        target: `${this.config.CDP_PACKAGE_ID}::vault::get_position_data`,
+        target: `${this.config.CDP_PACKAGE_ID}::vault::try_get_position_data`,
         typeArguments: [coinType],
         arguments: [tx.sharedObjectRef(vault), tx.pure.address(debtor), tx.object.clock()],
       });
@@ -212,6 +216,7 @@ export class BucketClient {
       transactionBlock: tx,
       sender: DUMMY_ADDRESS,
     });
+    console.log(res);
     if (!res.results) {
       return [];
     }
