@@ -42,10 +42,14 @@ describe('Interacting with Bucket Client on mainnet', () => {
     Object.keys(prices).map((coinType) => {
       const price = prices[coinType];
       if (coinType.includes('BTC')) {
+        expect(price).toBeLessThan(500000);
+        expect(price).toBeGreaterThan(10000);
+      } else if (coinType.includes('ETH')) {
+        expect(price).toBeLessThan(10000);
         expect(price).toBeGreaterThan(1000);
       } else if (coinType.includes('::USD') || coinType.includes('::BUCK')) {
-        expect(price).toBeGreaterThan(0.9);
         expect(price).toBeLessThan(1.1);
+        expect(price).toBeGreaterThan(0.9);
       } else {
         expect(price).toBeDefined();
       }

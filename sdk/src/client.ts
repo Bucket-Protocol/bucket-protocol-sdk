@@ -1,7 +1,7 @@
 import { bcs } from '@mysten/sui/bcs';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
-import { fromBase64, normalizeStructTag } from '@mysten/sui/utils';
+import { fromBase64, normalizeStructTag, SUI_CLOCK_OBJECT_ID } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import { TransactionNestedResult } from '@/types';
@@ -339,7 +339,11 @@ export class BucketClient {
    * @return [PriceResult]
    */
   async aggregateBasicPrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
-    const aggInfoList = coinTypes.map((coinType) => this.getAggregatorObjectInfo({ coinType }));
+    const aggInfoList = coinTypes.map((coinType) => {
+      const aggInfo = this.getAggregatorObjectInfo({ coinType });
+      if (!aggInfo.pythPriceId) throw new Error(`${coinType} has no basic price`);
+      return aggInfo;
+    });
     const pythPriceIds = aggInfoList.map((aggInfo) => aggInfo.pythPriceId ?? '');
 
     const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
@@ -372,9 +376,66 @@ export class BucketClient {
    * @description
    */
   async aggregatePrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
-    // TODO: impl aggregate prices for derivatives
+    const basicCoinTypes = coinTypes.filter((coinType) => {
+      const aggInfo = this.getAggregatorObjectInfo({ coinType });
+      return aggInfo.pythPriceId !== undefined;
+    });
+    const underlyingCoinTypes = coinTypes
+      .map((coinType) => {
+        const aggInfo = this.getAggregatorObjectInfo({ coinType });
+        return aggInfo.scoinUnderlyingType ?? '';
+      })
+      .filter((coinType) => coinType.length > 0 && !basicCoinTypes.includes(coinType));
+    const totalBasicCoinTypes = [...basicCoinTypes, ...underlyingCoinTypes];
+    const priceResults = await this.aggregateBasicPrices(tx, { coinTypes: totalBasicCoinTypes });
+    const priceResultRecord: Record<string, TransactionResult> = {};
+    totalBasicCoinTypes.map((coinType, idx) => {
+      priceResultRecord[coinType] = priceResults[idx];
+    });
 
-    return this.aggregateBasicPrices(tx, { coinTypes });
+    // deal with sCoin
+    coinTypes
+      .filter((coinType) => {
+        const aggInfo = this.getAggregatorObjectInfo({ coinType });
+        return aggInfo.scoinUnderlyingType !== undefined;
+      })
+      .map((coinType) => {
+        const aggInfo = this.getAggregatorObjectInfo({ coinType });
+        const underlyingCoinType = aggInfo.scoinUnderlyingType ?? '';
+        const scoinConfig = tx.sharedObjectRef(this.config.SCOIN_RULE_CONFIG_OBJ);
+        const scallopVersion = tx.sharedObjectRef({
+          objectId: '0x07871c4b3c847a0f674510d4978d5cf6f960452795e8ff6f189fd2088a3f6ac7',
+          initialSharedVersion: 7765848,
+          mutable: false,
+        });
+        const scallopMarket = tx.sharedObjectRef({
+          objectId: '0xa757975255146dc9686aa823b7838b507f315d704f428cbadad2f4ea061939d9',
+          initialSharedVersion: 7765848,
+          mutable: true,
+        });
+        const clock = tx.object(SUI_CLOCK_OBJECT_ID);
+        const collector = this.newPriceCollector(tx, { coinType });
+        tx.moveCall({
+          target: `${this.config.SCOIN_RULE_PACKAGE_ID}::scoin_rule::feed`,
+          typeArguments: [coinType, underlyingCoinType],
+          arguments: [
+            collector,
+            scoinConfig,
+            priceResultRecord[underlyingCoinType],
+            scallopVersion,
+            scallopMarket,
+            clock,
+          ],
+        });
+        const priceResult = tx.moveCall({
+          target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
+          typeArguments: [coinType],
+          arguments: [tx.sharedObjectRef(aggInfo.priceAggregator), collector],
+        });
+        priceResultRecord[coinType] = priceResult;
+      });
+
+    return coinTypes.map((coinType) => priceResultRecord[coinType]);
   }
 
   /**

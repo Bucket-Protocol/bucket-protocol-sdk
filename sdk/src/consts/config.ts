@@ -16,6 +16,12 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 610893693,
       mutable: false,
     },
+    SCOIN_RULE_PACKAGE_ID: '0x18f4f3cd05ab7ff6dc0c41c692e3caae925927cc096f1de3de81d85a89f87aca',
+    SCOIN_RULE_CONFIG_OBJ: {
+      objectId: '0xe5a7b5c2a17811b03a48b9fa277319ffe4e629ce93b862c08fed71fb11b27618',
+      initialSharedVersion: 610893718,
+      mutable: false,
+    },
 
     ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x665188033384920a5bb5dcfb2ef21f54b4568d08b431718b97e02e5c184b92cc',
     ORIGINAL_USDB_PACKAGE_ID: '0xe14726c336e81b32328e92afc37345d159f5b550b09fa92bd43640cfdd0a0cfd',
@@ -269,6 +275,78 @@ export const CONFIG: Record<Network, ConfigType> = {
         },
         pythPriceId: '0xfdf28a46570252b25fd31cb257973f865afc5ca2f320439e45d95e0394bc7382',
       },
+      '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP': {
+        priceAggregator: {
+          objectId: '0x64585d0abf487a75bf69bc729586e5190bce585a0eb99d066457d48ee43e4922',
+          initialSharedVersion: 610893719,
+          mutable: false,
+        },
+        pythPriceId: '0x29bdd5248234e33bd93d3b81100b5fa32eaa5997843847e2c2cb16d7c6d9f7ff',
+      },
+      '0xd0e89b2af5e4910726fbcd8b8dd37bb79b29e5f83f7491bca830e94f7f226d29::eth::ETH': {
+        priceAggregator: {
+          objectId: '0x635141bf9c026fb7e0ce714c5b071ebc2e7059a90a2ffc4dd2e2190897ba02e8',
+          initialSharedVersion: 610893719,
+          mutable: false,
+        },
+        pythPriceId: '0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace',
+      },
+      '0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI': {
+        priceAggregator: {
+          objectId: '0xd248f5adeeb6e1761bb911a08cbfbdd4f5a74416dcba4c2230a5376af41945c5',
+          initialSharedVersion: 610893720,
+          mutable: false,
+        },
+        scoinUnderlyingType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+      },
+      '0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC': {
+        priceAggregator: {
+          objectId: '0x0b43266f77f8b2832c353e9ffd195ead5d9bc40a5c8874520dd1a4e3e45ec2c2',
+          initialSharedVersion: 610893720,
+          mutable: false,
+        },
+        scoinUnderlyingType: '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC',
+      },
+      '0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT': {
+        priceAggregator: {
+          objectId: '0xf64553ec0b83f0f502fe8d547819cad73323c8fac499c7ab2e7b05d87972cadb',
+          initialSharedVersion: 610893720,
+          mutable: false,
+        },
+        scoinUnderlyingType: '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT',
+      },
+      '0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL': {
+        priceAggregator: {
+          objectId: '0x95e56c1c6ba163c2edd727151c55841f384ff01f69477e950d70d1f70b759146',
+          initialSharedVersion: 610893720,
+          mutable: false,
+        },
+        scoinUnderlyingType: '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
+      },
+      '0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP': {
+        priceAggregator: {
+          objectId: '0x138d33eabd014c1178d2392f3e6ef3087129116609aa5786ca180d1d21f91a81',
+          initialSharedVersion: 610893720,
+          mutable: false,
+        },
+        scoinUnderlyingType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
+      },
+      '0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH': {
+        priceAggregator: {
+          objectId: '0xc846dc6b4257d689e7b9af6b7aaf741c11e63653be0f8bd7ddb627dfb701b785',
+          initialSharedVersion: 610893720,
+          mutable: false,
+        },
+        scoinUnderlyingType: '0xd0e89b2af5e4910726fbcd8b8dd37bb79b29e5f83f7491bca830e94f7f226d29::eth::ETH',
+      },
+      '0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA': {
+        priceAggregator: {
+          objectId: '0xc16c6913b53a70ea6f1547d8e4a54c14ad86959bd0a6de6d79efbe3bd92d1134',
+          initialSharedVersion: 610893720,
+          mutable: false,
+        },
+        scoinUnderlyingType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+      },
     },
     PSM_POOL_OBJS: {
       '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC': {
@@ -302,6 +380,12 @@ export const CONFIG: Record<Network, ConfigType> = {
     PYTH_RULE_CONFIG_OBJ: {
       objectId: '0xd8cc7827b9efc35c4093078b89e726a9d4a2fd56da69f29b3ba8d69e750c72fd',
       initialSharedVersion: '442159460',
+      mutable: false,
+    },
+    SCOIN_RULE_PACKAGE_ID: '',
+    SCOIN_RULE_CONFIG_OBJ: {
+      objectId: '',
+      initialSharedVersion: 0,
       mutable: false,
     },
 

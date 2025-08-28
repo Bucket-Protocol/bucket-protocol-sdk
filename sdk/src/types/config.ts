@@ -5,6 +5,7 @@ export type Network = 'mainnet' | 'testnet';
 export type AggregatorObjectInfo = {
   priceAggregator: SharedObjectRef;
   pythPriceId?: string;
+  scoinUnderlyingType?: string;
 };
 
 export type VaultObjectInfo = {
@@ -22,6 +23,8 @@ export type ConfigType = {
   WORMHOLE_STATE_ID: string;
   PYTH_RULE_PACKAGE_ID: string;
   PYTH_RULE_CONFIG_OBJ: SharedObjectRef;
+  SCOIN_RULE_PACKAGE_ID: string;
+  SCOIN_RULE_CONFIG_OBJ: SharedObjectRef;
 
   ORIGINAL_FRAMEWORK_PACKAGE_ID: string;
   ORIGINAL_USDB_PACKAGE_ID: string;
