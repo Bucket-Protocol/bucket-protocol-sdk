@@ -5,7 +5,14 @@ import { fromBase64, normalizeStructTag, SUI_CLOCK_OBJECT_ID } from '@mysten/sui
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import { TransactionNestedResult } from '@/types';
-import { AggregatorObjectInfo, ConfigType, Network, PsmPoolObjectInfo, VaultObjectInfo } from '@/types/config';
+import {
+  AggregatorObjectInfo,
+  ConfigType,
+  DerivativeKind,
+  Network,
+  PsmPoolObjectInfo,
+  VaultObjectInfo,
+} from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, VaultInfo } from '@/types/struct';
 import { DUMMY_ADDRESS } from '@/consts';
 import { CONFIG, SupportedSavingPoolType, TESTNET_SAVING_POOL } from '@/consts/config';
@@ -383,7 +390,7 @@ export class BucketClient {
     const underlyingCoinTypes = coinTypes
       .map((coinType) => {
         const aggInfo = this.getAggregatorObjectInfo({ coinType });
-        return aggInfo.scoinUnderlyingType ?? '';
+        return aggInfo.derivativeInfo?.underlyingCoinType ?? '';
       })
       .filter((coinType) => coinType.length > 0 && !basicCoinTypes.includes(coinType));
     const totalBasicCoinTypes = [...basicCoinTypes, ...underlyingCoinTypes];
@@ -393,46 +400,19 @@ export class BucketClient {
       priceResultRecord[coinType] = priceResults[idx];
     });
 
-    // deal with sCoin
+    // deal with exchange rate
     coinTypes
       .filter((coinType) => {
         const aggInfo = this.getAggregatorObjectInfo({ coinType });
-        return aggInfo.scoinUnderlyingType !== undefined;
+        return aggInfo.derivativeInfo !== undefined;
       })
       .map((coinType) => {
         const aggInfo = this.getAggregatorObjectInfo({ coinType });
-        const underlyingCoinType = aggInfo.scoinUnderlyingType ?? '';
-        const scoinConfig = tx.sharedObjectRef(this.config.SCOIN_RULE_CONFIG_OBJ);
-        const scallopVersion = tx.sharedObjectRef({
-          objectId: '0x07871c4b3c847a0f674510d4978d5cf6f960452795e8ff6f189fd2088a3f6ac7',
-          initialSharedVersion: 7765848,
-          mutable: false,
+        const underlyingCoinType = aggInfo.derivativeInfo?.underlyingCoinType ?? '';
+        priceResultRecord[coinType] = this.getDerivativePrice(tx, {
+          coinType,
+          underlyingPriceResult: priceResultRecord[underlyingCoinType],
         });
-        const scallopMarket = tx.sharedObjectRef({
-          objectId: '0xa757975255146dc9686aa823b7838b507f315d704f428cbadad2f4ea061939d9',
-          initialSharedVersion: 7765848,
-          mutable: true,
-        });
-        const clock = tx.object(SUI_CLOCK_OBJECT_ID);
-        const collector = this.newPriceCollector(tx, { coinType });
-        tx.moveCall({
-          target: `${this.config.SCOIN_RULE_PACKAGE_ID}::scoin_rule::feed`,
-          typeArguments: [coinType, underlyingCoinType],
-          arguments: [
-            collector,
-            scoinConfig,
-            priceResultRecord[underlyingCoinType],
-            scallopVersion,
-            scallopMarket,
-            clock,
-          ],
-        });
-        const priceResult = tx.moveCall({
-          target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
-          typeArguments: [coinType],
-          arguments: [tx.sharedObjectRef(aggInfo.priceAggregator), collector],
-        });
-        priceResultRecord[coinType] = priceResult;
       });
 
     return coinTypes.map((coinType) => priceResultRecord[coinType]);
@@ -1108,5 +1088,65 @@ export class BucketClient {
       rewards.push(rewardCoin);
     }
     return rewards;
+  }
+
+  private getDerivativePrice(
+    tx: Transaction,
+    {
+      coinType,
+      underlyingPriceResult,
+    }: {
+      coinType: string;
+      underlyingPriceResult: TransactionArgument;
+    },
+  ): TransactionResult {
+    const aggInfo = this.getAggregatorObjectInfo({ coinType });
+    const underlyingCoinType = aggInfo.derivativeInfo?.underlyingCoinType as string;
+    const kind = aggInfo.derivativeInfo?.derivativeKind as DerivativeKind;
+    const collector = this.newPriceCollector(tx, { coinType });
+    if (kind === 'sCoin') {
+      const scoinRuleConfig = tx.sharedObjectRef({
+        objectId: '0xe5a7b5c2a17811b03a48b9fa277319ffe4e629ce93b862c08fed71fb11b27618',
+        initialSharedVersion: 610893718,
+        mutable: false,
+      });
+      const scallopVersion = tx.sharedObjectRef({
+        objectId: '0x07871c4b3c847a0f674510d4978d5cf6f960452795e8ff6f189fd2088a3f6ac7',
+        initialSharedVersion: 7765848,
+        mutable: false,
+      });
+      const scallopMarket = tx.sharedObjectRef({
+        objectId: '0xa757975255146dc9686aa823b7838b507f315d704f428cbadad2f4ea061939d9',
+        initialSharedVersion: 7765848,
+        mutable: true,
+      });
+      const clock = tx.object(SUI_CLOCK_OBJECT_ID);
+      tx.moveCall({
+        target: '0x18f4f3cd05ab7ff6dc0c41c692e3caae925927cc096f1de3de81d85a89f87aca::scoin_rule::feed',
+        typeArguments: [coinType, underlyingCoinType],
+        arguments: [collector, scoinRuleConfig, underlyingPriceResult, scallopVersion, scallopMarket, clock],
+      });
+    } else {
+      const gcoinRuleConfig = tx.sharedObjectRef({
+        objectId: '0x6466f287d8864c56de1459ad294907d2a06767e9589ae953cc5e0f009fc1cfd7',
+        initialSharedVersion: 610893721,
+        mutable: false,
+      });
+      const unihouse = tx.sharedObjectRef({
+        objectId: '0x75c63644536b1a7155d20d62d9f88bf794dc847ea296288ddaf306aa320168ab',
+        initialSharedVersion: 333730283,
+        mutable: false,
+      });
+      tx.moveCall({
+        target: '0xba3c970933047c6e235424d7040a9a4e89d8fc1200d780a69b2666434f3a7313::gcoin_rule::feed',
+        typeArguments: [coinType, underlyingCoinType],
+        arguments: [collector, underlyingPriceResult, gcoinRuleConfig, unihouse],
+      });
+    }
+    return tx.moveCall({
+      target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
+      typeArguments: [coinType],
+      arguments: [tx.sharedObjectRef(aggInfo.priceAggregator), collector],
+    });
   }
 }

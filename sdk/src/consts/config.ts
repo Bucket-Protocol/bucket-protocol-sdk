@@ -16,12 +16,6 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 610893693,
       mutable: false,
     },
-    SCOIN_RULE_PACKAGE_ID: '0x18f4f3cd05ab7ff6dc0c41c692e3caae925927cc096f1de3de81d85a89f87aca',
-    SCOIN_RULE_CONFIG_OBJ: {
-      objectId: '0xe5a7b5c2a17811b03a48b9fa277319ffe4e629ce93b862c08fed71fb11b27618',
-      initialSharedVersion: 610893718,
-      mutable: false,
-    },
 
     ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x665188033384920a5bb5dcfb2ef21f54b4568d08b431718b97e02e5c184b92cc',
     ORIGINAL_USDB_PACKAGE_ID: '0xe14726c336e81b32328e92afc37345d159f5b550b09fa92bd43640cfdd0a0cfd',
@@ -297,7 +291,10 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893720,
           mutable: false,
         },
-        scoinUnderlyingType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+        derivativeInfo: {
+          underlyingCoinType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+          derivativeKind: 'sCoin',
+        },
       },
       '0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC': {
         priceAggregator: {
@@ -305,7 +302,10 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893720,
           mutable: false,
         },
-        scoinUnderlyingType: '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC',
+        derivativeInfo: {
+          underlyingCoinType: '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC',
+          derivativeKind: 'sCoin',
+        },
       },
       '0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT': {
         priceAggregator: {
@@ -313,7 +313,10 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893720,
           mutable: false,
         },
-        scoinUnderlyingType: '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT',
+        derivativeInfo: {
+          underlyingCoinType: '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT',
+          derivativeKind: 'sCoin',
+        },
       },
       '0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL': {
         priceAggregator: {
@@ -321,7 +324,10 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893720,
           mutable: false,
         },
-        scoinUnderlyingType: '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
+        derivativeInfo: {
+          underlyingCoinType: '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
+          derivativeKind: 'sCoin',
+        },
       },
       '0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP': {
         priceAggregator: {
@@ -329,7 +335,10 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893720,
           mutable: false,
         },
-        scoinUnderlyingType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
+        derivativeInfo: {
+          underlyingCoinType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
+          derivativeKind: 'sCoin',
+        },
       },
       '0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH': {
         priceAggregator: {
@@ -337,7 +346,10 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893720,
           mutable: false,
         },
-        scoinUnderlyingType: '0xd0e89b2af5e4910726fbcd8b8dd37bb79b29e5f83f7491bca830e94f7f226d29::eth::ETH',
+        derivativeInfo: {
+          underlyingCoinType: '0xd0e89b2af5e4910726fbcd8b8dd37bb79b29e5f83f7491bca830e94f7f226d29::eth::ETH',
+          derivativeKind: 'sCoin',
+        },
       },
       '0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA': {
         priceAggregator: {
@@ -345,8 +357,43 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893720,
           mutable: false,
         },
-        scoinUnderlyingType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+        derivativeInfo: {
+          underlyingCoinType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+          derivativeKind: 'sCoin',
+        },
       },
+      '0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD': {
+        priceAggregator: {
+          objectId: '0x5e869f79f00861d069adf8a5da716397984cc5d2eccb0637bed43b69ff4eb7c3',
+          initialSharedVersion: 610893722,
+          mutable: false,
+        },
+        pythPriceId: '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a',
+      },
+      '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>':
+        {
+          priceAggregator: {
+            objectId: '0xd1ae834ec25b834489e2c7e5716c8c382b7ee657b028b00cfa44d1e88e0eccf2',
+            initialSharedVersion: 610893723,
+            mutable: false,
+          },
+          derivativeInfo: {
+            underlyingCoinType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+            derivativeKind: 'gCoin',
+          },
+        },
+      '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD>':
+        {
+          priceAggregator: {
+            objectId: '0x10de87b3c47628d3377f4f4f03cd3fff8c42747c811034325ae699456d3f171f',
+            initialSharedVersion: 610893723,
+            mutable: false,
+          },
+          derivativeInfo: {
+            underlyingCoinType: '0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD',
+            derivativeKind: 'gCoin',
+          },
+        },
     },
     PSM_POOL_OBJS: {
       '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC': {
@@ -380,12 +427,6 @@ export const CONFIG: Record<Network, ConfigType> = {
     PYTH_RULE_CONFIG_OBJ: {
       objectId: '0xd8cc7827b9efc35c4093078b89e726a9d4a2fd56da69f29b3ba8d69e750c72fd',
       initialSharedVersion: '442159460',
-      mutable: false,
-    },
-    SCOIN_RULE_PACKAGE_ID: '',
-    SCOIN_RULE_CONFIG_OBJ: {
-      objectId: '',
-      initialSharedVersion: 0,
       mutable: false,
     },
 
