@@ -461,7 +461,7 @@ export function realtimeRewardAmount(options: RealtimeRewardAmountOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_saving_incentive';
     const argumentsTypes = [
         `${packageAddress}::saving_incentive::Rewarder<${options.typeArguments[0]}, ${options.typeArguments[1]}>`,
-        `0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f::saving::SavingPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
         'address',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
@@ -501,8 +501,8 @@ export function newRewardManager(options: NewRewardManagerOptions) {
     const argumentsTypes = [
         `${packageAddress}::saving_incentive::Registry`,
         `${packageAddress}::incentive_config::GlobalConfig`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
-        `0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f::saving::SavingPool<${options.typeArguments[0]}>`
+        `${packageAddress}::admin::AdminCap`,
+        `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`
     ] satisfies string[];
     const parameterNames = ["registry", "config", "Cap", "SavingPool"];
     return (tx: Transaction) => tx.moveCall({
@@ -547,14 +547,15 @@ export function addReward(options: AddRewardOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_saving_incentive';
     const argumentsTypes = [
         `${packageAddress}::saving_incentive::RewardManager<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::admin::AdminCap`,
         `${packageAddress}::incentive_config::GlobalConfig`,
-        `0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f::saving::SavingPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
         'u64',
         'u64',
-        'u64'
+        'u64',
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
-    const parameterNames = ["rewardManager", "Cap", "config", "savingPool", "flowAmount", "flowInterval", "startTime"];
+    const parameterNames = ["rewardManager", "Cap", "config", "savingPool", "flowAmount", "flowInterval", "startTime", "clock"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'saving_incentive',
@@ -588,7 +589,7 @@ export function withdrawFromSource(options: WithdrawFromSourceOptions) {
     const argumentsTypes = [
         `${packageAddress}::saving_incentive::RewardManager<${options.typeArguments[0]}>`,
         `${packageAddress}::incentive_config::GlobalConfig`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::admin::AdminCap`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock',
         'u64'
     ] satisfies string[];
@@ -631,7 +632,7 @@ export function updateFlowRate(options: UpdateFlowRateOptions) {
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock',
         'u64',
         'u64',
-        '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63::account::AccountRequest'
+        `${packageAddress}::account::AccountRequest`
     ] satisfies string[];
     const parameterNames = ["rewardManager", "config", "clock", "flowAmount", "flowInterval", "request"];
     return (tx: Transaction) => tx.moveCall({
@@ -669,7 +670,7 @@ export function updateRewardTimestamp(options: UpdateRewardTimestampOptions) {
         `${packageAddress}::incentive_config::GlobalConfig`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock',
         'u64',
-        '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63::account::AccountRequest'
+        `${packageAddress}::account::AccountRequest`
     ] satisfies string[];
     const parameterNames = ["rewardManager", "config", "clock", "timestamp", "request"];
     return (tx: Transaction) => tx.moveCall({
@@ -733,7 +734,7 @@ export function newCheckerForDepositAction(options: NewCheckerForDepositActionOp
     const argumentsTypes = [
         `${packageAddress}::saving_incentive::RewardManager<${options.typeArguments[0]}>`,
         `${packageAddress}::incentive_config::GlobalConfig`,
-        `0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f::saving::DepositResponse<${options.typeArguments[0]}>`
+        `${packageAddress}::saving::DepositResponse<${options.typeArguments[0]}>`
     ] satisfies string[];
     const parameterNames = ["rewardManager", "config", "depositResponse"];
     return (tx: Transaction) => tx.moveCall({
@@ -770,7 +771,7 @@ export function updateDepositAction(options: UpdateDepositActionOptions) {
         `${packageAddress}::saving_incentive::DepositResponseChecker<${options.typeArguments[0]}>`,
         `${packageAddress}::incentive_config::GlobalConfig`,
         `${packageAddress}::saving_incentive::RewardManager<${options.typeArguments[0]}>`,
-        `0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f::saving::SavingPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
     const parameterNames = ["depositChecker", "config", "rewardManager", "savingPool", "clock"];
@@ -837,8 +838,8 @@ export function claim(options: ClaimOptions) {
     const argumentsTypes = [
         `${packageAddress}::saving_incentive::RewardManager<${options.typeArguments[0]}>`,
         `${packageAddress}::incentive_config::GlobalConfig`,
-        `0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63::account::AccountRequest',
+        `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::account::AccountRequest`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
     const parameterNames = ["rewardManager", "config", "savingPool", "request", "clock"];
@@ -872,7 +873,7 @@ export function newCheckerForWithdrawAction(options: NewCheckerForWithdrawAction
     const argumentsTypes = [
         `${packageAddress}::saving_incentive::RewardManager<${options.typeArguments[0]}>`,
         `${packageAddress}::incentive_config::GlobalConfig`,
-        `0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f::saving::WithdrawResponse<${options.typeArguments[0]}>`
+        `${packageAddress}::saving::WithdrawResponse<${options.typeArguments[0]}>`
     ] satisfies string[];
     const parameterNames = ["rewardManager", "config", "withdrawResponse"];
     return (tx: Transaction) => tx.moveCall({
@@ -909,7 +910,7 @@ export function updateWithdrawAction(options: UpdateWithdrawActionOptions) {
         `${packageAddress}::saving_incentive::WithdrawResponseChecker<${options.typeArguments[0]}>`,
         `${packageAddress}::incentive_config::GlobalConfig`,
         `${packageAddress}::saving_incentive::RewardManager<${options.typeArguments[0]}>`,
-        `0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f::saving::SavingPool<${options.typeArguments[0]}>`,
+        `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
     const parameterNames = ["withdrawChecker", "config", "rewardManager", "savingPool", "clock"];

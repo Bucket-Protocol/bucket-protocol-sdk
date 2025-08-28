@@ -44,7 +44,7 @@ export function setFlashConfig(options: SetFlashConfigOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_flash';
     const argumentsTypes = [
         `${packageAddress}::config::GlobalConfig`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::admin::AdminCap`,
         '0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<address>',
         'u64',
         'u64'
@@ -76,8 +76,8 @@ export function flashMint(options: FlashMintOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_flash';
     const argumentsTypes = [
         `${packageAddress}::config::GlobalConfig`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
-        '0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63::account::AccountRequest>',
+        `${packageAddress}::usdb::Treasury`,
+        `0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<${packageAddress}::account::AccountRequest>`,
         'u64'
     ] satisfies string[];
     const parameterNames = ["self", "treasury", "partner", "value"];
@@ -107,8 +107,8 @@ export function flashBurn(options: FlashBurnOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_flash';
     const argumentsTypes = [
         `${packageAddress}::config::GlobalConfig`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
-        '0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::USDB>',
+        `${packageAddress}::usdb::Treasury`,
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${packageAddress}::usdb::USDB>`,
         `${packageAddress}::config::FlashMintReceipt`
     ] satisfies string[];
     const parameterNames = ["self", "treasury", "repayment", "receipt"];

@@ -35,6 +35,14 @@ export const SupplyLimitUpdated = new MoveStruct({ name: `${$moduleName}::Supply
         /** New supply limit */
         after: bcs.u64()
     } });
+export const InterestRateUpdated = new MoveStruct({ name: `${$moduleName}::InterestRateUpdated`, fields: {
+        /** Unique identifier for the vault */
+        vault_id: bcs.Address,
+        /** The coll type of the vault */
+        coll_type: bcs.string(),
+        /** New interest rate */
+        interest_rate_bps: bcs.u64()
+    } });
 export const LiquidationRuleUpdated = new MoveStruct({ name: `${$moduleName}::LiquidationRuleUpdated`, fields: {
         /** Unique identifier for the vault */
         vault_id: bcs.Address,
@@ -68,4 +76,10 @@ export const PositionUpdated = new MoveStruct({ name: `${$moduleName}::PositionU
         current_debt_amount: bcs.u64(),
         /** Optional memo or note for the update */
         memo: bcs.string()
+    } });
+export const SetSecurity = new MoveStruct({ name: `${$moduleName}::SetSecurity`, fields: {
+        vault_id: bcs.Address,
+        coll_type: bcs.string(),
+        sender: bcs.Address,
+        level: bcs.option(bcs.u8())
     } });

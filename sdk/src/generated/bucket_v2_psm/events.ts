@@ -12,6 +12,7 @@ export const NewPsmPool = new MoveStruct({ name: `${$moduleName}::NewPsmPool`, f
         swap_out_fee_bps: bcs.u64()
     } });
 export const PsmSwapIn = new MoveStruct({ name: `${$moduleName}::PsmSwapIn`, fields: {
+        asset_type: bcs.string(),
         asset_in_amount: bcs.u64(),
         asset_balance: bcs.u64(),
         usdb_out_amount: bcs.u64(),
@@ -20,6 +21,7 @@ export const PsmSwapIn = new MoveStruct({ name: `${$moduleName}::PsmSwapIn`, fie
 export const PsmSwapOut = new MoveStruct({ name: `${$moduleName}::PsmSwapOut`, fields: {
         usdb_in_amount: bcs.u64(),
         usdb_supply: bcs.u64(),
+        asset_type: bcs.string(),
         asset_out_amount: bcs.u64(),
         asset_balance: bcs.u64()
     } });
