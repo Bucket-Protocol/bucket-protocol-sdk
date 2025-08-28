@@ -43,7 +43,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
       const price = prices[coinType];
       if (coinType.includes('BTC')) {
         expect(price).toBeGreaterThan(1000);
-      } else if (coinType.includes('::USD')) {
+      } else if (coinType.includes('::USD') || coinType.includes('::BUCK')) {
         expect(price).toBeGreaterThan(0.9);
         expect(price).toBeLessThan(1.1);
       } else {

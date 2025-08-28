@@ -261,19 +261,34 @@ export const CONFIG: Record<Network, ConfigType> = {
         },
         pythPriceId: '0x7e17f0ac105abe9214deb9944c30264f5986bf292869c6bd8e8da3ccd92d79bc',
       },
+      '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK': {
+        priceAggregator: {
+          objectId: '0xe7683cdd76af3f80da4f022afa2c31b554a45d23dcd1f418d11eff8cd5c9bf82',
+          initialSharedVersion: 610893716,
+          mutable: false,
+        },
+        pythPriceId: '0xfdf28a46570252b25fd31cb257973f865afc5ca2f320439e45d95e0394bc7382',
+      },
     },
     PSM_POOL_OBJS: {
       '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC': {
         pool: {
           objectId: '0x37721762186721fb6eaf053f249aaf594503a6ad98dbcc998916be78d20a2df4',
-          initialSharedVersion: '610893712',
+          initialSharedVersion: 610893712,
           mutable: true,
         },
       },
       '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT': {
         pool: {
           objectId: '0x12a3dacb20ecfe8fe9fc281140196348722b9b3775bec57a09c6c66243076c40',
-          initialSharedVersion: '610893712',
+          initialSharedVersion: 610893712,
+          mutable: true,
+        },
+      },
+      '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK': {
+        pool: {
+          objectId: '0x4fef507f41f5b141625f0f193283820fbee26e883f24212d149e4220320ae321',
+          initialSharedVersion: 610893716,
           mutable: true,
         },
       },
