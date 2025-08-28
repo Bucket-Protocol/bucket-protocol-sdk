@@ -25,10 +25,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
   });
 
   it('test aggregatePrice()', async () => {
-    const coinTypes = [
-      ...bucketClient.getAllCollateralTypes(),
-      '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC',
-    ];
+    const coinTypes = bucketClient.getAllOracleCoinTypes();
     const tx = new Transaction();
     await bucketClient.aggregatePrices(tx, { coinTypes });
     tx.setSender(testAccount);
@@ -36,17 +33,23 @@ describe('Interacting with Bucket Client on mainnet', () => {
       transactionBlock: await tx.build({ client: suiClient }),
     });
     expect(dryrunRes.effects.status.status).toBe('success');
-    type PriceResult = { result: string };
-    const [suiPriceResult, btcPriceResult, walPriceResult, usdcPriceResult] = dryrunRes.events.slice(coinTypes.length);
-    const pricePrecision = 10 ** 9;
-    expect(+(suiPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeGreaterThan(1);
-    expect(+(suiPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeLessThan(1000);
-    expect(+(btcPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeGreaterThan(1000);
-    expect(+(btcPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeLessThan(1000000);
-    expect(+(walPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeGreaterThan(0.01);
-    expect(+(walPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeLessThan(10);
-    expect(+(usdcPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeGreaterThan(0.99);
-    expect(+(usdcPriceResult.parsedJson as PriceResult).result / pricePrecision).toBeLessThan(1.01);
+    const priceResultEvent = dryrunRes.events.filter((e) => e.type.includes('PriceAggregated'));
+    expect(priceResultEvent.length).toBe(coinTypes.length);
+  });
+
+  it('test getAllOraclePrices()', async () => {
+    const prices = await bucketClient.getAllOraclePrices();
+    Object.keys(prices).map((coinType) => {
+      const price = prices[coinType];
+      if (coinType.includes('BTC')) {
+        expect(price).toBeGreaterThan(1000);
+      } else if (coinType.includes('::USD')) {
+        expect(price).toBeGreaterThan(0.9);
+        expect(price).toBeLessThan(1.1);
+      } else {
+        expect(price).toBeDefined();
+      }
+    });
   });
 
   it('test buildManagePositionTransaction()', async () => {

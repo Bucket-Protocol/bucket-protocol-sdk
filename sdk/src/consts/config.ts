@@ -10,39 +10,39 @@ export const CONFIG: Record<Network, ConfigType> = {
     PRICE_SERVICE_ENDPOINT: 'https://hermes.pyth.network',
     PYTH_STATE_ID: '0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8',
     WORMHOLE_STATE_ID: '0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c',
-    PYTH_RULE_PACKAGE_ID: '0x855e2f7810fd7acbd470def555c3909ecd72e8dd3bf2989e4c223a455dd1bb33',
+    PYTH_RULE_PACKAGE_ID: '0x6ee87742e673749a97f5fbe576b92d8dd294a482307d3a3fb2c6f73a56b906a0',
     PYTH_RULE_CONFIG_OBJ: {
-      objectId: '0xeb3083af696c6c9b104f459ded2060dd6cdb35367d936255cc9e7d4885e0171c',
-      initialSharedVersion: 18178367,
+      objectId: '0x00aea60b799575ae4203bcc80c16844c4d514d5af661200c4565f6d5a6deac1f',
+      initialSharedVersion: 610893693,
       mutable: false,
     },
 
-    ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x89495ef31f30a6edbd08f8a28f4e5419401d2c133c34a617a7983928d5697797',
-    ORIGINAL_USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
-    ORIGINAL_ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
-    ORIGINAL_CDP_PACKAGE_ID: '0xa82cb0dcfa2ac2ccd635e628209775eef382e652f7ee5abd42d00f3de8828053',
-    ORIGINAL_PSM_PACKAGE_ID: '0xa563ace20f247f966b1819909d6cf24a52cc18c2ba14a72890c88d44be066545',
-    ORIGINAL_FLASH_PACKAGE_ID: '0x4f3ae969f16389f668debcdc84105025e046d90f4f5b79e5e639b0a47f2c43e4',
+    ORIGINAL_FRAMEWORK_PACKAGE_ID: '0x665188033384920a5bb5dcfb2ef21f54b4568d08b431718b97e02e5c184b92cc',
+    ORIGINAL_USDB_PACKAGE_ID: '0xe14726c336e81b32328e92afc37345d159f5b550b09fa92bd43640cfdd0a0cfd',
+    ORIGINAL_ORACLE_PACKAGE_ID: '0xf2ab9aa60c5e879675351a1a89f47131de9dea7cc927327dd0e7282e295c7f5e',
+    ORIGINAL_CDP_PACKAGE_ID: '0x9f835c21d21f8ce519fec17d679cd38243ef2643ad879e7048ba77374be4036e',
+    ORIGINAL_PSM_PACKAGE_ID: '0xc2ae6693383e4a81285136effc8190c7baaf0e75aafa36d1c69cd2170cfc3803',
+    ORIGINAL_FLASH_PACKAGE_ID: '0x0f51f9eb63574a1d12b62295599ac4f8231197f95b3cce9a516daba64f419d06',
     ORIGINAL_SAVING_PACKAGE_ID: '',
     ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '',
 
-    FRAMEWORK_PACKAGE_ID: '0x89495ef31f30a6edbd08f8a28f4e5419401d2c133c34a617a7983928d5697797',
-    USDB_PACKAGE_ID: '0x94c1beb34be4677052e1989cc16c4cddf8b97c706532d2136c33df6c2f5656fa',
-    ORACLE_PACKAGE_ID: '0x28edd31a17aca307ac6a5a83955caab4a65ef4eac9c05dad01515e31a18af6ed',
-    CDP_PACKAGE_ID: '0x0e6b94c4ff56511c615b536f43cae5c2f2844433af05a952907b9ba2f1a1b749',
-    PSM_PACKAGE_ID: '0xa563ace20f247f966b1819909d6cf24a52cc18c2ba14a72890c88d44be066545',
-    FLASH_PACKAGE_ID: '0x4f3ae969f16389f668debcdc84105025e046d90f4f5b79e5e639b0a47f2c43e4',
+    FRAMEWORK_PACKAGE_ID: '0x665188033384920a5bb5dcfb2ef21f54b4568d08b431718b97e02e5c184b92cc',
+    USDB_PACKAGE_ID: '0xe14726c336e81b32328e92afc37345d159f5b550b09fa92bd43640cfdd0a0cfd',
+    ORACLE_PACKAGE_ID: '0xf2ab9aa60c5e879675351a1a89f47131de9dea7cc927327dd0e7282e295c7f5e',
+    CDP_PACKAGE_ID: '0x9f835c21d21f8ce519fec17d679cd38243ef2643ad879e7048ba77374be4036e',
+    PSM_PACKAGE_ID: '0xc2ae6693383e4a81285136effc8190c7baaf0e75aafa36d1c69cd2170cfc3803',
+    FLASH_PACKAGE_ID: '0x0f51f9eb63574a1d12b62295599ac4f8231197f95b3cce9a516daba64f419d06',
     SAVING_PACKAGE_ID: '',
     SAVING_INCENTIVE_PACKAGE_ID: '',
 
     TREASURY_OBJ: {
-      objectId: '0xc30d8b29ddca177f3ea934ec885cff4cfa46ae2390c8df3eca6513731e5d8ddd',
-      initialSharedVersion: 18178365,
+      objectId: '0x4de1c29a89d6888ebf8f7ae20364571dce4e1e42b9c9221f7df924ad6f9e617d',
+      initialSharedVersion: 610893687,
       mutable: true,
     },
     FLASH_GLOBAL_CONFIG_OBJ: {
-      objectId: '0x82520bf42d8806bb7adcd3410d6287f5ca34bf2b5c05c57ef8a7ab3092b52e78',
-      initialSharedVersion: 610893675,
+      objectId: '0x4cbc26a7ec49d4bec975768af386cc6ab987a1c29d524566f99d5aa018a99546',
+      initialSharedVersion: 610893688,
       mutable: true,
     },
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
@@ -51,24 +51,131 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: false,
     },
     VAULT_OBJS: {
-      '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
+      '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
         vault: {
-          objectId: '0x52aed4daa610b787cf2291f1e8e4c96aa46cbfdd90c7f2733d07048041a0730c',
-          initialSharedVersion: 18178374,
+          objectId: '0xf4b852ec580fb15da542b191d5fefe96939f718b43dc0240062fa83b35f06da1',
+          initialSharedVersion: 610893709,
           mutable: true,
         },
       },
-      '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC': {
+      '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD>':
+        {
+          vault: {
+            objectId: '0xdb3b2f1ce99c935a5c5e14ce8321e0c252a8b16c50861407d2253d392d5fb836',
+            initialSharedVersion: 610893709,
+            mutable: true,
+          },
+        },
+      '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>':
+        {
+          vault: {
+            objectId: '0x1e90eb4184e3303ee69d1728630c872b214f8699982b00dc39aabde8b4ff5ce3',
+            initialSharedVersion: 610893709,
+            mutable: true,
+          },
+        },
+      '0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA': {
         vault: {
-          objectId: '0x669949a9dd88e5251bdcb3f94e207ba86fcb708bdc7d187816da5e130783eb07',
-          initialSharedVersion: 18178375,
+          objectId: '0x38057191f48cf748d3b018e83ec0dda9f769f3f2d98010561002d6d2378f8ec3',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH': {
+        vault: {
+          objectId: '0x13ca385797229d6ad23a3ff0981fc30971735b0efd307d02920b58730d923a14',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP': {
+        vault: {
+          objectId: '0x6677cdcc3186900914823fc8e5de7a2d1e874bbc0682cbcf7637ddf9342b1cbd',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL': {
+        vault: {
+          objectId: '0xe1c7630ef33094491ab291bed669fcc64a48a88fcc99ddc200bcc38deb00400e',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT': {
+        vault: {
+          objectId: '0xf985037e218946d20344810be7c07e42e7fae1666cdce60e7f028706768daed0',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC': {
+        vault: {
+          objectId: '0xbd0079fb337dc5c79ae8f522aab72fcda38b6f10e38f2477c075777d8b1ac263',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI': {
+        vault: {
+          objectId: '0x5d76ee14fc4b1f501653c65eb3dc2ba0cd42f7d0d11480a840322e77d4b56362',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA': {
+        vault: {
+          objectId: '0xd3ef65a1dec4b5c5f0e0bb7caf29f4a425bd04ad43bce942ec6e1c70385b79de',
+          initialSharedVersion: 610893709,
           mutable: true,
         },
       },
       '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL': {
         vault: {
-          objectId: '0x290bded45388d998a0ec8feb4cf4e3309f69de5ad13a92acfe0d9d03a7f091d9',
-          initialSharedVersion: 18178376,
+          objectId: '0x9cd535e14d25767387e29798cfd61cf8c780d4836798cd64a5ce0d6fdc4659b2',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC': {
+        vault: {
+          objectId: '0xee2d62b04abd9064a5526043395e09b0481e89fa3309d428fcb271ac53ce3103',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC': {
+        vault: {
+          objectId: '0x755c54dd718d350afd03314fe6ccc71e0ab36a974caf6721f1e03b7675dfaba1',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI': {
+        vault: {
+          objectId: '0xb36fea26a681f44b9a075297ddb9ebb9d4f35210c48d133e767bb294ac6427c6',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {
+        vault: {
+          objectId: '0x2169f7a9f7c693265dad755bd7e75382e88cc4432595a22950432cb512bc6cd7',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI': {
+        vault: {
+          objectId: '0x83367e510389536e2041d50b3faabc2d1b1c8194ca5570a2a3a3e460d6113e86',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
+        vault: {
+          objectId: '0x542eff36534bc5d7d07808953ebb8c580c23f047b41c094601d40a0fc7e99238',
+          initialSharedVersion: 610893709,
           mutable: true,
         },
       },
@@ -76,57 +183,97 @@ export const CONFIG: Record<Network, ConfigType> = {
     AGGREGATOR_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         priceAggregator: {
-          objectId: '0x3f7f16277d5fb7c3075b5237985cf91c2fbd6421c64daf780229b811e2e7058f',
-          initialSharedVersion: 18178368,
+          objectId: '0x795e888b88d2cfd5aa5174cba71418e87878c7dd7d1980e5b0b2e51cc499aa53',
+          initialSharedVersion: 610893705,
           mutable: false,
         },
         pythPriceId: '0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744',
       },
       '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC': {
         priceAggregator: {
-          objectId: '0xc5b95126d891b1c05ae31754822d88e3976870ea655b8ff081b173c69ac2293e',
-          initialSharedVersion: 18178369,
+          objectId: '0xe2d05d53e45d47c7e4dc3756eb598afd61dd115d453b2d404f26ed3837883491',
+          initialSharedVersion: 610893707,
           mutable: false,
         },
         pythPriceId: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
       },
       '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL': {
         priceAggregator: {
-          objectId: '0x05905d3be7208b59f6b43382ef1dcc509f91d1bfd63fc7078b43e82951455c94',
-          initialSharedVersion: 18178370,
+          objectId: '0x88ba34137dae007a3b951847aa5ce8be3bdfefcff4b3675aab276b8e0672d68e',
+          initialSharedVersion: 610893707,
           mutable: false,
         },
         pythPriceId: '0xeba0732395fae9dec4bae12e52760b35fc1c5671e2da8b449c9af4efe5d54341',
       },
+      '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC': {
+        priceAggregator: {
+          objectId: '0x678e7a51bd5004d9d2dcdcc4d28840a7a3bd713b7f7479b435f4e2802704dfce',
+          initialSharedVersion: 610893707,
+          mutable: false,
+        },
+        pythPriceId: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
+      },
       '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC': {
         priceAggregator: {
-          objectId: '0x13c1f7b9fe0fca2092ab3b4c59aa404dc8b2b277858e9b7a3fb89be9a7723a21',
-          initialSharedVersion: 610893664,
+          objectId: '0x4b612d4d2039d90f596a362f15346a95149728613ca9d2e2c7e471b72b86c105',
+          initialSharedVersion: 610893707,
           mutable: false,
         },
         pythPriceId: '0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a',
       },
       '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT': {
         priceAggregator: {
-          objectId: '0x5e5aa6a03a13d28c6ea37157bcc05f073a375eaab233bc1c13df39ffe20c7561',
-          initialSharedVersion: 610893672,
+          objectId: '0x75f29f24d1b5839ec9ac95920e54b640980c56468e71dd0eeb65c67e299b7d25',
+          initialSharedVersion: 610893707,
           mutable: false,
         },
         pythPriceId: '0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b',
+      },
+      '0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI': {
+        priceAggregator: {
+          objectId: '0x8201e8138ada9945499db1e74cb86f92d102238b35f7d46f9cfe266426564edc',
+          initialSharedVersion: 610893707,
+          mutable: false,
+        },
+        pythPriceId: '0x6120ffcf96395c70aa77e72dcb900bf9d40dccab228efca59a17b90ce423d5e8',
+      },
+      '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {
+        priceAggregator: {
+          objectId: '0x16b7c7e5aed8dd0f3051655283812d17dec35be30f54cfcb52e72e956dfd9918',
+          initialSharedVersion: 610893707,
+          mutable: false,
+        },
+        pythPriceId: '0x57ff7100a282e4af0c91154679c5dae2e5dcacb93fd467ea9cb7e58afdcfde27',
+      },
+      '0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI': {
+        priceAggregator: {
+          objectId: '0xd97687812f73f390c762a02abe2d43f7dbc0f725a8f38bfbfeeb29421c7bfa78',
+          initialSharedVersion: 610893707,
+          mutable: false,
+        },
+        pythPriceId: '0x17cd845b16e874485b2684f8b8d1517d744105dbb904eec30222717f4bc9ee0d',
+      },
+      '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA': {
+        priceAggregator: {
+          objectId: '0x28672bb8232fe610c35d133f5ddf1d343447771a7297951db468b5af5ae83be2',
+          initialSharedVersion: 610893707,
+          mutable: false,
+        },
+        pythPriceId: '0x7e17f0ac105abe9214deb9944c30264f5986bf292869c6bd8e8da3ccd92d79bc',
       },
     },
     PSM_POOL_OBJS: {
       '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC': {
         pool: {
-          objectId: '0x56671d5a4e69f1b847786ba32b5bcb3a611728f9dd06f992cf9f5f849e81a667',
-          initialSharedVersion: '610893670',
+          objectId: '0x37721762186721fb6eaf053f249aaf594503a6ad98dbcc998916be78d20a2df4',
+          initialSharedVersion: '610893712',
           mutable: true,
         },
       },
       '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT': {
         pool: {
-          objectId: '0x254f2f21979928b4a14f43804a295dbd858f538084082c4ee68fedceb426b580',
-          initialSharedVersion: '610893671',
+          objectId: '0x12a3dacb20ecfe8fe9fc281140196348722b9b3775bec57a09c6c66243076c40',
+          initialSharedVersion: '610893712',
           mutable: true,
         },
       },

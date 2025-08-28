@@ -4,7 +4,7 @@ export type Network = 'mainnet' | 'testnet';
 
 export type AggregatorObjectInfo = {
   priceAggregator: SharedObjectRef;
-  pythPriceId: string;
+  pythPriceId?: string;
 };
 
 export type VaultObjectInfo = {

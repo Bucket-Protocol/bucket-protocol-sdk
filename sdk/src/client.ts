@@ -68,6 +68,13 @@ export class BucketClient {
   }
 
   /**
+   * @description Get all Oracle coin types
+   */
+  getAllOracleCoinTypes(): string[] {
+    return Object.keys(this.config.AGGREGATOR_OBJS);
+  }
+
+  /**
    * @description Get all CDP collateral types
    */
   getAllCollateralTypes(): string[] {
@@ -233,6 +240,26 @@ export class BucketClient {
       }
       return result;
     }, [] as PositionInfo[]);
+  }
+
+  async getAllOraclePrices(): Promise<Record<string, number>> {
+    const coinTypes = this.getAllOracleCoinTypes();
+    const tx = new Transaction();
+    await this.aggregatePrices(tx, { coinTypes });
+    tx.setSender(DUMMY_ADDRESS);
+    const dryrunRes = await this.suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: this.suiClient }),
+    });
+    const priceResultEvent = dryrunRes.events.filter((e) => e.type.includes('PriceAggregated'));
+    const pricePrecision = 10 ** 9;
+    const result: Record<string, number> = {};
+    priceResultEvent.map((e) => {
+      const startIdx = e.type.indexOf('<') + 1;
+      const endIdx = e.type.indexOf('>');
+      const coinType = normalizeStructTag(e.type.slice(startIdx, endIdx));
+      result[coinType] = +(e.parsedJson as { result: string }).result / pricePrecision;
+    });
+    return result;
   }
 
   /* ----- Transaction Methods ----- */
