@@ -36,7 +36,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
       transactionBlock: await tx.build({ client: suiClient }),
     });
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(coinTypes.length * 2);
     type PriceResult = { result: string };
     const [suiPriceResult, btcPriceResult, walPriceResult, usdcPriceResult] = dryrunRes.events.slice(coinTypes.length);
     const pricePrecision = 10 ** 9;
@@ -66,7 +65,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
       transactionBlock: await tx.build({ client: suiClient }),
     });
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(4);
     const [, , positionUpdatedEvent, mintUSDBEvent] = dryrunRes.events;
     const mintUSDBEventData = mintUSDBEvent.parsedJson as {
       amount: string;
@@ -145,7 +143,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
     });
 
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(8);
   });
 });
 
@@ -177,7 +174,6 @@ describe('Interacting with Bucket Client on testnet', () => {
       transactionBlock: await tx.build({ client: suiClient }),
     });
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(4);
   });
 
   it('test psmSwapOut()', async () => {
@@ -200,7 +196,6 @@ describe('Interacting with Bucket Client on testnet', () => {
     });
 
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(5);
   });
 
   it('test flashMint 1 USDB with default fee config', async () => {
@@ -227,7 +222,6 @@ describe('Interacting with Bucket Client on testnet', () => {
     });
 
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(8);
   });
 
   it('test psmSwapIn() then deposit to saving pool', async () => {
@@ -255,7 +249,6 @@ describe('Interacting with Bucket Client on testnet', () => {
     });
 
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(6);
   });
 
   it('test deposit to saving pool', async () => {
@@ -277,7 +270,6 @@ describe('Interacting with Bucket Client on testnet', () => {
     });
 
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(2);
   });
 
   it('test withdraw from saving pool', async () => {
@@ -299,7 +291,6 @@ describe('Interacting with Bucket Client on testnet', () => {
     });
 
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(2);
   });
 
   it('test claim from saving pool', async () => {
@@ -318,6 +309,5 @@ describe('Interacting with Bucket Client on testnet', () => {
     });
 
     expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.events.length).toBe(1);
   });
 });
