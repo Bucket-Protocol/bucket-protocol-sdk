@@ -109,11 +109,11 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const usdtCoin = coinWithBalance({ type: usdtCoinType, balance: amount });
     const usdbCoin1 = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType: usdcCoinType,
-      inputCoin: usdcCoin,
+      inputCoinOrAmount: usdcCoin,
     });
     const usdbCoin2 = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType: usdtCoinType,
-      inputCoin: usdtCoin,
+      inputCoinOrAmount: usdtCoin,
     });
 
     tx.transferObjects([usdbCoin1, usdbCoin2], testAccount);
@@ -140,7 +140,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const feeCollateralCoin = coinWithBalance({ type: usdcCoinType, balance: feeAmount });
     const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType: usdcCoinType,
-      inputCoin: feeCollateralCoin,
+      inputCoinOrAmount: feeCollateralCoin,
     });
     tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
     bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
@@ -172,9 +172,8 @@ describe('Interacting with Bucket Client on testnet', () => {
     const inputCoin = coinWithBalance({ type: coinType, balance: amount });
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType,
-      inputCoin,
+      inputCoinOrAmount: inputCoin,
     });
-
     tx.transferObjects([usdbCoin], testAccount);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
@@ -193,9 +192,8 @@ describe('Interacting with Bucket Client on testnet', () => {
 
     const inputCoin = await bucketClient.buildPSMSwapOutTransaction(tx, {
       coinType: usdcCoinType,
-      usdbCoin,
+      usdbCoinOrAmount: usdbCoin,
     });
-
     tx.transferObjects([inputCoin], testAccount);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
@@ -219,7 +217,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     const feeCollateralCoin = coinWithBalance({ type: coinType, balance: feeAmount });
     const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType,
-      inputCoin: feeCollateralCoin,
+      inputCoinOrAmount: feeCollateralCoin,
     });
     tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
     bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
@@ -242,9 +240,8 @@ describe('Interacting with Bucket Client on testnet', () => {
     // psmSwapIn
     const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType: usdcCoinType,
-      inputCoin: usdcCoin,
+      inputCoinOrAmount: usdcCoin,
     });
-
     bucketClient.buildDepositToSavingPoolTransaction(tx, {
       savingPoolType: 'Allen',
       account: testAccount,

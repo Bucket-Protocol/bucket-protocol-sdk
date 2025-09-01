@@ -245,7 +245,7 @@ type VaultInfo = {
   minCollateralRatio: number; // Minimum collateralization ratio
   interestRate: number; // Interest rate
   usdbSupply: string; // Current USDB supply
-  maxSupply: string; // Maximum supply
+  maxUsdbSupply: string; // Maximum supply
   positionTableSize: string; // Number of positions
 };
 ```
@@ -394,7 +394,7 @@ interface ManagePositionOptions {
   borrowAmount?: number; // Amount to borrow
   repayAmount?: number; // Amount to repay
   withdrawAmount?: number; // Amount to withdraw
-  accountObjId?: string; // Account object ID (optional)
+  accountObjectOrId?: string | TransactionArgument; // Account object ID (optional)
   recipient?: string; // Recipient address
   keepTransaction?: boolean; // Keep transaction object
 }
