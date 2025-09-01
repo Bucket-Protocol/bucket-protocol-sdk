@@ -866,7 +866,7 @@ export interface NewOptions {
 export function _new(options: NewOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::admin::AdminCap`,
         `0x0000000000000000000000000000000000000000000000000000000000000002::coin::TreasuryCap<${options.typeArguments[0]}>`
     ] satisfies string[];
     const parameterNames = ["Cap", "treasuryCap"];
@@ -874,6 +874,35 @@ export function _new(options: NewOptions) {
         package: packageAddress,
         module: 'saving',
         function: 'new',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface DefaultArguments {
+    cap: RawTransactionArgument<string>;
+    treasuryCap: RawTransactionArgument<string>;
+}
+export interface DefaultOptions {
+    package?: string;
+    arguments: DefaultArguments | [
+        cap: RawTransactionArgument<string>,
+        treasuryCap: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+export function _default(options: DefaultOptions) {
+    const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
+    const argumentsTypes = [
+        `${packageAddress}::admin::AdminCap`,
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::TreasuryCap<${options.typeArguments[0]}>`
+    ] satisfies string[];
+    const parameterNames = ["cap", "treasuryCap"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'saving',
+        function: 'default',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -904,8 +933,8 @@ export function updateSavingRate(options: UpdateSavingRateOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
+        `${packageAddress}::admin::AdminCap`,
+        `${packageAddress}::usdb::Treasury`,
         'u64',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
@@ -942,7 +971,7 @@ export function updateDepositCap(options: UpdateDepositCapOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::admin::AdminCap`,
         '0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<u64>'
     ] satisfies string[];
     const parameterNames = ["self", "Cap", "depositCapAmount"];
@@ -977,7 +1006,7 @@ export function addDepositResponseCheck(options: AddDepositResponseCheckOptions)
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["self", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -1008,7 +1037,7 @@ export function removeDepositResponseCheck(options: RemoveDepositResponseCheckOp
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["self", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -1042,7 +1071,7 @@ export function addWithdrawResponseCheck(options: AddWithdrawResponseCheckOption
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["self", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -1073,7 +1102,7 @@ export function removeWithdrawResponseCheck(options: RemoveWithdrawResponseCheck
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["self", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -1109,7 +1138,7 @@ export function checkDepositResponse(options: CheckDepositResponseOptions) {
     const argumentsTypes = [
         `${packageAddress}::saving::DepositResponse<${options.typeArguments[0]}>`,
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury'
+        `${packageAddress}::usdb::Treasury`
     ] satisfies string[];
     const parameterNames = ["res", "self", "treasury"];
     return (tx: Transaction) => tx.moveCall({
@@ -1145,7 +1174,7 @@ export function checkWithdrawResponse(options: CheckWithdrawResponseOptions) {
     const argumentsTypes = [
         `${packageAddress}::saving::WithdrawResponse<${options.typeArguments[0]}>`,
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury'
+        `${packageAddress}::usdb::Treasury`
     ] satisfies string[];
     const parameterNames = ["res", "self", "treasury"];
     return (tx: Transaction) => tx.moveCall({
@@ -1251,9 +1280,9 @@ export function deposit(options: DepositOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
+        `${packageAddress}::usdb::Treasury`,
         'address',
-        '0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::USDB>',
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${packageAddress}::usdb::USDB>`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
     const parameterNames = ["self", "treasury", "account", "usdb", "clock"];
@@ -1292,8 +1321,8 @@ export function withdraw(options: WithdrawOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
     const argumentsTypes = [
         `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
-        '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63::account::AccountRequest',
+        `${packageAddress}::usdb::Treasury`,
+        `${packageAddress}::account::AccountRequest`,
         'u64',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];

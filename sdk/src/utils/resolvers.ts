@@ -5,10 +5,11 @@ import {
   BuildTransactionOptions,
   Commands,
   Inputs,
-  TransactionArgument,
   TransactionDataBuilder,
+  TransactionResult,
 } from '@mysten/sui/transactions';
 
+import { TransactionNestedResult } from '@/types';
 import { getCoinsOfType } from '@/utils/transaction';
 
 export const COIN_WITH_BALANCE_RESOLVER = 'AugmentedCoinWithBalance';
@@ -27,7 +28,7 @@ export const resolveCoinBalance = async (
     if (command.$kind === '$Intent' && command.$Intent.name === COIN_WITH_BALANCE_RESOLVER) {
       const { type, balance } = command.$Intent.data as {
         type: string;
-        balance: bigint | TransactionArgument;
+        balance: bigint | TransactionResult | TransactionNestedResult;
       };
       if (type !== 'gas' && (typeof balance !== 'bigint' || balance > 0n)) {
         coinTypes.add(type);
@@ -100,7 +101,9 @@ export const resolveCoinBalance = async (
     }
     commands.push(
       Commands.SplitCoins(mergedCoins.get(type)!, [
-        transactionData.addInput('pure', Inputs.Pure(bcs.u64().serialize(balance))),
+        typeof balance === 'bigint'
+          ? transactionData.addInput('pure', Inputs.Pure(bcs.u64().serialize(balance)))
+          : balance,
       ]),
     );
     transactionData.replaceCommand(index, commands);

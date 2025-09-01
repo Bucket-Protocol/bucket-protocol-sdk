@@ -4,18 +4,36 @@ export type Double = { fields: { value: string } };
 export type VaultInfo = {
   collateralType: string;
   collateralDecimal: number;
-  collateralBalance: number;
+  collateralBalance: bigint;
+  usdbSupply: bigint;
+  maxUsdbSupply: bigint;
   minCollateralRatio: number;
   interestRate: number;
-  usdbSupply: number;
-  maxSupply: number;
   positionTableSize: number;
+};
+
+export type PsmPoolInfo = {
+  coinType: string;
+  decimal: number;
+  balance: bigint;
+  usdbSupply: bigint;
+  feeRate: {
+    swapIn: number;
+    swapOut: number;
+  };
+  partnerFeeRate: Record<
+    string,
+    {
+      swapIn: number;
+      swapOut: number;
+    }
+  >;
 };
 
 export type PositionInfo = {
   collateralType: string;
-  collateralAmount: number;
-  debtAmount: number;
+  collateralAmount: bigint;
+  debtAmount: bigint;
   debtor: string;
 };
 

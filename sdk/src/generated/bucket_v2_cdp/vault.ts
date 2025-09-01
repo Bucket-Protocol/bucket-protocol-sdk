@@ -21,6 +21,7 @@ import * as type_name from './deps/std/type_name.js';
 import * as linked_table from './deps/bucket_v2_framework/linked_table.js';
 import * as balance from './deps/sui/balance.js';
 import * as vec_set from './deps/sui/vec_set.js';
+import * as sheet from './deps/bucket_v2_framework/sheet.js';
 const $moduleName = '@local-pkg/bucket_v2_cdp::vault';
 export const Position = new MoveStruct({ name: `${$moduleName}::Position`, fields: {
         coll_amount: bcs.u64(),
@@ -34,7 +35,7 @@ export const Vault = new MoveStruct({ name: `${$moduleName}::Vault`, fields: {
          * Any level greater than or equal to the current non-zero security level will be
          * aborted.
          */
-        security_level: bcs.u8(),
+        security_level: bcs.option(bcs.u8()),
         access_control: acl.Acl,
         decimal: bcs.u8(),
         interest_rate: double.Double,
@@ -42,6 +43,7 @@ export const Vault = new MoveStruct({ name: `${$moduleName}::Vault`, fields: {
         timestamp: bcs.u64(),
         total_pending_interest_amount: bcs.u64(),
         limited_supply: limited_supply.LimitedSupply,
+        total_coll_amount: bcs.u64(),
         total_debt_amount: bcs.u64(),
         min_collateral_ratio: float.Float,
         liquidation_rule: type_name.TypeName,
@@ -49,13 +51,27 @@ export const Vault = new MoveStruct({ name: `${$moduleName}::Vault`, fields: {
         response_checklist: bcs.vector(type_name.TypeName),
         position_table: linked_table.LinkedTable(bcs.Address),
         balance: balance.Balance,
-        position_locker: vec_set.VecSet(bcs.Address)
+        position_locker: vec_set.VecSet(bcs.Address),
+        sheet: sheet.Sheet
     } });
 export const PositionData = new MoveStruct({ name: `${$moduleName}::PositionData`, fields: {
         debtor: bcs.Address,
         coll_amount: bcs.u64(),
         debt_amount: bcs.u64()
     } });
+export interface MinCollateralRatioPercentageOptions {
+    package?: string;
+    arguments?: [
+    ];
+}
+export function minCollateralRatioPercentage(options: MinCollateralRatioPercentageOptions = {}) {
+    const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'vault',
+        function: 'min_collateral_ratio_percentage',
+    });
+}
 export interface NewArguments {
     treasury: RawTransactionArgument<string>;
     Cap: RawTransactionArgument<string>;
@@ -83,12 +99,12 @@ export interface NewOptions {
 export function _new(options: NewOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::usdb::Treasury`,
+        `${packageAddress}::admin::AdminCap`,
         'u8',
-        '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63::double::Double',
+        `${packageAddress}::double::Double`,
         'u64',
-        '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63::float::Float'
+        `${packageAddress}::float::Float`
     ] satisfies string[];
     const parameterNames = ["treasury", "Cap", "decimal", "interestRate", "supplyLimit", "minCollateralRatio"];
     return (tx: Transaction) => tx.moveCall({
@@ -119,7 +135,7 @@ export function setSupplyLimit(options: SetSupplyLimitOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::admin::AdminCap`,
         'u64'
     ] satisfies string[];
     const parameterNames = ["vault", "Cap", "limit"];
@@ -153,8 +169,8 @@ export function setInterestRate(options: SetInterestRateOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::usdb::Treasury`,
+        `${packageAddress}::admin::AdminCap`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock',
         'u64'
     ] satisfies string[];
@@ -186,7 +202,7 @@ export function setLiquidationRule(options: SetLiquidationRuleOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["vault", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -216,7 +232,7 @@ export function addRequestCheck(options: AddRequestCheckOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["vault", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -246,7 +262,7 @@ export function removeRequestCheck(options: RemoveRequestCheckOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["vault", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -276,7 +292,7 @@ export function addResponseCheck(options: AddResponseCheckOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["vault", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -306,7 +322,7 @@ export function removeResponseCheck(options: RemoveResponseCheckOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap'
+        `${packageAddress}::admin::AdminCap`
     ] satisfies string[];
     const parameterNames = ["vault", "Cap"];
     return (tx: Transaction) => tx.moveCall({
@@ -339,7 +355,7 @@ export function setManagerRole(options: SetManagerRoleOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::admin::AdminCap`,
         'address',
         'u8'
     ] satisfies string[];
@@ -372,7 +388,7 @@ export function removeManagerRole(options: RemoveManagerRoleOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
+        `${packageAddress}::admin::AdminCap`,
         'address'
     ] satisfies string[];
     const parameterNames = ["vault", "Cap", "manager"];
@@ -387,14 +403,14 @@ export function removeManagerRole(options: RemoveManagerRoleOptions) {
 export interface SetSecurityByAdminArguments {
     vault: RawTransactionArgument<string>;
     Cap: RawTransactionArgument<string>;
-    level: RawTransactionArgument<number>;
+    level: RawTransactionArgument<number | null>;
 }
 export interface SetSecurityByAdminOptions {
     package?: string;
     arguments: SetSecurityByAdminArguments | [
         vault: RawTransactionArgument<string>,
         Cap: RawTransactionArgument<string>,
-        level: RawTransactionArgument<number>
+        level: RawTransactionArgument<number | null>
     ];
     typeArguments: [
         string
@@ -404,8 +420,8 @@ export function setSecurityByAdmin(options: SetSecurityByAdminOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::admin::AdminCap',
-        'u8'
+        `${packageAddress}::admin::AdminCap`,
+        '0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<u8>'
     ] satisfies string[];
     const parameterNames = ["vault", "Cap", "level"];
     return (tx: Transaction) => tx.moveCall({
@@ -416,28 +432,31 @@ export function setSecurityByAdmin(options: SetSecurityByAdminOptions) {
         typeArguments: options.typeArguments
     });
 }
-export interface SetSecurityByManagerLevelArguments {
+export interface SetSecurityByManagerArguments {
     vault: RawTransactionArgument<string>;
+    level: RawTransactionArgument<number>;
 }
-export interface SetSecurityByManagerLevelOptions {
+export interface SetSecurityByManagerOptions {
     package?: string;
-    arguments: SetSecurityByManagerLevelArguments | [
-        vault: RawTransactionArgument<string>
+    arguments: SetSecurityByManagerArguments | [
+        vault: RawTransactionArgument<string>,
+        level: RawTransactionArgument<number>
     ];
     typeArguments: [
         string
     ];
 }
-export function setSecurityByManagerLevel(options: SetSecurityByManagerLevelOptions) {
+export function setSecurityByManager(options: SetSecurityByManagerOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
-        `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`
+        `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
+        'u8'
     ] satisfies string[];
-    const parameterNames = ["vault"];
+    const parameterNames = ["vault", "level"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'vault',
-        function: 'set_security_by_manager_level',
+        function: 'set_security_by_manager',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
@@ -468,9 +487,9 @@ export function updatePosition(options: UpdatePositionOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
+        `${packageAddress}::usdb::Treasury`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock',
-        `0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<0x589bc31d4f89f3fc2c8c94f78ba7b234992c06408f1a1571927c971cf8fcc0ce::result::PriceResult<${options.typeArguments[0]}>>`,
+        `0x0000000000000000000000000000000000000000000000000000000000000001::option::Option<${packageAddress}::result::PriceResult<${options.typeArguments[0]}>>`,
         `${packageAddress}::request::UpdateRequest<${options.typeArguments[0]}>`
     ] satisfies string[];
     const parameterNames = ["vault", "treasury", "clock", "collPriceOpt", "request"];
@@ -503,7 +522,7 @@ export function destroyResponse(options: DestroyResponseOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
+        `${packageAddress}::usdb::Treasury`,
         `${packageAddress}::response::UpdateResponse<${options.typeArguments[0]}>`
     ] satisfies string[];
     const parameterNames = ["vault", "treasury", "response"];
@@ -544,11 +563,11 @@ export function debtorRequest(options: DebtorRequestOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63::account::AccountRequest',
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
+        `${packageAddress}::account::AccountRequest`,
+        `${packageAddress}::usdb::Treasury`,
         `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${options.typeArguments[0]}>`,
         'u64',
-        '0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::USDB>',
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${packageAddress}::usdb::USDB>`,
         'u64'
     ] satisfies string[];
     const parameterNames = ["vault", "accountReq", "treasury", "deposit", "borrowAmount", "repayment", "withdrawAmount"];
@@ -585,10 +604,10 @@ export function donorRequest(options: DonorRequestOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
+        `${packageAddress}::usdb::Treasury`,
         'address',
         `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${options.typeArguments[0]}>`,
-        '0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::USDB>'
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${packageAddress}::usdb::USDB>`
     ] satisfies string[];
     const parameterNames = ["vault", "treasury", "debtor", "deposit", "repayment"];
     return (tx: Transaction) => tx.moveCall({
@@ -605,7 +624,7 @@ export interface LiquidateArguments<LR extends BcsType<any>> {
     collPrice: RawTransactionArgument<string>;
     debtor: RawTransactionArgument<string>;
     repayment: RawTransactionArgument<string>;
-    LiqudationRule: RawTransactionArgument<LR>;
+    LiquidationRule: RawTransactionArgument<LR>;
 }
 export interface LiquidateOptions<LR extends BcsType<any>> {
     package?: string;
@@ -615,7 +634,7 @@ export interface LiquidateOptions<LR extends BcsType<any>> {
         collPrice: RawTransactionArgument<string>,
         debtor: RawTransactionArgument<string>,
         repayment: RawTransactionArgument<string>,
-        LiqudationRule: RawTransactionArgument<LR>
+        LiquidationRule: RawTransactionArgument<LR>
     ];
     typeArguments: [
         string,
@@ -627,14 +646,14 @@ export function liquidate<LR extends BcsType<any>>(options: LiquidateOptions<LR>
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
+        `${packageAddress}::usdb::Treasury`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock',
-        `0x589bc31d4f89f3fc2c8c94f78ba7b234992c06408f1a1571927c971cf8fcc0ce::result::PriceResult<${options.typeArguments[0]}>`,
+        `${packageAddress}::result::PriceResult<${options.typeArguments[0]}>`,
         'address',
-        '0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::USDB>',
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${packageAddress}::usdb::USDB>`,
         `${options.typeArguments[1]}`
     ] satisfies string[];
-    const parameterNames = ["vault", "treasury", "clock", "collPrice", "debtor", "repayment", "LiqudationRule"];
+    const parameterNames = ["vault", "treasury", "clock", "collPrice", "debtor", "repayment", "LiquidationRule"];
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'vault',
@@ -661,7 +680,7 @@ export function collectInterest(options: CollectInterestOptions) {
     const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
     const argumentsTypes = [
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
-        '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9::usdb::Treasury',
+        `${packageAddress}::usdb::Treasury`,
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
     ] satisfies string[];
     const parameterNames = ["vault", "treasury", "clock"];
@@ -941,7 +960,7 @@ export function positionIsHealthy(options: PositionIsHealthyOptions) {
         `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
         'address',
         '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock',
-        `0x589bc31d4f89f3fc2c8c94f78ba7b234992c06408f1a1571927c971cf8fcc0ce::result::PriceResult<${options.typeArguments[0]}>`
+        `${packageAddress}::result::PriceResult<${options.typeArguments[0]}>`
     ] satisfies string[];
     const parameterNames = ["vault", "debtor", "clock", "collPrice"];
     return (tx: Transaction) => tx.moveCall({
@@ -979,6 +998,36 @@ export function getPositionData(options: GetPositionDataOptions) {
         package: packageAddress,
         module: 'vault',
         function: 'get_position_data',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface TryGetPositionDataArguments {
+    vault: RawTransactionArgument<string>;
+    debtor: RawTransactionArgument<string>;
+}
+export interface TryGetPositionDataOptions {
+    package?: string;
+    arguments: TryGetPositionDataArguments | [
+        vault: RawTransactionArgument<string>,
+        debtor: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+export function tryGetPositionData(options: TryGetPositionDataOptions) {
+    const packageAddress = options.package ?? '@local-pkg/bucket_v2_cdp';
+    const argumentsTypes = [
+        `${packageAddress}::vault::Vault<${options.typeArguments[0]}>`,
+        'address',
+        '0x0000000000000000000000000000000000000000000000000000000000000002::clock::Clock'
+    ] satisfies string[];
+    const parameterNames = ["vault", "debtor", "clock"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'vault',
+        function: 'try_get_position_data',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });
