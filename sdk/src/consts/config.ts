@@ -25,6 +25,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_FLASH_PACKAGE_ID: '0x0f51f9eb63574a1d12b62295599ac4f8231197f95b3cce9a516daba64f419d06',
     ORIGINAL_SAVING_PACKAGE_ID: '',
     ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '',
+    ORIGINAL_BORROW_INCENTIVE_PACKAGE_ID: '0x8cc2eed1b1012881a623e9bafd58ff0f17a8c5f807662631e623acf7779a78ee',
 
     FRAMEWORK_PACKAGE_ID: '0x665188033384920a5bb5dcfb2ef21f54b4568d08b431718b97e02e5c184b92cc',
     USDB_PACKAGE_ID: '0xe14726c336e81b32328e92afc37345d159f5b550b09fa92bd43640cfdd0a0cfd',
@@ -34,6 +35,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     FLASH_PACKAGE_ID: '0x0f51f9eb63574a1d12b62295599ac4f8231197f95b3cce9a516daba64f419d06',
     SAVING_PACKAGE_ID: '',
     SAVING_INCENTIVE_PACKAGE_ID: '',
+    BORROW_INCENTIVE_PACKAGE_ID: '0x8cc2eed1b1012881a623e9bafd58ff0f17a8c5f807662631e623acf7779a78ee',
 
     TREASURY_OBJ: {
       objectId: '0x4de1c29a89d6888ebf8f7ae20364571dce4e1e42b9c9221f7df924ad6f9e617d',
@@ -50,6 +52,12 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 0,
       mutable: false,
     },
+    VAULT_REWARDER_REGISTRY: {
+      objectId: '0x14c57bf1085babf6e408c0488f2b68443f887e67a43436cadf1b84e5d41f54ba',
+      initialSharedVersion: 610893725,
+      mutable: false,
+    },
+
     VAULT_OBJS: {
       '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
         vault: {
@@ -80,6 +88,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0xb494654edf1a6d2e022be634135acf74a09fda48d074b0bcfc2f10c793f1cddc',
+          },
+        ],
       },
       '0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH': {
         vault: {
@@ -87,6 +101,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x78308e58091071bf52a8c3af7efda903d8028f1ab676ab0ecfafb4b271a84108',
+          },
+        ],
       },
       '0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP': {
         vault: {
@@ -101,6 +121,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x9402af27a7ed0983ec5a7c5116c97747d7e9e564c87e20c6f45d8ac82576a648',
+          },
+        ],
       },
       '0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT': {
         vault: {
@@ -108,6 +134,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x6f23ab1a2284af3926095dfa6971c9551d99d2f9baede1905e5ff19123d42003',
+          },
+        ],
       },
       '0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC': {
         vault: {
@@ -115,6 +147,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x3a109981109d8bdf058018a1d57bacf7e1f361a2edb3e4ad701c6db62decaad1',
+          },
+        ],
       },
       '0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI': {
         vault: {
@@ -122,6 +160,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0xeac0843f99610dd48bccc24f8a1fdbd6da84808ff48eff8eb5824963de8e7fa7',
+          },
+        ],
       },
       '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA': {
         vault: {
@@ -129,6 +173,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x515cf6543567b5de032de6a2a34f65f8755cada8ee214eba75f365ff98cde080',
+          },
+        ],
       },
       '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL': {
         vault: {
@@ -150,6 +200,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
+            rewarderId: '0xa3a6146f43b88e23792db83e83c2b47773be67289fc403f6e7cb933d73b9dfc1',
+          },
+        ],
       },
       '0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI': {
         vault: {
@@ -157,6 +213,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+            rewarderId: '0x1a8debd149a023c0d918a8a6eec29fa3d2d7f6614fd135ff1d9db306ecde0998',
+          },
+        ],
       },
       '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {
         vault: {
@@ -164,6 +226,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+            rewarderId: '0x0813f9074c8c2e723291de2a1dae1224116dd142d34c2f6fe8041f2818b365cd',
+          },
+        ],
       },
       '0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI': {
         vault: {
@@ -171,6 +239,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 610893709,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+            rewarderId: '0xcf9fecf8bcd4aa080ebc27f79692a6c77af47a28ab59e19b66d2951da3209eca',
+          },
+        ],
       },
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         vault: {
@@ -438,6 +512,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
     ORIGINAL_SAVING_PACKAGE_ID: '0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f',
     ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '0x11e03be85d2b5f1ddef785fe1dfa129551f69913c41324ac0cad116031579588',
+    ORIGINAL_BORROW_INCENTIVE_PACKAGE_ID: '',
 
     FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
     USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
@@ -447,6 +522,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     FLASH_PACKAGE_ID: '0x68d88be9921bd6730a0f1cdfc200a7e9dda6b3e862c0245cd3891511671bcb8c',
     SAVING_PACKAGE_ID: '0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f',
     SAVING_INCENTIVE_PACKAGE_ID: '0x11e03be85d2b5f1ddef785fe1dfa129551f69913c41324ac0cad116031579588',
+    BORROW_INCENTIVE_PACKAGE_ID: '',
 
     TREASURY_OBJ: {
       objectId: '0xb1bf430d03abcceed4f64b31ddf71b03bd503bea91ca64e80adaff35b22c7230',
@@ -458,12 +534,17 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: '349180354',
       mutable: true,
     },
-
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
       objectId: '0xdfdfe9c7bdd63113a5c57f3d1c7c425d2b85b73c7ef7d974b98db8584837c5b6',
       initialSharedVersion: 349180418,
       mutable: false,
     },
+    VAULT_REWARDER_REGISTRY: {
+      objectId: '',
+      initialSharedVersion: 0,
+      mutable: false,
+    },
+
     AGGREGATOR_OBJS: {
       '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
         priceAggregator: {

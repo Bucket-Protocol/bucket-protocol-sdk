@@ -13,9 +13,14 @@ export type AggregatorObjectInfo = {
   };
 };
 
+export type RewarderInfo = {
+  rewarderId: string;
+  rewardType: string;
+};
+
 export type VaultObjectInfo = {
   vault: SharedObjectRef;
-  rewarders?: SharedObjectRef[];
+  rewarders?: RewarderInfo[];
 };
 
 export type PsmPoolObjectInfo = {
@@ -37,6 +42,7 @@ export type ConfigType = {
   ORIGINAL_FLASH_PACKAGE_ID: string;
   ORIGINAL_SAVING_PACKAGE_ID: string;
   ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: string;
+  ORIGINAL_BORROW_INCENTIVE_PACKAGE_ID: string;
 
   FRAMEWORK_PACKAGE_ID: string;
   USDB_PACKAGE_ID: string;
@@ -46,10 +52,12 @@ export type ConfigType = {
   FLASH_PACKAGE_ID: string;
   SAVING_PACKAGE_ID: string;
   SAVING_INCENTIVE_PACKAGE_ID: string;
+  BORROW_INCENTIVE_PACKAGE_ID: string;
 
   TREASURY_OBJ: SharedObjectRef;
   FLASH_GLOBAL_CONFIG_OBJ: SharedObjectRef;
   SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: SharedObjectRef;
+  VAULT_REWARDER_REGISTRY: SharedObjectRef;
   VAULT_OBJS: Record<string, VaultObjectInfo>;
   AGGREGATOR_OBJS: Record<string, AggregatorObjectInfo>;
   PSM_POOL_OBJS: Record<string, PsmPoolObjectInfo>;
