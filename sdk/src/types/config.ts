@@ -27,6 +27,14 @@ export type PsmPoolObjectInfo = {
   pool: SharedObjectRef;
 };
 
+export type SavingPoolObjectInfo = {
+  pool: SharedObjectRef;
+  reward?: {
+    rewardManager: SharedObjectRef;
+    rewardTypes: string[];
+  };
+};
+
 export type ConfigType = {
   PRICE_SERVICE_ENDPOINT: string;
   PYTH_STATE_ID: string;
@@ -54,6 +62,7 @@ export type ConfigType = {
   SAVING_INCENTIVE_PACKAGE_ID: string;
   BORROW_INCENTIVE_PACKAGE_ID: string;
 
+  SAVING_OBJS: Record<string, SavingPoolObjectInfo>;
   TREASURY_OBJ: SharedObjectRef;
   FLASH_GLOBAL_CONFIG_OBJ: SharedObjectRef;
   SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: SharedObjectRef;

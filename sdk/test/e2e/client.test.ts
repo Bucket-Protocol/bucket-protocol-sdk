@@ -151,6 +151,93 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     expect(dryrunRes.effects.status.status).toBe('success');
   });
+
+  it('test psmSwapIn() then deposit to saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 0.1 * 10 ** 6; // 0.1 USDB
+    const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
+
+    // psmSwapIn
+    const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
+      coinType: usdcCoinType,
+      inputCoinOrAmount: usdcCoin,
+    });
+
+    bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      savingPoolType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      account: testAccount,
+      usdbCoin,
+    });
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  });
+
+  it('test deposit to saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 0.1 * 10 ** 6; // 0.1 USDB
+
+    const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
+    bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      savingPoolType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      account: testAccount,
+      usdbCoin,
+    });
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  });
+
+  it('test withdraw from saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 0.1 * 10 ** 6; // 0.1 SUSDB
+
+    const usdbCoin = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+      savingPoolType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      amount,
+    });
+
+    tx.transferObjects([usdbCoin], testAccount);
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  });
+
+  it('test claim from saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const rewardCoins = bucketClient.buildClaimRewardsFromSavingPoolTransaction(tx, {
+      savingPoolType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+    });
+
+    tx.transferObjects([...rewardCoins], testAccount);
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  });
 });
 
 describe('Interacting with Bucket Client on testnet', () => {
@@ -242,8 +329,9 @@ describe('Interacting with Bucket Client on testnet', () => {
       coinType: usdcCoinType,
       inputCoinOrAmount: usdcCoin,
     });
+
     bucketClient.buildDepositToSavingPoolTransaction(tx, {
-      savingPoolType: 'Allen',
+      savingPoolType: '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB',
       account: testAccount,
       usdbCoin,
     });
@@ -264,7 +352,7 @@ describe('Interacting with Bucket Client on testnet', () => {
 
     const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
     bucketClient.buildDepositToSavingPoolTransaction(tx, {
-      savingPoolType: 'Allen',
+      savingPoolType: '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB',
       account: testAccount,
       usdbCoin,
     });
@@ -284,7 +372,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     const amount = 0.1 * 10 ** 6; // 0.1 SUSDB
 
     const usdbCoin = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
-      savingPoolType: 'Allen',
+      savingPoolType: '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB',
       amount,
     });
 
@@ -303,7 +391,7 @@ describe('Interacting with Bucket Client on testnet', () => {
     tx.setSender(testAccount);
 
     const rewardCoins = bucketClient.buildClaimRewardsFromSavingPoolTransaction(tx, {
-      savingPoolType: 'Allen',
+      savingPoolType: '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB',
     });
 
     tx.transferObjects([...rewardCoins], testAccount);

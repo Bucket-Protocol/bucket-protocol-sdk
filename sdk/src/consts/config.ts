@@ -23,8 +23,8 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_CDP_PACKAGE_ID: '0x9f835c21d21f8ce519fec17d679cd38243ef2643ad879e7048ba77374be4036e',
     ORIGINAL_PSM_PACKAGE_ID: '0xc2ae6693383e4a81285136effc8190c7baaf0e75aafa36d1c69cd2170cfc3803',
     ORIGINAL_FLASH_PACKAGE_ID: '0x0f51f9eb63574a1d12b62295599ac4f8231197f95b3cce9a516daba64f419d06',
-    ORIGINAL_SAVING_PACKAGE_ID: '',
-    ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '',
+    ORIGINAL_SAVING_PACKAGE_ID: '0x872d08a70db3db498aa7853276acea8091fdd9871b2d86bc8dcb8524526df622',
+    ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '0x39692320d6fc01c27315a7972ed4717e4fd32eed43531ad6f55fd7f24b74e207',
     ORIGINAL_BORROW_INCENTIVE_PACKAGE_ID: '0x8cc2eed1b1012881a623e9bafd58ff0f17a8c5f807662631e623acf7779a78ee',
 
     FRAMEWORK_PACKAGE_ID: '0x665188033384920a5bb5dcfb2ef21f54b4568d08b431718b97e02e5c184b92cc',
@@ -33,8 +33,8 @@ export const CONFIG: Record<Network, ConfigType> = {
     CDP_PACKAGE_ID: '0x9f835c21d21f8ce519fec17d679cd38243ef2643ad879e7048ba77374be4036e',
     PSM_PACKAGE_ID: '0xc2ae6693383e4a81285136effc8190c7baaf0e75aafa36d1c69cd2170cfc3803',
     FLASH_PACKAGE_ID: '0x0f51f9eb63574a1d12b62295599ac4f8231197f95b3cce9a516daba64f419d06',
-    SAVING_PACKAGE_ID: '',
-    SAVING_INCENTIVE_PACKAGE_ID: '',
+    SAVING_PACKAGE_ID: '0x872d08a70db3db498aa7853276acea8091fdd9871b2d86bc8dcb8524526df622',
+    SAVING_INCENTIVE_PACKAGE_ID: '0x39692320d6fc01c27315a7972ed4717e4fd32eed43531ad6f55fd7f24b74e207',
     BORROW_INCENTIVE_PACKAGE_ID: '0x8cc2eed1b1012881a623e9bafd58ff0f17a8c5f807662631e623acf7779a78ee',
 
     TREASURY_OBJ: {
@@ -48,14 +48,32 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: true,
     },
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
-      objectId: '',
-      initialSharedVersion: 0,
+      objectId: '0x50ffe3535b157841e9ff0470fff722192c90b86b4dee521de0b27b03b44b20f5',
+      initialSharedVersion: 606028576,
       mutable: false,
     },
     VAULT_REWARDER_REGISTRY: {
       objectId: '0x14c57bf1085babf6e408c0488f2b68443f887e67a43436cadf1b84e5d41f54ba',
       initialSharedVersion: 610893725,
       mutable: false,
+    },
+
+    SAVING_OBJS: {
+      '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB': {
+        pool: {
+          objectId: '0xa0bfd8f31cc869c5f91cc23cb24414f3e225f015d269803279dc8a2179ce964f',
+          initialSharedVersion: 610893718,
+          mutable: true,
+        },
+        reward: {
+          rewardManager: {
+            objectId: '0x79c753c1512a0eaeae0aedc623e620c599915e5855e27ee5d292d5bf95192578',
+            initialSharedVersion: '610893721',
+            mutable: true,
+          },
+          rewardTypes: [SUI_TYPE_ARG],
+        },
+      },
     },
 
     VAULT_OBJS: {
@@ -545,6 +563,24 @@ export const CONFIG: Record<Network, ConfigType> = {
       mutable: false,
     },
 
+    SAVING_OBJS: {
+      '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB': {
+        pool: {
+          objectId: '0x8a2b3f7e26050c9ed4b9a60d25dfc205e2541b6c05509295769511b0e13b7b25',
+          initialSharedVersion: '546822516',
+          mutable: true,
+        },
+        reward: {
+          rewardManager: {
+            objectId: '0x70d52865febce4e0b5f6c0a53f772f735e178eb03a80d3b764dd3e365a7bf3f1',
+            initialSharedVersion: '546934688',
+            mutable: true,
+          },
+          rewardTypes: [SUI_TYPE_ARG],
+        },
+      },
+    },
+
     AGGREGATOR_OBJS: {
       '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
         priceAggregator: {
@@ -565,37 +601,6 @@ export const CONFIG: Record<Network, ConfigType> = {
           mutable: true,
         },
       },
-    },
-  },
-};
-
-// To be refactored
-export type SupportedSavingPoolType = 'Allen';
-export const TESTNET_SAVING_POOL: Record<
-  SupportedSavingPoolType,
-  {
-    pool: SharedObjectRef;
-    coinType: string;
-    reward?: {
-      rewardManager: SharedObjectRef;
-      rewardTypes: string[];
-    };
-  }
-> = {
-  Allen: {
-    pool: {
-      objectId: '0x8a2b3f7e26050c9ed4b9a60d25dfc205e2541b6c05509295769511b0e13b7b25',
-      initialSharedVersion: '546822516',
-      mutable: true,
-    },
-    coinType: '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB',
-    reward: {
-      rewardManager: {
-        objectId: '0x70d52865febce4e0b5f6c0a53f772f735e178eb03a80d3b764dd3e365a7bf3f1',
-        initialSharedVersion: '546934688',
-        mutable: true,
-      },
-      rewardTypes: [SUI_TYPE_ARG],
     },
   },
 };
