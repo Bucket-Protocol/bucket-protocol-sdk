@@ -20,7 +20,7 @@ import {
 } from '@/types/config';
 import { PaginatedPositionsResult, PositionInfo, PsmPoolInfo, VaultInfo } from '@/types/struct';
 import { CLOCK_OBJ, DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts';
-import { CONFIG, SupportedSavingPoolType, TESTNET_SAVING_POOL } from '@/consts/config';
+import { CONFIG } from '@/consts/config';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction';
 
 import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
@@ -759,16 +759,16 @@ export class BucketClient {
       usdbCoin,
       account,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       usdbCoin: TransactionArgument;
       account: string;
     },
   ): TransactionResult {
     const depositResponse = tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::deposit`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      typeArguments: [savingPoolType],
       arguments: [
-        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+        tx.sharedObjectRef(this.config.SAVING_OBJS[savingPoolType].pool),
         this.treasury(tx),
         tx.pure.address(account),
         usdbCoin,
@@ -787,14 +787,14 @@ export class BucketClient {
       savingPoolType,
       depositResponse,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       depositResponse: TransactionArgument;
     },
   ): void {
     tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::check_deposit_response`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
-      arguments: [depositResponse, tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool), this.treasury(tx)],
+      typeArguments: [savingPoolType],
+      arguments: [depositResponse, tx.sharedObjectRef(this.config.SAVING_OBJS[savingPoolType].pool), this.treasury(tx)],
     });
   }
 
@@ -808,7 +808,7 @@ export class BucketClient {
       amount,
       accountObjectOrId,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       amount: number;
       accountObjectOrId?: string | TransactionArgument;
     },
@@ -816,9 +816,9 @@ export class BucketClient {
     const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
     const [usdbCoin, withdrawResponse] = tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::withdraw`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      typeArguments: [savingPoolType],
       arguments: [
-        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+        tx.sharedObjectRef(this.config.SAVING_OBJS[savingPoolType].pool),
         this.treasury(tx),
         accountReq,
         tx.pure.u64(amount),
@@ -837,14 +837,18 @@ export class BucketClient {
       savingPoolType,
       withdrawResponse,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       withdrawResponse: TransactionArgument;
     },
   ): void {
     tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::check_withdraw_response`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
-      arguments: [withdrawResponse, tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool), this.treasury(tx)],
+      typeArguments: [savingPoolType],
+      arguments: [
+        withdrawResponse,
+        tx.sharedObjectRef(this.config.SAVING_OBJS[savingPoolType].pool),
+        this.treasury(tx),
+      ],
     });
   }
 
@@ -857,34 +861,35 @@ export class BucketClient {
       savingPoolType,
       depositResponse,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       depositResponse: TransactionArgument;
     },
   ) {
-    if (!TESTNET_SAVING_POOL[savingPoolType].reward) {
+    const savingPool = this.config.SAVING_OBJS[savingPoolType];
+    if (!savingPool.reward) {
       throw new Error(`No Rewards to handle for ${savingPoolType}`);
     }
 
     const depositChecker = tx.moveCall({
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::new_checker_for_deposit_action`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      typeArguments: [savingPoolType],
       arguments: [
-        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
+        tx.sharedObjectRef(savingPool.reward.rewardManager),
         tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
         depositResponse,
       ],
     });
-    const rewards = TESTNET_SAVING_POOL[savingPoolType].reward.rewardTypes;
+    const rewards = savingPool.reward.rewardTypes;
 
     for (const rewardType of rewards) {
       tx.moveCall({
         target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::update_deposit_action`,
-        typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType, rewardType],
+        typeArguments: [savingPoolType, rewardType],
         arguments: [
           depositChecker,
           tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
-          tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
-          tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+          tx.sharedObjectRef(savingPool.reward.rewardManager),
+          tx.sharedObjectRef(savingPool.pool),
           tx.object.clock(),
         ],
       });
@@ -892,7 +897,7 @@ export class BucketClient {
 
     const depositResponse_ = tx.moveCall({
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::destroy_deposit_checker`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      typeArguments: [savingPoolType],
       arguments: [depositChecker, tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ)],
     });
 
@@ -908,41 +913,42 @@ export class BucketClient {
       savingPoolType,
       withdrawResponse,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       withdrawResponse: TransactionArgument;
     },
   ) {
-    if (!TESTNET_SAVING_POOL[savingPoolType].reward) {
+    const savingPool = this.config.SAVING_OBJS[savingPoolType];
+    if (!savingPool.reward) {
       throw new Error(`No Rewards to handle for ${savingPoolType}`);
     }
 
     const withdrawChecker = tx.moveCall({
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::new_checker_for_withdraw_action`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      typeArguments: [savingPoolType],
       arguments: [
-        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
+        tx.sharedObjectRef(savingPool.reward.rewardManager),
         tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
         withdrawResponse,
       ],
     });
-    const rewards = TESTNET_SAVING_POOL[savingPoolType].reward.rewardTypes;
+    const rewards = savingPool.reward.rewardTypes;
 
     for (const rewardType of rewards) {
       tx.moveCall({
         target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::update_withdraw_action`,
-        typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType, rewardType],
+        typeArguments: [savingPoolType, rewardType],
         arguments: [
           withdrawChecker,
           tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
-          tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
-          tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+          tx.sharedObjectRef(savingPool.reward.rewardManager),
+          tx.sharedObjectRef(savingPool.pool),
           tx.object.clock(),
         ],
       });
     }
     const withdrawResponse_ = tx.moveCall({
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::destroy_withdraw_checker`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType],
+      typeArguments: [savingPoolType],
       arguments: [withdrawChecker, tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ)],
     });
     return withdrawResponse_;
@@ -958,21 +964,22 @@ export class BucketClient {
       rewardType,
       accountObjectOrId,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       rewardType: string;
       accountObjectOrId?: string | TransactionArgument;
     },
   ) {
-    if (!TESTNET_SAVING_POOL[savingPoolType].reward) return getZeroCoin(tx, { coinType: rewardType });
+    const savingPool = this.config.SAVING_OBJS[savingPoolType];
+    if (!savingPool.reward) return getZeroCoin(tx, { coinType: rewardType });
 
     const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
     const rewardCoin = tx.moveCall({
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::claim`,
-      typeArguments: [TESTNET_SAVING_POOL[savingPoolType].coinType, rewardType],
+      typeArguments: [savingPoolType, rewardType],
       arguments: [
-        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].reward.rewardManager),
+        tx.sharedObjectRef(savingPool.reward.rewardManager),
         tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
-        tx.sharedObjectRef(TESTNET_SAVING_POOL[savingPoolType].pool),
+        tx.sharedObjectRef(savingPool.pool),
         accountReq,
         tx.object.clock(),
       ],
@@ -1195,7 +1202,7 @@ export class BucketClient {
       usdbCoin,
       account,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       usdbCoin: TransactionArgument;
       account: string;
     },
@@ -1205,7 +1212,7 @@ export class BucketClient {
       usdbCoin,
       account,
     });
-    if (TESTNET_SAVING_POOL[savingPoolType].reward) {
+    if (this.config.SAVING_OBJS[savingPoolType].reward) {
       depositResponse = this.updateSavingPoolIncentiveDepositAction(tx, { savingPoolType, depositResponse });
     }
 
@@ -1222,7 +1229,7 @@ export class BucketClient {
       amount,
       accountObjectOrId,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       amount: number;
       accountObjectOrId?: string | TransactionArgument;
     },
@@ -1234,7 +1241,7 @@ export class BucketClient {
     });
 
     const usdbCoin = withdrawResult[0];
-    const withdrawResponse = TESTNET_SAVING_POOL[savingPoolType].reward
+    const withdrawResponse = this.config.SAVING_OBJS[savingPoolType].reward
       ? this.updateSavingPoolIncentiveWithdrawAction(tx, { savingPoolType, withdrawResponse: withdrawResult[1] })
       : withdrawResult[1];
 
@@ -1252,13 +1259,13 @@ export class BucketClient {
       savingPoolType,
       accountObjectOrId,
     }: {
-      savingPoolType: SupportedSavingPoolType;
+      savingPoolType: string;
       accountObjectOrId?: string | TransactionArgument;
     },
   ): TransactionResult[] {
     const rewards = [];
 
-    for (const rewardType of TESTNET_SAVING_POOL[savingPoolType].reward?.rewardTypes || []) {
+    for (const rewardType of this.config.SAVING_OBJS[savingPoolType].reward?.rewardTypes || []) {
       const rewardCoin = this.claimPoolIncentive(tx, {
         savingPoolType,
         rewardType,
