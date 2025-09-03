@@ -12,6 +12,15 @@ export type VaultInfo = {
   positionTableSize: number;
 };
 
+export type SavingPoolInfo = {
+  lpType: string;
+  lpSupply: bigint;
+  usdbBalance: bigint;
+  usdbDepositCap: bigint | null;
+  interestRate: number;
+  incentiveRate: Record<string, number>;
+};
+
 export type PsmPoolInfo = {
   coinType: string;
   decimal: number;
@@ -35,6 +44,12 @@ export type PositionInfo = {
   collateralAmount: bigint;
   debtAmount: bigint;
   debtor: string;
+};
+
+export type SavingInfo = {
+  lpType: string;
+  depositAmount: bigint;
+  rewards: Record<string, bigint>;
 };
 
 export type PaginatedPositionsResult = {

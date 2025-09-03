@@ -1,5 +1,4 @@
-import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 
 import { ConfigType } from '@/types/config';
 
@@ -42,236 +41,22 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 610893687,
       mutable: true,
     },
-    FLASH_GLOBAL_CONFIG_OBJ: {
-      objectId: '0x4cbc26a7ec49d4bec975768af386cc6ab987a1c29d524566f99d5aa018a99546',
-      initialSharedVersion: 610893688,
-      mutable: true,
+    VAULT_REWARDER_REGISTRY: {
+      objectId: '0x14c57bf1085babf6e408c0488f2b68443f887e67a43436cadf1b84e5d41f54ba',
+      initialSharedVersion: 610893725,
+      mutable: false,
     },
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
       objectId: '0x50ffe3535b157841e9ff0470fff722192c90b86b4dee521de0b27b03b44b20f5',
       initialSharedVersion: 606028576,
       mutable: false,
     },
-    VAULT_REWARDER_REGISTRY: {
-      objectId: '0x14c57bf1085babf6e408c0488f2b68443f887e67a43436cadf1b84e5d41f54ba',
-      initialSharedVersion: 610893725,
-      mutable: false,
+    FLASH_GLOBAL_CONFIG_OBJ: {
+      objectId: '0x4cbc26a7ec49d4bec975768af386cc6ab987a1c29d524566f99d5aa018a99546',
+      initialSharedVersion: 610893688,
+      mutable: true,
     },
 
-    SAVING_OBJS: {
-      '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB': {
-        pool: {
-          objectId: '0xa0bfd8f31cc869c5f91cc23cb24414f3e225f015d269803279dc8a2179ce964f',
-          initialSharedVersion: 610893718,
-          mutable: true,
-        },
-        reward: {
-          rewardManager: {
-            objectId: '0x79c753c1512a0eaeae0aedc623e620c599915e5855e27ee5d292d5bf95192578',
-            initialSharedVersion: '610893721',
-            mutable: true,
-          },
-          rewardTypes: [SUI_TYPE_ARG],
-        },
-      },
-    },
-
-    VAULT_OBJS: {
-      '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
-        vault: {
-          objectId: '0xf4b852ec580fb15da542b191d5fefe96939f718b43dc0240062fa83b35f06da1',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-      },
-      '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD>':
-        {
-          vault: {
-            objectId: '0xdb3b2f1ce99c935a5c5e14ce8321e0c252a8b16c50861407d2253d392d5fb836',
-            initialSharedVersion: 610893709,
-            mutable: true,
-          },
-        },
-      '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>':
-        {
-          vault: {
-            objectId: '0x1e90eb4184e3303ee69d1728630c872b214f8699982b00dc39aabde8b4ff5ce3',
-            initialSharedVersion: 610893709,
-            mutable: true,
-          },
-        },
-      '0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA': {
-        vault: {
-          objectId: '0x38057191f48cf748d3b018e83ec0dda9f769f3f2d98010561002d6d2378f8ec3',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0xb494654edf1a6d2e022be634135acf74a09fda48d074b0bcfc2f10c793f1cddc',
-          },
-        ],
-      },
-      '0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH': {
-        vault: {
-          objectId: '0x13ca385797229d6ad23a3ff0981fc30971735b0efd307d02920b58730d923a14',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0x78308e58091071bf52a8c3af7efda903d8028f1ab676ab0ecfafb4b271a84108',
-          },
-        ],
-      },
-      '0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP': {
-        vault: {
-          objectId: '0x6677cdcc3186900914823fc8e5de7a2d1e874bbc0682cbcf7637ddf9342b1cbd',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-      },
-      '0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL': {
-        vault: {
-          objectId: '0xe1c7630ef33094491ab291bed669fcc64a48a88fcc99ddc200bcc38deb00400e',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0x9402af27a7ed0983ec5a7c5116c97747d7e9e564c87e20c6f45d8ac82576a648',
-          },
-        ],
-      },
-      '0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT': {
-        vault: {
-          objectId: '0xf985037e218946d20344810be7c07e42e7fae1666cdce60e7f028706768daed0',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0x6f23ab1a2284af3926095dfa6971c9551d99d2f9baede1905e5ff19123d42003',
-          },
-        ],
-      },
-      '0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC': {
-        vault: {
-          objectId: '0xbd0079fb337dc5c79ae8f522aab72fcda38b6f10e38f2477c075777d8b1ac263',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0x3a109981109d8bdf058018a1d57bacf7e1f361a2edb3e4ad701c6db62decaad1',
-          },
-        ],
-      },
-      '0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI': {
-        vault: {
-          objectId: '0x5d76ee14fc4b1f501653c65eb3dc2ba0cd42f7d0d11480a840322e77d4b56362',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0xeac0843f99610dd48bccc24f8a1fdbd6da84808ff48eff8eb5824963de8e7fa7',
-          },
-        ],
-      },
-      '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA': {
-        vault: {
-          objectId: '0xd3ef65a1dec4b5c5f0e0bb7caf29f4a425bd04ad43bce942ec6e1c70385b79de',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0x515cf6543567b5de032de6a2a34f65f8755cada8ee214eba75f365ff98cde080',
-          },
-        ],
-      },
-      '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL': {
-        vault: {
-          objectId: '0x9cd535e14d25767387e29798cfd61cf8c780d4836798cd64a5ce0d6fdc4659b2',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-      },
-      '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC': {
-        vault: {
-          objectId: '0xee2d62b04abd9064a5526043395e09b0481e89fa3309d428fcb271ac53ce3103',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-      },
-      '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC': {
-        vault: {
-          objectId: '0x755c54dd718d350afd03314fe6ccc71e0ab36a974caf6721f1e03b7675dfaba1',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
-            rewarderId: '0xa3a6146f43b88e23792db83e83c2b47773be67289fc403f6e7cb933d73b9dfc1',
-          },
-        ],
-      },
-      '0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI': {
-        vault: {
-          objectId: '0xb36fea26a681f44b9a075297ddb9ebb9d4f35210c48d133e767bb294ac6427c6',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
-            rewarderId: '0x1a8debd149a023c0d918a8a6eec29fa3d2d7f6614fd135ff1d9db306ecde0998',
-          },
-        ],
-      },
-      '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {
-        vault: {
-          objectId: '0x2169f7a9f7c693265dad755bd7e75382e88cc4432595a22950432cb512bc6cd7',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
-            rewarderId: '0x0813f9074c8c2e723291de2a1dae1224116dd142d34c2f6fe8041f2818b365cd',
-          },
-        ],
-      },
-      '0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI': {
-        vault: {
-          objectId: '0x83367e510389536e2041d50b3faabc2d1b1c8194ca5570a2a3a3e460d6113e86',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-        rewarders: [
-          {
-            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
-            rewarderId: '0xcf9fecf8bcd4aa080ebc27f79692a6c77af47a28ab59e19b66d2951da3209eca',
-          },
-        ],
-      },
-      '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
-        vault: {
-          objectId: '0x542eff36534bc5d7d07808953ebb8c580c23f047b41c094601d40a0fc7e99238',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-      },
-    },
     AGGREGATOR_OBJS: {
       '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
         priceAggregator: {
@@ -487,6 +272,219 @@ export const CONFIG: Record<Network, ConfigType> = {
           },
         },
     },
+    VAULT_OBJS: {
+      '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
+        vault: {
+          objectId: '0xf4b852ec580fb15da542b191d5fefe96939f718b43dc0240062fa83b35f06da1',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD>':
+        {
+          vault: {
+            objectId: '0xdb3b2f1ce99c935a5c5e14ce8321e0c252a8b16c50861407d2253d392d5fb836',
+            initialSharedVersion: 610893709,
+            mutable: true,
+          },
+        },
+      '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>':
+        {
+          vault: {
+            objectId: '0x1e90eb4184e3303ee69d1728630c872b214f8699982b00dc39aabde8b4ff5ce3',
+            initialSharedVersion: 610893709,
+            mutable: true,
+          },
+        },
+      '0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA': {
+        vault: {
+          objectId: '0x38057191f48cf748d3b018e83ec0dda9f769f3f2d98010561002d6d2378f8ec3',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0xb494654edf1a6d2e022be634135acf74a09fda48d074b0bcfc2f10c793f1cddc',
+          },
+        ],
+      },
+      '0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH': {
+        vault: {
+          objectId: '0x13ca385797229d6ad23a3ff0981fc30971735b0efd307d02920b58730d923a14',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x78308e58091071bf52a8c3af7efda903d8028f1ab676ab0ecfafb4b271a84108',
+          },
+        ],
+      },
+      '0xeb7a05a3224837c5e5503575aed0be73c091d1ce5e43aa3c3e716e0ae614608f::scallop_deep::SCALLOP_DEEP': {
+        vault: {
+          objectId: '0x6677cdcc3186900914823fc8e5de7a2d1e874bbc0682cbcf7637ddf9342b1cbd',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL': {
+        vault: {
+          objectId: '0xe1c7630ef33094491ab291bed669fcc64a48a88fcc99ddc200bcc38deb00400e',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x9402af27a7ed0983ec5a7c5116c97747d7e9e564c87e20c6f45d8ac82576a648',
+          },
+        ],
+      },
+      '0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT': {
+        vault: {
+          objectId: '0xf985037e218946d20344810be7c07e42e7fae1666cdce60e7f028706768daed0',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x6f23ab1a2284af3926095dfa6971c9551d99d2f9baede1905e5ff19123d42003',
+          },
+        ],
+      },
+      '0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC': {
+        vault: {
+          objectId: '0xbd0079fb337dc5c79ae8f522aab72fcda38b6f10e38f2477c075777d8b1ac263',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x3a109981109d8bdf058018a1d57bacf7e1f361a2edb3e4ad701c6db62decaad1',
+          },
+        ],
+      },
+      '0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI': {
+        vault: {
+          objectId: '0x5d76ee14fc4b1f501653c65eb3dc2ba0cd42f7d0d11480a840322e77d4b56362',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0xeac0843f99610dd48bccc24f8a1fdbd6da84808ff48eff8eb5824963de8e7fa7',
+          },
+        ],
+      },
+      '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA': {
+        vault: {
+          objectId: '0xd3ef65a1dec4b5c5f0e0bb7caf29f4a425bd04ad43bce942ec6e1c70385b79de',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+            rewarderId: '0x515cf6543567b5de032de6a2a34f65f8755cada8ee214eba75f365ff98cde080',
+          },
+        ],
+      },
+      '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL': {
+        vault: {
+          objectId: '0x9cd535e14d25767387e29798cfd61cf8c780d4836798cd64a5ce0d6fdc4659b2',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC': {
+        vault: {
+          objectId: '0xee2d62b04abd9064a5526043395e09b0481e89fa3309d428fcb271ac53ce3103',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC': {
+        vault: {
+          objectId: '0x755c54dd718d350afd03314fe6ccc71e0ab36a974caf6721f1e03b7675dfaba1',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
+            rewarderId: '0xa3a6146f43b88e23792db83e83c2b47773be67289fc403f6e7cb933d73b9dfc1',
+          },
+        ],
+      },
+      '0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI': {
+        vault: {
+          objectId: '0xb36fea26a681f44b9a075297ddb9ebb9d4f35210c48d133e767bb294ac6427c6',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+            rewarderId: '0x1a8debd149a023c0d918a8a6eec29fa3d2d7f6614fd135ff1d9db306ecde0998',
+          },
+        ],
+      },
+      '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {
+        vault: {
+          objectId: '0x2169f7a9f7c693265dad755bd7e75382e88cc4432595a22950432cb512bc6cd7',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+            rewarderId: '0x0813f9074c8c2e723291de2a1dae1224116dd142d34c2f6fe8041f2818b365cd',
+          },
+        ],
+      },
+      '0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI': {
+        vault: {
+          objectId: '0x83367e510389536e2041d50b3faabc2d1b1c8194ca5570a2a3a3e460d6113e86',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+            rewarderId: '0xcf9fecf8bcd4aa080ebc27f79692a6c77af47a28ab59e19b66d2951da3209eca',
+          },
+        ],
+      },
+      '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI': {
+        vault: {
+          objectId: '0x542eff36534bc5d7d07808953ebb8c580c23f047b41c094601d40a0fc7e99238',
+          initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+    },
+    SAVING_POOL_OBJS: {
+      '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB': {
+        pool: {
+          objectId: '0xa0bfd8f31cc869c5f91cc23cb24414f3e225f015d269803279dc8a2179ce964f',
+          initialSharedVersion: 610893718,
+          mutable: true,
+        },
+        reward: {
+          rewardManager: {
+            objectId: '0x79c753c1512a0eaeae0aedc623e620c599915e5855e27ee5d292d5bf95192578',
+            initialSharedVersion: '610893721',
+            mutable: true,
+          },
+          rewardTypes: [normalizeStructTag(SUI_TYPE_ARG)],
+        },
+      },
+    },
     PSM_POOL_OBJS: {
       '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC': {
         pool: {
@@ -547,38 +545,20 @@ export const CONFIG: Record<Network, ConfigType> = {
       initialSharedVersion: 349180351,
       mutable: true,
     },
-    FLASH_GLOBAL_CONFIG_OBJ: {
-      objectId: '0x66c8c42e1ccf2a8eaa50f2584b990418c54349f53470004545e12333ccf1f0fc',
-      initialSharedVersion: '349180354',
-      mutable: true,
+    VAULT_REWARDER_REGISTRY: {
+      objectId: '',
+      initialSharedVersion: 0,
+      mutable: false,
     },
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: {
       objectId: '0xdfdfe9c7bdd63113a5c57f3d1c7c425d2b85b73c7ef7d974b98db8584837c5b6',
       initialSharedVersion: 349180418,
       mutable: false,
     },
-    VAULT_REWARDER_REGISTRY: {
-      objectId: '',
-      initialSharedVersion: 0,
-      mutable: false,
-    },
-
-    SAVING_OBJS: {
-      '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB': {
-        pool: {
-          objectId: '0x8a2b3f7e26050c9ed4b9a60d25dfc205e2541b6c05509295769511b0e13b7b25',
-          initialSharedVersion: '546822516',
-          mutable: true,
-        },
-        reward: {
-          rewardManager: {
-            objectId: '0x70d52865febce4e0b5f6c0a53f772f735e178eb03a80d3b764dd3e365a7bf3f1',
-            initialSharedVersion: '546934688',
-            mutable: true,
-          },
-          rewardTypes: [SUI_TYPE_ARG],
-        },
-      },
+    FLASH_GLOBAL_CONFIG_OBJ: {
+      objectId: '0x66c8c42e1ccf2a8eaa50f2584b990418c54349f53470004545e12333ccf1f0fc',
+      initialSharedVersion: '349180354',
+      mutable: true,
     },
 
     AGGREGATOR_OBJS: {
@@ -593,6 +573,23 @@ export const CONFIG: Record<Network, ConfigType> = {
       },
     },
     VAULT_OBJS: {},
+    SAVING_POOL_OBJS: {
+      '0x784660d93d9f013f1c77c4bcb2e04a374fdb4038abf2637c75ca27828b2ac18c::allen_susdb::ALLEN_SUSDB': {
+        pool: {
+          objectId: '0x8a2b3f7e26050c9ed4b9a60d25dfc205e2541b6c05509295769511b0e13b7b25',
+          initialSharedVersion: '546822516',
+          mutable: true,
+        },
+        reward: {
+          rewardManager: {
+            objectId: '0x70d52865febce4e0b5f6c0a53f772f735e178eb03a80d3b764dd3e365a7bf3f1',
+            initialSharedVersion: '546934688',
+            mutable: true,
+          },
+          rewardTypes: [normalizeStructTag(SUI_TYPE_ARG)],
+        },
+      },
+    },
     PSM_POOL_OBJS: {
       '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC': {
         pool: {
