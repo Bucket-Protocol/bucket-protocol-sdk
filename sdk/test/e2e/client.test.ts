@@ -238,6 +238,28 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     expect(dryrunRes.effects.status.status).toBe('success');
   });
+
+  it('test get saving pool APR', async () => {
+    const rewaders = await bucketClient.getSavingPoolRewarders(
+      '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+    );
+
+    console.log({ rewaders });
+
+    const realtimeRewards = await bucketClient.getUserSavingPoolRealtimeRewards(
+      '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      testAccount,
+    );
+
+    console.log({ realtimeRewards });
+
+    const savingPoolBalance = await bucketClient.getUserSavingPoolBalance(
+      '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      testAccount,
+    );
+
+    console.log({ savingPoolBalance });
+  });
 });
 
 describe('Interacting with Bucket Client on testnet', () => {

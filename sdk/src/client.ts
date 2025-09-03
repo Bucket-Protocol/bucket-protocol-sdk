@@ -6,7 +6,7 @@ import {
   TransactionObjectArgument,
   TransactionResult,
 } from '@mysten/sui/transactions';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag, normalizeSuiAddress } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import { TransactionNestedResult } from '@/types';
@@ -31,9 +31,11 @@ import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts';
 import { CONFIG } from '@/consts/config';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction';
 
+import { getRewarder, realtimeRewardAmount, Rewarder } from './generated/bucket_saving_incentive/saving_incentive';
 import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
 import { Pool } from './generated/bucket_v2_psm/pool';
-import { SavingPool } from './generated/bucket_v2_saving/saving';
+import { lpBalanceOf, SavingPool } from './generated/bucket_v2_saving/saving';
+import { splitIntoChunks } from './utils';
 
 export class BucketClient {
   /**
@@ -233,14 +235,14 @@ export class BucketClient {
           throw new Error(`Failed to parse pool object`);
         }
         const pool = SavingPool.fromBase64(data.bcs.bcsBytes);
-
+        const incentiveRate = +pool.saving_config.saving_rate.value / 10 ** 18;
         result[lpType] = {
           lpType,
           lpSupply: BigInt(pool.lp_supply.value),
           usdbBalance: BigInt(pool.usdb_reserve_balance.value),
           usdbDepositCap: pool.deposit_cap_amount !== null ? BigInt(pool.deposit_cap_amount) : null,
           interestRate: Number((BigInt(pool.saving_config.saving_rate.value) * 10000n) / DOUBLE_OFFSET) / 10000,
-          // incentiveRate:
+          incentiveRate,
         };
         return result;
       },
@@ -420,6 +422,106 @@ export class BucketClient {
       }
     });
     return rewards;
+  }
+
+  async getSavingPoolRewarders(lpType: string) {
+    const pool = this.config.SAVING_POOL_OBJS[lpType];
+    if (!pool.reward) return {};
+
+    const rewardObjectIds = await this.suiClient
+      .getDynamicFields({ parentId: pool.reward.rewardManager.objectId })
+      .then((res) => res.data.map((df) => df.objectId));
+
+    const savingPoolRewards = await this.suiClient.multiGetObjects({
+      ids: rewardObjectIds,
+      options: {
+        showBcs: true,
+      },
+    });
+
+    const rewarders = savingPoolRewards.map((rewarder) => {
+      if (rewarder.data?.bcs?.dataType !== 'moveObject') {
+        throw new Error(`Failed to parse reward object for ${savingPoolType} SavingPool`);
+      }
+
+      return Rewarder.fromBase64(rewarder.data?.bcs.bcsBytes);
+    });
+
+    return pool.reward.rewardTypes.reduce(
+      (acc, rewardType, idx) => ({ ...acc, [rewardType]: rewarders[idx] }),
+      {} as Record<string, (typeof rewarders)[number]>,
+    );
+  }
+
+  async getUserSavingPoolRealtimeRewards(lpType: string, account: string) {
+    const rewarders = await this.getSavingPoolRewarders(lpType);
+    const pool = this.config.SAVING_POOL_OBJS[lpType];
+    if (!Object.keys(rewarders).length || !pool.reward) return {};
+    const tx = new Transaction();
+
+    for (const rewardType of pool.reward.rewardTypes) {
+      const rewarder_ref = getRewarder({
+        package: this.config.SAVING_INCENTIVE_PACKAGE_ID,
+        arguments: [tx.sharedObjectRef(pool.reward.rewardManager)],
+        typeArguments: [lpType, rewardType],
+      });
+
+      tx.add(
+        realtimeRewardAmount({
+          package: this.config.SAVING_INCENTIVE_PACKAGE_ID,
+          arguments: [rewarder_ref(tx), tx.sharedObjectRef(pool.pool), account],
+          typeArguments: [lpType, rewardType],
+        }),
+      );
+    }
+
+    const devInspectResponse = await this.suiClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: normalizeSuiAddress(account),
+    });
+
+    const results = devInspectResponse.results;
+
+    if (!results || !results.length) return {};
+
+    const chunks = splitIntoChunks(results, 2);
+
+    return pool.reward.rewardTypes.reduce(
+      (acc, rewardType, idx) => {
+        const chunk = chunks[idx];
+        const value = chunk[1]?.returnValues?.[0][0];
+        const realtimeReward = value ? +bcs.u64().parse(new Uint8Array(value)) : 0;
+
+        return { ...acc, [rewardType]: realtimeReward };
+      },
+      {} as Record<string, number>,
+    );
+  }
+
+  async getUserSavingPoolBalance(lpType: string, account: string) {
+    const pool = this.config.SAVING_POOL_OBJS[lpType];
+    if (!pool.reward) return 0;
+
+    const tx = new Transaction();
+    tx.add(
+      lpBalanceOf({
+        package: this.config.SAVING_PACKAGE_ID,
+        arguments: [tx.sharedObjectRef(pool.pool), account],
+        typeArguments: [lpType],
+      }),
+    );
+
+    const devInspectResponse = await this.suiClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: normalizeSuiAddress(account),
+    });
+
+    const results = devInspectResponse.results;
+
+    if (!results || !results.length) return 0;
+
+    const value = devInspectResponse?.results?.[0]?.returnValues?.[0][0];
+    return value ? +bcs.u64().parse(new Uint8Array(value)) : 0;
   }
 
   /**
