@@ -232,7 +232,6 @@ export class BucketClient {
       ids: rewardObjectIds,
       options: {
         showBcs: true,
-        showContent: true,
       },
     });
     const rewarders = savingPoolRewards.map((rewarder) => {
@@ -280,8 +279,7 @@ export class BucketClient {
           lpSupply: BigInt(pool.lp_supply.value),
           usdbBalance: BigInt(pool.usdb_reserve_balance.value),
           usdbDepositCap: pool.deposit_cap_amount !== null ? BigInt(pool.deposit_cap_amount) : null,
-          savingRate:
-            Number((BigInt(pool.saving_config.saving_rate.value) * 365n * 86400000n * 10000n) / DOUBLE_OFFSET) / 10000,
+          savingRate: Number((BigInt(pool.saving_config.saving_rate.value) * 10000n) / DOUBLE_OFFSET) / 10000,
           rewardRate: Object.keys(flowRates).reduce(
             (result, rewardType) => ({
               ...result,
@@ -474,26 +472,70 @@ export class BucketClient {
     return rewards;
   }
 
-  /**
-   * @description
-   */
-  async getUserSavings({ address }: { address: string }): Promise<SavingInfo[]> {
+  async getUserSavingPoolRewards({
+    lpType,
+    address,
+  }: {
+    lpType: string;
+    address: string;
+  }): Promise<Record<string, bigint>> {
+    const pool = this.getSavingPoolObjectInfo({ lpType });
+
+    if (!pool.reward) {
+      return {};
+    }
     const tx = new Transaction();
 
-    Object.entries(this.config.SAVING_POOL_OBJS).map(([coinType, { pool }]) => {
+    pool.reward.rewardTypes.forEach((rewardType) => {
+      const rewarder = tx.moveCall({
+        target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::get_rewarder`,
+        typeArguments: [lpType, rewardType],
+        arguments: [tx.sharedObjectRef(pool.reward!.rewardManager)],
+      });
       tx.moveCall({
-        target: `${this.config.SAVING_PACKAGE_ID}::saving::lp_token_value_of`,
-        typeArguments: [coinType],
-        arguments: [tx.sharedObjectRef(pool), tx.pure.address(address), tx.object.clock()],
+        target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::realtime_reward_amount`,
+        typeArguments: [lpType, rewardType],
+        arguments: [rewarder, tx.sharedObjectRef(pool.pool), tx.pure.address(address), tx.object.clock()],
       });
     });
     const res = await this.suiClient.devInspectTransactionBlock({
       transactionBlock: tx,
       sender: DUMMY_ADDRESS,
     });
-    if (!res.results) {
-      return [];
-    }
+    return pool.reward.rewardTypes.reduce(
+      (result, rewardType, index) => {
+        if (!res.results || !res.results[2 * index + 1] || !res.results[2 * index + 1].returnValues) {
+          return result;
+        }
+        const realtimeReward = bcs.u64().parse(Uint8Array.from(res.results[2 * index + 1].returnValues![0][0]));
+
+        return { ...result, [rewardType]: BigInt(realtimeReward) };
+      },
+      {} as Record<string, bigint>,
+    );
+  }
+
+  /**
+   * @description
+   */
+  async getUserSavings({ address }: { address: string }): Promise<SavingInfo[]> {
+    const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
+
+    const tx = new Transaction();
+
+    lpTypes.map((lpType) => {
+      tx.moveCall({
+        target: `${this.config.SAVING_PACKAGE_ID}::saving::lp_token_value_of`,
+        typeArguments: [lpType],
+        arguments: [this.savingPoolObj(tx, { lpType }), tx.pure.address(address), tx.object.clock()],
+      });
+    });
+    const res = await this.suiClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: DUMMY_ADDRESS,
+    });
+    const rewards = await Promise.all(lpTypes.map((lpType) => this.getUserSavingPoolRewards({ lpType, address })));
+
     return Object.keys(this.config.SAVING_POOL_OBJS).reduce((result, lpType, index) => {
       if (!res.results || !res.results[index] || !res.results[index].returnValues) {
         return result;
@@ -503,7 +545,7 @@ export class BucketClient {
       result.push({
         lpType,
         depositAmount,
-        rewards: {},
+        rewards: rewards[index],
       });
       return result;
     }, [] as SavingInfo[]);
