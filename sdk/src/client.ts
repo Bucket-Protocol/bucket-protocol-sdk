@@ -31,6 +31,8 @@ import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts';
 import { CONFIG } from '@/consts/config';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction';
 
+import { Field } from './generated/bucket_saving_incentive/deps/sui/dynamic_field';
+import { Rewarder, RewarderKey } from './generated/bucket_saving_incentive/saving_incentive';
 import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
 import { Pool } from './generated/bucket_v2_psm/pool';
 import { SavingPool } from './generated/bucket_v2_saving/saving';
@@ -214,9 +216,45 @@ export class BucketClient {
   }
 
   /**
+   * @description
+   */
+  async getSavingPoolRewardFlowRate({ lpType }: { lpType: string }): Promise<Record<string, bigint>> {
+    const pool = this.getSavingPoolObjectInfo({ lpType });
+
+    if (!pool.reward) {
+      return {};
+    }
+    const rewardObjectIds = await this.suiClient
+      .getDynamicFields({ parentId: pool.reward.rewardManager.objectId })
+      .then((res) => res.data.map((df) => df.objectId));
+
+    const savingPoolRewards = await this.suiClient.multiGetObjects({
+      ids: rewardObjectIds,
+      options: {
+        showBcs: true,
+        showContent: true,
+      },
+    });
+    const rewarders = savingPoolRewards.map((rewarder) => {
+      if (rewarder.data?.bcs?.dataType !== 'moveObject') {
+        throw new Error(`Failed to parse reward object for ${lpType} SavingPool`);
+      }
+      return Field(RewarderKey, Rewarder).fromBase64(rewarder.data.bcs.bcsBytes);
+    });
+    return pool.reward.rewardTypes.reduce(
+      (result, rewardType, index) => ({
+        ...result,
+        [rewardType]: BigInt(rewarders[index].value.flow_rate.value),
+      }),
+      {} as Record<string, bigint>,
+    );
+  }
+
+  /**
    * @description Get all PSM pool objects
    */
   async getAllSavingPoolObjects(): Promise<Record<string, SavingPoolInfo>> {
+    const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
     const poolObjectIds = Object.values(this.config.SAVING_POOL_OBJS).map((v) => v.pool.objectId);
 
     const res = await this.suiClient.multiGetObjects({
@@ -225,9 +263,12 @@ export class BucketClient {
         showBcs: true,
       },
     });
+    const rewardFlowRates = await Promise.all(lpTypes.map((lpType) => this.getSavingPoolRewardFlowRate({ lpType })));
+
     return Object.keys(this.config.SAVING_POOL_OBJS).reduce(
       (result, lpType, index) => {
         const data = res[index].data;
+        const flowRates = rewardFlowRates[index];
 
         if (data?.bcs?.dataType !== 'moveObject') {
           throw new Error(`Failed to parse pool object`);
@@ -239,8 +280,19 @@ export class BucketClient {
           lpSupply: BigInt(pool.lp_supply.value),
           usdbBalance: BigInt(pool.usdb_reserve_balance.value),
           usdbDepositCap: pool.deposit_cap_amount !== null ? BigInt(pool.deposit_cap_amount) : null,
-          interestRate: Number((BigInt(pool.saving_config.saving_rate.value) * 10000n) / DOUBLE_OFFSET) / 10000,
-          // incentiveRate:
+          savingRate:
+            Number((BigInt(pool.saving_config.saving_rate.value) * 365n * 86400000n * 10000n) / DOUBLE_OFFSET) / 10000,
+          rewardRate: Object.keys(flowRates).reduce(
+            (result, rewardType) => ({
+              ...result,
+              [rewardType]:
+                Number(
+                  ((flowRates[rewardType] / BigInt(pool.usdb_reserve_balance.value)) * 365n * 86400000n * 10000n) /
+                    DOUBLE_OFFSET,
+                ) / 10000,
+            }),
+            {},
+          ),
         };
         return result;
       },

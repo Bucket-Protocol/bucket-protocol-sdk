@@ -17,8 +17,8 @@ export type SavingPoolInfo = {
   lpSupply: bigint;
   usdbBalance: bigint;
   usdbDepositCap: bigint | null;
-  interestRate: number;
-  incentiveRate: Record<string, number>;
+  savingRate: number;
+  rewardRate: Record<string, number>;
 };
 
 export type PsmPoolInfo = {
