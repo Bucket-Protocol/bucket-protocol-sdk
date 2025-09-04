@@ -242,6 +242,17 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     expect(dryrunRes.effects.status.status).toBe('success');
   });
+
+  it('test getAllVaultObjects()', async () => {
+    const allVaults = await bucketClient.getAllVaultObjects();
+    Object.entries(allVaults)
+      .filter(([coinType]) => coinType.includes('SCALLOP_') && !coinType.includes('_DEEP'))
+      .map(([, vault]) => {
+        expect(
+          vault.rewardRate['0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA'],
+        ).toBeDefined();
+      });
+  });
 });
 
 // describe('Interacting with Bucket Client on testnet', () => {

@@ -31,10 +31,11 @@ import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts';
 import { CONFIG } from '@/consts/config';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction';
 
-import { Field } from './generated/bucket_saving_incentive/deps/sui/dynamic_field';
-import { Rewarder, RewarderKey } from './generated/bucket_saving_incentive/saving_incentive';
+import { VaultRewarder } from './generated/bucket_v2_borrow_incentive/borrow_incentive';
 import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
 import { Pool } from './generated/bucket_v2_psm/pool';
+import { Field } from './generated/bucket_v2_saving_incentive/deps/sui/dynamic_field';
+import { Rewarder, RewarderKey } from './generated/bucket_v2_saving_incentive/saving_incentive';
 import { SavingPool } from './generated/bucket_v2_saving/saving';
 
 export class BucketClient {
@@ -190,6 +191,7 @@ export class BucketClient {
    */
   async getAllVaultObjects(): Promise<Record<string, VaultInfo>> {
     const vaultObjectIds = Object.values(this.config.VAULT_OBJS).map((v) => v.vault.objectId);
+    const allCollateralTypes = this.getAllCollateralTypes();
 
     const res = await this.suiClient.multiGetObjects({
       ids: vaultObjectIds,
@@ -197,9 +199,13 @@ export class BucketClient {
         showBcs: true,
       },
     });
+    const rewardFlowRates = await Promise.all(
+      allCollateralTypes.map((coinType) => this.getBorrowRewardFlowRate({ coinType })),
+    );
     return Object.keys(this.config.VAULT_OBJS).reduce(
       (result, collateralType, index) => {
         const data = res[index].data;
+        const flowRates = rewardFlowRates[index];
 
         if (data?.bcs?.dataType !== 'moveObject') {
           throw new Error(`Failed to parse vault object`);
@@ -215,6 +221,17 @@ export class BucketClient {
           maxUsdbSupply: BigInt(vault.limited_supply.limit),
           interestRate: Number((BigInt(vault.interest_rate.value) * 10000n) / DOUBLE_OFFSET) / 10000,
           minCollateralRatio: Number((BigInt(vault.min_collateral_ratio.value) * 10000n) / FLOAT_OFFSET) / 10000,
+          rewardRate: Object.keys(flowRates).reduce(
+            (result, rewardType) => ({
+              ...result,
+              [rewardType]:
+                Number(
+                  ((flowRates[rewardType] / BigInt(vault.limited_supply.supply)) * 365n * 86400000n * 10000n) /
+                    DOUBLE_OFFSET,
+                ) / 10000,
+            }),
+            {},
+          ),
         };
         return result;
       },
@@ -257,7 +274,38 @@ export class BucketClient {
   }
 
   /**
-   * @description Get all PSM pool objects
+   * @description
+   */
+  async getBorrowRewardFlowRate({ coinType }: { coinType: string }): Promise<Record<string, bigint>> {
+    const vault = this.getVaultObjectInfo({ coinType });
+    if (!vault.rewarders) {
+      return {};
+    }
+    const rewardObjectIds = vault.rewarders.map((rewarder) => rewarder.rewarderId);
+
+    const vaultRewardersRes = await this.suiClient.multiGetObjects({
+      ids: rewardObjectIds,
+      options: {
+        showBcs: true,
+      },
+    });
+    const rewarders = vaultRewardersRes.map((rewarder) => {
+      if (rewarder.data?.bcs?.dataType !== 'moveObject') {
+        throw new Error(`Failed to parse reward object for ${coinType}`);
+      }
+      return VaultRewarder.fromBase64(rewarder.data.bcs.bcsBytes);
+    });
+    return vault.rewarders.reduce(
+      (result, rewarder, idx) => ({
+        ...result,
+        [rewarder.rewardType]: BigInt(rewarders[idx].flow_rate.value),
+      }),
+      {} as Record<string, bigint>,
+    );
+  }
+
+  /**
+   * @description Get all Saving pool objects
    */
   async getAllSavingPoolObjects(): Promise<Record<string, SavingPoolInfo>> {
     const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);

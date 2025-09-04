@@ -10,6 +10,7 @@ export type VaultInfo = {
   minCollateralRatio: number;
   interestRate: number;
   positionTableSize: number;
+  rewardRate: Record<string, number>;
 };
 
 export type SavingPoolInfo = {
