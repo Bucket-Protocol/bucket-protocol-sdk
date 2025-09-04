@@ -31,7 +31,13 @@ import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts';
 import { CONFIG } from '@/consts/config';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction';
 
-import { getRewarder, realtimeRewardAmount, Rewarder } from './generated/bucket_saving_incentive/saving_incentive';
+import { Field } from './generated/bucket_saving_incentive/deps/sui/dynamic_field';
+import {
+  getRewarder,
+  realtimeRewardAmount,
+  Rewarder,
+  RewarderKey,
+} from './generated/bucket_saving_incentive/saving_incentive';
 import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
 import { Pool } from './generated/bucket_v2_psm/pool';
 import { lpBalanceOf, SavingPool } from './generated/bucket_v2_saving/saving';
@@ -444,7 +450,9 @@ export class BucketClient {
         throw new Error(`Failed to parse reward object for ${savingPoolType} SavingPool`);
       }
 
-      return Rewarder.fromBase64(rewarder.data?.bcs.bcsBytes);
+      const field = Field(RewarderKey, Rewarder).fromBase64(rewarder.data?.bcs.bcsBytes);
+
+      return field.value;
     });
 
     return pool.reward.rewardTypes.reduce(
