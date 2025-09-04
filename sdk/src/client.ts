@@ -158,8 +158,7 @@ export class BucketClient {
   /**
    * @description
    */
-  async getAllOraclePrices(): Promise<Record<string, number>> {
-    const coinTypes = this.getAllOracleCoinTypes();
+  async getOraclePrices({ coinTypes }: { coinTypes: string[] }): Promise<Record<string, number>> {
     const tx = new Transaction();
     await this.aggregatePrices(tx, { coinTypes });
     tx.setSender(DUMMY_ADDRESS);
@@ -176,6 +175,14 @@ export class BucketClient {
       result[coinType] = +(e.parsedJson as { result: string }).result / pricePrecision;
     });
     return result;
+  }
+
+  /**
+   * @description
+   */
+  async getAllOraclePrices(): Promise<Record<string, number>> {
+    const coinTypes = this.getAllOracleCoinTypes();
+    return this.getOraclePrices({ coinTypes });
   }
 
   /**
@@ -396,9 +403,15 @@ export class BucketClient {
   }
 
   /**
-   * @description Get debtor's position data
+   * @description Get position data given account (can be wallet address or Account object ID)
    */
-  async getUserPositions({ address }: { address: string }): Promise<PositionInfo[]> {
+  async getAccountPositions({
+    address,
+    isAccountId = false,
+  }: {
+    address: string;
+    isAccountId?: boolean;
+  }): Promise<PositionInfo[]> {
     const tx = new Transaction();
 
     Object.entries(this.config.VAULT_OBJS).map(([coinType, { vault }]) => {
@@ -415,6 +428,7 @@ export class BucketClient {
     if (!res.results) {
       return [];
     }
+    const accountId = isAccountId ? address : undefined;
     return Object.keys(this.config.VAULT_OBJS).reduce((result, collateralType, index) => {
       if (!res.results || !res.results[index] || !res.results[index].returnValues) {
         return result;
@@ -428,10 +442,36 @@ export class BucketClient {
           collateralAmount,
           debtAmount,
           debtor: address,
+          accountId,
         });
       }
       return result;
     }, [] as PositionInfo[]);
+  }
+
+  /**
+   * @description Get position data given wallet address
+   */
+  async getUserPositions({ address }: { address: string }): Promise<PositionInfo[]> {
+    const accountObjRes = await this.suiClient.getOwnedObjects({
+      owner: address,
+      filter: {
+        StructType: `${this.config.ORIGINAL_FRAMEWORK_PACKAGE_ID}::account::Account`,
+      },
+    });
+    const positionPromises = [
+      this.getAccountPositions({ address }),
+      ...accountObjRes.data
+        .map((data) => data.data?.objectId)
+        .map((accountId) => {
+          if (accountId) {
+            return this.getAccountPositions({ address: accountId, isAccountId: true });
+          } else {
+            return [];
+          }
+        }),
+    ];
+    return (await Promise.all(positionPromises)).flat();
   }
 
   /**

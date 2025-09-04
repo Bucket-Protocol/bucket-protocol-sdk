@@ -44,6 +44,7 @@ export type PositionInfo = {
   collateralAmount: bigint;
   debtAmount: bigint;
   debtor: string;
+  accountId?: string;
 };
 
 export type SavingInfo = {
