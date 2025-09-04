@@ -518,7 +518,7 @@ export class BucketClient {
   /**
    * @description
    */
-  async getUserSavings({ address }: { address: string }): Promise<SavingInfo[]> {
+  async getUserSavings({ address }: { address: string }): Promise<Record<string, SavingInfo>> {
     const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
 
     const tx = new Transaction();
@@ -536,19 +536,24 @@ export class BucketClient {
     });
     const rewards = await Promise.all(lpTypes.map((lpType) => this.getUserSavingPoolRewards({ lpType, address })));
 
-    return Object.keys(this.config.SAVING_POOL_OBJS).reduce((result, lpType, index) => {
-      if (!res.results || !res.results[index] || !res.results[index].returnValues) {
-        return result;
-      }
-      const depositAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])));
+    return Object.keys(this.config.SAVING_POOL_OBJS).reduce(
+      (result, lpType, index) => {
+        if (!res.results || !res.results[index] || !res.results[index].returnValues) {
+          return result;
+        }
+        const depositAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])));
 
-      result.push({
-        lpType,
-        depositAmount,
-        rewards: rewards[index],
-      });
-      return result;
-    }, [] as SavingInfo[]);
+        return {
+          ...result,
+          [lpType]: {
+            lpType,
+            depositAmount,
+            rewards: rewards[index],
+          },
+        };
+      },
+      {} as Record<string, SavingInfo>,
+    );
   }
 
   /* ----- Transaction Methods ----- */
