@@ -1,5 +1,3 @@
-import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
-
 import { ConfigType } from '@/types/config';
 
 export type Network = 'mainnet' | 'testnet';
@@ -481,7 +479,7 @@ export const CONFIG: Record<Network, ConfigType> = {
             initialSharedVersion: '610893721',
             mutable: true,
           },
-          rewardTypes: [normalizeStructTag(SUI_TYPE_ARG)],
+          rewardTypes: ['0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI'],
         },
       },
     },
@@ -586,7 +584,7 @@ export const CONFIG: Record<Network, ConfigType> = {
             initialSharedVersion: '546934688',
             mutable: true,
           },
-          rewardTypes: [normalizeStructTag(SUI_TYPE_ARG)],
+          rewardTypes: ['0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI'],
         },
       },
     },

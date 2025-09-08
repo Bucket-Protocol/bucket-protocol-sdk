@@ -46,6 +46,7 @@ export type PositionInfo = {
   debtAmount: bigint;
   debtor: string;
   accountId?: string;
+  rewards?: Record<string, bigint>;
 };
 
 export type SavingInfo = {
