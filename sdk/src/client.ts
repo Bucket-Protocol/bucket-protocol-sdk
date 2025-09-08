@@ -243,24 +243,23 @@ export class BucketClient {
           throw new Error(`Failed to parse vault object`);
         }
         const vault = Vault.fromBase64(data.bcs.bcsBytes);
+        const usdbSupply = BigInt(vault.limited_supply.supply);
 
         result[collateralType] = {
           collateralType,
           positionTableSize: +vault.position_table.size,
           collateralDecimal: +vault.decimal,
           collateralBalance: BigInt(vault.balance.value),
-          usdbSupply: BigInt(vault.limited_supply.supply),
+          usdbSupply,
           maxUsdbSupply: BigInt(vault.limited_supply.limit),
           interestRate: Number((BigInt(vault.interest_rate.value) * 10000n) / DOUBLE_OFFSET) / 10000,
           minCollateralRatio: Number((BigInt(vault.min_collateral_ratio.value) * 10000n) / FLOAT_OFFSET) / 10000,
           rewardRate: Object.keys(flowRates).reduce(
             (result, rewardType) => ({
               ...result,
-              [rewardType]:
-                Number(
-                  ((flowRates[rewardType] / BigInt(vault.limited_supply.supply)) * 365n * 86400000n * 10000n) /
-                    DOUBLE_OFFSET,
-                ) / 10000,
+              [rewardType]: usdbSupply
+                ? Number(((flowRates[rewardType] / usdbSupply) * 365n * 86400000n * 10000n) / DOUBLE_OFFSET) / 10000
+                : Infinity,
             }),
             {},
           ),
@@ -329,21 +328,20 @@ export class BucketClient {
           throw new Error(`Failed to parse pool object`);
         }
         const pool = SavingPool.fromBase64(data.bcs.bcsBytes);
+        const usdbBalance = BigInt(pool.usdb_reserve_balance.value);
 
         result[lpType] = {
           lpType,
           lpSupply: BigInt(pool.lp_supply.value),
-          usdbBalance: BigInt(pool.usdb_reserve_balance.value),
+          usdbBalance,
           usdbDepositCap: pool.deposit_cap_amount !== null ? BigInt(pool.deposit_cap_amount) : null,
           savingRate: Number((BigInt(pool.saving_config.saving_rate.value) * 10000n) / DOUBLE_OFFSET) / 10000,
           rewardRate: Object.keys(flowRates).reduce(
             (result, rewardType) => ({
               ...result,
-              [rewardType]:
-                Number(
-                  ((flowRates[rewardType] / BigInt(pool.usdb_reserve_balance.value)) * 365n * 86400000n * 10000n) /
-                    DOUBLE_OFFSET,
-                ) / 10000,
+              [rewardType]: usdbBalance
+                ? Number(((flowRates[rewardType] / usdbBalance) * 365n * 86400000n * 10000n) / DOUBLE_OFFSET) / 10000
+                : Infinity,
             }),
             {},
           ),
