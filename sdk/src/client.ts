@@ -428,7 +428,7 @@ export class BucketClient {
       transactionBlock: tx,
       sender: DUMMY_ADDRESS,
     });
-    if (!res.results || !res.results[0]?.returnValues) {
+    if (!res.results?.[0]?.returnValues) {
       return {
         positions: [],
         nextCursor: null,
@@ -478,7 +478,7 @@ export class BucketClient {
     }
     const accountId = isAccountId ? address : undefined;
     return Object.keys(this.config.VAULT_OBJS).reduce((result, collateralType, index) => {
-      if (!res.results || !res.results[index] || !res.results[index].returnValues) {
+      if (!res.results?.[index]?.returnValues) {
         return result;
       }
       const collateralAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])));
@@ -592,7 +592,7 @@ export class BucketClient {
     });
     return pool.reward.rewardTypes.reduce(
       (result, rewardType, index) => {
-        if (!res.results || !res.results[2 * index + 1] || !res.results[2 * index + 1].returnValues) {
+        if (!res.results?.[2 * index + 1]?.returnValues) {
           return result;
         }
         const realtimeReward = bcs.u64().parse(Uint8Array.from(res.results[2 * index + 1].returnValues![0][0]));
@@ -617,6 +617,11 @@ export class BucketClient {
         typeArguments: [lpType],
         arguments: [this.savingPoolObj(tx, { lpType }), tx.pure.address(address), tx.object.clock()],
       });
+      tx.moveCall({
+        target: `${this.config.SAVING_PACKAGE_ID}::saving::lp_balance_of`,
+        typeArguments: [lpType],
+        arguments: [this.savingPoolObj(tx, { lpType }), tx.pure.address(address)],
+      });
     });
     const res = await this.suiClient.devInspectTransactionBlock({
       transactionBlock: tx,
@@ -626,16 +631,18 @@ export class BucketClient {
 
     return Object.keys(this.config.SAVING_POOL_OBJS).reduce(
       (result, lpType, index) => {
-        if (!res.results || !res.results[index] || !res.results[index].returnValues) {
+        if (!res.results?.[2 * index]?.returnValues || !res.results?.[2 * index + 1]?.returnValues) {
           return result;
         }
-        const depositAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])));
+        const usdbBalance = BigInt(bcs.u64().parse(Uint8Array.from(res.results[2 * index].returnValues![0][0])));
+        const lpBalance = BigInt(bcs.u64().parse(Uint8Array.from(res.results[2 * index + 1].returnValues![0][0])));
 
         return {
           ...result,
           [lpType]: {
             lpType,
-            depositAmount,
+            usdbBalance,
+            lpBalance,
             rewards: rewards[index],
           },
         };
@@ -1518,17 +1525,22 @@ export class BucketClient {
     tx: Transaction,
     {
       lpType,
-      usdbCoin,
+      depositCoinOrAmount,
       account,
     }: {
       lpType: string;
-      usdbCoin: TransactionArgument;
+      depositCoinOrAmount: number | TransactionArgument;
       account: string;
     },
   ): void {
+    const depositCoin =
+      typeof depositCoinOrAmount === 'number'
+        ? coinWithBalance({ balance: depositCoinOrAmount, type: this.getUsdbCoinType() })
+        : depositCoinOrAmount;
+
     const depositResponse = this.savingPoolDeposit(tx, {
       lpType,
-      usdbCoin,
+      usdbCoin: depositCoin,
       account,
     });
     const finalResponse = this.getSavingPoolObjectInfo({ lpType }).reward

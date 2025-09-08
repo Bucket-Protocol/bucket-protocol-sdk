@@ -50,7 +50,8 @@ export type PositionInfo = {
 
 export type SavingInfo = {
   lpType: string;
-  depositAmount: bigint;
+  usdbBalance: bigint;
+  lpBalance: bigint;
   rewards: Record<string, bigint>;
 };
 
