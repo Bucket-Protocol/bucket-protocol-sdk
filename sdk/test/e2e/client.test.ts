@@ -102,6 +102,22 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(accountPositions.length).toBeLessThanOrEqual(userPositions.length);
   });
 
+  it('test buildClaimBorrowRewardsTransaction()', async () => {
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+    bucketClient.getAllCollateralTypes().map((coinType) => {
+      const rewards = bucketClient.buildClaimBorrowRewardsTransaction(tx, { coinType });
+      if (rewards) tx.transferObjects(rewards, testAccount);
+    });
+    const res = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+    expect(res.balanceChanges.length).toBe(3);
+    res.balanceChanges.map((bc) => {
+      expect(Number(bc.amount)).toBeGreaterThan(0);
+    });
+  });
+
   it('test psmSwapIn()', async () => {
     // tx
     const tx = new Transaction();
@@ -173,7 +189,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     bucketClient.buildDepositToSavingPoolTransaction(tx, {
       lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
       account: testAccount,
-      usdbCoin,
+      depositCoinOrAmount: usdbCoin,
     });
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
@@ -194,7 +210,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     bucketClient.buildDepositToSavingPoolTransaction(tx, {
       lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
       account: testAccount,
-      usdbCoin,
+      depositCoinOrAmount: usdbCoin,
     });
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({

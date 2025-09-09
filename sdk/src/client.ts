@@ -454,30 +454,34 @@ export class BucketClient {
    */
   async getUserBorrowRewards({
     address,
-    coinType,
+    coinTypes,
   }: {
     address: string;
-    coinType: string;
-  }): Promise<Record<string, bigint>> {
-    const vaultInfo = this.getVaultObjectInfo({ coinType });
-
-    if (!vaultInfo.rewarders) {
-      return {};
-    }
+    coinTypes: string[];
+  }): Promise<Record<string, Record<string, bigint>>> {
     const tx = new Transaction();
+    const rewardTypeLengths = coinTypes.map((coinType) => {
+      const vaultInfo = this.getVaultObjectInfo({ coinType });
 
-    vaultInfo.rewarders.map((rewarder) => {
-      tx.moveCall({
-        target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::realtime_reward_amount`,
-        typeArguments: [coinType, rewarder.rewardType],
-        arguments: [
-          tx.object(rewarder.rewarderId),
-          tx.sharedObjectRef(vaultInfo.vault),
-          tx.pure.address(address),
-          tx.object.clock(),
-        ],
+      if (!vaultInfo.rewarders) {
+        return 0;
+      }
+
+      vaultInfo.rewarders.map((rewarder) => {
+        tx.moveCall({
+          target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::realtime_reward_amount`,
+          typeArguments: [coinType, rewarder.rewardType],
+          arguments: [
+            tx.object(rewarder.rewarderId),
+            tx.sharedObjectRef(vaultInfo.vault),
+            tx.pure.address(address),
+            tx.object.clock(),
+          ],
+        });
       });
+      return vaultInfo.rewarders.length;
     });
+
     const res = await this.suiClient.devInspectTransactionBlock({
       transactionBlock: tx,
       sender: address,
@@ -485,13 +489,17 @@ export class BucketClient {
     if (!res.results) {
       return {};
     }
-    return vaultInfo.rewarders.reduce((result, rewarder, index) => {
-      if (!res.results?.[index]?.returnValues) {
-        return result;
-      }
-      const realtimeReward = bcs.u64().parse(Uint8Array.from(res.results[index].returnValues![0][0]));
-
-      return { ...result, [rewarder.rewardType]: BigInt(realtimeReward) };
+    return coinTypes.reduce((vaultResult, coinType, vaultIndex) => {
+      const vaultInfo = this.getVaultObjectInfo({ coinType });
+      const rewardTypeLength = rewardTypeLengths[vaultIndex];
+      if (!vaultInfo.rewarders || rewardTypeLength === 0) return vaultResult;
+      const offset = rewardTypeLengths.slice(0, vaultIndex).reduce((sum, length) => sum + length, 0);
+      const vaultRewards = vaultInfo.rewarders.reduce((result, rewarder, index) => {
+        if (!res.results?.[offset + index]?.returnValues) return result;
+        const realtimeReward = bcs.u64().parse(Uint8Array.from(res.results[offset + index].returnValues![0][0]));
+        return { ...result, [rewarder.rewardType]: BigInt(realtimeReward) };
+      }, {});
+      return { ...vaultResult, [coinType]: vaultRewards };
     }, {});
   }
 
@@ -516,9 +524,7 @@ export class BucketClient {
     if (!res.results) {
       return [];
     }
-    const rewards = await Promise.all(
-      allCollateralTypes.map((coinType) => this.getUserBorrowRewards({ coinType, address })),
-    );
+    const borrowRewards = await this.getUserBorrowRewards({ coinTypes: allCollateralTypes, address });
     return Object.keys(this.config.VAULT_OBJS).reduce((result, collateralType, index) => {
       if (!res.results?.[index]?.returnValues) {
         return result;
@@ -533,7 +539,7 @@ export class BucketClient {
           debtAmount,
           debtor: address,
           accountId,
-          rewards: rewards[index],
+          rewards: borrowRewards[collateralType],
         });
       }
       return result;
