@@ -824,7 +824,7 @@ export class BucketClient {
           tx.object.clock(),
         ],
       });
-    } else {
+    } else if (kind === 'gCoin') {
       const gcoinRuleConfig = tx.sharedObjectRef({
         objectId: '0x6466f287d8864c56de1459ad294907d2a06767e9589ae953cc5e0f009fc1cfd7',
         initialSharedVersion: 610893721,
@@ -839,6 +839,27 @@ export class BucketClient {
         target: '0xba3c970933047c6e235424d7040a9a4e89d8fc1200d780a69b2666434f3a7313::gcoin_rule::feed',
         typeArguments: [coinType, underlyingCoinType],
         arguments: [collector, underlyingPriceResult, gcoinRuleConfig, unihouse],
+      });
+    } else {
+      const indexMap = tx.sharedObjectRef({
+        objectId: '0x440f1f04be202b44cc072fdba117e779c7c81bb202383b2d2088e9a67e15487e',
+        initialSharedVersion: 633603447,
+        mutable: false,
+      });
+      const tlpVersion = tx.sharedObjectRef({
+        objectId: '0xa12c282a068328833ec4a9109fc77803ec1f523f8da1bb0f82bac8450335f0c9',
+        initialSharedVersion: 516359485,
+        mutable: false,
+      });
+      const tlpRegistry = tx.sharedObjectRef({
+        objectId: '0xfee68e535bf24702be28fa38ea2d5946e617e0035027d5ca29dbed99efd82aaa',
+        initialSharedVersion: 516359485,
+        mutable: false,
+      });
+      tx.moveCall({
+        target: '0x499b930751ecbbfbbc3b76cde04486787a6e99752df3b5d765bd5f1f441934b8::tlp_rule::feed',
+        typeArguments: [coinType],
+        arguments: [collector, indexMap, tlpVersion, tlpRegistry],
       });
     }
     return tx.moveCall({
@@ -902,7 +923,8 @@ export class BucketClient {
       })
       .filter((coinType) => coinType.length > 0 && !basicCoinTypes.includes(coinType));
     const totalBasicCoinTypes = [...basicCoinTypes, ...underlyingCoinTypes];
-    const priceResults = await this.aggregateBasicPrices(tx, { coinTypes: totalBasicCoinTypes });
+    const priceResults =
+      totalBasicCoinTypes.length > 0 ? await this.aggregateBasicPrices(tx, { coinTypes: totalBasicCoinTypes }) : [];
     const priceResultRecord: Record<string, TransactionResult> = {};
     totalBasicCoinTypes.map((coinType, idx) => {
       priceResultRecord[coinType] = priceResults[idx];

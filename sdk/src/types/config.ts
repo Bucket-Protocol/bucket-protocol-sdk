@@ -2,7 +2,7 @@ import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
 
 export type Network = 'mainnet' | 'testnet';
 
-export type DerivativeKind = 'sCoin' | 'gCoin';
+export type DerivativeKind = 'sCoin' | 'gCoin' | 'TLP';
 
 export type AggregatorObjectInfo = {
   priceAggregator: SharedObjectRef;

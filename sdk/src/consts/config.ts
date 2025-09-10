@@ -269,6 +269,17 @@ export const CONFIG: Record<Network, ConfigType> = {
             derivativeKind: 'gCoin',
           },
         },
+      '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
+        priceAggregator: {
+          objectId: '0x487e76e8c9a321cc0131bfcf6e5a4d87fbc0beb8f6384f8c7e1658cde6076798',
+          initialSharedVersion: 633603450,
+          mutable: false,
+        },
+        derivativeInfo: {
+          underlyingCoinType: '',
+          derivativeKind: 'TLP',
+        },
+      },
     },
     VAULT_OBJS: {
       '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
