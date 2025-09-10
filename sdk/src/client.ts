@@ -159,6 +159,31 @@ export class BucketClient {
   /**
    * @description
    */
+  async getUsdbSupply(): Promise<bigint> {
+    const tx = new Transaction();
+
+    const treasury = tx.moveCall({
+      target: `${this.config.USDB_PACKAGE_ID}::usdb::borrow_cap_mut`,
+      arguments: [this.treasury(tx)],
+    });
+    tx.moveCall({
+      target: `0x2::coin::total_supply`,
+      typeArguments: [this.getUsdbCoinType()],
+      arguments: [treasury],
+    });
+    const res = await this.suiClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: DUMMY_ADDRESS,
+    });
+    if (!res.results?.[1]?.returnValues) {
+      return 0n;
+    }
+    return BigInt(bcs.u64().parse(Uint8Array.from(res.results[1].returnValues![0][0])));
+  }
+
+  /**
+   * @description
+   */
   async getOraclePrices({ coinTypes }: { coinTypes: string[] }): Promise<Record<string, number>> {
     const tx = new Transaction();
     await this.aggregatePrices(tx, { coinTypes });
