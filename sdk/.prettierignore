@@ -4,4 +4,4 @@ cache
 coverage*
 dist
 .turbo
-src/_generated/
+src/generated/
