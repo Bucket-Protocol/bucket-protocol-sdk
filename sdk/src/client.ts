@@ -4,6 +4,7 @@ import {
   Transaction,
   TransactionArgument,
   TransactionObjectArgument,
+  TransactionObjectInput,
   TransactionResult,
 } from '@mysten/sui/transactions';
 import { normalizeStructTag } from '@mysten/sui/utils';
@@ -1356,15 +1357,15 @@ export class BucketClient {
     tx: Transaction,
     {
       amount,
-      accountObjectOrId,
+      accountRequest,
     }: {
       amount: number | TransactionArgument;
-      accountObjectOrId?: string | TransactionArgument;
+      accountRequest?: TransactionObjectInput;
     },
   ): [TransactionNestedResult, TransactionNestedResult] {
     const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: accountObjectOrId ? this.newAccountRequest(tx, { accountObjectOrId: accountObjectOrId }) : null,
+      value: accountRequest || null,
     });
     const [usdbCoin, flashMintReceipt] = tx.moveCall({
       target: `${this.config.FLASH_PACKAGE_ID}::config::flash_mint`,
