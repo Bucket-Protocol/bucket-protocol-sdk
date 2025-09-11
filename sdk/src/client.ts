@@ -197,7 +197,7 @@ export class BucketClient {
     const result: Record<string, number> = {};
     priceResultEvent.map((e) => {
       const startIdx = e.type.indexOf('<') + 1;
-      const endIdx = e.type.indexOf('>');
+      const endIdx = e.type.lastIndexOf('>');
       const coinType = normalizeStructTag(e.type.slice(startIdx, endIdx));
       result[coinType] = +(e.parsedJson as { result: string }).result / pricePrecision;
     });
