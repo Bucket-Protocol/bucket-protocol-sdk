@@ -333,7 +333,7 @@ export class BucketClient {
   /**
    * @description Get all Saving pool objects
    */
-  async getAllSavingPoolObjects(): Promise<Record<any, SavingPoolInfo>> {
+  async getAllSavingPoolObjects(): Promise<Record<string, SavingPoolInfo>> {
     const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
     const poolObjectIds = Object.values(this.config.SAVING_POOL_OBJS).map((v) => v.pool.objectId);
 
