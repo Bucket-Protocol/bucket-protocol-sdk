@@ -1,5 +1,6 @@
 import { bcs } from '@mysten/sui/bcs';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
 import {
   Transaction,
   TransactionArgument,
@@ -1743,53 +1744,55 @@ export class BucketClient {
     const totalSuiCoin = getZeroCoin(tx, { coinType: suiType });
     const totalSBuckBalance = tx.moveCall({ target: '0x2::balance::zero', typeArguments: [sbuckType] });
     const [buckPriceResult] = await this.aggregatePrices(tx, { coinTypes: [buckType] });
-    const v1ProtocolObj = tx.object('0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df');
-    sbuckPositionIds.map((pid) => {
-      const [buckBalance, suiBalance] = tx.moveCall({
-        target: `0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82::fountain_core::force_unstake`,
-        typeArguments: [sbuckType, suiType],
-        arguments: [tx.object.clock(), fountainObj, tx.object(pid)],
+    if (buckPriceResult) {
+      const v1ProtocolObj = tx.object('0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df');
+      sbuckPositionIds.map((pid) => {
+        const [buckBalance, suiBalance] = tx.moveCall({
+          target: `0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82::fountain_core::force_unstake`,
+          typeArguments: [sbuckType, suiType],
+          arguments: [tx.object.clock(), fountainObj, tx.object(pid)],
+        });
+        tx.moveCall({
+          target: '0x2::balance::join',
+          typeArguments: [sbuckType],
+          arguments: [totalSBuckBalance, buckBalance],
+        });
+        const [suiCoin] = tx.moveCall({
+          target: '0x2::coin::from_balance',
+          typeArguments: [suiType],
+          arguments: [suiBalance],
+        });
+        tx.mergeCoins(totalSuiCoin, [suiCoin]);
       });
-      tx.moveCall({
-        target: '0x2::balance::join',
-        typeArguments: [sbuckType],
-        arguments: [totalSBuckBalance, buckBalance],
+      tx.transferObjects([totalSuiCoin], account);
+      const [buckBalance] = tx.moveCall({
+        target: `0x0b6ba9889bb71abc5fa89e4ad5db12e63bc331dba858019dd8d701bc91184d79::buck::sbuck_to_buck`,
+        arguments: [
+          v1ProtocolObj,
+          tx.object('0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8'),
+          tx.object.clock(),
+          totalSBuckBalance,
+        ],
       });
-      const [suiCoin] = tx.moveCall({
+      const [buckCoin] = tx.moveCall({
         target: '0x2::coin::from_balance',
-        typeArguments: [suiType],
-        arguments: [suiBalance],
+        typeArguments: [buckType],
+        arguments: [buckBalance],
       });
-      tx.mergeCoins(totalSuiCoin, [suiCoin]);
-    });
-    tx.transferObjects([totalSuiCoin], account);
-    const [buckBalance] = tx.moveCall({
-      target: `0x0b6ba9889bb71abc5fa89e4ad5db12e63bc331dba858019dd8d701bc91184d79::buck::sbuck_to_buck`,
-      arguments: [
-        v1ProtocolObj,
-        tx.object('0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8'),
-        tx.object.clock(),
-        totalSBuckBalance,
-      ],
-    });
-    const [buckCoin] = tx.moveCall({
-      target: '0x2::coin::from_balance',
-      typeArguments: [buckType],
-      arguments: [buckBalance],
-    });
-    const [usdbCoin] = this.psmSwapIn(tx, { coinType: buckType, priceResult: buckPriceResult, inputCoin: buckCoin });
-    this.buildDepositToSavingPoolTransaction(tx, { lpType: susdbType, depositCoinOrAmount: usdbCoin, account });
-    tx.moveCall({
-      target: '0xb140b86b2503e95da301bab078ed4a2600513dd9776a29056f5e8e09a110300c::migration::flash_burn_buck',
-      arguments: [
-        tx.object('0xe716e382e99b172ff7e0cdc773649c154a95ab3c86ef21828a182839121fd920'),
-        v1ProtocolObj,
-        this.treasury(tx),
-        this.flashGlobalConfig(tx),
-        this.psmPoolObj(tx, { coinType: buckType }),
-        buckPriceResult,
-      ],
-    });
+      const [usdbCoin] = this.psmSwapIn(tx, { coinType: buckType, priceResult: buckPriceResult, inputCoin: buckCoin });
+      this.buildDepositToSavingPoolTransaction(tx, { lpType: susdbType, depositCoinOrAmount: usdbCoin, account });
+      tx.moveCall({
+        target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::flash_burn_buck',
+        arguments: [
+          tx.object('0xe716e382e99b172ff7e0cdc773649c154a95ab3c86ef21828a182839121fd920'),
+          v1ProtocolObj,
+          this.treasury(tx),
+          this.flashGlobalConfig(tx),
+          this.psmPoolObj(tx, { coinType: buckType }),
+          buckPriceResult,
+        ],
+      });
+    }
   }
 
   /**
@@ -1802,112 +1805,22 @@ export class BucketClient {
       account,
     }: {
       positions: {
-        coinType: string;
-        proofId?: string;
+        collateralType: string;
+        strapFountain?: SharedObjectRef & { rewardType: string };
         strapId?: string;
       }[];
       account: string;
     },
   ) {
     tx.setSender(account);
-    const STRAP_FOUNTAIN_IDS: Record<
-      string,
-      { objectId: string; initialSharedVersion: string; mutable: boolean; rewardType: string }
-    > = {
-      '0xf325ce1300e8dac124071d3152c5c5ee6174914f8bc2161e88329cf579246efc::afsui::AFSUI': {
-        objectId: '0xcfc2678c5ba0d8f57dc4984b6875988a92d34c55a3bdc47c593710931d128e68',
-        initialSharedVersion: '77035444',
-        mutable: true,
-        rewardType: '0x2::sui::SUI',
-      },
-      '0x549e8b69270defbfafd4f94e17ec44cdbdd99820b33bda2278dea3b9a32d3f55::cert::CERT': {
-        objectId: '0x1f7cc70940fa415fb1af862642ff9791d4376453496d28b95eea01604dc5291f',
-        initialSharedVersion: '77035445',
-        mutable: true,
-        rewardType: '0x2::sui::SUI',
-      },
-      '0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI': {
-        objectId: '0x07df6066e0a92bfb61f54f0a65f765030c8624849916eed9afbd634840082f5e',
-        initialSharedVersion: '77035446',
-        mutable: true,
-        rewardType: '0x2::sui::SUI',
-      },
-      '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA': {
-        objectId: '0xde8df1bed9afa9cbdc3ed6f868e5d8bb8819354c181288919692e2d072d71954',
-        initialSharedVersion: '406217067',
-        mutable: true,
-        rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-      },
-      '0x854950aa624b1df59fe64e630b2ba7c550642e9342267a33061d59fb31582da5::scallop_usdc::SCALLOP_USDC': {
-        objectId: '0xec596ccd29fee021f22c69147d75836d07d97823d0c9bf95ef40de9eccef4b55',
-        initialSharedVersion: '406217068',
-        mutable: true,
-        rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-      },
-      '0xaafc4f740de0dd0dde642a31148fb94517087052f19afb0f7bed1dc41a50c77b::scallop_sui::SCALLOP_SUI': {
-        objectId: '0xb818acbf6f2d2c5f18e2c30d3d0ca477dbdfb4d5f5a54e44dd1ac88b9b33a66a',
-        initialSharedVersion: '411503873',
-        mutable: true,
-        rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-      },
-      '0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA': {
-        objectId: '0x209a9ef3b719895329eb9ae9311c39e35e89c278593cc3068a7862b48b9f2517',
-        initialSharedVersion: '421697128',
-        mutable: true,
-        rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-      },
-      '0xe6e5a012ec20a49a3d1d57bd2b67140b96cd4d3400b9d79e541f7bdbab661f95::scallop_wormhole_usdt::SCALLOP_WORMHOLE_USDT':
-        {
-          objectId: '0x77299d4b0ae5b44c6a300721db6fb989b9ac53008cb71fab932f1b6b6ea923c7',
-          initialSharedVersion: '421697129',
-          mutable: true,
-          rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-        },
-      '0xb14f82d8506d139eacef109688d1b71e7236bcce9b2c0ad526abcd6aa5be7de0::scallop_sb_eth::SCALLOP_SB_ETH': {
-        objectId: '0x4ef5c215794459c8a230fb754ed7b58c4ecdb94ec04abe10d819fa5c5ddd7c14',
-        initialSharedVersion: '421697130',
-        mutable: true,
-        rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-      },
-      '0x922d15d7f55c13fd790f6e54397470ec592caa2b508df292a2e8553f3d3b274f::msui::MSUI': {
-        objectId: '0x6683924feb18501ee6f9f6a977a686f341bcdac5190ca86d21c8182d7b46fd1c',
-        initialSharedVersion: '424587149',
-        mutable: true,
-        rewardType: '0xa99166e802527eeb5439cbda12b0a02851bf2305d3c96a592b1440014fcb8975::koto::KOTO',
-      },
-      '0xb1d7df34829d1513b73ba17cb7ad90c88d1e104bb65ab8f62f13e0cc103783d3::scallop_sb_usdt::SCALLOP_SB_USDT': {
-        objectId: '0x47be0c2692b7d9e5c53052ac6ef0c77a64f5985e52736902db68d25fd268166b',
-        initialSharedVersion: '509764242',
-        mutable: true,
-        rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-      },
-      '0x622345b3f80ea5947567760eec7b9639d0582adcfd6ab9fccb85437aeda7c0d0::scallop_wal::SCALLOP_WAL': {
-        objectId: '0x66d12220faaef9bf15ab1345f4a69dfc356bf5cbb2b0e5a0f53b456147e1e74c',
-        initialSharedVersion: '509764244',
-        mutable: true,
-        rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-      },
-      '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL': {
-        objectId: '0xf1d6b296bf419c2a557c4b8649bd13cc35e2b6e7fefe491aeb79489509f3ac8e',
-        initialSharedVersion: '509764243',
-        mutable: true,
-        rewardType: '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
-      },
-      '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC': {
-        objectId: '0xd556ee0351aa6e8f96816e7c43494a63929efd392268b1a73d6e60dd30837e62',
-        initialSharedVersion: '524784045',
-        mutable: true,
-        rewardType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
-      },
-      '0x3a304c7feba2d819ea57c3542d68439ca2c386ba02159c740f7b406e592c62ea::haedal::HAEDAL': {
-        objectId: '0x6471aaa20dac06a603f239d4193a743e7535720760317aad12aa556d52345ee8',
-        initialSharedVersion: '564498138',
-        mutable: true,
-        rewardType: '0x3a304c7feba2d819ea57c3542d68439ca2c386ba02159c740f7b406e592c62ea::haedal::HAEDAL',
-      },
-    };
     const buckType = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK';
-    const coinTypes = [buckType, ...positions.map((p) => p.coinType)];
+    const allCollTypes = this.getAllCollateralTypes();
+    const coinTypes = [
+      buckType,
+      ...positions
+        .filter((p) => allCollTypes.includes(normalizeStructTag(p.collateralType)))
+        .map((p) => p.collateralType),
+    ];
     const priceResults = await this.aggregatePrices(tx, { coinTypes });
     const privilegesObj = tx.object('0xe716e382e99b172ff7e0cdc773649c154a95ab3c86ef21828a182839121fd920');
     const v1ProtocolObj = tx.object('0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df');
@@ -1918,24 +1831,19 @@ export class BucketClient {
       {} as Record<string, TransactionResult>,
     );
     positions.map((position) => {
-      const coinType = normalizeStructTag(position.coinType);
+      const { collateralType, strapFountain, strapId } = position;
+      const coinType = normalizeStructTag(collateralType);
       if (!Object.keys(this.config.VAULT_OBJS).includes(coinType)) return;
       const [updateRequest, flashmintReceipt, debtAmount] = (() => {
-        if (position.proofId) {
-          const fountain = STRAP_FOUNTAIN_IDS[coinType];
+        if (strapFountain && strapId) {
           const [strap, reward] = tx.moveCall({
             target: `0x204f5f18b9b4d10eddc0f7256284ed3c655bd06e9425801e60b262152d47de50::fountain::unstake`,
-            typeArguments: [coinType, fountain.rewardType],
-            arguments: [
-              tx.sharedObjectRef(fountain),
-              tx.object.clock(),
-              tx.object(position.proofId),
-              this.treasury(tx),
-            ],
+            typeArguments: [coinType, strapFountain.rewardType],
+            arguments: [tx.sharedObjectRef(strapFountain), tx.object.clock(), tx.object(strapId)],
           });
           tx.transferObjects([reward], account);
           return tx.moveCall({
-            target: '0xb140b86b2503e95da301bab078ed4a2600513dd9776a29056f5e8e09a110300c::migration::migrate_strap',
+            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate_strap',
             typeArguments: [coinType],
             arguments: [
               privilegesObj,
@@ -1946,10 +1854,10 @@ export class BucketClient {
               strap,
             ],
           });
-        } else if (position.strapId) {
-          const strap = tx.object(position.strapId);
+        } else if (strapId) {
+          const strap = tx.object(strapId);
           return tx.moveCall({
-            target: '0xb140b86b2503e95da301bab078ed4a2600513dd9776a29056f5e8e09a110300c::migration::migrate_strap',
+            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate_strap',
             typeArguments: [coinType],
             arguments: [
               privilegesObj,
@@ -1962,7 +1870,7 @@ export class BucketClient {
           });
         } else {
           return tx.moveCall({
-            target: '0xb140b86b2503e95da301bab078ed4a2600513dd9776a29056f5e8e09a110300c::migration::migrate',
+            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate',
             typeArguments: [coinType],
             arguments: [
               privilegesObj,
@@ -1982,12 +1890,12 @@ export class BucketClient {
       destroyZeroCoin(tx, { coin: collCoin, coinType });
       this.checkUpdatePositionResponse(tx, { coinType, response });
       tx.moveCall({
-        target: '0xb140b86b2503e95da301bab078ed4a2600513dd9776a29056f5e8e09a110300c::migration::flash_burn_usdb',
+        target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::flash_burn_usdb',
         arguments: [privilegesObj, v1ProtocolObj, this.treasury(tx), usdbCoin, flashmintReceipt, debtAmount],
       });
     });
     tx.moveCall({
-      target: '0xb140b86b2503e95da301bab078ed4a2600513dd9776a29056f5e8e09a110300c::migration::flash_burn_buck',
+      target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::flash_burn_buck',
       arguments: [
         tx.object('0xe716e382e99b172ff7e0cdc773649c154a95ab3c86ef21828a182839121fd920'),
         v1ProtocolObj,

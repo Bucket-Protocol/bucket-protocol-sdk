@@ -269,6 +269,25 @@ describe('Interacting with Bucket Client on mainnet', () => {
         ).toBeDefined();
       });
   });
+
+  it('test buildMigrateSBuckToSUsdbTransaction()', async () => {
+    const tx = new Transaction();
+    const account = '0x95b0ce9775382b88a4e698d31a0a7fd796922c91bb80de66e940bd4cae5a9916';
+    const res = await suiClient.getOwnedObjects({
+      owner: account,
+      filter: {
+        StructType:
+          '0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82::fountain_core::StakeProof<0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK, 0x2::sui::SUI>',
+      },
+    });
+    const proofIds = res.data.map((d) => d.data?.objectId as string);
+    await bucketClient.buildMigrateSBuckToSUsdbTransaction(tx, { sbuckPositionIds: proofIds, account });
+    // console.log(await tx.toJSON());
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+    expect(dryrunRes.effects.status.status).toBe('success');
+  });
 });
 
 // describe('Interacting with Bucket Client on testnet', () => {
