@@ -1716,4 +1716,64 @@ export class BucketClient {
 
     return this.psmSwapOut(tx, { coinType, priceResult, usdbCoin, accountObjectOrId: accountObjectOrId });
   }
+
+  /**
+   * @description Migrate positions from SBUCK saving pool to SUSDB saving pool
+   */
+  async buildMigrateSBuckToSUsdbTransaction(
+    tx: Transaction,
+    {
+      sbuckPositionIds,
+      account,
+    }: {
+      sbuckPositionIds: string[];
+      account: string;
+    },
+  ) {
+    tx.setSender(account);
+    const sbuckType = '0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK';
+    const buckType = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK';
+    const suiType = '0x2::sui::SUI';
+    const susdbType = '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB';
+    const clockObj = tx.object('0x6');
+    const fountainObj = tx.object('0xbdf91f558c2b61662e5839db600198eda66d502e4c10c4fc5c683f9caca13359');
+    const totalSuiCoin = getZeroCoin(tx, { coinType: suiType });
+    const totalSBuckBalance = tx.moveCall({ target: '0x2::balance::zero', typeArguments: [sbuckType] });
+    const [buckPriceResult] = await this.aggregatePrices(tx, { coinTypes: [buckType] });
+    sbuckPositionIds.map((pid) => {
+      const [buckBalance, suiBalance] = tx.moveCall({
+        target: `0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82::fountain_core::force_unstake`,
+        typeArguments: [sbuckType, suiType],
+        arguments: [clockObj, fountainObj, tx.object(pid)],
+      });
+      tx.moveCall({
+        target: '0x2::balance::join',
+        typeArguments: [sbuckType],
+        arguments: [totalSBuckBalance, buckBalance],
+      });
+      const [suiCoin] = tx.moveCall({
+        target: '0x2::coin::from_balance',
+        typeArguments: [suiType],
+        arguments: [suiBalance],
+      });
+      tx.mergeCoins(totalSuiCoin, [suiCoin]);
+    });
+    tx.transferObjects([totalSuiCoin], account);
+    const [buckBalance] = tx.moveCall({
+      target: `0x0b6ba9889bb71abc5fa89e4ad5db12e63bc331dba858019dd8d701bc91184d79::buck::sbuck_to_buck`,
+      arguments: [
+        tx.object('0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df'),
+        tx.object('0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8'),
+        clockObj,
+        totalSBuckBalance,
+      ],
+    });
+    const [buckCoin] = tx.moveCall({
+      target: '0x2::coin::from_balance',
+      typeArguments: [buckType],
+      arguments: [buckBalance],
+    });
+    const [usdbCoin] = this.psmSwapIn(tx, { coinType: buckType, priceResult: buckPriceResult, inputCoin: buckCoin });
+    this.buildDepositToSavingPoolTransaction(tx, { lpType: susdbType, depositCoinOrAmount: usdbCoin, account });
+  }
 }
