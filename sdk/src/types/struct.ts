@@ -10,6 +10,16 @@ export type VaultInfo = {
   minCollateralRatio: number;
   interestRate: number;
   positionTableSize: number;
+  rewardRate: Record<string, number>;
+};
+
+export type SavingPoolInfo = {
+  lpType: string;
+  lpSupply: bigint;
+  usdbBalance: bigint;
+  usdbDepositCap: bigint | null;
+  savingRate: number;
+  rewardRate: Record<string, number>;
 };
 
 export type PsmPoolInfo = {
@@ -35,6 +45,15 @@ export type PositionInfo = {
   collateralAmount: bigint;
   debtAmount: bigint;
   debtor: string;
+  accountId?: string;
+  rewards?: Record<string, bigint>;
+};
+
+export type SavingInfo = {
+  lpType: string;
+  usdbBalance: bigint;
+  lpBalance: bigint;
+  rewards: Record<string, bigint>;
 };
 
 export type PaginatedPositionsResult = {
