@@ -38,7 +38,13 @@ import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
 import { Pool } from './generated/bucket_v2_psm/pool';
 import { Field } from './generated/bucket_v2_saving_incentive/deps/sui/dynamic_field';
 import { Rewarder, RewarderKey } from './generated/bucket_v2_saving_incentive/saving_incentive';
-import { SavingPool } from './generated/bucket_v2_saving/saving';
+import {
+  assertCoinMinimum,
+  assertMintedLpMinimum,
+  calculateLpMintAmount,
+  lpTokenValue,
+  SavingPool,
+} from './generated/bucket_v2_saving/saving';
 
 export class BucketClient {
   /**
@@ -1110,6 +1116,18 @@ export class BucketClient {
       account: string;
     },
   ): TransactionResult {
+    const coinValue = tx.moveCall({
+      target: '0x2::sui::coin',
+      typeArguments: [this.getUsdbCoinType()],
+      arguments: [usdbCoin],
+    });
+    const mintedLP = tx.add(
+      calculateLpMintAmount({
+        package: this.config.SAVING_PACKAGE_ID,
+        typeArguments: [lpType],
+        arguments: [coinValue, tx.object.clock()],
+      }),
+    );
     const depositResponse = tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::deposit`,
       typeArguments: [lpType],
@@ -1120,6 +1138,12 @@ export class BucketClient {
         usdbCoin,
         tx.object.clock(),
       ],
+    });
+
+    assertMintedLpMinimum({
+      package: this.config.SAVING_PACKAGE_ID,
+      typeArguments: [lpType],
+      arguments: [depositResponse, mintedLP],
     });
     return depositResponse;
   }
@@ -1209,6 +1233,13 @@ export class BucketClient {
   ): [TransactionNestedResult, TransactionNestedResult] {
     const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
 
+    const quotedUSDB = tx.add(
+      lpTokenValue({
+        package: this.config.SAVING_PACKAGE_ID,
+        typeArguments: [lpType],
+        arguments: [this.savingPoolObj(tx, { lpType }), tx.pure.u64(amount)],
+      }),
+    );
     const [usdbCoin, withdrawResponse] = tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::withdraw`,
       typeArguments: [lpType],
@@ -1219,6 +1250,12 @@ export class BucketClient {
         tx.pure.u64(amount),
         tx.object.clock(),
       ],
+    });
+
+    assertCoinMinimum({
+      package: this.config.SAVING_PACKAGE_ID,
+      typeArguments: [this.getUsdbCoinType()],
+      arguments: [usdbCoin, quotedUSDB],
     });
     return [usdbCoin, withdrawResponse];
   }
@@ -1431,244 +1468,6 @@ export class BucketClient {
       target: `${this.config.FLASH_PACKAGE_ID}::config::flash_burn`,
       arguments: [this.flashGlobalConfig(tx), this.treasury(tx), usdbCoin, flashMintReceipt],
     });
-  }
-
-  /**
-   * @description
-   */
-  savingPoolDeposit(
-    tx: Transaction,
-    {
-      savingPoolType,
-      usdbCoin,
-      account,
-    }: {
-      savingPoolType: string;
-      usdbCoin: TransactionArgument;
-      account: string;
-    },
-  ): TransactionResult {
-    const depositResponse = tx.moveCall({
-      target: `${this.config.SAVING_PACKAGE_ID}::saving::deposit`,
-      typeArguments: [savingPoolType],
-      arguments: [
-        tx.sharedObjectRef(this.config.SAVING_OBJS[savingPoolType].pool),
-        this.treasury(tx),
-        tx.pure.address(account),
-        usdbCoin,
-        tx.object.clock(),
-      ],
-    });
-    return depositResponse;
-  }
-
-  /**
-   * @description
-   */
-  checkDepositResponse(
-    tx: Transaction,
-    {
-      savingPoolType,
-      depositResponse,
-    }: {
-      savingPoolType: string;
-      depositResponse: TransactionArgument;
-    },
-  ): void {
-    tx.moveCall({
-      target: `${this.config.SAVING_PACKAGE_ID}::saving::check_deposit_response`,
-      typeArguments: [savingPoolType],
-      arguments: [depositResponse, tx.sharedObjectRef(this.config.SAVING_OBJS[savingPoolType].pool), this.treasury(tx)],
-    });
-  }
-
-  /**
-   * @description
-   */
-  savingPoolWithdraw(
-    tx: Transaction,
-    {
-      savingPoolType,
-      amount,
-      accountObjectOrId,
-    }: {
-      savingPoolType: string;
-      amount: number;
-      accountObjectOrId?: string | TransactionArgument;
-    },
-  ) {
-    const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
-    const [usdbCoin, withdrawResponse] = tx.moveCall({
-      target: `${this.config.SAVING_PACKAGE_ID}::saving::withdraw`,
-      typeArguments: [savingPoolType],
-      arguments: [
-        tx.sharedObjectRef(this.config.SAVING_OBJS[savingPoolType].pool),
-        this.treasury(tx),
-        accountReq,
-        tx.pure.u64(amount),
-        tx.object.clock(),
-      ],
-    });
-    return [usdbCoin, withdrawResponse];
-  }
-
-  /**
-   * @description
-   */
-  checkWithdrawResponse(
-    tx: Transaction,
-    {
-      savingPoolType,
-      withdrawResponse,
-    }: {
-      savingPoolType: string;
-      withdrawResponse: TransactionArgument;
-    },
-  ): void {
-    tx.moveCall({
-      target: `${this.config.SAVING_PACKAGE_ID}::saving::check_withdraw_response`,
-      typeArguments: [savingPoolType],
-      arguments: [
-        withdrawResponse,
-        tx.sharedObjectRef(this.config.SAVING_OBJS[savingPoolType].pool),
-        this.treasury(tx),
-      ],
-    });
-  }
-
-  /**
-   * @description
-   */
-  updateSavingPoolIncentiveDepositAction(
-    tx: Transaction,
-    {
-      savingPoolType,
-      depositResponse,
-    }: {
-      savingPoolType: string;
-      depositResponse: TransactionArgument;
-    },
-  ) {
-    const savingPool = this.config.SAVING_OBJS[savingPoolType];
-    if (!savingPool.reward) {
-      throw new Error(`No Rewards to handle for ${savingPoolType}`);
-    }
-
-    const depositChecker = tx.moveCall({
-      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::new_checker_for_deposit_action`,
-      typeArguments: [savingPoolType],
-      arguments: [
-        tx.sharedObjectRef(savingPool.reward.rewardManager),
-        tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
-        depositResponse,
-      ],
-    });
-    const rewards = savingPool.reward.rewardTypes;
-
-    for (const rewardType of rewards) {
-      tx.moveCall({
-        target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::update_deposit_action`,
-        typeArguments: [savingPoolType, rewardType],
-        arguments: [
-          depositChecker,
-          tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
-          tx.sharedObjectRef(savingPool.reward.rewardManager),
-          tx.sharedObjectRef(savingPool.pool),
-          tx.object.clock(),
-        ],
-      });
-    }
-
-    const depositResponse_ = tx.moveCall({
-      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::destroy_deposit_checker`,
-      typeArguments: [savingPoolType],
-      arguments: [depositChecker, tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ)],
-    });
-
-    return depositResponse_;
-  }
-
-  /**
-   * @description
-   */
-  updateSavingPoolIncentiveWithdrawAction(
-    tx: Transaction,
-    {
-      savingPoolType,
-      withdrawResponse,
-    }: {
-      savingPoolType: string;
-      withdrawResponse: TransactionArgument;
-    },
-  ) {
-    const savingPool = this.config.SAVING_OBJS[savingPoolType];
-    if (!savingPool.reward) {
-      throw new Error(`No Rewards to handle for ${savingPoolType}`);
-    }
-
-    const withdrawChecker = tx.moveCall({
-      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::new_checker_for_withdraw_action`,
-      typeArguments: [savingPoolType],
-      arguments: [
-        tx.sharedObjectRef(savingPool.reward.rewardManager),
-        tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
-        withdrawResponse,
-      ],
-    });
-    const rewards = savingPool.reward.rewardTypes;
-
-    for (const rewardType of rewards) {
-      tx.moveCall({
-        target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::update_withdraw_action`,
-        typeArguments: [savingPoolType, rewardType],
-        arguments: [
-          withdrawChecker,
-          tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
-          tx.sharedObjectRef(savingPool.reward.rewardManager),
-          tx.sharedObjectRef(savingPool.pool),
-          tx.object.clock(),
-        ],
-      });
-    }
-    const withdrawResponse_ = tx.moveCall({
-      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::destroy_withdraw_checker`,
-      typeArguments: [savingPoolType],
-      arguments: [withdrawChecker, tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ)],
-    });
-    return withdrawResponse_;
-  }
-
-  /**
-   * @description
-   */
-  claimPoolIncentive(
-    tx: Transaction,
-    {
-      savingPoolType,
-      rewardType,
-      accountObjectOrId,
-    }: {
-      savingPoolType: string;
-      rewardType: string;
-      accountObjectOrId?: string | TransactionArgument;
-    },
-  ) {
-    const savingPool = this.config.SAVING_OBJS[savingPoolType];
-    if (!savingPool.reward) return getZeroCoin(tx, { coinType: rewardType });
-
-    const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
-    const rewardCoin = tx.moveCall({
-      target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::claim`,
-      typeArguments: [savingPoolType, rewardType],
-      arguments: [
-        tx.sharedObjectRef(savingPool.reward.rewardManager),
-        tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ),
-        tx.sharedObjectRef(savingPool.pool),
-        accountReq,
-        tx.object.clock(),
-      ],
-    });
-    return rewardCoin;
   }
 
   /* ----- Transaction Builders ----- */
@@ -1969,8 +1768,6 @@ export class BucketClient {
       sbuckPositionIds,
       account,
     }: {
-      savingPoolType: string;
-      usdbCoin: TransactionArgument;
       sbuckPositionIds: string[];
       account: string;
     },
@@ -2043,65 +1840,89 @@ export class BucketClient {
     {
       positions,
       account,
-    });
-    if (this.config.SAVING_OBJS[savingPoolType].reward) {
-      depositResponse = this.updateSavingPoolIncentiveDepositAction(tx, { savingPoolType, depositResponse });
-    }
-
-    this.checkDepositResponse(tx, { savingPoolType, depositResponse });
-  }
-
-  /**
-   * @description
-   */
-  buildWithdrawFromSavingPoolTransaction(
-    tx: Transaction,
-    {
-      savingPoolType,
-      amount,
-      accountObjectOrId,
     }: {
-      savingPoolType: string;
-      amount: number;
-      accountObjectOrId?: string | TransactionArgument;
+      positions: {
+        collateralType: string;
+        strapFountain?: SharedObjectRef & { rewardType: string };
+        strapId?: string;
+      }[];
+      account: string;
     },
-  ): TransactionNestedResult {
-    const withdrawResult = this.savingPoolWithdraw(tx, {
-      savingPoolType,
-      amount,
-      accountObjectOrId: accountObjectOrId,
-    });
-
-    const usdbCoin = withdrawResult[0];
-    const withdrawResponse = this.config.SAVING_OBJS[savingPoolType].reward
-      ? this.updateSavingPoolIncentiveWithdrawAction(tx, { savingPoolType, withdrawResponse: withdrawResult[1] })
-      : withdrawResult[1];
-
-    this.checkWithdrawResponse(tx, { savingPoolType, withdrawResponse });
-
-    return usdbCoin;
-  }
-
-  /**
-   * @description
-   */
-  buildClaimRewardsFromSavingPoolTransaction(
-    tx: Transaction,
-    {
-      savingPoolType,
-      accountObjectOrId,
-    }: {
-      savingPoolType: string;
-      accountObjectOrId?: string | TransactionArgument;
-    },
-  ): TransactionResult[] {
-    const rewards = [];
-
-    for (const rewardType of this.config.SAVING_OBJS[savingPoolType].reward?.rewardTypes || []) {
-      const rewardCoin = this.claimPoolIncentive(tx, {
-        savingPoolType,
-        rewardType,
-        accountObjectOrId: accountObjectOrId,
+  ) {
+    tx.setSender(account);
+    const buckType = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK';
+    const allCollTypes = this.getAllCollateralTypes();
+    const coinTypes = [
+      buckType,
+      ...positions
+        .filter((p) => allCollTypes.includes(normalizeStructTag(p.collateralType)))
+        .map((p) => p.collateralType),
+    ];
+    const priceResults = await this.aggregatePrices(tx, { coinTypes });
+    const privilegesObj = tx.object('0xe716e382e99b172ff7e0cdc773649c154a95ab3c86ef21828a182839121fd920');
+    const v1ProtocolObj = tx.object('0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df');
+    const priceResultRecord = coinTypes.reduce(
+      (result, coinType, idx) => {
+        return { ...result, [normalizeStructTag(coinType)]: priceResults[idx] };
+      },
+      {} as Record<string, TransactionResult>,
+    );
+    positions.map((position) => {
+      const { collateralType, strapFountain, strapId } = position;
+      const coinType = normalizeStructTag(collateralType);
+      if (!Object.keys(this.config.VAULT_OBJS).includes(coinType)) return;
+      const [updateRequest, flashmintReceipt, debtAmount] = (() => {
+        if (strapFountain && strapId) {
+          const [strap, reward] = tx.moveCall({
+            target: `0x204f5f18b9b4d10eddc0f7256284ed3c655bd06e9425801e60b262152d47de50::fountain::unstake`,
+            typeArguments: [coinType, strapFountain.rewardType],
+            arguments: [tx.sharedObjectRef(strapFountain), tx.object.clock(), tx.object(strapId)],
+          });
+          tx.transferObjects([reward], account);
+          return tx.moveCall({
+            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate_strap',
+            typeArguments: [coinType],
+            arguments: [
+              privilegesObj,
+              v1ProtocolObj,
+              tx.object.clock(),
+              this.vault(tx, { coinType }),
+              this.treasury(tx),
+              strap,
+            ],
+          });
+        } else if (strapId) {
+          const strap = tx.object(strapId);
+          return tx.moveCall({
+            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate_strap',
+            typeArguments: [coinType],
+            arguments: [
+              privilegesObj,
+              v1ProtocolObj,
+              tx.object.clock(),
+              this.vault(tx, { coinType }),
+              this.treasury(tx),
+              strap,
+            ],
+          });
+        } else {
+          return tx.moveCall({
+            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate',
+            typeArguments: [coinType],
+            arguments: [
+              privilegesObj,
+              v1ProtocolObj,
+              tx.object.clock(),
+              this.vault(tx, { coinType }),
+              this.treasury(tx),
+            ],
+          });
+        }
+      })();
+      const [collCoin, usdbCoin, response] = this.updatePosition(tx, {
+        coinType,
+        updateRequest,
+        priceResult: priceResultRecord[coinType],
       });
       destroyZeroCoin(tx, { coin: collCoin, coinType });
       this.checkUpdatePositionResponse(tx, { coinType, response });

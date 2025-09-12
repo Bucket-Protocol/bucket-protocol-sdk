@@ -62,7 +62,6 @@ export type ConfigType = {
   SAVING_INCENTIVE_PACKAGE_ID: string;
   BORROW_INCENTIVE_PACKAGE_ID: string;
 
-  SAVING_OBJS: Record<string, SavingPoolObjectInfo>;
   TREASURY_OBJ: SharedObjectRef;
   VAULT_REWARDER_REGISTRY: SharedObjectRef;
   SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: SharedObjectRef;
