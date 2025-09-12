@@ -240,7 +240,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     expect(dryrunRes.effects.status.status).toBe('success');
   });
-
+  //
   it('test claim from saving pool', async () => {
     // tx
     const tx = new Transaction();

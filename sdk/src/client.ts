@@ -1117,7 +1117,7 @@ export class BucketClient {
     },
   ): TransactionResult {
     const coinValue = tx.moveCall({
-      target: '0x2::sui::coin',
+      target: '0x2::coin::value',
       typeArguments: [this.getUsdbCoinType()],
       arguments: [usdbCoin],
     });
@@ -1125,7 +1125,7 @@ export class BucketClient {
       calculateLpMintAmount({
         package: this.config.SAVING_PACKAGE_ID,
         typeArguments: [lpType],
-        arguments: [coinValue, tx.object.clock()],
+        arguments: [this.savingPoolObj(tx, { lpType }), coinValue],
       }),
     );
     const depositResponse = tx.moveCall({

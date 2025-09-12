@@ -1113,6 +1113,35 @@ export function removeWithdrawResponseCheck(options: RemoveWithdrawResponseCheck
         typeArguments: options.typeArguments
     });
 }
+export interface BurnArguments {
+    treasury: RawTransactionArgument<string>;
+    Cap: RawTransactionArgument<string>;
+    usdbCoin: RawTransactionArgument<string>;
+}
+export interface BurnOptions {
+    package?: string;
+    arguments: BurnArguments | [
+        treasury: RawTransactionArgument<string>,
+        Cap: RawTransactionArgument<string>,
+        usdbCoin: RawTransactionArgument<string>
+    ];
+}
+/** Burn the USDB that minted by Saving module */
+export function burn(options: BurnOptions) {
+    const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
+    const argumentsTypes = [
+        `${packageAddress}::usdb::Treasury`,
+        `${packageAddress}::admin::AdminCap`,
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${packageAddress}::usdb::USDB>`
+    ] satisfies string[];
+    const parameterNames = ["treasury", "Cap", "usdbCoin"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'saving',
+        function: 'burn',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+    });
+}
 export interface CheckDepositResponseArguments {
     res: RawTransactionArgument<string>;
     self: RawTransactionArgument<string>;
@@ -1331,6 +1360,94 @@ export function withdraw(options: WithdrawOptions) {
         package: packageAddress,
         module: 'saving',
         function: 'withdraw',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface AssertMintedLpMinimumArguments {
+    depositRes: RawTransactionArgument<string>;
+    minimum: RawTransactionArgument<number | bigint>;
+}
+export interface AssertMintedLpMinimumOptions {
+    package?: string;
+    arguments: AssertMintedLpMinimumArguments | [
+        depositRes: RawTransactionArgument<string>,
+        minimum: RawTransactionArgument<number | bigint>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+export function assertMintedLpMinimum(options: AssertMintedLpMinimumOptions) {
+    const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
+    const argumentsTypes = [
+        `${packageAddress}::saving::DepositResponse<${options.typeArguments[0]}>`,
+        'u64'
+    ] satisfies string[];
+    const parameterNames = ["depositRes", "minimum"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'saving',
+        function: 'assert_minted_lp_minimum',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface AssertCoinMinimumArguments {
+    coin: RawTransactionArgument<string>;
+    minimum: RawTransactionArgument<number | bigint>;
+}
+export interface AssertCoinMinimumOptions {
+    package?: string;
+    arguments: AssertCoinMinimumArguments | [
+        coin: RawTransactionArgument<string>,
+        minimum: RawTransactionArgument<number | bigint>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+export function assertCoinMinimum(options: AssertCoinMinimumOptions) {
+    const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
+    const argumentsTypes = [
+        `0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<${options.typeArguments[0]}>`,
+        'u64'
+    ] satisfies string[];
+    const parameterNames = ["coin", "minimum"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'saving',
+        function: 'assert_coin_minimum',
+        arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
+        typeArguments: options.typeArguments
+    });
+}
+export interface SupplyArguments {
+    self: RawTransactionArgument<string>;
+    balance: RawTransactionArgument<string>;
+}
+export interface SupplyOptions {
+    package?: string;
+    arguments: SupplyArguments | [
+        self: RawTransactionArgument<string>,
+        balance: RawTransactionArgument<string>
+    ];
+    typeArguments: [
+        string
+    ];
+}
+/** public function allow anyone supply rewards to current stakers */
+export function supply(options: SupplyOptions) {
+    const packageAddress = options.package ?? '@local-pkg/bucket_v2_saving';
+    const argumentsTypes = [
+        `${packageAddress}::saving::SavingPool<${options.typeArguments[0]}>`,
+        `0x0000000000000000000000000000000000000000000000000000000000000002::balance::Balance<${packageAddress}::usdb::USDB>`
+    ] satisfies string[];
+    const parameterNames = ["self", "balance"];
+    return (tx: Transaction) => tx.moveCall({
+        package: packageAddress,
+        module: 'saving',
+        function: 'supply',
         arguments: normalizeMoveArguments(options.arguments, argumentsTypes, parameterNames),
         typeArguments: options.typeArguments
     });

@@ -11,6 +11,10 @@ export const UpdateSavingRateEvent = new MoveStruct({ name: `${$moduleName}::Upd
         saving_pool_id: bcs.Address,
         saving_rate_bps: bcs.u64()
     } });
+export const UpdateDepositCapEvent = new MoveStruct({ name: `${$moduleName}::UpdateDepositCapEvent`, fields: {
+        saving_pool_id: bcs.Address,
+        deposit_cap_amount: bcs.option(bcs.u64())
+    } });
 export const DepositEvent = new MoveStruct({ name: `${$moduleName}::DepositEvent`, fields: {
         saving_pool_id: bcs.Address,
         account_address: bcs.Address,
@@ -22,6 +26,10 @@ export const WithdrawEvent = new MoveStruct({ name: `${$moduleName}::WithdrawEve
         account_address: bcs.Address,
         burned_lp_amount: bcs.u64(),
         withdrawal_usdb_amount: bcs.u64()
+    } });
+export const SupplyEvent = new MoveStruct({ name: `${$moduleName}::SupplyEvent`, fields: {
+        saving_pool_id: bcs.Address,
+        amount: bcs.u64()
     } });
 export const InterestEmittedEvent = new MoveStruct({ name: `${$moduleName}::InterestEmittedEvent`, fields: {
         saving_pool_id: bcs.Address,
