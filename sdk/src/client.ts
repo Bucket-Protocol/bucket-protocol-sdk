@@ -764,6 +764,27 @@ export class BucketClient {
     return tx.sharedObjectRef({ objectId: '0x6', initialSharedVersion: 1, mutable: false });
   }
 
+  debtorAddress(
+    tx: Transaction,
+    {
+      accountObjectOrId,
+      address,
+    }: {
+      accountObjectOrId?: string | TransactionArgument;
+      address: string;
+    },
+  ): TransactionArgument {
+    if (accountObjectOrId) {
+      return typeof accountObjectOrId === 'string'
+        ? tx.pure.address(accountObjectOrId)
+        : tx.moveCall({
+            target: `${this.config.FRAMEWORK_PACKAGE_ID}::account::account_address`,
+            arguments: [accountObjectOrId],
+          });
+    }
+    return tx.pure.address(address);
+  }
+
   /**
    * @description Create a AccountRequest
    * @param accountObjectOrId (optional): Account object or EOA if undefined
@@ -1525,7 +1546,11 @@ export class BucketClient {
     const [collateralAmount, debtAmount] = tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::get_position_data`,
       typeArguments: [coinType],
-      arguments: [this.vault(tx, { coinType }), tx.pure.address(address), tx.object.clock()],
+      arguments: [
+        this.vault(tx, { coinType }),
+        this.debtorAddress(tx, { accountObjectOrId, address }),
+        tx.object.clock(),
+      ],
     });
     const splittedRepayCoin = repayCoin
       ? tx.splitCoins(repayCoin, [debtAmount])[0]
