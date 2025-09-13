@@ -35,6 +35,7 @@ import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transacti
 
 import { VaultRewarder } from './generated/bucket_v2_borrow_incentive/borrow_incentive';
 import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
+import { Account } from './generated/bucket_v2_framework/account';
 import { Pool } from './generated/bucket_v2_psm/pool';
 import { Field } from './generated/bucket_v2_saving_incentive/deps/sui/dynamic_field';
 import { Rewarder, RewarderKey } from './generated/bucket_v2_saving_incentive/saving_incentive';
@@ -477,6 +478,27 @@ export class BucketClient {
   }
 
   /**
+   * @description
+   */
+  async getUserAccounts({ address }: { address: string }) {
+    const accountRes = await this.suiClient.getOwnedObjects({
+      owner: address,
+      filter: {
+        StructType: `${this.config.ORIGINAL_FRAMEWORK_PACKAGE_ID}::account::Account`,
+      },
+      options: {
+        showBcs: true,
+      },
+    });
+    return accountRes.data.map((account) => {
+      if (account.data?.bcs?.dataType !== 'moveObject') {
+        throw new Error(`Failed to parse account object for ${address}`);
+      }
+      return Account.fromBase64(account.data.bcs.bcsBytes);
+    });
+  }
+
+  /**
    * @description Get debtor's borrow rewards of given collateral coin type
    */
   async getUserBorrowRewards({
@@ -585,13 +607,8 @@ export class BucketClient {
    * @description Get position data given wallet address
    */
   async getUserPositions({ address }: { address: string }): Promise<PositionInfo[]> {
-    const accountObjRes = await this.suiClient.getOwnedObjects({
-      owner: address,
-      filter: {
-        StructType: `${this.config.ORIGINAL_FRAMEWORK_PACKAGE_ID}::account::Account`,
-      },
-    });
-    const accountObjectIds = accountObjRes.data.map((data) => data.data?.objectId).filter((id) => id !== undefined);
+    const accounts = await this.getUserAccounts({ address });
+    const accountObjectIds = accounts.map((account) => account.id.id);
 
     const positionsForAccount = await Promise.all([
       this.getAccountPositions({ address }),
