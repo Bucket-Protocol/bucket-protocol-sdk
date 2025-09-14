@@ -1141,11 +1141,11 @@ export class BucketClient {
     {
       lpType,
       usdbCoin,
-      account,
+      address,
     }: {
       lpType: string;
       usdbCoin: TransactionArgument;
-      account: string;
+      address: string;
     },
   ): TransactionResult {
     const depositResponse = tx.moveCall({
@@ -1154,7 +1154,7 @@ export class BucketClient {
       arguments: [
         this.savingPoolObj(tx, { lpType }),
         this.treasury(tx),
-        tx.pure.address(account),
+        tx.pure.address(address),
         usdbCoin,
         tx.object.clock(),
       ],
@@ -1634,11 +1634,11 @@ export class BucketClient {
     {
       lpType,
       depositCoinOrAmount,
-      account,
+      address,
     }: {
       lpType: string;
       depositCoinOrAmount: number | TransactionArgument;
-      account: string;
+      address: string;
     },
   ): void {
     const depositCoin =
@@ -1649,7 +1649,7 @@ export class BucketClient {
     const depositResponse = this.savingPoolDeposit(tx, {
       lpType,
       usdbCoin: depositCoin,
-      account,
+      address,
     });
     const finalResponse = this.getSavingPoolObjectInfo({ lpType }).reward
       ? this.updateSavingPoolIncentiveDepositAction(tx, { lpType, depositResponse })
@@ -1771,13 +1771,13 @@ export class BucketClient {
     tx: Transaction,
     {
       sbuckPositionIds,
-      account,
+      address,
     }: {
       sbuckPositionIds: string[];
-      account: string;
+      address: string;
     },
   ) {
-    tx.setSender(account);
+    tx.setSender(address);
     const sbuckType = '0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK';
     const buckType = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK';
     const suiType = '0x2::sui::SUI';
@@ -1806,7 +1806,7 @@ export class BucketClient {
         });
         tx.mergeCoins(totalSuiCoin, [suiCoin]);
       });
-      tx.transferObjects([totalSuiCoin], account);
+      tx.transferObjects([totalSuiCoin], address);
       const [buckBalance] = tx.moveCall({
         target: `0x0b6ba9889bb71abc5fa89e4ad5db12e63bc331dba858019dd8d701bc91184d79::buck::sbuck_to_buck`,
         arguments: [
@@ -1822,7 +1822,7 @@ export class BucketClient {
         arguments: [buckBalance],
       });
       const [usdbCoin] = this.psmSwapIn(tx, { coinType: buckType, priceResult: buckPriceResult, inputCoin: buckCoin });
-      this.buildDepositToSavingPoolTransaction(tx, { lpType: susdbType, depositCoinOrAmount: usdbCoin, account });
+      this.buildDepositToSavingPoolTransaction(tx, { lpType: susdbType, depositCoinOrAmount: usdbCoin, address });
       tx.moveCall({
         target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::flash_burn_buck',
         arguments: [
@@ -1844,17 +1844,17 @@ export class BucketClient {
     tx: Transaction,
     {
       positions,
-      account,
+      address,
     }: {
       positions: {
         collateralType: string;
         strapFountain?: SharedObjectRef & { rewardType: string };
         strapId?: string;
       }[];
-      account: string;
+      address: string;
     },
   ) {
-    tx.setSender(account);
+    tx.setSender(address);
     const buckType = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK';
     const allCollTypes = this.getAllCollateralTypes();
     const coinTypes = [
@@ -1883,7 +1883,7 @@ export class BucketClient {
             typeArguments: [coinType, strapFountain.rewardType],
             arguments: [tx.sharedObjectRef(strapFountain), tx.object.clock(), tx.object(strapId)],
           });
-          tx.transferObjects([reward], account);
+          tx.transferObjects([reward], address);
           return tx.moveCall({
             target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate_strap',
             typeArguments: [coinType],
