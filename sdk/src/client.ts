@@ -39,7 +39,13 @@ import { Account } from './generated/bucket_v2_framework/account';
 import { Pool } from './generated/bucket_v2_psm/pool';
 import { Field } from './generated/bucket_v2_saving_incentive/deps/sui/dynamic_field';
 import { Rewarder, RewarderKey } from './generated/bucket_v2_saving_incentive/saving_incentive';
-import { SavingPool } from './generated/bucket_v2_saving/saving';
+import {
+  assertCoinMinimum,
+  assertMintedLpMinimum,
+  calculateLpMintAmount,
+  lpTokenValue,
+  SavingPool,
+} from './generated/bucket_v2_saving/saving';
 
 export class BucketClient {
   /**
@@ -1148,6 +1154,18 @@ export class BucketClient {
       address: string;
     },
   ): TransactionResult {
+    const coinValue = tx.moveCall({
+      target: '0x2::coin::value',
+      typeArguments: [this.getUsdbCoinType()],
+      arguments: [usdbCoin],
+    });
+    const mintedLP = tx.add(
+      calculateLpMintAmount({
+        package: this.config.SAVING_PACKAGE_ID,
+        typeArguments: [lpType],
+        arguments: [this.savingPoolObj(tx, { lpType }), coinValue],
+      }),
+    );
     const depositResponse = tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::deposit`,
       typeArguments: [lpType],
@@ -1158,6 +1176,12 @@ export class BucketClient {
         usdbCoin,
         tx.object.clock(),
       ],
+    });
+
+    assertMintedLpMinimum({
+      package: this.config.SAVING_PACKAGE_ID,
+      typeArguments: [lpType],
+      arguments: [depositResponse, mintedLP],
     });
     return depositResponse;
   }
@@ -1247,6 +1271,13 @@ export class BucketClient {
   ): [TransactionNestedResult, TransactionNestedResult] {
     const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
 
+    const quotedUSDB = tx.add(
+      lpTokenValue({
+        package: this.config.SAVING_PACKAGE_ID,
+        typeArguments: [lpType],
+        arguments: [this.savingPoolObj(tx, { lpType }), tx.pure.u64(amount)],
+      }),
+    );
     const [usdbCoin, withdrawResponse] = tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::withdraw`,
       typeArguments: [lpType],
@@ -1257,6 +1288,12 @@ export class BucketClient {
         tx.pure.u64(amount),
         tx.object.clock(),
       ],
+    });
+
+    assertCoinMinimum({
+      package: this.config.SAVING_PACKAGE_ID,
+      typeArguments: [this.getUsdbCoinType()],
+      arguments: [usdbCoin, quotedUSDB],
     });
     return [usdbCoin, withdrawResponse];
   }
