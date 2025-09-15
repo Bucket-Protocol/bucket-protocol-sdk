@@ -16,4 +16,4 @@ runs:
       with:
         filters: |
           isApp:
-            - 'sdk/src/**'
+            - 'src/**'
