@@ -3,7 +3,6 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
-bun.lock
 
 # testing
 /coverage
