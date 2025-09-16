@@ -32,7 +32,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     FLASH_PACKAGE_ID: '0x0f51f9eb63574a1d12b62295599ac4f8231197f95b3cce9a516daba64f419d06',
     SAVING_PACKAGE_ID: '0x872d08a70db3db498aa7853276acea8091fdd9871b2d86bc8dcb8524526df622',
     SAVING_INCENTIVE_PACKAGE_ID: '0x39692320d6fc01c27315a7972ed4717e4fd32eed43531ad6f55fd7f24b74e207',
-    BORROW_INCENTIVE_PACKAGE_ID: '0x7e01ce8c28d97d73d1e5a38af86cb70507b03aa67e723fcf0a70af471d79e5b7',
+    BORROW_INCENTIVE_PACKAGE_ID: '0xef9719a3392d3742ae09c42ebf01030d88b1a75651430932be1eb017b79fb372',
 
     TREASURY_OBJ: {
       objectId: '0x4de1c29a89d6888ebf8f7ae20364571dce4e1e42b9c9221f7df924ad6f9e617d',
@@ -314,7 +314,7 @@ export const CONFIG: Record<Network, ConfigType> = {
         rewarders: [
           {
             rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0x8e6406c238867af1984b384ef3c4190abc7147c7693456c652955a1854acdc91',
+            rewarderId: '0x3aeab227a25667c8536c7babc89bd2d1dc78c60e99e1f429b61348ace5c50f57',
           },
         ],
       },
@@ -327,7 +327,7 @@ export const CONFIG: Record<Network, ConfigType> = {
         rewarders: [
           {
             rewardType: '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
-            rewarderId: '0x78308e58091071bf52a8c3af7efda903d8028f1ab676ab0ecfafb4b271a84108',
+            rewarderId: '0x8e6406c238867af1984b384ef3c4190abc7147c7693456c652955a1854acdc91',
           },
         ],
       },
