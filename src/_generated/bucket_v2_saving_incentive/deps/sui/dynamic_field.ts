@@ -1,7 +1,7 @@
 import { type BcsType } from '@mysten/sui/bcs';
 import { type Transaction } from '@mysten/sui/transactions';
 
-import { MoveStruct, normalizeMoveArguments, type RawTransactionArgument } from '../../../utils/index';
+import { MoveStruct, normalizeMoveArguments, type RawTransactionArgument } from '../../../utils/index.js';
 import * as object from './object.js';
 
 const $moduleName = '@local-pkg/suiii::dynamic_field';

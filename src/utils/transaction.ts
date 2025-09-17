@@ -2,7 +2,7 @@ import { CoinStruct, SuiClient } from '@mysten/sui/client';
 import { Commands, Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 
-import { COIN_WITH_BALANCE_RESOLVER, resolveCoinBalance } from '@/utils/resolvers';
+import { COIN_WITH_BALANCE_RESOLVER, resolveCoinBalance } from '@/utils/resolvers.js';
 
 /**
  * @description new zero coin

@@ -1,6 +1,5 @@
 import { bcs } from '@mysten/sui/bcs';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
 import {
   Transaction,
   TransactionArgument,
@@ -11,7 +10,6 @@ import {
 import { normalizeStructTag } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
-import { TransactionNestedResult } from '@/types';
 import {
   AggregatorObjectInfo,
   ConfigType,
@@ -20,7 +18,8 @@ import {
   PsmPoolObjectInfo,
   SavingPoolObjectInfo,
   VaultObjectInfo,
-} from '@/types/config';
+} from '@/types/config.js';
+import { SharedObjectRef, TransactionNestedResult } from '@/types/index.js';
 import {
   PaginatedPositionsResult,
   PositionInfo,
@@ -28,18 +27,18 @@ import {
   SavingInfo,
   SavingPoolInfo,
   VaultInfo,
-} from '@/types/struct';
-import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts';
-import { CONFIG } from '@/consts/config';
-import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction';
+} from '@/types/struct.js';
+import { CONFIG } from '@/consts/config.js';
+import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
+import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction.js';
 
-import { VaultRewarder } from './generated/bucket_v2_borrow_incentive/borrow_incentive';
-import { PositionData, Vault } from './generated/bucket_v2_cdp/vault';
-import { Account } from './generated/bucket_v2_framework/account';
-import { Pool } from './generated/bucket_v2_psm/pool';
-import { Field } from './generated/bucket_v2_saving_incentive/deps/sui/dynamic_field';
-import { Rewarder, RewarderKey } from './generated/bucket_v2_saving_incentive/saving_incentive';
-import { SavingPool } from './generated/bucket_v2_saving/saving';
+import { VaultRewarder } from '@/_generated/bucket_v2_borrow_incentive/borrow_incentive.js';
+import { PositionData, Vault } from '@/_generated/bucket_v2_cdp/vault.js';
+import { Account } from '@/_generated/bucket_v2_framework/account.js';
+import { Pool } from '@/_generated/bucket_v2_psm/pool.js';
+import { Field } from '@/_generated/bucket_v2_saving_incentive/deps/sui/dynamic_field.js';
+import { Rewarder, RewarderKey } from '@/_generated/bucket_v2_saving_incentive/saving_incentive.js';
+import { SavingPool } from '@/_generated/bucket_v2_saving/saving.js';
 
 export class BucketClient {
   /**
@@ -62,6 +61,8 @@ export class BucketClient {
     this.config = CONFIG[network];
     this.suiClient = suiClient;
     this.pythConnection = new SuiPriceServiceConnection(this.config.PRICE_SERVICE_ENDPOINT);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore pythClient has only commonJS
     this.pythClient = new SuiPythClient(this.suiClient, this.config.PYTH_STATE_ID, this.config.WORMHOLE_STATE_ID);
   }
 
@@ -937,6 +938,8 @@ export class BucketClient {
     const pythPriceIds = aggInfoList.map((aggInfo) => aggInfo.pythPriceId ?? '');
 
     const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore pythClient has only commonJS
     const priceInfoObjIds = await this.pythClient.updatePriceFeeds(tx, updateData, pythPriceIds);
 
     return coinTypes.map((coinType, idx) => {

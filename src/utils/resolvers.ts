@@ -9,8 +9,8 @@ import {
   TransactionResult,
 } from '@mysten/sui/transactions';
 
-import { TransactionNestedResult } from '@/types';
-import { getCoinsOfType } from '@/utils/transaction';
+import { TransactionNestedResult } from '@/types/index.js';
+import { getCoinsOfType } from '@/utils/transaction.js';
 
 export const COIN_WITH_BALANCE_RESOLVER = 'AugmentedCoinWithBalance';
 

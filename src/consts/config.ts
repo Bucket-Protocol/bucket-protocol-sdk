@@ -1,4 +1,4 @@
-import { ConfigType } from '@/types/config';
+import { ConfigType } from '@/types/config.js';
 
 export type Network = 'mainnet' | 'testnet';
 

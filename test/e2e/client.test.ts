@@ -3,8 +3,8 @@ import { Transaction } from '@mysten/sui/transactions';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import { BucketClient } from '@/client';
-import { coinWithBalance } from '@/utils/transaction';
+import { BucketClient } from '@/client.js';
+import { coinWithBalance } from '@/utils/transaction.js';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   const network = 'mainnet';
@@ -188,7 +188,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     bucketClient.buildDepositToSavingPoolTransaction(tx, {
       lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
-      account: testAccount,
+      address: testAccount,
       depositCoinOrAmount: usdbCoin,
     });
 
@@ -209,7 +209,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
     bucketClient.buildDepositToSavingPoolTransaction(tx, {
       lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
-      account: testAccount,
+      address: testAccount,
       depositCoinOrAmount: usdbCoin,
     });
 
@@ -281,7 +281,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
       },
     });
     const proofIds = res.data.map((d) => d.data?.objectId as string);
-    await bucketClient.buildMigrateSBuckToSUsdbTransaction(tx, { sbuckPositionIds: proofIds, account });
+    await bucketClient.buildMigrateSBuckToSUsdbTransaction(tx, { sbuckPositionIds: proofIds, address: account });
     // console.log(await tx.toJSON());
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),

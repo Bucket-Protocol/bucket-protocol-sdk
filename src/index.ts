@@ -1,3 +1,3 @@
-export * from '@/client';
-export * from '@/types/struct';
-export * from '@/utils/transaction';
+export * from '@/client.js';
+export * from '@/types/struct.js';
+export * from '@/utils/transaction.js';

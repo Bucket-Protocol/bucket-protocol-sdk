@@ -3,8 +3,9 @@
     /* Base Options: */
     "target": "esnext",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "allowJs": true,
+    "allowJs": false,
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
@@ -12,7 +13,6 @@
     /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": false,
-    "checkJs": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
@@ -20,21 +20,19 @@
     "forceConsistentCasingInFileNames": true,
 
     /* Bundled projects */
-    "lib": ["dom", "esnext"],
+    "lib": ["esnext"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "noEmit": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "sourceMap": true,
 
     /* Path Aliases */
-    "rootDir": ".",
+    "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mysten/sui/bcs": ["./node_modules/@mysten/sui/dist/esm/bcs/index"]
     }
   },
-  "include": ["src", "test"],
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

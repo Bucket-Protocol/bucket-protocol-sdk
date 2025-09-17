@@ -1,4 +1,4 @@
-import { SharedObjectRef } from '@mysten/sui/dist/cjs/bcs/types';
+import { SharedObjectRef } from './index.js';
 
 export type Network = 'mainnet' | 'testnet';
 
