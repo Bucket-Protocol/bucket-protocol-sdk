@@ -12,9 +12,6 @@ importers:
 
   .:
     dependencies:
-      '@bucket-protocol/sdk':
-        specifier: link:../../Library/pnpm/global/5/node_modules/@bucket-protocol/sdk
-        version: link:../../Library/pnpm/global/5/node_modules/@bucket-protocol/sdk
       '@mysten/bcs':
         specifier: 1.8.0
         version: 1.8.0
