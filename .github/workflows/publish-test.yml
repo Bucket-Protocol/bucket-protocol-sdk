@@ -29,12 +29,12 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 20
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: 'https://www.npmjs.com/bucket-protocol'
           cache: 'pnpm'
       - name: Install Dependencies
         run: pnpm install
       - name: Compile
-        run: pnpm run build
+        run: pnpm build
       - name: Bump & publish package
         run: pnpm version prerelease --preid ${{ inputs.pre-release-tag }}--no-git-tag-version && npm publish --access restricted
         env:
