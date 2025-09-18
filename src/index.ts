@@ -1,3 +1,3 @@
 export * from '@/client.js';
-export * from '@/types/struct.js';
-export * from '@/utils/transaction.js';
+export * from '@/types/index.js';
+export * from '@/utils/index.js';

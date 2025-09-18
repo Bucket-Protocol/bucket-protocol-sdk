@@ -1,3 +1,5 @@
+export * from './transaction.js';
+
 export function splitIntoChunks<T>(arr: T[], chunkSize: number): T[][] {
   const result: T[][] = [];
 

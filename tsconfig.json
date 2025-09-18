@@ -29,8 +29,7 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@mysten/sui/bcs": ["./node_modules/@mysten/sui/dist/esm/bcs/index"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
