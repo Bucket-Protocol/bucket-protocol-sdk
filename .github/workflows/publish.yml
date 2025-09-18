@@ -6,7 +6,7 @@ on:
       version-bump-type:
         description: 'Version bump type'
         required: true
-        default: 'patch'
+        default: "patch"
         type: choice
         options:
           - major
