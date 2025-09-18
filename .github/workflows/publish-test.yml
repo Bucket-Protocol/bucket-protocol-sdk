@@ -6,7 +6,7 @@ on:
       pre-release-tag:
         description: 'Pre-release tag'
         required: true
-        default: 'testing'
+        default: 'dev'
         type: string
 
 permissions:
@@ -36,6 +36,6 @@ jobs:
       - name: Compile
         run: pnpm build
       - name: Bump & publish package
-        run: pnpm version prerelease --preid ${{ inputs.pre-release-tag }}--no-git-tag-version && pnpm publish --access restricted
+        run: pnpm version prerelease --preid ${{ inputs.pre-release-tag }} --no-git-tag-version && pnpm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
