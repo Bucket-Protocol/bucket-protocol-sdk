@@ -1,7 +1,7 @@
 {
   "name": "@bucket-protocol/sdk",
   "author": "Bucket Protocol <info@bucketprotocol.io>",
-  "version": "1.0.3-testing",
+  "version": "1.0.3",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
   "repository": {
@@ -14,6 +14,12 @@
   },
   "type": "module",
   "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    },
     "./*": {
       "types": "./dist/types/*.d.ts",
       "require": "./dist/cjs/*.js",
