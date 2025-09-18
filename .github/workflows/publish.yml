@@ -3,7 +3,7 @@ name: Publish package
 on:
   workflow_dispatch:
     inputs:
-      versionBumpType:
+      version-bump-type:
         description: 'Version bump type'
         required: true
         default: 'patch'
@@ -20,8 +20,6 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    outputs:
-      latest-version: ${{ steps.publish.outputs.latest-version }}
     steps:
       - name: Check permission
         if: ${{ !contains('["17008875", "33892812", "2819672"]', github.actor_id) }}
@@ -45,16 +43,10 @@ jobs:
       - name: Compile
         run: pnpm run build
       - name: Bump & publish package
-        run: pnpm version --${{ inputs.versionBumpType }} --no-git-tag-version && pnpm publish --provenance
+        run: pnpm version ${{ inputs.version-bump-type }} && pnpm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - id: publish
-        name: Output variables
-        run: echo "latest-version=$(npm view bucket-protocol-sdk version)" >> "$GITHUB_OUTPUT"
-      - name: Commit change
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'chore: bump sdk version'
+
   create-pr:
     runs-on: ubuntu-latest
     needs: publish
@@ -74,10 +66,10 @@ jobs:
           node-version: 20
       - name: Bump version
         run: |
-          yarn upgrade bucket-protocol-sdk@${{ needs.publish.outputs.latest-version }}  --save-exact
+          yarn upgrade bucket-protocol-sdk@$latest --save-exact
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: bump-bucket-protocol-sdk-v${{ needs.publish.outputs.latest-version }}
-          title: 'chore: bump bucket-protocol-sdk to v${{ needs.publish.outputs.latest-version }}'
+          branch: bump-bucket-protocol-sdk
+          title: 'chore: bump bucket-protocol-sdk'
           token: ${{ secrets.ADMIN_TOKEN }}
