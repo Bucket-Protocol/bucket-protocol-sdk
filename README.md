@@ -479,7 +479,7 @@ const positions = await client.getUserPositions({
 
 ```typescript
 // Check balance before attempting transactions
-const { data: coins } = await suiClient.getCoins({
+const { data: coins } = await client.getSuiClient().getCoins({
     owner: '0x...your-address',
     coinType: SUI_TYPE_ARG
 });
