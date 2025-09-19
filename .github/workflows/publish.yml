@@ -6,7 +6,7 @@ on:
       version-bump-type:
         description: 'Version bump type'
         required: true
-        default: "patch"
+        default: 'patch'
         type: choice
         options:
           - major
@@ -39,7 +39,7 @@ jobs:
           registry-url: 'https://www.npmjs.com/bucket-protocol'
           cache: 'pnpm'
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
       - name: Compile
         run: pnpm build
       - name: Bump & publish package
@@ -66,7 +66,7 @@ jobs:
           node-version: 20
       - name: Bump version
         run: |
-          yarn upgrade bucket-protocol-sdk@$latest --save-exact
+          pnpm upgrade bucket-protocol-sdk@$latest --save-exact
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
         with:
