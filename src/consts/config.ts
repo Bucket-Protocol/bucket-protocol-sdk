@@ -7,7 +7,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     PRICE_SERVICE_ENDPOINT: 'https://hermes.pyth.network',
     PYTH_STATE_ID: '0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8',
     WORMHOLE_STATE_ID: '0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c',
-    PYTH_RULE_PACKAGE_ID: '0x6ee87742e673749a97f5fbe576b92d8dd294a482307d3a3fb2c6f73a56b906a0',
+    PYTH_RULE_PACKAGE_ID: '0x5bc4f912b59c5cfcc86dfc90419837b9c3f9d3a3a94cef7a198838fa196bac4a',
     PYTH_RULE_CONFIG_OBJ: {
       objectId: '0x00aea60b799575ae4203bcc80c16844c4d514d5af661200c4565f6d5a6deac1f',
       initialSharedVersion: 610893693,
@@ -280,6 +280,17 @@ export const CONFIG: Record<Network, ConfigType> = {
           derivativeKind: 'TLP',
         },
       },
+      '0x7438e8caf5c345fbd3772517380bf0ca432f53892dee65ee0dda3eb127993cd9::bfbtc::BFBTC': {
+        priceAggregator: {
+          objectId: '0xe93f95caf1b9cbb2309dd973524ec3ca3f17c9af1d33354f057f9824e97e5089',
+          initialSharedVersion: 639842266,
+          mutable: false,
+        },
+        derivativeInfo: {
+          underlyingCoinType: '0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC',
+          derivativeKind: 'BFBTC',
+        },
+      },
     },
     VAULT_OBJS: {
       '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
@@ -473,6 +484,13 @@ export const CONFIG: Record<Network, ConfigType> = {
         vault: {
           objectId: '0x542eff36534bc5d7d07808953ebb8c580c23f047b41c094601d40a0fc7e99238',
           initialSharedVersion: 610893709,
+          mutable: true,
+        },
+      },
+      '0x7438e8caf5c345fbd3772517380bf0ca432f53892dee65ee0dda3eb127993cd9::bfbtc::BFBTC': {
+        vault: {
+          objectId: '0x1f32b8b587b69a97cb779b2df1e2aa90f6fbb43edcc887f11a8f4a6de0944937',
+          initialSharedVersion: 639842264,
           mutable: true,
         },
       },

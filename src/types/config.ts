@@ -2,7 +2,7 @@ import { SharedObjectRef } from './index.js';
 
 export type Network = 'mainnet' | 'testnet';
 
-export type DerivativeKind = 'sCoin' | 'gCoin' | 'TLP';
+export type DerivativeKind = 'sCoin' | 'gCoin' | 'TLP' | 'BFBTC';
 
 export type AggregatorObjectInfo = {
   priceAggregator: SharedObjectRef;

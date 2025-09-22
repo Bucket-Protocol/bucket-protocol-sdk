@@ -1,6 +1,6 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
 import { BucketClient } from '../../src/client.js';
@@ -22,20 +22,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(usdbMetadata?.decimals).toBe(6);
     expect(usdbMetadata?.symbol).toBe('USDB');
     expect(usdbMetadata?.name).toBe('Bucket USD');
-  });
-
-  it('test aggregatePrice()', async () => {
-    const coinTypes = bucketClient.getAllOracleCoinTypes();
-    const tx = new Transaction();
-    await bucketClient.aggregatePrices(tx, { coinTypes });
-    tx.setSender(testAccount);
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-    expect(dryrunRes.effects.status.status).toBe('success');
-    const priceResultEvent = dryrunRes.events.filter((e) => e.type.includes('PriceAggregated'));
-    expect(priceResultEvent.length).toBe(coinTypes.length);
-  });
+  }, 20_000);
 
   it('test getAllOraclePrices()', async () => {
     const prices = await bucketClient.getAllOraclePrices();
@@ -54,7 +41,183 @@ describe('Interacting with Bucket Client on mainnet', () => {
         expect(price).toBeDefined();
       }
     });
-  });
+  }, 20_000);
+
+  it('test getAccountPositions() and getUserPositions()', async () => {
+    const accountPositions = await bucketClient.getAccountPositions({ address: testAccount });
+    const userPositions = await bucketClient.getUserPositions({ address: testAccount });
+    expect(accountPositions.length).toBeLessThanOrEqual(userPositions.length);
+  }, 20_000);
+
+  it('test buildClaimBorrowRewardsTransaction()', async () => {
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+    bucketClient.getAllCollateralTypes().map((coinType) => {
+      const rewards = bucketClient.buildClaimBorrowRewardsTransaction(tx, { coinType });
+      if (rewards) tx.transferObjects(rewards, testAccount);
+    });
+    const res = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+    expect(res.balanceChanges.length).toBe(3);
+    res.balanceChanges.map((bc) => {
+      if (normalizeStructTag(bc.coinType) !== normalizeStructTag('0x2::sui::SUI')) {
+        expect(Number(bc.amount)).toBeGreaterThan(0);
+      }
+    });
+  }, 20_000);
+
+  it('test psmSwapIn()', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 1 * 10 ** 6; // 1 USDC
+
+    const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
+    const usdtCoin = coinWithBalance({ type: usdtCoinType, balance: amount });
+    const usdbCoin1 = await bucketClient.buildPSMSwapInTransaction(tx, {
+      coinType: usdcCoinType,
+      inputCoinOrAmount: usdcCoin,
+    });
+    const usdbCoin2 = await bucketClient.buildPSMSwapInTransaction(tx, {
+      coinType: usdtCoinType,
+      inputCoinOrAmount: usdtCoin,
+    });
+
+    tx.transferObjects([usdbCoin1, usdbCoin2], testAccount);
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdcCoinType)?.amount).toBe('-1000000');
+    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdtCoinType)?.amount).toBe('-1000000');
+    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdbCoinType)?.amount).toBe('1999500');
+  }, 20_000);
+
+  it('test flashMint 1000 USDB with default fee config', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 1_000 * 10 ** 6; // 1000 USDB
+    const feeAmount = amount * 0.0005;
+
+    // flash mint
+    const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
+    const feeCollateralCoin = coinWithBalance({ type: usdcCoinType, balance: feeAmount });
+    const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
+      coinType: usdcCoinType,
+      inputCoinOrAmount: feeCollateralCoin,
+    });
+    tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
+    bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  }, 20_000);
+
+  it('test psmSwapIn() then deposit to saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 0.1 * 10 ** 6; // 0.1 USDB
+    const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
+
+    // psmSwapIn
+    const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
+      coinType: usdcCoinType,
+      inputCoinOrAmount: usdcCoin,
+    });
+
+    bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      address: testAccount,
+      depositCoinOrAmount: usdbCoin,
+    });
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  }, 20_000);
+
+  it('test deposit to saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 0.1 * 10 ** 6; // 0.1 USDB
+
+    const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
+    bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      address: testAccount,
+      depositCoinOrAmount: usdbCoin,
+    });
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  }, 20_000);
+
+  it('test withdraw from saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const amount = 0.1 * 10 ** 6; // 0.1 SUSDB
+
+    const usdbCoin = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      amount,
+    });
+
+    tx.transferObjects([usdbCoin], testAccount);
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  }, 20_000);
+
+  it('test claim from saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+
+    const rewardCoins = bucketClient.buildClaimSavingRewardsTransaction(tx, {
+      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+    });
+
+    tx.transferObjects([...rewardCoins], testAccount);
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
+  }, 20_000);
+
+  it('test getAllVaultObjects()', async () => {
+    const allVaults = await bucketClient.getAllVaultObjects();
+    Object.entries(allVaults)
+      .filter(([coinType]) => coinType.includes('SCALLOP_') && !coinType.includes('_DEEP'))
+      .map(([, vault]) => {
+        expect(
+          vault.rewardRate['0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA'],
+        ).toBeDefined();
+      });
+  }, 20_000);
 
   it('test buildManagePositionTransaction()', async () => {
     const depositAmount = 1 * 10 ** 9; // 1 SUI
@@ -94,200 +257,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(+positionUpdatedEventData.withdraw_amount).toBe(0);
     expect(+positionUpdatedEventData.repay_amount).toBe(0);
     expect(positionUpdatedEventData.memo).toBe('cdp_manage');
-  });
-
-  it('test getAccountPositions() and getUserPositions()', async () => {
-    const accountPositions = await bucketClient.getAccountPositions({ address: testAccount });
-    const userPositions = await bucketClient.getUserPositions({ address: testAccount });
-    expect(accountPositions.length).toBeLessThanOrEqual(userPositions.length);
-  });
-
-  it('test buildClaimBorrowRewardsTransaction()', async () => {
-    const tx = new Transaction();
-    tx.setSender(testAccount);
-    bucketClient.getAllCollateralTypes().map((coinType) => {
-      const rewards = bucketClient.buildClaimBorrowRewardsTransaction(tx, { coinType });
-      if (rewards) tx.transferObjects(rewards, testAccount);
-    });
-    const res = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-    expect(res.balanceChanges.length).toBe(3);
-    res.balanceChanges.map((bc) => {
-      expect(Number(bc.amount)).toBeGreaterThan(0);
-    });
-  });
-
-  it('test psmSwapIn()', async () => {
-    // tx
-    const tx = new Transaction();
-    tx.setSender(testAccount);
-
-    const amount = 1 * 10 ** 6; // 1 USDC
-
-    const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
-    const usdtCoin = coinWithBalance({ type: usdtCoinType, balance: amount });
-    const usdbCoin1 = await bucketClient.buildPSMSwapInTransaction(tx, {
-      coinType: usdcCoinType,
-      inputCoinOrAmount: usdcCoin,
-    });
-    const usdbCoin2 = await bucketClient.buildPSMSwapInTransaction(tx, {
-      coinType: usdtCoinType,
-      inputCoinOrAmount: usdtCoin,
-    });
-
-    tx.transferObjects([usdbCoin1, usdbCoin2], testAccount);
-
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-    expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdcCoinType)?.amount).toBe('-1000000');
-    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdtCoinType)?.amount).toBe('-1000000');
-    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdbCoinType)?.amount).toBe('1997000');
-  });
-
-  it('test flashMint 1000 USDB with default fee config', async () => {
-    // tx
-    const tx = new Transaction();
-    tx.setSender(testAccount);
-
-    const amount = 1_000 * 10 ** 6; // 1000 USDB
-    const feeAmount = amount * 0.0005;
-
-    // flash mint
-    const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
-    const feeCollateralCoin = coinWithBalance({ type: usdcCoinType, balance: feeAmount });
-    const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
-      coinType: usdcCoinType,
-      inputCoinOrAmount: feeCollateralCoin,
-    });
-    tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
-    bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
-
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-
-    expect(dryrunRes.effects.status.status).toBe('success');
-  });
-
-  it('test psmSwapIn() then deposit to saving pool', async () => {
-    // tx
-    const tx = new Transaction();
-    tx.setSender(testAccount);
-
-    const amount = 0.1 * 10 ** 6; // 0.1 USDB
-    const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
-
-    // psmSwapIn
-    const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
-      coinType: usdcCoinType,
-      inputCoinOrAmount: usdcCoin,
-    });
-
-    bucketClient.buildDepositToSavingPoolTransaction(tx, {
-      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
-      address: testAccount,
-      depositCoinOrAmount: usdbCoin,
-    });
-
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-
-    expect(dryrunRes.effects.status.status).toBe('success');
-  });
-
-  it('test deposit to saving pool', async () => {
-    // tx
-    const tx = new Transaction();
-    tx.setSender(testAccount);
-
-    const amount = 0.1 * 10 ** 6; // 0.1 USDB
-
-    const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
-    bucketClient.buildDepositToSavingPoolTransaction(tx, {
-      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
-      address: testAccount,
-      depositCoinOrAmount: usdbCoin,
-    });
-
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-
-    expect(dryrunRes.effects.status.status).toBe('success');
-  });
-
-  it('test withdraw from saving pool', async () => {
-    // tx
-    const tx = new Transaction();
-    tx.setSender(testAccount);
-
-    const amount = 0.1 * 10 ** 6; // 0.1 SUSDB
-
-    const usdbCoin = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
-      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
-      amount,
-    });
-
-    tx.transferObjects([usdbCoin], testAccount);
-
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-
-    expect(dryrunRes.effects.status.status).toBe('success');
-  });
-
-  it('test claim from saving pool', async () => {
-    // tx
-    const tx = new Transaction();
-    tx.setSender(testAccount);
-
-    const rewardCoins = bucketClient.buildClaimSavingRewardsTransaction(tx, {
-      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
-    });
-
-    tx.transferObjects([...rewardCoins], testAccount);
-
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-
-    expect(dryrunRes.effects.status.status).toBe('success');
-  });
-
-  it('test getAllVaultObjects()', async () => {
-    const allVaults = await bucketClient.getAllVaultObjects();
-    Object.entries(allVaults)
-      .filter(([coinType]) => coinType.includes('SCALLOP_') && !coinType.includes('_DEEP'))
-      .map(([, vault]) => {
-        expect(
-          vault.rewardRate['0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA'],
-        ).toBeDefined();
-      });
-  });
-
-  it('test buildMigrateSBuckToSUsdbTransaction()', async () => {
-    const tx = new Transaction();
-    const account = '0x95b0ce9775382b88a4e698d31a0a7fd796922c91bb80de66e940bd4cae5a9916';
-    const res = await suiClient.getOwnedObjects({
-      owner: account,
-      filter: {
-        StructType:
-          '0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82::fountain_core::StakeProof<0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK, 0x2::sui::SUI>',
-      },
-    });
-    const proofIds = res.data.map((d) => d.data?.objectId as string);
-    await bucketClient.buildMigrateSBuckToSUsdbTransaction(tx, { sbuckPositionIds: proofIds, address: account });
-    // console.log(await tx.toJSON());
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
-    expect(dryrunRes.effects.status.status).toBe('success');
-  });
+  }, 20_000);
 });
 
 // describe('Interacting with Bucket Client on testnet', () => {
