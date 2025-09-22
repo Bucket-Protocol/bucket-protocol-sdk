@@ -38,6 +38,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Compile
         run: pnpm build
+      - name: Configure git user
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
       - name: Bump & publish package
         run: pnpm version ${{ inputs.version-bump-type }} && pnpm publish --provenance --access public
         env:
