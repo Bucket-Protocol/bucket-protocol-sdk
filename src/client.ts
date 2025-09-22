@@ -22,7 +22,6 @@ import {
   SavingInfo,
   SavingPoolInfo,
   SavingPoolObjectInfo,
-  SharedObjectRef,
   TransactionNestedResult,
   VaultInfo,
   VaultObjectInfo,
@@ -893,7 +892,7 @@ export class BucketClient {
         typeArguments: [coinType, underlyingCoinType],
         arguments: [collector, underlyingPriceResult, gcoinRuleConfig, unihouse],
       });
-    } else {
+    } else if (kind === 'TLP') {
       const indexMap = tx.sharedObjectRef({
         objectId: '0x440f1f04be202b44cc072fdba117e779c7c81bb202383b2d2088e9a67e15487e',
         initialSharedVersion: 633603447,
@@ -913,6 +912,16 @@ export class BucketClient {
         target: '0x499b930751ecbbfbbc3b76cde04486787a6e99752df3b5d765bd5f1f441934b8::tlp_rule::feed',
         typeArguments: [coinType],
         arguments: [collector, indexMap, tlpVersion, tlpRegistry],
+      });
+    } else {
+      tx.moveCall({
+        target: '0x6043cfb7e941a06526ed11e396d305ea547f55c55ae0e140d78652e8637ff60e::bfbtc_rule::feed',
+        typeArguments: [underlyingCoinType],
+        arguments: [
+          collector,
+          underlyingPriceResult,
+          tx.object('0x05b526a3cb659b9074d3f3f84f10ee19971c4b7cf15e9079da084f9edcf835e6'),
+        ],
       });
     }
     return tx.moveCall({
@@ -1763,190 +1772,5 @@ export class BucketClient {
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
     return this.psmSwapOut(tx, { coinType, priceResult, usdbCoin, accountObjectOrId: accountObjectOrId });
-  }
-
-  /**
-   * @description Migrate positions from SBUCK saving pool to SUSDB saving pool
-   */
-  async buildMigrateSBuckToSUsdbTransaction(
-    tx: Transaction,
-    {
-      sbuckPositionIds,
-      address,
-    }: {
-      sbuckPositionIds: string[];
-      address: string;
-    },
-  ) {
-    tx.setSender(address);
-    const sbuckType = '0x1798f84ee72176114ddbf5525a6d964c5f8ea1b3738d08d50d0d3de4cf584884::sbuck::SBUCK';
-    const buckType = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK';
-    const suiType = '0x2::sui::SUI';
-    const susdbType = '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB';
-    const fountainObj = tx.object('0xbdf91f558c2b61662e5839db600198eda66d502e4c10c4fc5c683f9caca13359');
-    const totalSuiCoin = getZeroCoin(tx, { coinType: suiType });
-    const totalSBuckBalance = tx.moveCall({ target: '0x2::balance::zero', typeArguments: [sbuckType] });
-    const [buckPriceResult] = await this.aggregatePrices(tx, { coinTypes: [buckType] });
-    if (buckPriceResult) {
-      const v1ProtocolObj = tx.object('0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df');
-      sbuckPositionIds.map((pid) => {
-        const [buckBalance, suiBalance] = tx.moveCall({
-          target: `0x75b23bde4de9aca930d8c1f1780aa65ee777d8b33c3045b053a178b452222e82::fountain_core::force_unstake`,
-          typeArguments: [sbuckType, suiType],
-          arguments: [tx.object.clock(), fountainObj, tx.object(pid)],
-        });
-        tx.moveCall({
-          target: '0x2::balance::join',
-          typeArguments: [sbuckType],
-          arguments: [totalSBuckBalance, buckBalance],
-        });
-        const [suiCoin] = tx.moveCall({
-          target: '0x2::coin::from_balance',
-          typeArguments: [suiType],
-          arguments: [suiBalance],
-        });
-        tx.mergeCoins(totalSuiCoin, [suiCoin]);
-      });
-      tx.transferObjects([totalSuiCoin], address);
-      const [buckBalance] = tx.moveCall({
-        target: `0x0b6ba9889bb71abc5fa89e4ad5db12e63bc331dba858019dd8d701bc91184d79::buck::sbuck_to_buck`,
-        arguments: [
-          v1ProtocolObj,
-          tx.object('0xc6ecc9731e15d182bc0a46ebe1754a779a4bfb165c201102ad51a36838a1a7b8'),
-          tx.object.clock(),
-          totalSBuckBalance,
-        ],
-      });
-      const [buckCoin] = tx.moveCall({
-        target: '0x2::coin::from_balance',
-        typeArguments: [buckType],
-        arguments: [buckBalance],
-      });
-      const [usdbCoin] = this.psmSwapIn(tx, { coinType: buckType, priceResult: buckPriceResult, inputCoin: buckCoin });
-      this.buildDepositToSavingPoolTransaction(tx, { lpType: susdbType, depositCoinOrAmount: usdbCoin, address });
-      tx.moveCall({
-        target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::flash_burn_buck',
-        arguments: [
-          tx.object('0xe716e382e99b172ff7e0cdc773649c154a95ab3c86ef21828a182839121fd920'),
-          v1ProtocolObj,
-          this.treasury(tx),
-          this.flashGlobalConfig(tx),
-          this.psmPoolObj(tx, { coinType: buckType }),
-          buckPriceResult,
-        ],
-      });
-    }
-  }
-
-  /**
-   * @description Migrate CDP positions from v1 to v2
-   */
-  async buildMigrateCdpPositions(
-    tx: Transaction,
-    {
-      positions,
-      address,
-    }: {
-      positions: {
-        collateralType: string;
-        strapFountain?: SharedObjectRef & { rewardType: string };
-        strapId?: string;
-      }[];
-      address: string;
-    },
-  ) {
-    tx.setSender(address);
-    const buckType = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK';
-    const allCollTypes = this.getAllCollateralTypes();
-    const coinTypes = [
-      buckType,
-      ...positions
-        .filter((p) => allCollTypes.includes(normalizeStructTag(p.collateralType)))
-        .map((p) => p.collateralType),
-    ];
-    const priceResults = await this.aggregatePrices(tx, { coinTypes });
-    const privilegesObj = tx.object('0xe716e382e99b172ff7e0cdc773649c154a95ab3c86ef21828a182839121fd920');
-    const v1ProtocolObj = tx.object('0x9e3dab13212b27f5434416939db5dec6a319d15b89a84fd074d03ece6350d3df');
-    const priceResultRecord = coinTypes.reduce(
-      (result, coinType, idx) => {
-        return { ...result, [normalizeStructTag(coinType)]: priceResults[idx] };
-      },
-      {} as Record<string, TransactionResult>,
-    );
-    positions.map((position) => {
-      const { collateralType, strapFountain, strapId } = position;
-      const coinType = normalizeStructTag(collateralType);
-      if (!Object.keys(this.config.VAULT_OBJS).includes(coinType)) return;
-      const [updateRequest, flashmintReceipt, debtAmount] = (() => {
-        if (strapFountain && strapId) {
-          const [strap, reward] = tx.moveCall({
-            target: `0x204f5f18b9b4d10eddc0f7256284ed3c655bd06e9425801e60b262152d47de50::fountain::unstake`,
-            typeArguments: [coinType, strapFountain.rewardType],
-            arguments: [tx.sharedObjectRef(strapFountain), tx.object.clock(), tx.object(strapId)],
-          });
-          tx.transferObjects([reward], address);
-          return tx.moveCall({
-            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate_strap',
-            typeArguments: [coinType],
-            arguments: [
-              privilegesObj,
-              v1ProtocolObj,
-              tx.object.clock(),
-              this.vault(tx, { coinType }),
-              this.treasury(tx),
-              strap,
-            ],
-          });
-        } else if (strapId) {
-          const strap = tx.object(strapId);
-          return tx.moveCall({
-            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate_strap',
-            typeArguments: [coinType],
-            arguments: [
-              privilegesObj,
-              v1ProtocolObj,
-              tx.object.clock(),
-              this.vault(tx, { coinType }),
-              this.treasury(tx),
-              strap,
-            ],
-          });
-        } else {
-          return tx.moveCall({
-            target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::migrate',
-            typeArguments: [coinType],
-            arguments: [
-              privilegesObj,
-              v1ProtocolObj,
-              tx.object.clock(),
-              this.vault(tx, { coinType }),
-              this.treasury(tx),
-            ],
-          });
-        }
-      })();
-      const [collCoin, usdbCoin, response] = this.updatePosition(tx, {
-        coinType,
-        updateRequest,
-        priceResult: priceResultRecord[coinType],
-      });
-      destroyZeroCoin(tx, { coin: collCoin, coinType });
-      this.checkUpdatePositionResponse(tx, { coinType, response });
-      tx.moveCall({
-        target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::flash_burn_usdb',
-        arguments: [privilegesObj, v1ProtocolObj, this.treasury(tx), usdbCoin, flashmintReceipt, debtAmount],
-      });
-    });
-    tx.moveCall({
-      target: '0x4c3f58d56bdf517083b65df037b39b2ca95f4c79bf979bd80df661f807df03a8::migration::flash_burn_buck',
-      arguments: [
-        tx.object('0xe716e382e99b172ff7e0cdc773649c154a95ab3c86ef21828a182839121fd920'),
-        v1ProtocolObj,
-        this.treasury(tx),
-        this.flashGlobalConfig(tx),
-        this.psmPoolObj(tx, { coinType: buckType }),
-        priceResultRecord[normalizeStructTag(buckType)],
-      ],
-    });
   }
 }
