@@ -3,8 +3,8 @@ import { Transaction } from '@mysten/sui/transactions';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import { BucketClient } from '@/client.js';
-import { coinWithBalance } from '@/utils/transaction.js';
+import { BucketClient } from '../../src/client.js';
+import { coinWithBalance } from '../../src/utils/transaction.js';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   const network = 'mainnet';

@@ -1,4 +1,4 @@
-name: Lint
+name: Unit test
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
   issues: write
 
 jobs:
-  lint:
+  unit-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,5 +25,5 @@ jobs:
           cache: 'pnpm'
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-      - name: Run ESLint
-        run: pnpm lint
+      - name: Run unit test
+        run: pnpm test
