@@ -60,6 +60,8 @@ jobs:
         with:
           repository: Bucket-Protocol/${{ matrix.repo }}
           token: ${{ secrets.ADMIN_TOKEN }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
