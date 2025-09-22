@@ -1,4 +1,4 @@
-name: Lint
+name: E2E test
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
   issues: write
 
 jobs:
-  lint:
+  e2e-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,5 +25,5 @@ jobs:
           cache: 'pnpm'
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-      - name: Run ESLint
-        run: pnpm lint
+      - name: Run E2E test
+        run: pnpm test

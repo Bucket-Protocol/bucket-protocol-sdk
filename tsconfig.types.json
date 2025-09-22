@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/types",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true
+  }
+}

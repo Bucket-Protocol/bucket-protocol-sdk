@@ -3,10 +3,10 @@ name: Publish package
 on:
   workflow_dispatch:
     inputs:
-      versionBumpType:
-        description: "Version bump type"
+      version-bump-type:
+        description: 'Version bump type'
         required: true
-        default: "patch"
+        default: 'patch'
         type: choice
         options:
           - major
@@ -20,39 +20,31 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    outputs:
-      latest-version: ${{ steps.publish.outputs.latest-version }}
-    defaults:
-      run:
-        working-directory: ./sdk
     steps:
       - name: Check permission
-        if: ${{ !contains('["17008875","33892812", "2819672"]', github.actor_id) }}
+        if: ${{ !contains('["17008875", "33892812", "2819672"]', github.actor_id) }}
         run: echo 'Permission denied' && exit 1
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.ADMIN_TOKEN }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
-          registry-url: "https://registry.npmjs.org"
+          registry-url: 'https://www.npmjs.com/bucket-protocol'
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Compile
-        run: yarn run build
+        run: pnpm build
       - name: Bump & publish package
-        run: yarn version --${{ inputs.versionBumpType }} --no-git-tag-version && npm publish --provenance
+        run: pnpm version ${{ inputs.version-bump-type }} && pnpm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - id: publish
-        name: Output variables
-        run: echo "latest-version=$(npm view bucket-protocol-sdk version)" >> "$GITHUB_OUTPUT"
-      - name: Commit change
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: bump sdk version"
+
   create-pr:
     runs-on: ubuntu-latest
     needs: publish
@@ -62,20 +54,20 @@ jobs:
           - bucket-frontend-v5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: Bucket-Protocol/${{ matrix.repo }}
           token: ${{ secrets.ADMIN_TOKEN }}
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
       - name: Bump version
         run: |
-          yarn upgrade bucket-protocol-sdk@${{ needs.publish.outputs.latest-version }}  --save-exact
+          pnpm upgrade bucket-protocol-sdk@$latest --save-exact
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: bump-bucket-protocol-sdk-v${{ needs.publish.outputs.latest-version }}
-          title: "chore: bump bucket-protocol-sdk to v${{ needs.publish.outputs.latest-version }}"
+          branch: bump-bucket-protocol-sdk
+          title: 'chore: bump bucket-protocol-sdk'
           token: ${{ secrets.ADMIN_TOKEN }}

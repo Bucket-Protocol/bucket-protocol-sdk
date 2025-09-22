@@ -1,24 +1,77 @@
 {
-  "name": "bucket-sdk-monorepo",
-  "private": true,
-  "workspaces": [
-    "sdk",
-    "previews/*"
-  ],
+  "name": "@bucket-protocol/sdk",
+  "author": "Bucket Protocol <info@bucketprotocol.io>",
+  "version": "1.0.4-dev.1",
+  "license": "Apache-2.0",
+  "description": "Bucket Protocol TypeScript SDK",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bucket-Protocol/bucket-protocol-sdk.git"
+  },
+  "homepage": "https://github.com/Bucket-Protocol/bucket-protocol-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/Bucket-Protocol/bucket-protocol-sdk/issues"
+  },
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "require": "./dist/cjs/*.js",
+      "import": "./dist/esm/*.js",
+      "default": "./dist/esm/*.js"
+    }
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
   "scripts": {
-    "preinstall": "bash ./scripts/setup.sh",
-    "build": "turbo run build",
-    "lint": "turbo lint --filter=bucket-protocol-sdk"
+    "lint": "eslint",
+    "clean": "rm -rf tsconfig.tsbuildinfo ./dist",
+    "build:types": "tsc -p ./tsconfig.types.json && tsc-alias -p ./tsconfig.types.json",
+    "build:cjs": "tsc -p ./tsconfig.cjs.json && tsc-alias -p ./tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
+    "build:esm": "tsc -p ./tsconfig.esm.json && tsc-alias -p ./tsconfig.esm.json && echo '{\"type\": \"module\"}' > dist/esm/package.json",
+    "build": "pnpm clean && npm-run-all --parallel build:types build:cjs build:esm",
+    "test": "vitest"
   },
-  "engines": {
-    "node": ">=20.18.0"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
-  "resolutions": {
-    "@mysten/sui": "1.28.2"
+  "dependencies": {
+    "@mysten/bcs": "1.8.0",
+    "@mysten/sui": "1.38.0",
+    "@pythnetwork/pyth-sui-js": "^2.2.0"
   },
   "devDependencies": {
-    "turbo": "2.4.4"
-  }
+    "@changesets/cli": "^2.26.2",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.35.0",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.44.0",
+    "@typescript-eslint/parser": "^8.44.0",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-unused-imports": "^4.2.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.6.2",
+    "tsc-alias": "^1.8.16",
+    "typescript": "5.9.2",
+    "vitest": "^0.34.1"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
+  "resolutions": {
+    "@mysten/sui": "1.38.0",
+    "@mysten/bcs": "1.8.0"
+  },
+  "packageManager": "pnpm@10.16.1+sha512.0e155aa2629db8672b49e8475da6226aa4bdea85fdcdfdc15350874946d4f3c91faaf64cbdc4a5d1ab8002f473d5c3fcedcd197989cf0390f9badd3c04678706"
 }
