@@ -89,6 +89,13 @@ export class BucketClient {
   /**
    * @description
    */
+  async getConfig(): Promise<ConfigType | undefined> {
+    return this.config;
+  }
+
+  /**
+   * @description
+   */
   getUsdbCoinType(): string {
     return `${this.config.ORIGINAL_USDB_PACKAGE_ID}::usdb::USDB`;
   }

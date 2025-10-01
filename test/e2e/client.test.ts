@@ -4,7 +4,7 @@ import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
 import { BucketClient } from '../../src/client.js';
-import { coinWithBalance } from '../../src/utils/transaction.js';
+import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '../../src/utils/transaction.js';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   const network = 'mainnet';
@@ -257,6 +257,30 @@ describe('Interacting with Bucket Client on mainnet', () => {
     expect(+positionUpdatedEventData.withdraw_amount).toBe(0);
     expect(+positionUpdatedEventData.repay_amount).toBe(0);
     expect(positionUpdatedEventData.memo).toBe('cdp_manage');
+  }, 20_000);
+
+  it('test deposit/withdraw zero to saving pool', async () => {
+    // tx
+    const tx = new Transaction();
+    tx.setSender(testAccount);
+    const zeroUsdbCoin = getZeroCoin(tx, { coinType: usdbCoinType });
+    bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      address: testAccount,
+      depositCoinOrAmount: zeroUsdbCoin,
+    });
+
+    const usdbOut = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+      lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
+      amount: 0,
+    });
+    destroyZeroCoin(tx, { coinType: usdbCoinType, coin: usdbOut });
+
+    const dryrunRes = await suiClient.dryRunTransactionBlock({
+      transactionBlock: await tx.build({ client: suiClient }),
+    });
+
+    expect(dryrunRes.effects.status.status).toBe('success');
   }, 20_000);
 });
 
