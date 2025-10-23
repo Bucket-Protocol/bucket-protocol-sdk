@@ -7,13 +7,12 @@ import {
   TransactionObjectInput,
   TransactionResult,
 } from '@mysten/sui/transactions';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag, parseStructTag } from '@mysten/sui/utils';
 import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import {
   AggregatorObjectInfo,
   ConfigType,
-  DerivativeKind,
   Network,
   PaginatedPositionsResult,
   PositionInfo,
@@ -36,6 +35,14 @@ import { Pool } from '@/_generated/bucket_v2_psm/pool.js';
 import { Field } from '@/_generated/bucket_v2_saving_incentive/deps/sui/dynamic_field.js';
 import { Rewarder, RewarderKey } from '@/_generated/bucket_v2_saving_incentive/saving_incentive.js';
 import { SavingPool } from '@/_generated/bucket_v2_saving/saving.js';
+
+import {
+  GCOIN_RULE_CONFIG,
+  SCALLOP_MARKET,
+  SCALLOP_VERSION,
+  SCOIN_RULE_CONFIG,
+  UNIHOUSE_OBJECT,
+} from './consts/price.js';
 
 export class BucketClient {
   /**
@@ -194,21 +201,27 @@ export class BucketClient {
    */
   async getOraclePrices({ coinTypes }: { coinTypes: string[] }): Promise<Record<string, number>> {
     const tx = new Transaction();
+
     await this.aggregatePrices(tx, { coinTypes });
+
     tx.setSender(DUMMY_ADDRESS);
+
     const dryrunRes = await this.suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: this.suiClient }),
     });
-    const priceResultEvent = dryrunRes.events.filter((e) => e.type.includes('PriceAggregated'));
-    const pricePrecision = 10 ** 9;
-    const result: Record<string, number> = {};
-    priceResultEvent.map((e) => {
-      const startIdx = e.type.indexOf('<') + 1;
-      const endIdx = e.type.lastIndexOf('>');
-      const coinType = normalizeStructTag(e.type.slice(startIdx, endIdx));
-      result[coinType] = +(e.parsedJson as { result: string }).result / pricePrecision;
-    });
-    return result;
+    return dryrunRes.events.reduce((result, e) => {
+      const typeStruct = parseStructTag(e.type);
+
+      if (typeStruct.module !== 'aggregator' || typeStruct.name !== 'PriceAggregated') {
+        return result;
+      }
+      const coinType = normalizeStructTag(typeStruct.typeParams[0]);
+
+      return {
+        ...result,
+        [coinType]: +(e.parsedJson as { result: string }).result / 10 ** 9,
+      };
+    }, {});
   }
 
   /**
@@ -216,6 +229,7 @@ export class BucketClient {
    */
   async getAllOraclePrices(): Promise<Record<string, number>> {
     const coinTypes = this.getAllOracleCoinTypes();
+
     return this.getOraclePrices({ coinTypes });
   }
 
@@ -839,6 +853,51 @@ export class BucketClient {
   }
 
   /**
+   * @description Get a basic (not derivative) price result
+   * @param collateral coin type, e.g "0x2::sui::SUI"
+   * @return [PriceResult]
+   */
+  async aggregateBasicPrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
+    if (!coinTypes.length) {
+      return [];
+    }
+    const pythPriceIds = coinTypes.map((coinType) => {
+      const aggregator = this.getAggregatorObjectInfo({ coinType });
+
+      if (!('pythPriceId' in aggregator)) {
+        throw new Error(`${coinType} has no basic price`);
+      }
+      return aggregator.pythPriceId;
+    });
+    const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore pythClient has only commonJS
+    const priceInfoObjIds = await this.pythClient.updatePriceFeeds(tx, updateData, pythPriceIds);
+
+    return coinTypes.map((coinType, index) => {
+      const collector = this.newPriceCollector(tx, { coinType });
+
+      tx.moveCall({
+        target: `${this.config.PYTH_RULE_PACKAGE_ID}::pyth_rule::feed`,
+        typeArguments: [coinType],
+        arguments: [
+          collector,
+          tx.sharedObjectRef(this.config.PYTH_RULE_CONFIG_OBJ),
+          tx.object.clock(),
+          tx.object(this.config.PYTH_STATE_ID),
+          tx.object(priceInfoObjIds[index]),
+        ],
+      });
+      const priceResult = tx.moveCall({
+        target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
+        typeArguments: [coinType],
+        arguments: [tx.sharedObjectRef(this.getAggregatorObjectInfo({ coinType }).priceAggregator), collector],
+      });
+      return priceResult;
+    });
+  }
+
+  /**
    * @description
    */
   private getDerivativePrice(
@@ -851,131 +910,56 @@ export class BucketClient {
       underlyingPriceResult: TransactionArgument;
     },
   ): TransactionResult {
-    const aggInfo = this.getAggregatorObjectInfo({ coinType });
-    const underlyingCoinType = aggInfo.derivativeInfo?.underlyingCoinType as string;
-    const kind = aggInfo.derivativeInfo?.derivativeKind as DerivativeKind;
+    const aggregator = this.getAggregatorObjectInfo({ coinType });
+
+    if (!('derivativeInfo' in aggregator)) {
+      throw new Error(`${coinType} has no derivative info`);
+    }
+    const { priceAggregator, derivativeInfo } = aggregator;
     const collector = this.newPriceCollector(tx, { coinType });
-    if (kind === 'sCoin') {
-      const scoinRuleConfig = tx.sharedObjectRef({
-        objectId: '0xe5a7b5c2a17811b03a48b9fa277319ffe4e629ce93b862c08fed71fb11b27618',
-        initialSharedVersion: 610893718,
-        mutable: false,
-      });
-      const scallopVersion = tx.sharedObjectRef({
-        objectId: '0x07871c4b3c847a0f674510d4978d5cf6f960452795e8ff6f189fd2088a3f6ac7',
-        initialSharedVersion: 7765848,
-        mutable: false,
-      });
-      const scallopMarket = tx.sharedObjectRef({
-        objectId: '0xa757975255146dc9686aa823b7838b507f315d704f428cbadad2f4ea061939d9',
-        initialSharedVersion: 7765848,
-        mutable: true,
-      });
-      tx.moveCall({
-        target: '0x18f4f3cd05ab7ff6dc0c41c692e3caae925927cc096f1de3de81d85a89f87aca::scoin_rule::feed',
-        typeArguments: [coinType, underlyingCoinType],
-        arguments: [
-          collector,
-          scoinRuleConfig,
-          underlyingPriceResult,
-          scallopVersion,
-          scallopMarket,
-          tx.object.clock(),
-        ],
-      });
-    } else if (kind === 'gCoin') {
-      const gcoinRuleConfig = tx.sharedObjectRef({
-        objectId: '0x6466f287d8864c56de1459ad294907d2a06767e9589ae953cc5e0f009fc1cfd7',
-        initialSharedVersion: 610893721,
-        mutable: false,
-      });
-      const unihouse = tx.sharedObjectRef({
-        objectId: '0x75c63644536b1a7155d20d62d9f88bf794dc847ea296288ddaf306aa320168ab',
-        initialSharedVersion: 333730283,
-        mutable: false,
-      });
-      tx.moveCall({
-        target: '0xba3c970933047c6e235424d7040a9a4e89d8fc1200d780a69b2666434f3a7313::gcoin_rule::feed',
-        typeArguments: [coinType, underlyingCoinType],
-        arguments: [collector, underlyingPriceResult, gcoinRuleConfig, unihouse],
-      });
-    } else if (kind === 'TLP') {
-      const indexMap = tx.sharedObjectRef({
-        objectId: '0x440f1f04be202b44cc072fdba117e779c7c81bb202383b2d2088e9a67e15487e',
-        initialSharedVersion: 633603447,
-        mutable: false,
-      });
-      const tlpVersion = tx.sharedObjectRef({
-        objectId: '0xa12c282a068328833ec4a9109fc77803ec1f523f8da1bb0f82bac8450335f0c9',
-        initialSharedVersion: 516359485,
-        mutable: false,
-      });
-      const tlpRegistry = tx.sharedObjectRef({
-        objectId: '0xfee68e535bf24702be28fa38ea2d5946e617e0035027d5ca29dbed99efd82aaa',
-        initialSharedVersion: 516359485,
-        mutable: false,
-      });
-      tx.moveCall({
-        target: '0x499b930751ecbbfbbc3b76cde04486787a6e99752df3b5d765bd5f1f441934b8::tlp_rule::feed',
-        typeArguments: [coinType],
-        arguments: [collector, indexMap, tlpVersion, tlpRegistry],
-      });
-    } else {
-      tx.moveCall({
-        target: '0x6043cfb7e941a06526ed11e396d305ea547f55c55ae0e140d78652e8637ff60e::bfbtc_rule::feed',
-        typeArguments: [underlyingCoinType],
-        arguments: [
-          collector,
-          underlyingPriceResult,
-          tx.object('0x05b526a3cb659b9074d3f3f84f10ee19971c4b7cf15e9079da084f9edcf835e6'),
-        ],
-      });
+
+    switch (derivativeInfo.derivativeKind) {
+      case 'sCoin':
+        tx.moveCall({
+          target: '0x18f4f3cd05ab7ff6dc0c41c692e3caae925927cc096f1de3de81d85a89f87aca::scoin_rule::feed',
+          typeArguments: [coinType, derivativeInfo.underlyingCoinType],
+          arguments: [
+            collector,
+            tx.sharedObjectRef(SCOIN_RULE_CONFIG),
+            underlyingPriceResult,
+            tx.sharedObjectRef(SCALLOP_VERSION),
+            tx.sharedObjectRef(SCALLOP_MARKET),
+            tx.object.clock(),
+          ],
+        });
+        break;
+      case 'gCoin':
+        tx.moveCall({
+          target: '0xba3c970933047c6e235424d7040a9a4e89d8fc1200d780a69b2666434f3a7313::gcoin_rule::feed',
+          typeArguments: [coinType, derivativeInfo.underlyingCoinType],
+          arguments: [
+            collector,
+            underlyingPriceResult,
+            tx.sharedObjectRef(GCOIN_RULE_CONFIG),
+            tx.sharedObjectRef(UNIHOUSE_OBJECT),
+          ],
+        });
+        break;
+      case 'BFBTC':
+        tx.moveCall({
+          target: '0x6043cfb7e941a06526ed11e396d305ea547f55c55ae0e140d78652e8637ff60e::bfbtc_rule::feed',
+          typeArguments: [derivativeInfo.underlyingCoinType],
+          arguments: [
+            collector,
+            underlyingPriceResult,
+            tx.object('0x05b526a3cb659b9074d3f3f84f10ee19971c4b7cf15e9079da084f9edcf835e6'),
+          ],
+        });
     }
     return tx.moveCall({
       target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
       typeArguments: [coinType],
-      arguments: [tx.sharedObjectRef(aggInfo.priceAggregator), collector],
-    });
-  }
-
-  /**
-   * @description Get a basic (not derivative) price result
-   * @param collateral coin type, e.g "0x2::sui::SUI"
-   * @return [PriceResult]
-   */
-  async aggregateBasicPrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
-    const aggInfoList = coinTypes.map((coinType) => {
-      const aggInfo = this.getAggregatorObjectInfo({ coinType });
-      if (!aggInfo.pythPriceId) throw new Error(`${coinType} has no basic price`);
-      return aggInfo;
-    });
-    const pythPriceIds = aggInfoList.map((aggInfo) => aggInfo.pythPriceId ?? '');
-
-    const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore pythClient has only commonJS
-    const priceInfoObjIds = await this.pythClient.updatePriceFeeds(tx, updateData, pythPriceIds);
-
-    return coinTypes.map((coinType, idx) => {
-      const collector = this.newPriceCollector(tx, { coinType });
-
-      tx.moveCall({
-        target: `${this.config.PYTH_RULE_PACKAGE_ID}::pyth_rule::feed`,
-        typeArguments: [coinType],
-        arguments: [
-          collector,
-          tx.sharedObjectRef(this.config.PYTH_RULE_CONFIG_OBJ),
-          tx.object.clock(),
-          tx.object(this.config.PYTH_STATE_ID),
-          tx.object(priceInfoObjIds[idx]),
-        ],
-      });
-      const priceResult = tx.moveCall({
-        target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
-        typeArguments: [coinType],
-        arguments: [tx.sharedObjectRef(aggInfoList[idx].priceAggregator), collector],
-      });
-      return priceResult;
+      arguments: [tx.sharedObjectRef(priceAggregator), collector],
     });
   }
 
@@ -983,41 +967,35 @@ export class BucketClient {
    * @description
    */
   async aggregatePrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
-    const basicCoinTypes = coinTypes.filter((coinType) => {
-      const aggInfo = this.getAggregatorObjectInfo({ coinType });
-      return aggInfo.pythPriceId !== undefined;
-    });
-    const underlyingCoinTypes = coinTypes
-      .map((coinType) => {
-        const aggInfo = this.getAggregatorObjectInfo({ coinType });
-        return aggInfo.derivativeInfo?.underlyingCoinType ?? '';
-      })
-      .filter((coinType) => coinType.length > 0 && !basicCoinTypes.includes(coinType));
-    const totalBasicCoinTypes = [...basicCoinTypes, ...underlyingCoinTypes];
-    const priceResults =
-      totalBasicCoinTypes.length > 0 ? await this.aggregateBasicPrices(tx, { coinTypes: totalBasicCoinTypes }) : [];
-    const priceResultRecord = totalBasicCoinTypes.reduce(
-      (result, coinType, idx) => {
-        return { ...result, [coinType]: priceResults[idx] };
-      },
-      {} as Record<string, TransactionResult>,
-    );
+    const allBasicCoinTypes = Array.from(
+      new Set(
+        coinTypes.map((coinType) => {
+          const aggregator = this.getAggregatorObjectInfo({ coinType });
 
+          return 'pythPriceId' in aggregator ? coinType : aggregator.derivativeInfo.underlyingCoinType;
+        }),
+      ),
+    );
+    const basicPriceResults = await this.aggregateBasicPrices(tx, { coinTypes: allBasicCoinTypes });
+
+    const priceResults = Object.fromEntries(
+      allBasicCoinTypes.map((coinType, index) => [coinType, basicPriceResults[index]]),
+    );
     // deal with exchange rate
-    coinTypes
-      .filter((coinType) => {
-        const aggInfo = this.getAggregatorObjectInfo({ coinType });
-        return aggInfo.derivativeInfo !== undefined;
-      })
-      .map((coinType) => {
-        const aggInfo = this.getAggregatorObjectInfo({ coinType });
-        const underlyingCoinType = aggInfo.derivativeInfo?.underlyingCoinType ?? '';
-        priceResultRecord[coinType] = this.getDerivativePrice(tx, {
-          coinType,
-          underlyingPriceResult: priceResultRecord[underlyingCoinType],
-        });
+    coinTypes.forEach((coinType) => {
+      const aggregator = this.getAggregatorObjectInfo({ coinType });
+
+      if (!('derivativeInfo' in aggregator)) {
+        return;
+      }
+      const { underlyingCoinType } = aggregator.derivativeInfo;
+
+      priceResults[coinType] = this.getDerivativePrice(tx, {
+        coinType,
+        underlyingPriceResult: priceResults[underlyingCoinType],
       });
-    return coinTypes.map((coinType) => priceResultRecord[coinType]);
+    });
+    return coinTypes.map((coinType) => priceResults[coinType]);
   }
 
   /**
@@ -1623,24 +1601,31 @@ export class BucketClient {
       coinType: string;
       accountObjectOrId?: string | TransactionArgument;
     },
-  ): TransactionResult[] | undefined {
+  ): Record<string, TransactionResult[]> {
     const vaultObj = this.vault(tx, { coinType });
     const rewarders = this.getVaultObjectInfo({ coinType }).rewarders;
     const registryObj = tx.sharedObjectRef(this.config.VAULT_REWARDER_REGISTRY);
 
-    return rewarders?.map((rewarder) => {
-      return tx.moveCall({
-        target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::claim`,
-        typeArguments: [coinType, rewarder.rewardType],
-        arguments: [
-          registryObj,
-          tx.object(rewarder.rewarderId),
-          vaultObj,
-          this.newAccountRequest(tx, { accountObjectOrId }),
-          tx.object.clock(),
-        ],
-      });
-    });
+    if (!rewarders) {
+      return {};
+    }
+    return rewarders.reduce(
+      (result, { rewardType, rewarderId }) => ({
+        ...result,
+        [rewardType]: tx.moveCall({
+          target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::claim`,
+          typeArguments: [coinType, rewardType],
+          arguments: [
+            registryObj,
+            tx.object(rewarderId),
+            vaultObj,
+            this.newAccountRequest(tx, { accountObjectOrId }),
+            tx.object.clock(),
+          ],
+        }),
+      }),
+      {},
+    );
   }
 
   /**

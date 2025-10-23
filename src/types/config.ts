@@ -6,12 +6,17 @@ export type DerivativeKind = 'sCoin' | 'gCoin' | 'TLP' | 'BFBTC';
 
 export type AggregatorObjectInfo = {
   priceAggregator: SharedObjectRef;
-  pythPriceId?: string;
-  derivativeInfo?: {
-    underlyingCoinType: string;
-    derivativeKind: DerivativeKind;
-  };
-};
+} & (
+  | {
+      pythPriceId: string;
+    }
+  | {
+      derivativeInfo: {
+        underlyingCoinType: string;
+        derivativeKind: DerivativeKind;
+      };
+    }
+);
 
 export type RewarderInfo = {
   rewarderId: string;
