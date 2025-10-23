@@ -1601,7 +1601,7 @@ export class BucketClient {
       coinType: string;
       accountObjectOrId?: string | TransactionArgument;
     },
-  ): Record<string, TransactionResult[]> {
+  ): Record<string, TransactionResult> {
     const vaultObj = this.vault(tx, { coinType });
     const rewarders = this.getVaultObjectInfo({ coinType }).rewarders;
     const registryObj = tx.sharedObjectRef(this.config.VAULT_REWARDER_REGISTRY);
