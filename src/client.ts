@@ -1701,18 +1701,22 @@ export class BucketClient {
       lpType: string;
       accountObjectOrId?: string | TransactionArgument;
     },
-  ): TransactionResult[] {
+  ): Record<string, TransactionResult> {
     const savingPool = this.getSavingPoolObjectInfo({ lpType });
 
     if (!savingPool.reward) {
-      return [];
+      return {};
     }
-    return savingPool.reward.rewardTypes.map((rewardType) =>
-      this.claimPoolIncentive(tx, {
-        lpType,
-        rewardType,
-        accountObjectOrId: accountObjectOrId,
+    return savingPool.reward.rewardTypes.reduce(
+      (result, rewardType) => ({
+        ...result,
+        [rewardType]: this.claimPoolIncentive(tx, {
+          lpType,
+          rewardType,
+          accountObjectOrId: accountObjectOrId,
+        }),
       }),
+      {},
     );
   }
 
