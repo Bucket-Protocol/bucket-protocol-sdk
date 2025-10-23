@@ -269,17 +269,6 @@ export const CONFIG: Record<Network, ConfigType> = {
             derivativeKind: 'gCoin',
           },
         },
-      '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
-        priceAggregator: {
-          objectId: '0x487e76e8c9a321cc0131bfcf6e5a4d87fbc0beb8f6384f8c7e1658cde6076798',
-          initialSharedVersion: 633603450,
-          mutable: false,
-        },
-        derivativeInfo: {
-          underlyingCoinType: '',
-          derivativeKind: 'TLP',
-        },
-      },
       '0x7438e8caf5c345fbd3772517380bf0ca432f53892dee65ee0dda3eb127993cd9::bfbtc::BFBTC': {
         priceAggregator: {
           objectId: '0xe93f95caf1b9cbb2309dd973524ec3ca3f17c9af1d33354f057f9824e97e5089',
@@ -293,13 +282,6 @@ export const CONFIG: Record<Network, ConfigType> = {
       },
     },
     VAULT_OBJS: {
-      '0xe27969a70f93034de9ce16e6ad661b480324574e68d15a64b513fd90eb2423e5::tlp::TLP': {
-        vault: {
-          objectId: '0xf4b852ec580fb15da542b191d5fefe96939f718b43dc0240062fa83b35f06da1',
-          initialSharedVersion: 610893709,
-          mutable: true,
-        },
-      },
       '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD>':
         {
           vault: {
