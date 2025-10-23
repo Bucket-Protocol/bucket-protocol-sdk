@@ -1,5 +1,5 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
@@ -52,10 +52,22 @@ describe('Interacting with Bucket Client on mainnet', () => {
   it('test buildClaimBorrowRewardsTransaction()', async () => {
     const tx = new Transaction();
     tx.setSender(testAccount);
-    bucketClient.getAllCollateralTypes().map((coinType) => {
-      const rewards = bucketClient.buildClaimBorrowRewardsTransaction(tx, { coinType });
-      if (rewards) tx.transferObjects(rewards, testAccount);
-    });
+    const result = bucketClient.getAllCollateralTypes().reduce(
+      (result, coinType) => {
+        const newResult = result;
+        const rewardsRecord = bucketClient.buildClaimBorrowRewardsTransaction(tx, { coinType });
+        Object.entries(rewardsRecord).map(([coinType, rewardCoin]) => {
+          if (newResult[coinType]) {
+            tx.mergeCoins(newResult[coinType], [rewardCoin]);
+          } else {
+            newResult[coinType] = rewardCoin;
+          }
+        });
+        return newResult;
+      },
+      {} as Record<string, TransactionResult>,
+    );
+    tx.transferObjects(Object.values(result), testAccount);
     const res = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
     });
@@ -72,7 +84,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const tx = new Transaction();
     tx.setSender(testAccount);
 
-    const amount = 1 * 10 ** 6; // 1 USDC
+    const amount = 1 * 10 ** 6; // 1 USDC or USDT
 
     const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
     const usdtCoin = coinWithBalance({ type: usdtCoinType, balance: amount });
@@ -195,11 +207,11 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const tx = new Transaction();
     tx.setSender(testAccount);
 
-    const rewardCoins = bucketClient.buildClaimSavingRewardsTransaction(tx, {
+    const rewardsRecord = bucketClient.buildClaimSavingRewardsTransaction(tx, {
       lpType: '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB',
     });
 
-    tx.transferObjects([...rewardCoins], testAccount);
+    tx.transferObjects(Object.values(rewardsRecord), testAccount);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
