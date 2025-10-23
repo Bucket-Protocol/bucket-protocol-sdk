@@ -585,11 +585,13 @@ export class BucketClient {
     const tx = new Transaction();
     const allCollateralTypes = this.getAllCollateralTypes();
 
-    Object.entries(this.config.VAULT_OBJS).map(([coinType, { vault }]) => {
+    allCollateralTypes.forEach((coinType) => {
+      const vaultInfo = this.getVaultObjectInfo({ coinType });
+
       tx.moveCall({
         target: `${this.config.CDP_PACKAGE_ID}::vault::try_get_position_data`,
         typeArguments: [coinType],
-        arguments: [tx.sharedObjectRef(vault), tx.pure.address(accountId ?? address), tx.object.clock()],
+        arguments: [tx.sharedObjectRef(vaultInfo.vault), tx.pure.address(accountId ?? address), tx.object.clock()],
       });
     });
     const res = await this.suiClient.devInspectTransactionBlock({
@@ -601,21 +603,22 @@ export class BucketClient {
     }
     const borrowRewards = await this.getUserBorrowRewards({ coinTypes: allCollateralTypes, address });
 
-    return Object.keys(this.config.VAULT_OBJS).reduce((result, collateralType, index) => {
+    return allCollateralTypes.reduce((result, coinType, index) => {
       if (!res.results?.[index]?.returnValues) {
         return result;
       }
       const collateralAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])));
       const debtAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[1][0])));
+      const hasBorrowRewards = !!Object.keys(borrowRewards[coinType]).length;
 
-      if (collateralAmount || debtAmount) {
+      if (collateralAmount || debtAmount || hasBorrowRewards) {
         result.push({
-          collateralType,
+          collateralType: coinType,
           collateralAmount,
           debtAmount,
           debtor: address,
           accountId,
-          rewards: borrowRewards[collateralType] ?? {},
+          rewards: borrowRewards[coinType] ?? {},
         });
       }
       return result;
