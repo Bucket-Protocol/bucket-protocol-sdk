@@ -8,7 +8,7 @@ import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '../../src/utils/t
 
 describe('Interacting with Bucket Client on mainnet', () => {
   const network = 'mainnet';
-  const testAccount = '0x26266b1381bcf03ab3acc37c1e87beffb52d49f345248bc3efb9114176990ae4';
+  const testAccount = '0x7a718956581fbe4a568d135fef5161024e74af87a073a1489e57ebef53744652';
   const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
   const bucketClient = new BucketClient({ suiClient, network });
   const usdbCoinType = bucketClient.getUsdbCoinType();
