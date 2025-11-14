@@ -280,6 +280,14 @@ export const CONFIG: Record<Network, ConfigType> = {
           derivativeKind: 'BFBTC',
         },
       },
+      '0x0041f9f9344cac094454cd574e333c4fdb132d7bcc9379bcd4aab485b2a63942::wbtc::WBTC': {
+        priceAggregator: {
+          objectId: '0xd812f15dd488f3c82e540259c41aaa6172be345f828c5041f2d826b2119bc451',
+          initialSharedVersion: 667214223,
+          mutable: false,
+        },
+        pythPriceId: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
+      },
     },
     VAULT_OBJS: {
       '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD>':
@@ -473,6 +481,13 @@ export const CONFIG: Record<Network, ConfigType> = {
         vault: {
           objectId: '0x1f32b8b587b69a97cb779b2df1e2aa90f6fbb43edcc887f11a8f4a6de0944937',
           initialSharedVersion: 639842264,
+          mutable: true,
+        },
+      },
+      '0x0041f9f9344cac094454cd574e333c4fdb132d7bcc9379bcd4aab485b2a63942::wbtc::WBTC': {
+        vault: {
+          objectId: '0x94f785bda085beb012e9e96d16a36cf16b6729f776e620ef8c3b37d1e06c2d82',
+          initialSharedVersion: 685690141,
           mutable: true,
         },
       },

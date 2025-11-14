@@ -295,7 +295,7 @@ export class BucketClient {
           collateralType,
           positionTableSize: +vault.position_table.size,
           collateralDecimal: +vault.decimal,
-          collateralBalance: BigInt(vault.balance.value),
+          collateralBalance: BigInt(vault.total_coll_amount),
           usdbSupply,
           maxUsdbSupply: BigInt(vault.limited_supply.limit),
           interestRate: Number((BigInt(vault.interest_rate.value) * 10000n) / DOUBLE_OFFSET) / 10000,
@@ -422,7 +422,7 @@ export class BucketClient {
         result[coinType] = {
           coinType,
           decimal: +pool.decimal,
-          balance: BigInt(pool.balance.value),
+          balance: BigInt(pool.balance_amount),
           usdbSupply: BigInt(pool.usdb_supply),
           feeRate: {
             swapIn: Number((BigInt(pool.default_fee_config.swap_in_fee_rate.value) * 10000n) / FLOAT_OFFSET) / 10000,
