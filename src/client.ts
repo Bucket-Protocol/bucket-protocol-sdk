@@ -1196,7 +1196,7 @@ export class BucketClient {
   /**
    * @description
    */
-  updateSavingPoolIncentiveDepositAction(
+  private updateSavingPoolIncentiveDepositAction(
     tx: Transaction,
     {
       lpType,
@@ -1257,7 +1257,11 @@ export class BucketClient {
     tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::check_deposit_response`,
       typeArguments: [lpType],
-      arguments: [depositResponse, this.savingPoolObj(tx, { lpType }), this.treasury(tx)],
+      arguments: [
+        this.updateSavingPoolIncentiveDepositAction(tx, { lpType, depositResponse }),
+        this.savingPoolObj(tx, { lpType }),
+        this.treasury(tx),
+      ],
     });
   }
 
@@ -1295,7 +1299,7 @@ export class BucketClient {
   /**
    * @description
    */
-  updateSavingPoolIncentiveWithdrawAction(
+  private updateSavingPoolIncentiveWithdrawAction(
     tx: Transaction,
     {
       lpType,
@@ -1356,7 +1360,11 @@ export class BucketClient {
     tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::check_withdraw_response`,
       typeArguments: [lpType],
-      arguments: [withdrawResponse, this.savingPoolObj(tx, { lpType }), this.treasury(tx)],
+      arguments: [
+        this.updateSavingPoolIncentiveWithdrawAction(tx, { lpType, withdrawResponse }),
+        this.savingPoolObj(tx, { lpType }),
+        this.treasury(tx),
+      ],
     });
   }
 
@@ -1692,11 +1700,8 @@ export class BucketClient {
       lpType,
       usdbCoin: depositCoin,
     });
-    const finalResponse = this.getSavingPoolObjectInfo({ lpType }).reward
-      ? this.updateSavingPoolIncentiveDepositAction(tx, { lpType, depositResponse })
-      : depositResponse;
 
-    this.checkDepositResponse(tx, { lpType, depositResponse: finalResponse });
+    this.checkDepositResponse(tx, { lpType, depositResponse });
   }
 
   /**
@@ -1719,11 +1724,8 @@ export class BucketClient {
       lpType,
       amount,
     });
-    const finalResponse = this.getSavingPoolObjectInfo({ lpType }).reward
-      ? this.updateSavingPoolIncentiveWithdrawAction(tx, { lpType, withdrawResponse })
-      : withdrawResponse;
 
-    this.checkWithdrawResponse(tx, { lpType, withdrawResponse: finalResponse });
+    this.checkWithdrawResponse(tx, { lpType, withdrawResponse });
 
     return usdbCoin;
   }

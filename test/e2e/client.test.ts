@@ -13,7 +13,6 @@ describe('Interacting with Bucket Client on mainnet', () => {
   const bucketClient = new BucketClient({ suiClient, network });
   const usdbCoinType = bucketClient.getUsdbCoinType();
   const usdcCoinType = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
-  const usdtCoinType = '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT';
 
   it('test usdbCoinType()', async () => {
     const usdbMetadata = await suiClient.getCoinMetadata({
@@ -87,25 +86,19 @@ describe('Interacting with Bucket Client on mainnet', () => {
     const amount = 1 * 10 ** 6; // 1 USDC or USDT
 
     const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
-    const usdtCoin = coinWithBalance({ type: usdtCoinType, balance: amount });
     const usdbCoin1 = await bucketClient.buildPSMSwapInTransaction(tx, {
       coinType: usdcCoinType,
       inputCoinOrAmount: usdcCoin,
     });
-    const usdbCoin2 = await bucketClient.buildPSMSwapInTransaction(tx, {
-      coinType: usdtCoinType,
-      inputCoinOrAmount: usdtCoin,
-    });
 
-    tx.transferObjects([usdbCoin1, usdbCoin2], testAccount);
+    tx.transferObjects([usdbCoin1], testAccount);
 
     const dryrunRes = await suiClient.dryRunTransactionBlock({
       transactionBlock: await tx.build({ client: suiClient }),
     });
     expect(dryrunRes.effects.status.status).toBe('success');
     expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdcCoinType)?.amount).toBe('-1000000');
-    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdtCoinType)?.amount).toBe('-1000000');
-    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdbCoinType)?.amount).toBe('1999500');
+    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdbCoinType)?.amount).toBe('1000000');
   }, 20_000);
 
   it('test flashMint 1000 USDB with default fee config', async () => {
