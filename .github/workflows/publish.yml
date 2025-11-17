@@ -46,6 +46,10 @@ jobs:
         run: pnpm version ${{ inputs.version-bump-type }} && pnpm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Commit change
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: bump sdk version'
 
   create-pr:
     runs-on: ubuntu-latest
@@ -68,7 +72,7 @@ jobs:
           node-version: 20
       - name: Bump version
         run: |
-          pnpm upgrade bucket-protocol-sdk@$latest --save-exact
+          pnpm upgrade @bucket-protocol/sdk --save-exact
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
         with:
