@@ -46,6 +46,8 @@ jobs:
         run: pnpm version ${{ inputs.version-bump-type }} && pnpm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Stage change
+        run: git add .
       - name: Commit change
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
