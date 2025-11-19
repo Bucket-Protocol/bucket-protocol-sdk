@@ -33,14 +33,36 @@ const client = new BucketClient({
 // Get all supported collateral types
 const collateralTypes = client.getAllCollateralTypes();
 console.log('Supported collaterals:', collateralTypes);
+// Example: ['0x2::sui::SUI', '0x...::btc::BTC', ...]
 
-// Get all vault information
+// Get all vault information (CDP vaults)
 const vaults = await client.getAllVaultObjects();
 console.log('Vault info:', vaults);
+// Returns: { [coinType]: VaultInfo, ... }
 
-// Get user positions
-const positions = await client.getUserPositions({ address: '0x...user-address' });
+// Get user positions (collateral and debt)
+const positions = await client.getUserPositions({
+  address: '0x...user-address'
+});
 console.log('User positions:', positions);
+// Returns: PositionInfo[]
+
+// Get all PSM pools
+const psmPools = await client.getAllPsmPoolObjects();
+console.log('PSM Pools:', psmPools);
+// Returns: { [coinType]: PsmPoolInfo, ... }
+
+// Get all saving pools
+const savingPools = await client.getAllSavingPoolObjects();
+console.log('Saving Pools:', savingPools);
+// Returns: { [lpType]: SavingPoolInfo, ... }
+
+// Get user's savings
+const userSavings = await client.getUserSavings({
+  address: '0x...user-address'
+});
+console.log('User Savings:', userSavings);
+// Returns: SavingInfo[]
 ```
 
 ## Core Features
@@ -125,6 +147,299 @@ if (positions.nextCursor) {
 }
 ```
 
+### 4. PSM (Peg Stability Module)
+
+The PSM allows users to swap stablecoins to/from USDB at fair prices with low fees.
+
+**Swap stablecoin to USDB (Swap In):**
+
+```typescript
+import { Transaction } from '@mysten/sui/transactions';
+
+const tx = new Transaction();
+
+// Example: Swap 10 USDC to USDB
+const usdcAmount = 10 * 10 ** 6; // 10 USDC (6 decimals)
+const USDC_TYPE = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
+
+const usdbCoin = await client.buildPSMSwapInTransaction(tx, {
+  coinType: USDC_TYPE,
+  inputCoinOrAmount: usdcAmount, // Can also pass a coin object
+});
+
+// Transfer or use the USDB coin
+tx.transferObjects([usdbCoin], keypair.getPublicKey().toSuiAddress());
+
+// Sign and execute
+tx.setSender(keypair.getPublicKey().toSuiAddress());
+const result = await client.getSuiClient().signAndExecuteTransaction({
+  signer: keypair,
+  transaction: tx,
+});
+```
+
+**Swap USDB to stablecoin (Swap Out):**
+
+```typescript
+const tx = new Transaction();
+
+// Example: Swap 10 USDB to USDC
+const usdbAmount = 10 * 10 ** 6; // 10 USDB (6 decimals)
+
+const usdcCoin = await client.buildPSMSwapOutTransaction(tx, {
+  coinType: USDC_TYPE,
+  usdbCoinOrAmount: usdbAmount, // Can also pass a coin object
+});
+
+// Transfer USDC to user
+tx.transferObjects([usdcCoin], keypair.getPublicKey().toSuiAddress());
+
+tx.setSender(keypair.getPublicKey().toSuiAddress());
+const result = await client.getSuiClient().signAndExecuteTransaction({
+  signer: keypair,
+  transaction: tx,
+});
+```
+
+**Query PSM pool information:**
+
+```typescript
+// Get all PSM pools
+const psmPools = await client.getAllPsmPoolObjects();
+console.log('PSM Pools:', psmPools);
+
+// Example output:
+// {
+//   'USDC': {
+//     coinType: '0x...::usdc::USDC',
+//     decimal: 6,
+//     balance: 1000000n,
+//     usdbSupply: 1000000n,
+//     feeRate: { swapIn: 0.001, swapOut: 0.001 },
+//     partnerFeeRate: {}
+//   }
+// }
+```
+
+### 5. Saving Pool
+
+Deposit USDB into saving pools to earn interest and rewards over time.
+
+**Deposit USDB to saving pool:**
+
+```typescript
+const tx = new Transaction();
+
+const usdbAmount = 100 * 10 ** 6; // 100 USDB
+const SUSDB_TYPE = '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB';
+const userAddress = keypair.getPublicKey().toSuiAddress();
+
+client.buildDepositToSavingPoolTransaction(tx, {
+  lpType: SUSDB_TYPE,
+  address: userAddress,
+  depositCoinOrAmount: usdbAmount, // Can also pass a coin object
+});
+
+tx.setSender(userAddress);
+const result = await client.getSuiClient().signAndExecuteTransaction({
+  signer: keypair,
+  transaction: tx,
+});
+```
+
+**Withdraw USDB from saving pool:**
+
+```typescript
+const tx = new Transaction();
+
+// Withdraw 50 LP tokens worth of USDB
+const lpAmount = 50 * 10 ** 6; // 50 SUSDB (LP tokens)
+
+const usdbCoin = client.buildWithdrawFromSavingPoolTransaction(tx, {
+  lpType: SUSDB_TYPE,
+  amount: lpAmount,
+});
+
+// Transfer withdrawn USDB to user
+tx.transferObjects([usdbCoin], userAddress);
+
+tx.setSender(userAddress);
+const result = await client.getSuiClient().signAndExecuteTransaction({
+  signer: keypair,
+  transaction: tx,
+});
+```
+
+**Claim rewards from saving pool:**
+
+```typescript
+const tx = new Transaction();
+
+// Claim all available rewards
+const rewardsRecord = client.buildClaimSavingRewardsTransaction(tx, {
+  lpType: SUSDB_TYPE,
+});
+
+// Transfer all reward coins to user
+tx.transferObjects(Object.values(rewardsRecord), userAddress);
+
+tx.setSender(userAddress);
+const result = await client.getSuiClient().signAndExecuteTransaction({
+  signer: keypair,
+  transaction: tx,
+});
+```
+
+**Query saving pool information:**
+
+```typescript
+// Get all saving pools
+const savingPools = await client.getAllSavingPoolObjects();
+console.log('Saving Pools:', savingPools);
+
+// Get user's savings positions
+const userSavings = await client.getUserSavings({ address: userAddress });
+console.log('User Savings:', userSavings);
+
+// Get user's rewards for specific pools
+const rewards = await client.getAccountSavingPoolRewards({
+  address: userAddress,
+  lpTypes: [SUSDB_TYPE],
+});
+console.log('Claimable Rewards:', rewards);
+```
+
+**Claim accrued interest (zero deposit/withdraw):**
+
+```typescript
+const tx = new Transaction();
+
+// Deposit zero to distribute interest
+const zeroUsdb = tx.splitCoins(tx.gas, [0]); // Zero coin
+client.buildDepositToSavingPoolTransaction(tx, {
+  lpType: SUSDB_TYPE,
+  address: userAddress,
+  depositCoinOrAmount: zeroUsdb,
+});
+
+// Withdraw zero to claim accumulated interest
+const accruedUsdb = client.buildWithdrawFromSavingPoolTransaction(tx, {
+  lpType: SUSDB_TYPE,
+  amount: 0,
+});
+
+tx.transferObjects([accruedUsdb], userAddress);
+```
+
+### 6. Flash Mint
+
+Flash mint allows borrowing USDB within a single transaction without collateral, useful for arbitrage and liquidations.
+
+**Basic flash mint:**
+
+```typescript
+const tx = new Transaction();
+
+// Flash mint 1000 USDB
+const amount = 1000 * 10 ** 6; // 1000 USDB
+const [usdbCoin, flashReceipt] = client.flashMint(tx, { amount });
+
+// Use USDB for operations...
+// (e.g., arbitrage, liquidation, swaps)
+
+// Repay with 0.05% fee
+const feeAmount = Math.ceil(amount * 0.0005);
+const totalRepayment = amount + feeAmount;
+
+// Get USDB to repay (from operations or swap)
+// ...
+
+// Burn to repay flash loan
+client.flashBurn(tx, { usdbCoin, flashMintReceipt: flashReceipt });
+```
+
+### 7. Integration Patterns
+
+**Pattern 1: Swap stablecoin and deposit to saving pool**
+
+```typescript
+const tx = new Transaction();
+
+// Step 1: Swap USDC to USDB via PSM
+const usdcAmount = 100 * 10 ** 6; // 100 USDC
+const usdbCoin = await client.buildPSMSwapInTransaction(tx, {
+  coinType: USDC_TYPE,
+  inputCoinOrAmount: usdcAmount,
+});
+
+// Step 2: Deposit USDB to saving pool
+client.buildDepositToSavingPoolTransaction(tx, {
+  lpType: SUSDB_TYPE,
+  address: userAddress,
+  depositCoinOrAmount: usdbCoin,
+});
+
+tx.setSender(userAddress);
+const result = await client.getSuiClient().signAndExecuteTransaction({
+  signer: keypair,
+  transaction: tx,
+});
+```
+
+**Pattern 2: Flash mint with PSM repayment**
+
+```typescript
+const tx = new Transaction();
+
+// Step 1: Flash mint USDB
+const amount = 1000 * 10 ** 6; // 1000 USDB
+const [usdbCoin, flashReceipt] = client.flashMint(tx, { amount });
+
+// Step 2: Use USDB for operations...
+// (e.g., arbitrage, liquidation, etc.)
+
+// Step 3: Get fee in stablecoin (0.05% fee)
+const feeAmount = Math.ceil(amount * 0.0005);
+const feeUsdbCoin = await client.buildPSMSwapInTransaction(tx, {
+  coinType: USDC_TYPE,
+  inputCoinOrAmount: feeAmount,
+});
+
+// Step 4: Repay flash loan
+tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
+client.flashBurn(tx, { usdbCoin, flashReceipt });
+
+tx.setSender(userAddress);
+const result = await client.getSuiClient().signAndExecuteTransaction({
+  signer: keypair,
+  transaction: tx,
+});
+```
+
+**Pattern 3: Partner account integration**
+
+```typescript
+const tx = new Transaction();
+
+// Use partner account for fee sharing
+const partnerAccountId = '0x...partner-account-id';
+
+// PSM swap with partner account
+const usdbCoin = await client.buildPSMSwapInTransaction(tx, {
+  accountObjectOrId: partnerAccountId,
+  coinType: USDC_TYPE,
+  inputCoinOrAmount: usdcAmount,
+});
+
+// Deposit to saving pool with partner account
+client.buildDepositToSavingPoolTransaction(tx, {
+  accountObjectOrId: partnerAccountId,
+  lpType: SUSDB_TYPE,
+  address: userAddress,
+  depositCoinOrAmount: usdbCoin,
+});
+```
+
 ## Supported Collateral Types
 
 Currently, the SDK supports the following collaterals:
@@ -141,6 +456,30 @@ const BFBTC_TYPE = '0x7438e8caf5c345fbd3772517380bf0ca432f53892dee65ee0dda3eb127
 
 // WAL
 const WAL_TYPE = '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL';
+
+// LayerZero WBTC
+const LZ_WBTC_TYPE = '0x027792d9fed7f9844eb4839566001bb6f6cb4804f66aa2da6fe1ee242d896881::coin::COIN';
+```
+
+## Supported PSM Stablecoins
+
+```typescript
+// USDC
+const USDC_TYPE = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
+
+// USDT
+const USDT_TYPE = '0x375f70cf2ae4c00bf37117d0c85a2c71545e6ee05c4a5c7d282cd66a4504b068::usdt::USDT';
+
+// BUCK
+const BUCK_TYPE = '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK';
+```
+
+## Supported Saving Pools
+
+```typescript
+// SUSDB (Mainnet)
+const SUSDB_TYPE = '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB';
+// Rewards: SUI
 ```
 
 ## Price Aggregation Features
@@ -303,9 +642,55 @@ type PaginatedPositionsResult = {
 };
 ```
 
-### New Data Types
+### PsmPoolInfo
 
-#### AggregatorObjectInfo
+```typescript
+type PsmPoolInfo = {
+  coinType: string; // The stable coin type
+  decimal: number; // Token decimals
+  balance: bigint; // Pool balance amount
+  usdbSupply: bigint; // USDB supply from this pool
+  feeRate: {
+    swapIn: number; // Fee rate for swapping in (e.g., 0.001 = 0.1%)
+    swapOut: number; // Fee rate for swapping out
+  };
+  partnerFeeRate: Record<
+    string,
+    {
+      swapIn: number;
+      swapOut: number;
+    }
+  >; // Partner-specific fee rates
+};
+```
+
+### SavingPoolInfo
+
+```typescript
+type SavingPoolInfo = {
+  lpType: string; // LP token type
+  lpSupply: bigint; // Total LP supply
+  usdbBalance: bigint; // USDB reserves in pool
+  usdbDepositCap: bigint | null; // Optional deposit cap
+  savingRate: number; // Annual saving rate (e.g., 0.05 = 5%)
+  rewardRate: Record<string, number>; // APR by reward type
+};
+```
+
+### SavingInfo
+
+```typescript
+type SavingInfo = {
+  lpType: string; // LP token type
+  address: string; // User address
+  accountId?: string; // Account object ID (optional)
+  usdbBalance: bigint; // User's USDB value in pool
+  lpBalance: bigint; // User's LP token balance
+  rewards: Record<string, bigint>; // Claimable rewards by type
+};
+```
+
+### AggregatorObjectInfo
 
 ```typescript
 type AggregatorObjectInfo = {
@@ -315,13 +700,33 @@ type AggregatorObjectInfo = {
 };
 ```
 
-#### VaultObjectInfo
+### VaultObjectInfo
 
 ```typescript
 type VaultObjectInfo = {
   collateralCoinType: string; // Collateral type
   vault: SharedObjectRef; // Vault object
   rewarders?: SharedObjectRef[]; // Rewarder objects (optional)
+};
+```
+
+### PsmPoolObjectInfo
+
+```typescript
+type PsmPoolObjectInfo = {
+  pool: SharedObjectRef; // Shared object reference to PSM pool
+};
+```
+
+### SavingPoolObjectInfo
+
+```typescript
+type SavingPoolObjectInfo = {
+  pool: SharedObjectRef; // Shared object reference
+  reward?: {
+    rewardManager: SharedObjectRef; // Reward manager object
+    rewardTypes: string[]; // List of reward token types
+  };
 };
 ```
 
@@ -402,6 +807,10 @@ const pythClient = client.getPythClient();
 6. **Position Monitoring**: Regularly check position health and market conditions
 7. **Batch Operations**: Use batch price aggregation features for efficiency
 8. **Transaction Management**: Always create a new `Transaction` object for building transactions
+9. **PSM Usage**: Check fee rates before swapping; consider using PSM for large stablecoin swaps to minimize slippage
+10. **Saving Pool Strategy**: Claim accrued interest periodically using zero deposit/withdraw for gas efficiency
+11. **Reward Claiming**: Regularly claim rewards from saving pools to maximize earnings
+12. **Account Objects**: Use account objects for partner integrations to enable fee sharing
 
 ## Example Project
 
@@ -420,6 +829,8 @@ interface BucketClientOptions {
 
 ### Transaction Options
 
+**CDP (Manage Position):**
+
 ```typescript
 interface ManagePositionOptions {
   coinType: string; // Collateral token type
@@ -428,6 +839,57 @@ interface ManagePositionOptions {
   repayCoinOrAmount?: number | TransactionArgument; // Amount or coin to repay
   withdrawAmount?: number | TransactionArgument; // Amount to withdraw
   accountObjectOrId?: string | TransactionArgument; // Account object ID (optional)
+}
+```
+
+**PSM (Peg Stability Module):**
+
+```typescript
+interface PSMSwapInOptions {
+  coinType: string; // Stablecoin type (USDC, USDT, BUCK)
+  inputCoinOrAmount: number | TransactionArgument; // Stablecoin amount or coin object
+  accountObjectOrId?: string | TransactionArgument; // Account object ID (optional)
+}
+
+interface PSMSwapOutOptions {
+  coinType: string; // Stablecoin type to receive
+  usdbCoinOrAmount: number | TransactionArgument; // USDB amount or coin object
+  accountObjectOrId?: string | TransactionArgument; // Account object ID (optional)
+}
+```
+
+**Saving Pool:**
+
+```typescript
+interface DepositToSavingPoolOptions {
+  lpType: string; // LP token type (e.g., SUSDB)
+  address: string; // User address
+  depositCoinOrAmount: number | TransactionArgument; // USDB amount or coin object
+  accountObjectOrId?: string | TransactionArgument; // Account object ID (optional)
+}
+
+interface WithdrawFromSavingPoolOptions {
+  lpType: string; // LP token type
+  amount: number; // LP token amount to withdraw
+  accountObjectOrId?: string | TransactionArgument; // Account object ID (optional)
+}
+
+interface ClaimSavingRewardsOptions {
+  lpType: string; // LP token type
+  accountObjectOrId?: string | TransactionArgument; // Account object ID (optional)
+}
+```
+
+**Flash Mint:**
+
+```typescript
+interface FlashMintOptions {
+  amount: number; // USDB amount to flash mint
+}
+
+interface FlashBurnOptions {
+  usdbCoin: TransactionArgument; // USDB coin to burn (must include fee)
+  flashMintReceipt: TransactionArgument; // Receipt from flashMint()
 }
 ```
 
@@ -468,6 +930,48 @@ console.log('Supported types:', supportedTypes);
 // Ensure the coin type has a valid price feed
 const aggInfo = client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
 console.log('Pyth Price ID:', aggInfo.pythPriceId);
+```
+
+**"Unsupported PSM coin type" Error:**
+
+```typescript
+// Use supported PSM stablecoins
+const supportedPsmCoins = await client.getAllPsmPoolObjects();
+console.log('Supported PSM coins:', Object.keys(supportedPsmCoins));
+```
+
+**"Insufficient pool balance" Error (PSM):**
+
+```typescript
+// Check PSM pool balance before swapping
+const psmPools = await client.getAllPsmPoolObjects();
+const poolInfo = psmPools[USDC_TYPE];
+console.log('Available balance:', poolInfo.balance);
+console.log('USDB supply:', poolInfo.usdbSupply);
+```
+
+**"Deposit cap reached" Error (Saving Pool):**
+
+```typescript
+// Check saving pool deposit cap
+const savingPools = await client.getAllSavingPoolObjects();
+const poolInfo = savingPools[SUSDB_TYPE];
+if (poolInfo.usdbDepositCap) {
+  const remaining = poolInfo.usdbDepositCap - poolInfo.usdbBalance;
+  console.log('Remaining deposit capacity:', remaining);
+}
+```
+
+**"Insufficient LP balance" Error (Saving Pool):**
+
+```typescript
+// Check user's LP balance before withdrawing
+const userSavings = await client.getUserSavings({ address: userAddress });
+const saving = userSavings.find(s => s.lpType === SUSDB_TYPE);
+if (saving) {
+  console.log('Available LP balance:', saving.lpBalance);
+  console.log('Equivalent USDB value:', saving.usdbBalance);
+}
 ```
 
 ## Support & Contributing
