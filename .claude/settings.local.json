@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__serena__find_symbol",
+      "Bash(yarn ls:*)",
+      "Bash(yarn info:*)",
+      "Bash(yarn why:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
