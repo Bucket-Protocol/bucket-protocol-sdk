@@ -488,6 +488,12 @@ export const CONFIG: Record<Network, ConfigType> = {
           initialSharedVersion: 685690141,
           mutable: true,
         },
+        rewarders: [
+          {
+            rewardType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
+            rewarderId: '0xefb294d3d3c53bb67a91052da2daeaa5a633218a1bc02633bedc175f09385f10',
+          },
+        ],
       },
     },
     SAVING_POOL_OBJS: {
