@@ -4,20 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@mysten/sui': 1.38.0
-  '@mysten/bcs': 1.8.0
-
 importers:
 
   .:
     dependencies:
-      '@mysten/bcs':
-        specifier: 1.8.0
-        version: 1.8.0
-      '@mysten/sui':
-        specifier: 1.38.0
-        version: 1.38.0(typescript@5.9.2)
       '@pythnetwork/pyth-sui-js':
         specifier: ^2.2.0
         version: 2.2.0(typescript@5.9.2)
@@ -34,6 +24,12 @@ importers:
       '@ianvs/prettier-plugin-sort-imports':
         specifier: ^4.7.0
         version: 4.7.0(prettier@3.6.2)
+      '@mysten/bcs':
+        specifier: 1.8.0
+        version: 1.8.0
+      '@mysten/sui':
+        specifier: 1.38.0
+        version: 1.38.0(typescript@5.9.2)
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.44.0
         version: 8.44.0(@typescript-eslint/parser@8.44.0(eslint@9.35.0)(typescript@5.9.2))(eslint@9.35.0)(typescript@5.9.2)

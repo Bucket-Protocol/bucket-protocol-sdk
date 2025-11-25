@@ -1,6 +1,4 @@
-import { ConfigType } from '@/types/config.js';
-
-export type Network = 'mainnet' | 'testnet';
+import { ConfigType, Network } from '@/types/config.js';
 
 export const CONFIG: Record<Network, ConfigType> = {
   mainnet: {
@@ -29,7 +27,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORACLE_PACKAGE_ID: '0xf2ab9aa60c5e879675351a1a89f47131de9dea7cc927327dd0e7282e295c7f5e',
     CDP_PACKAGE_ID: '0x9f835c21d21f8ce519fec17d679cd38243ef2643ad879e7048ba77374be4036e',
     PSM_PACKAGE_ID: '0xc2ae6693383e4a81285136effc8190c7baaf0e75aafa36d1c69cd2170cfc3803',
-    FLASH_PACKAGE_ID: '0x0f51f9eb63574a1d12b62295599ac4f8231197f95b3cce9a516daba64f419d06',
+    FLASH_PACKAGE_ID: '0xca00bbb7ecfe11dbb527efab6145b358f2a95aa11a8aae9b9f475176430cf42a',
     SAVING_PACKAGE_ID: '0x5b60c3cdbb9ee31b856f7f8a6d4d6c8b91e3c0036a138fb9927529b05fd00373',
     SAVING_INCENTIVE_PACKAGE_ID: '0x39692320d6fc01c27315a7972ed4717e4fd32eed43531ad6f55fd7f24b74e207',
     BORROW_INCENTIVE_PACKAGE_ID: '0xef9719a3392d3742ae09c42ebf01030d88b1a75651430932be1eb017b79fb372',
