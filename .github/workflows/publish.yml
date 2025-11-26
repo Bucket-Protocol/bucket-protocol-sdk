@@ -26,6 +26,8 @@ jobs:
         run: echo 'Permission denied' && exit 1
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -52,18 +54,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: 'chore(release): bump sdk version to new release'
-          token: ${{ secrets.PAT }}
-      # - name: Bump & publish package
-      #   run: pnpm version ${{ inputs.version-bump-type }} --no-git-tag-version && pnpm publish --provenance --access --no-git-checks
-      #   env:
-      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      # - name: Stage change
-      #   run: git add .
-      # - name: Commit change
-      #   uses: stefanzweifel/git-auto-commit-action@v7
-      #   with:
-      #     commit_message: 'chore: bump sdk version'
-      #     token: ${{ secrets.PAT }}
 
   create-pr:
     runs-on: ubuntu-latest
