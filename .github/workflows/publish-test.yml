@@ -33,3 +33,5 @@ jobs:
         run: pnpm build
       - name: Bump & publish package
         run: pnpm version prerelease --preid ${{ inputs.pre-release-tag }} --no-git-tag-version && pnpm publish --access public --tag dev --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

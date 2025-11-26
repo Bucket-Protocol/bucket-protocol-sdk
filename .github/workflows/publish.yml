@@ -42,17 +42,28 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Bump & publish package
-        run: pnpm version ${{ inputs.version-bump-type }} --no-git-tag-version && pnpm publish --no-git-checks
+      - name: Bump package version
+        run: pnpm version ${{ inputs.version-bump-type }} --no-git-tag-version
+      - name: Publish package to NPM
+        run: pnpm publish --provenance --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: true
-      - name: Stage change
-        run: git add .
-      - name: Commit change
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Commit version change
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: 'chore: bump sdk version'
+          commit_message: 'chore(release): bump sdk version to new release'
+          token: ${{ secrets.PAT }}
+      # - name: Bump & publish package
+      #   run: pnpm version ${{ inputs.version-bump-type }} --no-git-tag-version && pnpm publish --provenance --access --no-git-checks
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # - name: Stage change
+      #   run: git add .
+      # - name: Commit change
+      #   uses: stefanzweifel/git-auto-commit-action@v7
+      #   with:
+      #     commit_message: 'chore: bump sdk version'
+      #     token: ${{ secrets.PAT }}
 
   create-pr:
     runs-on: ubuntu-latest
