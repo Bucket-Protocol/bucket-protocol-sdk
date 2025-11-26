@@ -609,7 +609,7 @@ export class BucketClient {
       }
       const collateralAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])));
       const debtAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[1][0])));
-      const hasReward = borrowRewards[coinType] && Object.values(borrowRewards[coinType]).every((reward) => reward);
+      const hasReward = borrowRewards[coinType] && Object.values(borrowRewards[coinType]).some((reward) => reward);
 
       if (collateralAmount || debtAmount || hasReward) {
         result.push({
