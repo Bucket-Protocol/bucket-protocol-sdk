@@ -48,8 +48,6 @@ jobs:
         run: pnpm version ${{ inputs.version-bump-type }} --no-git-tag-version
       - name: Publish package to NPM
         run: pnpm publish --provenance --access public --no-git-checks --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit version change
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
@@ -75,11 +73,13 @@ jobs:
         with:
           node-version: 24
       - name: Bump version
+        id: bump-version
         run: |
           pnpm upgrade @bucket-protocol/sdk --save-exact
+          echo SDK_VERSION=$(pnpm info @bucket-protocol/sdk version) >> "$GITHUB_OUTPUT"
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: bump-bucket-protocol-sdk
-          title: 'chore: bump bucket-protocol-sdk'
+          branch: bump-bucket-protocol-sdk-${{ steps.bump-version.outputs.SDK_VERSION }}
+          title: 'chore: bump bucket-protocol-sdk to ${{ steps.bump-version.outputs.SDK_VERSION }}'
           token: ${{ secrets.ADMIN_TOKEN }}
