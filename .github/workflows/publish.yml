@@ -21,9 +21,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      # - name: Check permission
-      #   if: ${{ !contains('["17008875", "33892812", "2819672"]', github.actor_id) }}
-      #   run: echo 'Permission denied' && exit 1
+      - name: Check permission
+        if: ${{ !contains('["17008875", "33892812", "2819672"]', github.actor_id) }}
+        run: echo 'Permission denied' && exit 1
       - name: Checkout
         uses: actions/checkout@v5
         with:
@@ -47,7 +47,7 @@ jobs:
       - name: Bump package version
         run: pnpm version ${{ inputs.version-bump-type }} --no-git-tag-version
       - name: Publish package to NPM
-        run: pnpm publish --provenance --access public --no-git-checks --dry-run
+        run: pnpm publish --provenance --access public --no-git-checks
       - name: Commit version change
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
@@ -80,6 +80,6 @@ jobs:
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
         with:
-          branch: bump-bucket-protocol-sdk-${{ steps.bump-version.outputs.SDK_VERSION }}
-          title: 'chore: bump bucket-protocol-sdk to ${{ steps.bump-version.outputs.SDK_VERSION }}'
+          branch: bump-bucket-protocol-sdk-v${{ steps.bump-version.outputs.SDK_VERSION }}
+          title: 'chore: bump @bucket-protocol/sdk to v${{ steps.bump-version.outputs.SDK_VERSION }}'
           token: ${{ secrets.ADMIN_TOKEN }}
