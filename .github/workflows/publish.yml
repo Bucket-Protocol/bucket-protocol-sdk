@@ -47,7 +47,7 @@ jobs:
       - name: Bump package version
         run: pnpm version ${{ inputs.version-bump-type }} --no-git-tag-version
       - name: Publish package to NPM
-        run: pnpm publish --provenance --access public --no-git-checks
+        run: pnpm publish --provenance --access public --no-git-checks --dry-run
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit version change
