@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           registry-url: 'https://registry.npmjs.org/'
           cache: 'pnpm'
       - name: Install Dependencies
@@ -43,9 +43,10 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
       - name: Bump & publish package
-        run: pnpm version ${{ inputs.version-bump-type }} && pnpm publish --provenance --access public
+        run: pnpm version ${{ inputs.version-bump-type }} --no-git-tag-version && pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
       - name: Stage change
         run: git add .
       - name: Commit change
@@ -71,7 +72,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
       - name: Bump version
         run: |
           pnpm upgrade @bucket-protocol/sdk --save-exact
