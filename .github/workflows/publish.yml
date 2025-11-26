@@ -75,7 +75,7 @@ jobs:
       - name: Bump version
         id: bump-version
         run: |
-          pnpm upgrade @bucket-protocol/sdk --latest --save-exact
+          pnpm update @bucket-protocol/sdk --latest --save-exact
           echo SDK_VERSION=$(pnpm info @bucket-protocol/sdk version) >> "$GITHUB_OUTPUT"
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
