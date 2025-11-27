@@ -5,7 +5,8 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noEmit": false,
-    "declaration": false,
+    "declaration": true,
+    "declarationMap": true,
     "sourceMap": true
   }
 }
