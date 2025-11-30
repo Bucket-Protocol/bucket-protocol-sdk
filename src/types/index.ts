@@ -57,6 +57,11 @@ export type PsmPoolInfo = {
   >;
 };
 
+export type FlashMintInfo = {
+  feeRate: number;
+  partner: Record<string, number>;
+};
+
 export type PositionInfo = {
   collateralType: string;
   collateralAmount: bigint;
