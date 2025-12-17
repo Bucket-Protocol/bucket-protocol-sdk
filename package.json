@@ -1,7 +1,7 @@
 {
   "name": "@bucket-protocol/sdk",
   "author": "Bucket Protocol <info@bucketprotocol.io>",
-  "version": "1.0.7",
+  "version": "1.1.6",
   "license": "Apache-2.0",
   "description": "Bucket Protocol TypeScript SDK",
   "repository": {
@@ -13,18 +13,28 @@
     "url": "https://github.com/Bucket-Protocol/bucket-protocol-sdk/issues"
   },
   "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "require": "./dist/cjs/index.js",
-      "import": "./dist/esm/index.js",
-      "default": "./dist/esm/index.js"
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
     },
     "./*": {
-      "types": "./dist/types/*.d.ts",
-      "require": "./dist/cjs/*.js",
-      "import": "./dist/esm/*.js",
-      "default": "./dist/esm/*.js"
+      "import": {
+        "types": "./dist/esm/*.d.ts",
+        "default": "./dist/esm/*.js"
+      },
+      "require": {
+        "types": "./dist/cjs/*.d.ts",
+        "default": "./dist/cjs/*.js"
+      }
     }
   },
   "files": [
@@ -37,10 +47,9 @@
   "scripts": {
     "lint": "eslint",
     "clean": "rm -rf tsconfig.tsbuildinfo ./dist",
-    "build:types": "tsc -p ./tsconfig.types.json && tsc-alias -p ./tsconfig.types.json",
     "build:cjs": "tsc -p ./tsconfig.cjs.json && tsc-alias -p ./tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
     "build:esm": "tsc -p ./tsconfig.esm.json && tsc-alias -p ./tsconfig.esm.json && echo '{\"type\": \"module\"}' > dist/esm/package.json",
-    "build": "pnpm clean && npm-run-all --parallel build:types build:cjs build:esm",
+    "build": "pnpm clean && npm-run-all --parallel build:cjs build:esm",
     "test": "vitest"
   },
   "dependencies": {

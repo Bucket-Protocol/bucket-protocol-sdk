@@ -12,6 +12,7 @@ import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-
 import {
   AggregatorObjectInfo,
   ConfigType,
+  FlashMintInfo,
   Network,
   PaginatedPositionsResult,
   PositionInfo,
@@ -35,6 +36,7 @@ import { Field } from '@/_generated/bucket_v2_saving_incentive/deps/sui/dynamic_
 import { Rewarder, RewarderKey } from '@/_generated/bucket_v2_saving_incentive/saving_incentive.js';
 import { SavingPool } from '@/_generated/bucket_v2_saving/saving.js';
 
+import { GlobalConfig } from './_generated/bucket_v2_flash/config.js';
 import {
   GCOIN_RULE_CONFIG,
   SCALLOP_MARKET,
@@ -446,6 +448,33 @@ export class BucketClient {
   }
 
   /**
+   * @description
+   */
+  async getFlashMintInfo(): Promise<FlashMintInfo> {
+    const data = await this.suiClient.getObject({
+      id: this.config.FLASH_GLOBAL_CONFIG_OBJ.objectId,
+      options: {
+        showBcs: true,
+      },
+    });
+    if (data.data?.bcs?.dataType !== 'moveObject') {
+      throw new Error(`Failed to parse pool object`);
+    }
+    const flashConfig = GlobalConfig.fromBase64(data.data.bcs.bcsBytes);
+
+    return {
+      feeRate: Number((BigInt(flashConfig.default_config.fee_rate.value) * 100000n) / FLOAT_OFFSET) / 100000,
+      partner: flashConfig.partner_configs.contents.reduce(
+        (result, { key, value }) => ({
+          ...result,
+          [key]: Number((BigInt(value.fee_rate.value) * 100000n) / FLOAT_OFFSET) / 100000,
+        }),
+        {},
+      ),
+    };
+  }
+
+  /**
    * @description Get all positions by collateral with pagination
    */
   async getAllPositions({
@@ -609,7 +638,7 @@ export class BucketClient {
       }
       const collateralAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])));
       const debtAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[1][0])));
-      const hasReward = borrowRewards[coinType] && Object.values(borrowRewards[coinType]).every((reward) => reward);
+      const hasReward = borrowRewards[coinType] && Object.values(borrowRewards[coinType]).some((reward) => reward);
 
       if (collateralAmount || debtAmount || hasReward) {
         result.push({
