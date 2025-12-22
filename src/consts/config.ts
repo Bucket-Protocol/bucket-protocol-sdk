@@ -493,6 +493,10 @@ export const CONFIG: Record<Network, ConfigType> = {
             rewardType: '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP',
             rewarderId: '0xefb294d3d3c53bb67a91052da2daeaa5a633218a1bc02633bedc175f09385f10',
           },
+          {
+            rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+            rewarderId: '0xf6bfb7170255bf0eb0b77eb8c45501a43db9b8dce4a319afe7e899d61d38017c',
+          },
         ],
       },
     },
