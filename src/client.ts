@@ -984,7 +984,7 @@ export class BucketClient {
     switch (derivativeInfo.derivativeKind) {
       case 'sCoin':
         tx.moveCall({
-          target: '0x18f4f3cd05ab7ff6dc0c41c692e3caae925927cc096f1de3de81d85a89f87aca::scoin_rule::feed',
+          target: '0x2252a1cc5a16a0c9f4530005908cced53783d96b4932ca3fa15b1fe9d5935972::scoin_rule::feed',
           typeArguments: [coinType, derivativeInfo.underlyingCoinType],
           arguments: [
             collector,

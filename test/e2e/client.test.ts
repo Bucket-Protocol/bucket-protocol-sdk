@@ -25,6 +25,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
   it('test getAllOraclePrices()', async () => {
     const prices = await bucketClient.getAllOraclePrices();
+    console.log(prices);
     Object.keys(prices).map((coinType) => {
       const price = prices[coinType];
       if (coinType.includes('BTC')) {
