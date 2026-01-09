@@ -1130,11 +1130,17 @@ export class BucketClient {
         arguments: [registryObj, checker, vaultObj, tx.object(rewarder.rewarderId), tx.object.clock()],
       });
     });
-    return tx.moveCall({
+    const updateRequest = tx.moveCall({
       target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::destroy_checker`,
       typeArguments: [coinType],
       arguments: [registryObj, checker],
     });
+    tx.moveCall({
+      target: `${this.config.BLACKLIST_PACKAGE_ID}::blacklist_rule::check`,
+      typeArguments: [coinType],
+      arguments: [tx.sharedObjectRef(this.config.BLACKLIST_OBJ), updateRequest],
+    });
+    return updateRequest;
   }
 
   /**
