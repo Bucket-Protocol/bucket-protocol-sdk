@@ -21,6 +21,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_SAVING_PACKAGE_ID: '0x872d08a70db3db498aa7853276acea8091fdd9871b2d86bc8dcb8524526df622',
     ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '0x39692320d6fc01c27315a7972ed4717e4fd32eed43531ad6f55fd7f24b74e207',
     ORIGINAL_BORROW_INCENTIVE_PACKAGE_ID: '0x8cc2eed1b1012881a623e9bafd58ff0f17a8c5f807662631e623acf7779a78ee',
+    ORIGINAL_BLACKLIST_PACKAGE_ID: '0x6d7b711a5e614f99f87fdbfbf915fea0fa96af769130ac226c3cbcf07efb90f3',
 
     FRAMEWORK_PACKAGE_ID: '0x665188033384920a5bb5dcfb2ef21f54b4568d08b431718b97e02e5c184b92cc',
     USDB_PACKAGE_ID: '0xe14726c336e81b32328e92afc37345d159f5b550b09fa92bd43640cfdd0a0cfd',
@@ -31,6 +32,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     SAVING_PACKAGE_ID: '0x5b60c3cdbb9ee31b856f7f8a6d4d6c8b91e3c0036a138fb9927529b05fd00373',
     SAVING_INCENTIVE_PACKAGE_ID: '0x39692320d6fc01c27315a7972ed4717e4fd32eed43531ad6f55fd7f24b74e207',
     BORROW_INCENTIVE_PACKAGE_ID: '0xef9719a3392d3742ae09c42ebf01030d88b1a75651430932be1eb017b79fb372',
+    BLACKLIST_PACKAGE_ID: '0x6d7b711a5e614f99f87fdbfbf915fea0fa96af769130ac226c3cbcf07efb90f3',
 
     TREASURY_OBJ: {
       objectId: '0x4de1c29a89d6888ebf8f7ae20364571dce4e1e42b9c9221f7df924ad6f9e617d',
@@ -51,6 +53,11 @@ export const CONFIG: Record<Network, ConfigType> = {
       objectId: '0x4cbc26a7ec49d4bec975768af386cc6ab987a1c29d524566f99d5aa018a99546',
       initialSharedVersion: 610893688,
       mutable: true,
+    },
+    BLACKLIST_OBJ: {
+      objectId: '0x10ac2a1f47aaf8afac17d5ed3c869e5f3b932e8d4ae233932c6c7c686ca02ec2',
+      initialSharedVersion: 736271394,
+      mutable: false,
     },
 
     AGGREGATOR_OBJS: {
@@ -561,6 +568,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     ORIGINAL_SAVING_PACKAGE_ID: '0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f',
     ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: '0x11e03be85d2b5f1ddef785fe1dfa129551f69913c41324ac0cad116031579588',
     ORIGINAL_BORROW_INCENTIVE_PACKAGE_ID: '',
+    ORIGINAL_BLACKLIST_PACKAGE_ID: '',
 
     FRAMEWORK_PACKAGE_ID: '0x070e683f4dac417906f42fee9a175b19120855ae37444cba84041d7f37b27f63',
     USDB_PACKAGE_ID: '0x5eb92323ce3148b222cbf035804078ff52577f414cc7abcd4e20a1243e9907f9',
@@ -571,6 +579,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     SAVING_PACKAGE_ID: '0xf59c363a3af10f51e69c612c5fa01f6500701254043f057e132cdbd27b67d14f',
     SAVING_INCENTIVE_PACKAGE_ID: '0x11e03be85d2b5f1ddef785fe1dfa129551f69913c41324ac0cad116031579588',
     BORROW_INCENTIVE_PACKAGE_ID: '',
+    BLACKLIST_PACKAGE_ID: '',
 
     TREASURY_OBJ: {
       objectId: '0xb1bf430d03abcceed4f64b31ddf71b03bd503bea91ca64e80adaff35b22c7230',
@@ -591,6 +600,11 @@ export const CONFIG: Record<Network, ConfigType> = {
       objectId: '0x66c8c42e1ccf2a8eaa50f2584b990418c54349f53470004545e12333ccf1f0fc',
       initialSharedVersion: '349180354',
       mutable: true,
+    },
+    BLACKLIST_OBJ: {
+      objectId: '',
+      initialSharedVersion: 0,
+      mutable: false,
     },
 
     AGGREGATOR_OBJS: {
