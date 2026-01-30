@@ -356,7 +356,7 @@ export class BucketClient {
       });
       const coinType = COINS_TYPE_LIST[token];
       tx.moveCall({
-        target: '0xc3fb5907e9d8aa5cb0e866152da81f6ea9799c210b52a9d64eb3729d033e8c21::scoin_rule::update_price',
+        target: '0x83856855142b9e8beebbc73f335400f2eeda471ed6d959b58fb09c14a2ff3f0d::scoin_rule::update_price',
         typeArguments: [coinType, COINS_TYPE_LIST[underlyingToke]],
         arguments: [
           tx.sharedObjectRef({
@@ -447,7 +447,7 @@ export class BucketClient {
       });
       if (token === 'sWAL') {
         tx.moveCall({
-          target: '0xc3fb5907e9d8aa5cb0e866152da81f6ea9799c210b52a9d64eb3729d033e8c21::scoin_rule::update_price',
+          target: '0x83856855142b9e8beebbc73f335400f2eeda471ed6d959b58fb09c14a2ff3f0d::scoin_rule::update_price',
           typeArguments: [COINS_TYPE_LIST['sWAL'], COINS_TYPE_LIST['WAL']],
           arguments: [
             tx.sharedObjectRef({
