@@ -26,7 +26,7 @@ export const CONFIG: Record<Network, ConfigType> = {
     FRAMEWORK_PACKAGE_ID: '0x665188033384920a5bb5dcfb2ef21f54b4568d08b431718b97e02e5c184b92cc',
     USDB_PACKAGE_ID: '0xe14726c336e81b32328e92afc37345d159f5b550b09fa92bd43640cfdd0a0cfd',
     ORACLE_PACKAGE_ID: '0xf2ab9aa60c5e879675351a1a89f47131de9dea7cc927327dd0e7282e295c7f5e',
-    CDP_PACKAGE_ID: '0x9f835c21d21f8ce519fec17d679cd38243ef2643ad879e7048ba77374be4036e',
+    CDP_PACKAGE_ID: '0xc1dd29778f3fccd19a4ac79d1c35a14bf9d65a0b48f1c5bba98a949cacc53e26',
     PSM_PACKAGE_ID: '0x8a46afe6ab0b972e2ee3923f5669104ae9465c12b84cd5e78ea1ff6404e4bfaf',
     FLASH_PACKAGE_ID: '0xca00bbb7ecfe11dbb527efab6145b358f2a95aa11a8aae9b9f475176430cf42a',
     SAVING_PACKAGE_ID: '0x5b60c3cdbb9ee31b856f7f8a6d4d6c8b91e3c0036a138fb9927529b05fd00373',
@@ -293,6 +293,14 @@ export const CONFIG: Record<Network, ConfigType> = {
         },
         pythPriceId: '0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43',
       },
+      '0x9d297676e7a4b771ab023291377b2adfaa4938fb9080b8d12430e4b108b836a9::xaum::XAUM': {
+        priceAggregator: {
+          objectId: '0x7d9f757f08ad201d116d92482ead90e2b65c4a16d6eadbb92e4dd957a068863d',
+          initialSharedVersion: 774670138,
+          mutable: false,
+        },
+        pythPriceId: '0xd7db067954e28f51a96fd50c6d51775094025ced2d60af61ec9803e553471c88',
+      },
     },
     VAULT_OBJS: {
       '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD>':
@@ -503,6 +511,19 @@ export const CONFIG: Record<Network, ConfigType> = {
           {
             rewardType: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
             rewarderId: '0xf6bfb7170255bf0eb0b77eb8c45501a43db9b8dce4a319afe7e899d61d38017c',
+          },
+        ],
+      },
+      '0x9d297676e7a4b771ab023291377b2adfaa4938fb9080b8d12430e4b108b836a9::xaum::XAUM': {
+        vault: {
+          objectId: '0x61c4f4e0849de36b840a5198dbe0ac5bbdedf3a514f8a66ecedd2c6f7b2fb380',
+          initialSharedVersion: 772217383,
+          mutable: true,
+        },
+        rewarders: [
+          {
+            rewardType: '0x9d297676e7a4b771ab023291377b2adfaa4938fb9080b8d12430e4b108b836a9::xaum::XAUM',
+            rewarderId: '0xffb5e2a8993f374bccb36c204cbe556d75471fc6601ca1129acc62cc30bba501',
           },
         ],
       },
