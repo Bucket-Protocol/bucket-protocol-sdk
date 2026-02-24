@@ -28,5 +28,4 @@ yarn-error.log*
 
 # nvm
 .nvmrc
-CLAUDE.md
 .claude/settings.local.json
