@@ -79,20 +79,18 @@ export class BucketClient {
   private pythConnection: SuiPriceServiceConnection;
   private pythClient: SuiPythClient;
 
-  constructor({
-    suiClient,
-    network = 'mainnet',
-  }: {
-    suiClient?: SuiGrpcClient;
-    network?: Network;
-  }) {
+  constructor({ suiClient, network = 'mainnet' }: { suiClient?: SuiGrpcClient; network?: Network }) {
     this.config = CONFIG[network];
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
     this.pythConnection = new SuiPriceServiceConnection(this.config.PRICE_SERVICE_ENDPOINT);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore pythClient has only commonJS
-    this.pythClient = new SuiPythClient(createPythProviderAdapter(rpcUrl), this.config.PYTH_STATE_ID, this.config.WORMHOLE_STATE_ID);
+    this.pythClient = new SuiPythClient(
+      createPythProviderAdapter(rpcUrl),
+      this.config.PYTH_STATE_ID,
+      this.config.WORMHOLE_STATE_ID,
+    );
   }
 
   /* ----- Getter ----- */

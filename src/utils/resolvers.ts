@@ -1,10 +1,10 @@
 import { bcs } from '@mysten/sui/bcs';
 import type { ClientWithCoreApi, SuiClientTypes } from '@mysten/sui/client';
 import {
-  type BuildTransactionOptions,
   Inputs,
   TransactionCommands,
   TransactionDataBuilder,
+  type BuildTransactionOptions,
   type TransactionResult,
 } from '@mysten/sui/transactions';
 
@@ -77,7 +77,10 @@ export const resolveCoinBalance = async (
       balance: bigint;
     };
     if (balance === 0n && type !== 'gas') {
-      transactionData.replaceCommand(index, TransactionCommands.MoveCall({ target: '0x2::coin::zero', typeArguments: [type] }));
+      transactionData.replaceCommand(
+        index,
+        TransactionCommands.MoveCall({ target: '0x2::coin::zero', typeArguments: [type] }),
+      );
       continue;
     }
     const commands = [];

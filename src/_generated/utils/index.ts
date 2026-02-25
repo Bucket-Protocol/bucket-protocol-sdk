@@ -133,32 +133,17 @@ export function normalizeMoveArguments(args: unknown[] | object, argTypes: strin
 export class MoveStruct<
 	T extends Record<string, BcsType<any>>,
 	const Name extends string = string,
-> extends BcsStruct<T, Name> {
-	constructor(opts: { name: string; fields: T }) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		super(opts as any);
-	}
-}
+> extends BcsStruct<T, Name> {}
 
 export class MoveEnum<
 	T extends Record<string, BcsType<any> | null>,
 	const Name extends string,
-> extends BcsEnum<T, Name> {
-	constructor(opts: { name: string; fields: T }) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		super(opts as any);
-	}
-}
+> extends BcsEnum<T, Name> {}
 
 export class MoveTuple<
 	T extends readonly BcsType<any>[],
 	const Name extends string,
-> extends BcsTuple<T, Name> {
-	constructor(opts: { name?: string; fields: T }) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		super(opts as any);
-	}
-}
+> extends BcsTuple<T, Name> {}
 
 function stringify(val: unknown) {
 	if (typeof val === 'object') {
