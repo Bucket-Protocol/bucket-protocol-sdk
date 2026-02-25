@@ -1,5 +1,5 @@
 import { bcs } from '@mysten/sui/bcs';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { SuiGrpcClient } from '@mysten/sui/grpc';
 import {
   Transaction,
   TransactionArgument,
@@ -45,6 +45,29 @@ import {
   UNIHOUSE_OBJECT,
 } from './consts/price.js';
 
+const NETWORK_RPC_URLS: Record<string, string> = {
+  mainnet: 'https://fullnode.mainnet.sui.io:443',
+  testnet: 'https://fullnode.testnet.sui.io:443',
+};
+
+function createPythProviderAdapter(rpcUrl: string) {
+  const rpc = async (method: string, params: unknown[]) => {
+    const response = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    });
+    const json = (await response.json()) as { result: unknown; error?: { message: string } };
+    if (json.error) throw new Error(json.error.message);
+    return json.result;
+  };
+  return {
+    getObject: ({ id, options }: { id: string; options?: unknown }) => rpc('sui_getObject', [id, options]),
+    getDynamicFieldObject: ({ parentId, name }: { parentId: string; name: unknown }) =>
+      rpc('suix_getDynamicFieldObject', [parentId, name]),
+  };
+}
+
 export class BucketClient {
   /**
    * @description a TypeScript wrapper over Bucket V2 client.
@@ -52,23 +75,24 @@ export class BucketClient {
    * @param network
    */
   private config: ConfigType;
-  private suiClient: SuiClient;
+  private suiClient: SuiGrpcClient;
   private pythConnection: SuiPriceServiceConnection;
   private pythClient: SuiPythClient;
 
   constructor({
-    suiClient = new SuiClient({ url: getFullnodeUrl('mainnet') }),
+    suiClient,
     network = 'mainnet',
   }: {
-    suiClient?: SuiClient;
+    suiClient?: SuiGrpcClient;
     network?: Network;
   }) {
     this.config = CONFIG[network];
-    this.suiClient = suiClient;
+    const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
+    this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
     this.pythConnection = new SuiPriceServiceConnection(this.config.PRICE_SERVICE_ENDPOINT);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore pythClient has only commonJS
-    this.pythClient = new SuiPythClient(this.suiClient, this.config.PYTH_STATE_ID, this.config.WORMHOLE_STATE_ID);
+    this.pythClient = new SuiPythClient(createPythProviderAdapter(rpcUrl), this.config.PYTH_STATE_ID, this.config.WORMHOLE_STATE_ID);
   }
 
   /* ----- Getter ----- */
@@ -76,7 +100,7 @@ export class BucketClient {
   /**
    * @description Get this.suiClient
    */
-  getSuiClient(): SuiClient {
+  getSuiClient(): SuiGrpcClient {
     return this.suiClient;
   }
 
@@ -187,14 +211,12 @@ export class BucketClient {
       typeArguments: [this.getUsdbCoinType()],
       arguments: [treasury],
     });
-    const res = await this.suiClient.devInspectTransactionBlock({
-      transactionBlock: tx,
-      sender: DUMMY_ADDRESS,
-    });
-    if (!res.results?.[1]?.returnValues) {
+    tx.setSender(DUMMY_ADDRESS);
+    const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
+    if (res.$kind === 'FailedTransaction' || !res.commandResults?.[1]?.returnValues) {
       return 0n;
     }
-    return BigInt(bcs.u64().parse(Uint8Array.from(res.results[1].returnValues![0][0])));
+    return BigInt(bcs.u64().parse(res.commandResults![1].returnValues[0].bcs));
   }
 
   /**
@@ -207,11 +229,9 @@ export class BucketClient {
 
     tx.setSender(DUMMY_ADDRESS);
 
-    const dryrunRes = await this.suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: this.suiClient }),
-    });
-    return dryrunRes.events.reduce((result, e) => {
-      const typeStruct = parseStructTag(e.type);
+    const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { events: true } });
+    return ((res.Transaction ?? res.FailedTransaction)?.events ?? []).reduce((result, e) => {
+      const typeStruct = parseStructTag(e.eventType);
 
       if (typeStruct.module !== 'aggregator' || typeStruct.name !== 'PriceAggregated') {
         return result;
@@ -220,7 +240,7 @@ export class BucketClient {
 
       return {
         ...result,
-        [coinType]: +(e.parsedJson as { result: string }).result / 10 ** 9,
+        [coinType]: Number(bcs.u128().parse(e.bcs.slice(-16))) / 10 ** 9,
       };
     }, {});
   }
@@ -245,17 +265,17 @@ export class BucketClient {
     }
     const rewardObjectIds = vault.rewarders.map((rewarder) => rewarder.rewarderId);
 
-    const vaultRewardersRes = await this.suiClient.multiGetObjects({
-      ids: rewardObjectIds,
-      options: {
-        showBcs: true,
+    const vaultRewardersRes = await this.suiClient.getObjects({
+      objectIds: rewardObjectIds,
+      include: {
+        content: true,
       },
     });
-    const rewarders = vaultRewardersRes.map((rewarder) => {
-      if (rewarder.data?.bcs?.dataType !== 'moveObject') {
+    const rewarders = vaultRewardersRes.objects.map((object) => {
+      if (object instanceof Error || !object.content) {
         throw new Error(`Failed to parse reward object for ${coinType}`);
       }
-      return VaultRewarder.fromBase64(rewarder.data.bcs.bcsBytes);
+      return VaultRewarder.parse(object.content);
     });
     return vault.rewarders.reduce(
       (result, rewarder, idx) => ({
@@ -273,10 +293,10 @@ export class BucketClient {
     const vaultObjectIds = Object.values(this.config.VAULT_OBJS).map((v) => v.vault.objectId);
     const allCollateralTypes = this.getAllCollateralTypes();
 
-    const res = await this.suiClient.multiGetObjects({
-      ids: vaultObjectIds,
-      options: {
-        showBcs: true,
+    const res = await this.suiClient.getObjects({
+      objectIds: vaultObjectIds,
+      include: {
+        content: true,
       },
     });
     const rewardFlowRates = await Promise.all(
@@ -284,13 +304,13 @@ export class BucketClient {
     );
     return Object.keys(this.config.VAULT_OBJS).reduce(
       (result, collateralType, index) => {
-        const data = res[index].data;
+        const object = res.objects[index];
         const flowRates = rewardFlowRates[index];
 
-        if (data?.bcs?.dataType !== 'moveObject') {
+        if (object instanceof Error || !object.content) {
           throw new Error(`Failed to parse vault object`);
         }
-        const vault = Vault.fromBase64(data.bcs.bcsBytes);
+        const vault = Vault.parse(object.content);
         const usdbSupply = BigInt(vault.limited_supply.supply);
 
         result[collateralType] = {
@@ -328,20 +348,20 @@ export class BucketClient {
       return {};
     }
     const rewardObjectIds = await this.suiClient
-      .getDynamicFields({ parentId: pool.reward.rewardManager.objectId })
-      .then((res) => res.data.map((df) => df.objectId));
+      .listDynamicFields({ parentId: pool.reward.rewardManager.objectId })
+      .then((res) => res.dynamicFields.map((df) => df.fieldId));
 
-    const savingPoolRewards = await this.suiClient.multiGetObjects({
-      ids: rewardObjectIds,
-      options: {
-        showBcs: true,
+    const savingPoolRewards = await this.suiClient.getObjects({
+      objectIds: rewardObjectIds,
+      include: {
+        content: true,
       },
     });
-    const rewarders = savingPoolRewards.map((rewarder) => {
-      if (rewarder.data?.bcs?.dataType !== 'moveObject') {
+    const rewarders = savingPoolRewards.objects.map((object) => {
+      if (object instanceof Error || !object.content) {
         throw new Error(`Failed to parse reward object for ${lpType} SavingPool`);
       }
-      return Field(RewarderKey, Rewarder).fromBase64(rewarder.data.bcs.bcsBytes);
+      return Field(RewarderKey, Rewarder).parse(object.content);
     });
     return pool.reward.rewardTypes.reduce(
       (result, rewardType, index) => ({
@@ -359,23 +379,23 @@ export class BucketClient {
     const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
     const poolObjectIds = Object.values(this.config.SAVING_POOL_OBJS).map((v) => v.pool.objectId);
 
-    const res = await this.suiClient.multiGetObjects({
-      ids: poolObjectIds,
-      options: {
-        showBcs: true,
+    const res = await this.suiClient.getObjects({
+      objectIds: poolObjectIds,
+      include: {
+        content: true,
       },
     });
     const rewardFlowRates = await Promise.all(lpTypes.map((lpType) => this.getSavingPoolRewardFlowRate({ lpType })));
 
     return Object.keys(this.config.SAVING_POOL_OBJS).reduce(
       (result, lpType, index) => {
-        const data = res[index].data;
+        const object = res.objects[index];
         const flowRates = rewardFlowRates[index];
 
-        if (data?.bcs?.dataType !== 'moveObject') {
+        if (object instanceof Error || !object.content) {
           throw new Error(`Failed to parse pool object`);
         }
-        const pool = SavingPool.fromBase64(data.bcs.bcsBytes);
+        const pool = SavingPool.parse(object.content);
         const usdbBalance = BigInt(pool.usdb_reserve_balance.value);
 
         result[lpType] = {
@@ -406,20 +426,20 @@ export class BucketClient {
   async getAllPsmPoolObjects(): Promise<Record<string, PsmPoolInfo>> {
     const poolObjectIds = Object.values(this.config.PSM_POOL_OBJS).map((v) => v.pool.objectId);
 
-    const res = await this.suiClient.multiGetObjects({
-      ids: poolObjectIds,
-      options: {
-        showBcs: true,
+    const res = await this.suiClient.getObjects({
+      objectIds: poolObjectIds,
+      include: {
+        content: true,
       },
     });
     return Object.keys(this.config.PSM_POOL_OBJS).reduce(
       (result, coinType, index) => {
-        const data = res[index].data;
+        const object = res.objects[index];
 
-        if (data?.bcs?.dataType !== 'moveObject') {
+        if (object instanceof Error || !object.content) {
           throw new Error(`Failed to parse pool object`);
         }
-        const pool = Pool.fromBase64(data.bcs.bcsBytes);
+        const pool = Pool.parse(object.content);
 
         result[coinType] = {
           coinType,
@@ -430,7 +450,7 @@ export class BucketClient {
             swapIn: Number((BigInt(pool.default_fee_config.swap_in_fee_rate.value) * 10000n) / FLOAT_OFFSET) / 10000,
             swapOut: Number((BigInt(pool.default_fee_config.swap_out_fee_rate.value) * 10000n) / FLOAT_OFFSET) / 10000,
           },
-          partnerFeeRate: pool.partner_fee_configs.contents.reduce(
+          partnerFeeRate: pool.partner_fee_configs.contents.reduce<PsmPoolInfo['partnerFeeRate']>(
             (result, { key, value }) => {
               result[key] = {
                 swapIn: Number((BigInt(value.swap_in_fee_rate.value) * 10000n) / FLOAT_OFFSET) / 10000,
@@ -438,7 +458,7 @@ export class BucketClient {
               };
               return result;
             },
-            {} as PsmPoolInfo['partnerFeeRate'],
+            {},
           ),
         };
         return result;
@@ -452,19 +472,19 @@ export class BucketClient {
    */
   async getFlashMintInfo(): Promise<FlashMintInfo> {
     const data = await this.suiClient.getObject({
-      id: this.config.FLASH_GLOBAL_CONFIG_OBJ.objectId,
-      options: {
-        showBcs: true,
+      objectId: this.config.FLASH_GLOBAL_CONFIG_OBJ.objectId,
+      include: {
+        content: true,
       },
     });
-    if (data.data?.bcs?.dataType !== 'moveObject') {
+    if (!data.object.content) {
       throw new Error(`Failed to parse pool object`);
     }
-    const flashConfig = GlobalConfig.fromBase64(data.data.bcs.bcsBytes);
+    const flashConfig = GlobalConfig.parse(data.object.content);
 
     return {
       feeRate: Number((BigInt(flashConfig.default_config.fee_rate.value) * 100000n) / FLOAT_OFFSET) / 100000,
-      partner: flashConfig.partner_configs.contents.reduce(
+      partner: flashConfig.partner_configs.contents.reduce<Record<string, number>>(
         (result, { key, value }) => ({
           ...result,
           [key]: Number((BigInt(value.fee_rate.value) * 100000n) / FLOAT_OFFSET) / 100000,
@@ -498,29 +518,27 @@ export class BucketClient {
         tx.pure.u64(pageSize),
       ],
     });
-    const res = await this.suiClient.devInspectTransactionBlock({
-      transactionBlock: tx,
-      sender: DUMMY_ADDRESS,
-    });
-    if (!res.results?.[0]?.returnValues) {
+    tx.setSender(DUMMY_ADDRESS);
+    const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
+    if (res.$kind === 'FailedTransaction' || !res.commandResults?.[0]?.returnValues) {
       return {
         positions: [],
         nextCursor: null,
       };
     }
-    const [positionBytes, nextCursorBytes] = res.results[0].returnValues;
+    const [positionBytes, nextCursorBytes] = res.commandResults![0].returnValues;
 
     return {
       positions: bcs
         .vector(PositionData)
-        .parse(Uint8Array.from(positionBytes ? positionBytes[0] : []))
+        .parse(positionBytes ? positionBytes.bcs : new Uint8Array())
         .map((pos) => ({
           collateralType: coinType,
           collateralAmount: BigInt(pos.coll_amount),
           debtAmount: BigInt(pos.debt_amount),
           debtor: pos.debtor,
         })),
-      nextCursor: bcs.option(bcs.Address).parse(Uint8Array.from(nextCursorBytes ? nextCursorBytes[0] : [])),
+      nextCursor: bcs.option(bcs.Address).parse(nextCursorBytes ? nextCursorBytes.bcs : new Uint8Array()),
     };
   }
 
@@ -528,20 +546,18 @@ export class BucketClient {
    * @description
    */
   async getUserAccounts({ address }: { address: string }) {
-    const accountRes = await this.suiClient.getOwnedObjects({
+    const accountRes = await this.suiClient.listOwnedObjects({
       owner: address,
-      filter: {
-        StructType: `${this.config.ORIGINAL_FRAMEWORK_PACKAGE_ID}::account::Account`,
-      },
-      options: {
-        showBcs: true,
+      type: `${this.config.ORIGINAL_FRAMEWORK_PACKAGE_ID}::account::Account`,
+      include: {
+        content: true,
       },
     });
-    return accountRes.data.map((account) => {
-      if (account.data?.bcs?.dataType !== 'moveObject') {
+    return accountRes.objects.map((account) => {
+      if (!account.content) {
         throw new Error(`Failed to parse account object for ${address}`);
       }
-      return Account.fromBase64(account.data.bcs.bcsBytes);
+      return Account.parse(account.content);
     });
   }
 
@@ -578,11 +594,9 @@ export class BucketClient {
         });
       });
     });
-    const res = await this.suiClient.devInspectTransactionBlock({
-      transactionBlock: tx,
-      sender: DUMMY_ADDRESS,
-    });
-    if (!res.results) {
+    tx.setSender(DUMMY_ADDRESS);
+    const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
+    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
       return {};
     }
     return coinTypes.reduce((result, coinType) => {
@@ -591,7 +605,7 @@ export class BucketClient {
       if (!vaultInfo.rewarders?.length) {
         return result;
       }
-      const responses = res.results!.splice(0, vaultInfo.rewarders.length);
+      const responses = res.commandResults!.splice(0, vaultInfo.rewarders.length);
 
       return {
         ...result,
@@ -599,7 +613,7 @@ export class BucketClient {
           if (!responses[index]?.returnValues) {
             return result;
           }
-          const realtimeReward = bcs.u64().parse(Uint8Array.from(responses[index].returnValues![0][0]));
+          const realtimeReward = bcs.u64().parse(responses[index].returnValues[0].bcs);
 
           return { ...result, [rewarder.rewardType]: BigInt(realtimeReward) };
         }, {}),
@@ -623,21 +637,19 @@ export class BucketClient {
         arguments: [tx.sharedObjectRef(vaultInfo.vault), tx.pure.address(accountId ?? address), tx.object.clock()],
       });
     });
-    const res = await this.suiClient.devInspectTransactionBlock({
-      transactionBlock: tx,
-      sender: DUMMY_ADDRESS,
-    });
-    if (!res.results) {
+    tx.setSender(DUMMY_ADDRESS);
+    const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
+    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
       return [];
     }
     const borrowRewards = await this.getAccountBorrowRewards({ address, accountId, coinTypes: allCollateralTypes });
 
     return allCollateralTypes.reduce((result, coinType, index) => {
-      if (!res.results?.[index]?.returnValues) {
+      if (!res.commandResults?.[index]?.returnValues) {
         return result;
       }
-      const collateralAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[0][0])));
-      const debtAmount = BigInt(bcs.u64().parse(Uint8Array.from(res.results[index].returnValues[1][0])));
+      const collateralAmount = BigInt(bcs.u64().parse(res.commandResults[index].returnValues[0].bcs));
+      const debtAmount = BigInt(bcs.u64().parse(res.commandResults[index].returnValues[1].bcs));
       const hasReward = borrowRewards[coinType] && Object.values(borrowRewards[coinType]).some((reward) => reward);
 
       if (collateralAmount || debtAmount || hasReward) {
@@ -706,11 +718,9 @@ export class BucketClient {
         });
       });
     });
-    const res = await this.suiClient.devInspectTransactionBlock({
-      transactionBlock: tx,
-      sender: DUMMY_ADDRESS,
-    });
-    if (!res.results) {
+    tx.setSender(DUMMY_ADDRESS);
+    const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
+    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
       return {};
     }
     return lpTypes.reduce((result, lpType) => {
@@ -719,7 +729,7 @@ export class BucketClient {
       if (!poolInfo.reward?.rewardTypes?.length) {
         return result;
       }
-      const responses = res.results!.splice(0, 2 * poolInfo.reward.rewardTypes.length);
+      const responses = res.commandResults!.splice(0, 2 * poolInfo.reward.rewardTypes.length);
 
       return {
         ...result,
@@ -727,7 +737,7 @@ export class BucketClient {
           if (!responses[index]?.returnValues) {
             return result;
           }
-          const realtimeReward = bcs.u64().parse(Uint8Array.from(responses[index + 1].returnValues![0][0]));
+          const realtimeReward = bcs.u64().parse(responses[index + 1].returnValues[0].bcs);
 
           return { ...result, [rewardType]: BigInt(realtimeReward) };
         }, {}),
@@ -755,18 +765,16 @@ export class BucketClient {
         arguments: [this.savingPoolObj(tx, { lpType }), tx.pure.address(accountId ?? address)],
       });
     });
-    const res = await this.suiClient.devInspectTransactionBlock({
-      transactionBlock: tx,
-      sender: DUMMY_ADDRESS,
-    });
+    tx.setSender(DUMMY_ADDRESS);
+    const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
     const savingRewards = await this.getAccountSavingPoolRewards({ lpTypes, address, accountId });
 
     return lpTypes.reduce((result, lpType, index) => {
-      if (!res.results?.[2 * index]?.returnValues || !res.results?.[2 * index + 1]?.returnValues) {
+      if (!res.commandResults?.[2 * index]?.returnValues || !res.commandResults?.[2 * index + 1]?.returnValues) {
         return result;
       }
-      const usdbBalance = BigInt(bcs.u64().parse(Uint8Array.from(res.results[2 * index].returnValues![0][0])));
-      const lpBalance = BigInt(bcs.u64().parse(Uint8Array.from(res.results[2 * index + 1].returnValues![0][0])));
+      const usdbBalance = BigInt(bcs.u64().parse(res.commandResults![2 * index].returnValues[0].bcs));
+      const lpBalance = BigInt(bcs.u64().parse(res.commandResults![2 * index + 1].returnValues[0].bcs));
       const hasReward = savingRewards[lpType] && Object.values(savingRewards[lpType]).every((reward) => reward);
 
       if (usdbBalance || lpBalance || hasReward) {

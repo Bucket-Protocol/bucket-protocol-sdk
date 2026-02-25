@@ -1,12 +1,11 @@
 import { bcs } from '@mysten/sui/bcs';
-import { CoinStruct, SuiClient } from '@mysten/sui/client';
+import type { ClientWithCoreApi, SuiClientTypes } from '@mysten/sui/client';
 import {
-  Argument,
-  BuildTransactionOptions,
-  Commands,
+  type BuildTransactionOptions,
   Inputs,
+  TransactionCommands,
   TransactionDataBuilder,
-  TransactionResult,
+  type TransactionResult,
 } from '@mysten/sui/transactions';
 
 import { TransactionNestedResult } from '@/types/index.js';
@@ -45,7 +44,7 @@ export const resolveCoinBalance = async (
       usedIds.add(input.UnresolvedObject.objectId);
     }
   }
-  const coinsByType = new Map<string, CoinStruct[]>();
+  const coinsByType = new Map<string, SuiClientTypes.Coin[]>();
   const { client } = buildOptions;
   if (!client) {
     throw new Error(
@@ -58,16 +57,16 @@ export const resolveCoinBalance = async (
         coinType,
         await getCoinsOfType({
           coinType,
-          client: client as SuiClient,
+          client: client as ClientWithCoreApi,
           owner: transactionData.sender!,
           usedIds,
         }),
       );
     }),
   );
-  const mergedCoins = new Map<string, Argument>();
+  const mergedCoins = new Map<string, ReturnType<TransactionDataBuilder['addInput']>>();
 
-  mergedCoins.set('gas', { $kind: 'GasCoin', GasCoin: true });
+  mergedCoins.set('gas', { $kind: 'GasCoin', GasCoin: true } as never);
 
   for (const [index, transaction] of transactionData.commands.entries()) {
     if (transaction.$kind !== '$Intent' || transaction.$Intent.name !== COIN_WITH_BALANCE_RESOLVER) {
@@ -78,7 +77,7 @@ export const resolveCoinBalance = async (
       balance: bigint;
     };
     if (balance === 0n && type !== 'gas') {
-      transactionData.replaceCommand(index, Commands.MoveCall({ target: '0x2::coin::zero', typeArguments: [type] }));
+      transactionData.replaceCommand(index, TransactionCommands.MoveCall({ target: '0x2::coin::zero', typeArguments: [type] }));
       continue;
     }
     const commands = [];
@@ -88,19 +87,19 @@ export const resolveCoinBalance = async (
         transactionData.addInput(
           'object',
           Inputs.ObjectRef({
-            objectId: coin.coinObjectId,
+            objectId: coin.objectId,
             digest: coin.digest,
             version: coin.version,
           }),
         ),
       );
       if (rest.length > 0) {
-        commands.push(Commands.MergeCoins(first, rest));
+        commands.push(TransactionCommands.MergeCoins(first, rest));
       }
       mergedCoins.set(type, first);
     }
     commands.push(
-      Commands.SplitCoins(mergedCoins.get(type)!, [
+      TransactionCommands.SplitCoins(mergedCoins.get(type)!, [
         typeof balance === 'bigint'
           ? transactionData.addInput('pure', Inputs.Pure(bcs.u64().serialize(balance)))
           : balance,
@@ -108,7 +107,7 @@ export const resolveCoinBalance = async (
     );
     transactionData.replaceCommand(index, commands);
 
-    transactionData.mapArguments((arg) => {
+    transactionData.mapArguments((arg: Parameters<Parameters<typeof transactionData.mapArguments>[0]>[0]) => {
       if (arg.$kind === 'Result' && arg.Result === index) {
         return {
           $kind: 'NestedResult',

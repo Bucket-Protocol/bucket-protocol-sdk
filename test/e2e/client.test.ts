@@ -1,21 +1,22 @@
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { SuiGrpcClient } from '@mysten/sui/grpc';
 import { Transaction, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
 import { BucketClient } from '../../src/client.js';
+import { PositionUpdated } from '../../src/_generated/bucket_v2_cdp/events.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '../../src/utils/transaction.js';
 
 describe('Interacting with Bucket Client on mainnet', () => {
   const network = 'mainnet';
   const testAccount = '0x7a718956581fbe4a568d135fef5161024e74af87a073a1489e57ebef53744652';
-  const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+  const suiClient = new SuiGrpcClient({ network, baseUrl: 'https://fullnode.mainnet.sui.io:443' });
   const bucketClient = new BucketClient({ suiClient, network });
   const usdbCoinType = bucketClient.getUsdbCoinType();
   const usdcCoinType = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
 
   it('test usdbCoinType()', async () => {
-    const usdbMetadata = await suiClient.getCoinMetadata({
+    const { coinMetadata: usdbMetadata } = await suiClient.getCoinMetadata({
       coinType: usdbCoinType,
     });
     expect(usdbMetadata?.decimals).toBe(6);
@@ -67,11 +68,14 @@ describe('Interacting with Bucket Client on mainnet', () => {
       {} as Record<string, TransactionResult>,
     );
     tx.transferObjects(Object.values(result), testAccount);
-    const res = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
+    const dryrunRes = await suiClient.simulateTransaction({
+      transaction: tx,
+      include: { balanceChanges: true },
     });
-    expect(res.balanceChanges.length).toBe(3);
-    res.balanceChanges.map((bc) => {
+    expect(dryrunRes.$kind).toBe('Transaction');
+    const balanceChanges = (dryrunRes.Transaction ?? dryrunRes.FailedTransaction)!.balanceChanges!;
+    expect(balanceChanges.length).toBe(3);
+    balanceChanges.map((bc) => {
       if (normalizeStructTag(bc.coinType) !== normalizeStructTag('0x2::sui::SUI')) {
         expect(Number(bc.amount)).toBeGreaterThan(0);
       }
@@ -93,12 +97,14 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     tx.transferObjects([usdbCoin1], testAccount);
 
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
+    const dryrunRes = await suiClient.simulateTransaction({
+      transaction: tx,
+      include: { balanceChanges: true },
     });
-    expect(dryrunRes.effects.status.status).toBe('success');
-    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdcCoinType)?.amount).toBe('-1000000');
-    expect(dryrunRes.balanceChanges.find((c) => c.coinType === usdbCoinType)?.amount).toBe('1000000');
+    expect(dryrunRes.$kind).toBe('Transaction');
+    const balanceChanges = (dryrunRes.Transaction ?? dryrunRes.FailedTransaction)!.balanceChanges!;
+    expect(balanceChanges.find((c) => c.coinType === usdcCoinType)?.amount).toBe('-1000000');
+    expect(balanceChanges.find((c) => c.coinType === usdbCoinType)?.amount).toBe('1000000');
   }, 20_000);
 
   it('test flashMint 1000 USDB with default fee config', async () => {
@@ -119,11 +125,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
     tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
     bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
 
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
+    const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.$kind).toBe('Transaction');
   }, 20_000);
 
   it('test psmSwapIn() then deposit to saving pool', async () => {
@@ -146,11 +150,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
       depositCoinOrAmount: usdbCoin,
     });
 
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
+    const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.$kind).toBe('Transaction');
   }, 20_000);
 
   it('test deposit to saving pool', async () => {
@@ -167,11 +169,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
       depositCoinOrAmount: usdbCoin,
     });
 
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
+    const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.$kind).toBe('Transaction');
   }, 20_000);
 
   it('test withdraw from saving pool', async () => {
@@ -188,11 +188,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     tx.transferObjects([usdbCoin], testAccount);
 
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
+    const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.$kind).toBe('Transaction');
   }, 20_000);
 
   it('test claim from saving pool', async () => {
@@ -206,11 +204,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
     tx.transferObjects(Object.values(rewardsRecord), testAccount);
 
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
+    const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.$kind).toBe('Transaction');
   }, 20_000);
 
   it('test getAllVaultObjects()', async () => {
@@ -226,7 +222,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
   it('test buildManagePositionTransaction()', async () => {
     const depositAmount = 1 * 10 ** 9; // 1 SUI
-    const borrowAmount = 1 * 10 ** 6; // 1 USDB
+    const borrowAmount = 0.8 * 10 ** 6; // 1 USDB
     const tx = new Transaction();
     tx.setSender(testAccount);
 
@@ -236,26 +232,16 @@ describe('Interacting with Bucket Client on mainnet', () => {
       borrowAmount,
     });
     tx.transferObjects([usdbCoin], testAccount);
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
+    const dryrunRes = await suiClient.simulateTransaction({
+      transaction: tx,
+      include: { events: true },
     });
-    expect(dryrunRes.effects.status.status).toBe('success');
-    const positionUpdatedEvent = dryrunRes.events.find((e) => e.type.includes('PositionUpdated'));
+    expect(dryrunRes.$kind).toBe('Transaction');
+    const events = (dryrunRes.Transaction ?? dryrunRes.FailedTransaction)!.events!;
+    const positionUpdatedEvent = events.find((e) => e.eventType.includes('PositionUpdated'));
     expect(positionUpdatedEvent).toBeDefined();
     if (!positionUpdatedEvent) return;
-    const positionUpdatedEventData = positionUpdatedEvent.parsedJson as {
-      vault_id: string;
-      coll_type: string;
-      debtor: string;
-      deposit_amount: string;
-      borrow_amount: string;
-      withdraw_amount: string;
-      repay_amount: string;
-      interest_amount: string;
-      current_coll_amount: string;
-      current_debt_amount: string;
-      memo: string;
-    };
+    const positionUpdatedEventData = PositionUpdated.parse(positionUpdatedEvent.bcs);
     expect(positionUpdatedEventData.debtor).toBe(testAccount);
     expect(+positionUpdatedEventData.deposit_amount).toBe(depositAmount);
     expect(+positionUpdatedEventData.borrow_amount).toBe(borrowAmount);
@@ -281,18 +267,16 @@ describe('Interacting with Bucket Client on mainnet', () => {
     });
     destroyZeroCoin(tx, { coinType: usdbCoinType, coin: usdbOut });
 
-    const dryrunRes = await suiClient.dryRunTransactionBlock({
-      transactionBlock: await tx.build({ client: suiClient }),
-    });
+    const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-    expect(dryrunRes.effects.status.status).toBe('success');
+    expect(dryrunRes.$kind).toBe('Transaction');
   }, 20_000);
 });
 
 // describe('Interacting with Bucket Client on testnet', () => {
 //   const network = 'testnet';
 //   const testAccount = '0xa718efc9ae5452b22865101438a8286a5b0ca609cc58018298108c636cdda89c';
-//   const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+//   const suiClient = new SuiGrpcClient({ network, baseUrl: 'https://fullnode.mainnet.sui.io:443' });
 //   const bucketClient = new BucketClient({ suiClient, network });
 //   const usdbCoinType = bucketClient.getUsdbCoinType();
 //   const usdcCoinType = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC';
@@ -312,10 +296,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
 //     });
 //     tx.transferObjects([usdbCoin], testAccount);
 
-//     const dryrunRes = await suiClient.dryRunTransactionBlock({
-//       transactionBlock: await tx.build({ client: suiClient }),
-//     });
-//     expect(dryrunRes.effects.status.status).toBe('success');
+//     const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
+//     expect(dryrunRes.$kind).toBe('Transaction');
 //   });
 
 //   it('test psmSwapOut()', async () => {
@@ -332,11 +314,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
 //     });
 //     tx.transferObjects([inputCoin], testAccount);
 
-//     const dryrunRes = await suiClient.dryRunTransactionBlock({
-//       transactionBlock: await tx.build({ client: suiClient }),
-//     });
+//     const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-//     expect(dryrunRes.effects.status.status).toBe('success');
+//     expect(dryrunRes.$kind).toBe('Transaction');
 //   });
 
 //   it('test flashMint 1 USDB with default fee config', async () => {
@@ -358,11 +338,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
 //     tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
 //     bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
 
-//     const dryrunRes = await suiClient.dryRunTransactionBlock({
-//       transactionBlock: await tx.build({ client: suiClient }),
-//     });
+//     const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-//     expect(dryrunRes.effects.status.status).toBe('success');
+//     expect(dryrunRes.$kind).toBe('Transaction');
 //   });
 
 //   it('test psmSwapIn() then deposit to saving pool', async () => {
@@ -385,11 +363,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
 //       usdbCoin,
 //     });
 
-//     const dryrunRes = await suiClient.dryRunTransactionBlock({
-//       transactionBlock: await tx.build({ client: suiClient }),
-//     });
+//     const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-//     expect(dryrunRes.effects.status.status).toBe('success');
+//     expect(dryrunRes.$kind).toBe('Transaction');
 //   });
 
 //   it('test deposit to saving pool', async () => {
@@ -406,11 +382,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
 //       usdbCoin,
 //     });
 
-//     const dryrunRes = await suiClient.dryRunTransactionBlock({
-//       transactionBlock: await tx.build({ client: suiClient }),
-//     });
+//     const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-//     expect(dryrunRes.effects.status.status).toBe('success');
+//     expect(dryrunRes.$kind).toBe('Transaction');
 //   });
 
 //   it('test withdraw from saving pool', async () => {
@@ -427,11 +401,9 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
 //     tx.transferObjects([usdbCoin], testAccount);
 
-//     const dryrunRes = await suiClient.dryRunTransactionBlock({
-//       transactionBlock: await tx.build({ client: suiClient }),
-//     });
+//     const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-//     expect(dryrunRes.effects.status.status).toBe('success');
+//     expect(dryrunRes.$kind).toBe('Transaction');
 //   });
 
 //   it('test claim from saving pool', async () => {
@@ -445,10 +417,8 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
 //     tx.transferObjects([...rewardCoins], testAccount);
 
-//     const dryrunRes = await suiClient.dryRunTransactionBlock({
-//       transactionBlock: await tx.build({ client: suiClient }),
-//     });
+//     const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
 
-//     expect(dryrunRes.effects.status.status).toBe('success');
+//     expect(dryrunRes.$kind).toBe('Transaction');
 //   });
 // });

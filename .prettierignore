@@ -5,3 +5,4 @@ coverage*
 dist
 .turbo
 src/_generated
+CLAUDE.md

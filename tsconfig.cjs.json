@@ -7,6 +7,15 @@
     "noEmit": false,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@mysten/sui/bcs": ["./node_modules/@mysten/sui/dist/bcs/index.d.mts"],
+      "@mysten/sui/transactions": ["./node_modules/@mysten/sui/dist/transactions/index.d.mts"],
+      "@mysten/sui/utils": ["./node_modules/@mysten/sui/dist/utils/index.d.mts"],
+      "@mysten/sui/client": ["./node_modules/@mysten/sui/dist/client/index.d.mts"],
+      "@mysten/sui/grpc": ["./node_modules/@mysten/sui/dist/grpc/index.d.mts"]
+    }
   }
 }

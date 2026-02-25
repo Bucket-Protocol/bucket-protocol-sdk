@@ -20,7 +20,7 @@
     "forceConsistentCasingInFileNames": true,
 
     /* Bundled projects */
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "noEmit": true,

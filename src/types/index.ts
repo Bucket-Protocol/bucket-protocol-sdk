@@ -1,4 +1,4 @@
-import { Argument } from '@mysten/sui/transactions';
+import type { Argument } from '@mysten/sui/transactions';
 
 export * from './config.js';
 
