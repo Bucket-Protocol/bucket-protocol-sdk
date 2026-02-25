@@ -16,7 +16,7 @@ dist
 .DS_Store
 CLAUDE.md
 
-# docs (local only, do not track or push)
+# docs
 /docs
 *.pem
 
