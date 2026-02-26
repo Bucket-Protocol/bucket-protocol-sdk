@@ -978,7 +978,7 @@ if (saving) {
 
 ## Version Information
 
-**Current Version**: 1.2.5
+**Current Version**: 1.2.8
 **Node.js Requirement**: >= 20
 **Dependencies**:
 
