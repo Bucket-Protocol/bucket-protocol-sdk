@@ -2,20 +2,10 @@
  * Pyth price feed integration: fetch update data from Hermes, build Move calls for Sui (SuiGrpcClient).
  */
 
+import { fromHex, toHex } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import type { SuiGrpcClient } from '@mysten/sui/grpc';
 import type { Transaction, TransactionArgument } from '@mysten/sui/transactions';
-
-function hexToBytes(hex: string): Uint8Array {
-  const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
-  return new Uint8Array(clean.match(/.{1,2}/g)!.map((b) => parseInt(b, 16)));
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 async function runWithConcurrency<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
@@ -79,7 +69,7 @@ export async function fetchPriceFeedsUpdateDataFromHermes(endpoint: string, pric
     throw new Error('Hermes returned no binary price data');
   }
 
-  return data.map((hexStr: string) => hexToBytes(hexStr));
+  return data.map((hexStr: string) => fromHex(hexStr));
 }
 
 /**
@@ -125,9 +115,9 @@ export async function buildPythPriceUpdateCalls(
   const { packageId: pythPackageId, baseUpdateFee } = pythState;
 
   const vaa = extractVaaBytesFromAccumulatorMessage(updates[0]!);
-  const verifiedVaas = await verifyVaas(tx, wormholePackageId, config.wormholeStateId, [vaa]);
+  const verifiedVaas = verifyVaas(tx, wormholePackageId, config.wormholeStateId, [vaa]);
 
-  const accBytesArg = tx.pure.vector('u8', Array.from(updates[0]!)) as TransactionArgument;
+  const accBytesArg = tx.pure.vector('u8', updates[0]!) as TransactionArgument;
   const [priceUpdatesHotPotato] = tx.moveCall({
     target: `${pythPackageId}::pyth::create_authenticated_price_infos_using_accumulator`,
     arguments: [tx.object(config.pythStateId), accBytesArg, verifiedVaas[0]!, tx.object.clock()],
@@ -185,15 +175,15 @@ async function getPythStateInfo(client: SuiGrpcClient, pythStateId: string, cach
   return info;
 }
 
-async function verifyVaas(
+function verifyVaas(
   tx: Transaction,
   wormholePackageId: string,
   wormholeStateId: string,
   vaas: Uint8Array[],
-): Promise<TransactionArgument[]> {
+): TransactionArgument[] {
   const verified: TransactionArgument[] = [];
   for (const vaa of vaas) {
-    const vaaArg = tx.pure.vector('u8', Array.from(vaa));
+    const vaaArg = tx.pure.vector('u8', vaa);
     const [verifiedVaa] = tx.moveCall({
       target: `${wormholePackageId}::vaa::parse_and_verify`,
       arguments: [tx.object(wormholeStateId), vaaArg, tx.object.clock()],
@@ -244,7 +234,7 @@ async function getPriceFeedObjectIdWithTable(
   const keyBytes = bcs
     .struct('PriceIdentifier', { bytes: bcs.vector(bcs.u8()) })
     .serialize({
-      bytes: Array.from(hexToBytes(normalized)),
+      bytes: fromHex(normalized),
     })
     .toBytes();
   const result = await client.getDynamicField({
@@ -252,7 +242,7 @@ async function getPriceFeedObjectIdWithTable(
     name: { type: `${table.fieldType}::price_identifier::PriceIdentifier`, bcs: keyBytes },
   });
   const value = result.dynamicField?.value as { bcs?: Uint8Array } | undefined;
-  const objectId = !value?.bcs || value.bcs.length < 32 ? undefined : '0x' + bytesToHex(value.bcs);
+  const objectId = !value?.bcs || value.bcs.length < 32 ? undefined : '0x' + toHex(value.bcs);
 
   if (cache) cache.priceFeedObjectIdCache.set(cacheKey, objectId);
   return objectId;
