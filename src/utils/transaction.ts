@@ -1,5 +1,5 @@
 import type { ClientWithCoreApi, SuiClientTypes } from '@mysten/sui/client';
-import { TransactionCommands, Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
+import { Transaction, TransactionArgument, TransactionCommands, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 
 import { COIN_WITH_BALANCE_RESOLVER, resolveCoinBalance } from '@/utils/resolvers.js';
@@ -45,7 +45,11 @@ export const getCoinsOfType = async ({
   const coins: SuiClientTypes.Coin[] = [];
 
   const loadMoreCoins = async (cursor: string | null = null): Promise<SuiClientTypes.Coin[]> => {
-    const { objects, hasNextPage, cursor: nextCursor } = await client.core.listCoins({
+    const {
+      objects,
+      hasNextPage,
+      cursor: nextCursor,
+    } = await client.core.listCoins({
       owner,
       coinType,
       cursor,

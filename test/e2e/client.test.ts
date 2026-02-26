@@ -3,8 +3,8 @@ import { Transaction, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import { BucketClient } from '../../src/client.js';
 import { PositionUpdated } from '../../src/_generated/bucket_v2_cdp/events.js';
+import { BucketClient } from '../../src/client.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '../../src/utils/transaction.js';
 
 describe('Interacting with Bucket Client on mainnet', () => {
