@@ -106,6 +106,9 @@ export async function buildPythPriceUpdateCalls(
   feedIds: string[],
   cache?: PythCache,
 ): Promise<string[]> {
+  if (updates.length === 0) {
+    throw new Error('No price update data provided; Hermes may have returned empty results');
+  }
   if (updates.length > 1) {
     throw new Error('Only a single accumulator message is supported per transaction');
   }
