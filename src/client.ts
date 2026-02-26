@@ -7,7 +7,6 @@ import {
   TransactionResult,
 } from '@mysten/sui/transactions';
 import { normalizeStructTag, parseStructTag } from '@mysten/sui/utils';
-import { SuiPriceServiceConnection, SuiPythClient } from '@pythnetwork/pyth-sui-js';
 
 import {
   AggregatorObjectInfo,
@@ -27,6 +26,10 @@ import {
 } from '@/types/index.js';
 import { CONFIG, DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
+import {
+  fetchPriceFeedsUpdateDataFromHermes,
+  buildPythPriceUpdateCalls,
+} from '@/utils/pyth.js';
 
 import { VaultRewarder } from '@/_generated/bucket_v2_borrow_incentive/borrow_incentive.js';
 import { PositionData, Vault } from '@/_generated/bucket_v2_cdp/vault.js';
@@ -50,24 +53,6 @@ const NETWORK_RPC_URLS: Record<string, string> = {
   testnet: 'https://fullnode.testnet.sui.io:443',
 };
 
-function createPythProviderAdapter(rpcUrl: string) {
-  const rpc = async (method: string, params: unknown[]) => {
-    const response = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-    });
-    const json = (await response.json()) as { result: unknown; error?: { message: string } };
-    if (json.error) throw new Error(json.error.message);
-    return json.result;
-  };
-  return {
-    getObject: ({ id, options }: { id: string; options?: unknown }) => rpc('sui_getObject', [id, options]),
-    getDynamicFieldObject: ({ parentId, name }: { parentId: string; name: unknown }) =>
-      rpc('suix_getDynamicFieldObject', [parentId, name]),
-  };
-}
-
 export class BucketClient {
   /**
    * @description a TypeScript wrapper over Bucket V2 client.
@@ -76,8 +61,6 @@ export class BucketClient {
    */
   private config: ConfigType;
   private suiClient: SuiGrpcClient;
-  private pythConnection: SuiPriceServiceConnection;
-  private pythClient: SuiPythClient;
 
   constructor({
     suiClient,
@@ -89,10 +72,6 @@ export class BucketClient {
     this.config = CONFIG[network];
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
-    this.pythConnection = new SuiPriceServiceConnection(this.config.PRICE_SERVICE_ENDPOINT);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore pythClient has only commonJS
-    this.pythClient = new SuiPythClient(createPythProviderAdapter(rpcUrl), this.config.PYTH_STATE_ID, this.config.WORMHOLE_STATE_ID);
   }
 
   /* ----- Getter ----- */
@@ -102,20 +81,6 @@ export class BucketClient {
    */
   getSuiClient(): SuiGrpcClient {
     return this.suiClient;
-  }
-
-  /**
-   * @description Get this.pythConnection
-   */
-  getPythConnection(): SuiPriceServiceConnection {
-    return this.pythConnection;
-  }
-
-  /**
-   * @description Get this.pythClient
-   */
-  getPythClient(): SuiPythClient {
-    return this.pythClient;
   }
 
   /**
@@ -940,10 +905,20 @@ export class BucketClient {
       }
       return aggregator.pythPriceId;
     });
-    const updateData = await this.pythConnection.getPriceFeedsUpdateData(pythPriceIds);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore pythClient has only commonJS
-    const priceInfoObjIds = await this.pythClient.updatePriceFeeds(tx, updateData, pythPriceIds);
+    const updateData = await fetchPriceFeedsUpdateDataFromHermes(
+      this.config.PRICE_SERVICE_ENDPOINT,
+      pythPriceIds,
+    );
+    const priceInfoObjIds = await buildPythPriceUpdateCalls(
+      tx,
+      this.suiClient,
+      {
+        pythStateId: this.config.PYTH_STATE_ID,
+        wormholeStateId: this.config.WORMHOLE_STATE_ID,
+      },
+      updateData,
+      pythPriceIds,
+    );
 
     return coinTypes.map((coinType, index) => {
       const collector = this.newPriceCollector(tx, { coinType });
@@ -956,7 +931,7 @@ export class BucketClient {
           tx.sharedObjectRef(this.config.PYTH_RULE_CONFIG_OBJ),
           tx.object.clock(),
           tx.object(this.config.PYTH_STATE_ID),
-          tx.object(priceInfoObjIds[index]),
+          tx.object(priceInfoObjIds[index]!),
         ],
       });
       const priceResult = tx.moveCall({
