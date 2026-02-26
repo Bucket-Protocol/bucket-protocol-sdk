@@ -790,17 +790,7 @@ const accountRequest = client.newAccountRequest(tx, {
 
 ## Integration with Pyth Oracle
 
-The SDK integrates with Pyth Network for real-time price feeds:
-
-```typescript
-// Get Pyth connection
-const pythConnection = client.getPythConnection();
-
-// Get Pyth client
-const pythClient = client.getPythClient();
-
-// Price updates are automatically handled in aggregatePrices()
-```
+The SDK integrates with Pyth Network for price feeds without requiring the Pyth SDK. Price update data is fetched from Hermes (public REST API) and Move calls are built using `SuiGrpcClient`. Price updates are applied automatically when you call methods that use `aggregatePrices()` (e.g. `getOraclePrices`, `buildManagePositionTransaction` with borrow/withdraw, `buildPSMSwapInTransaction`, `buildPSMSwapOutTransaction`).
 
 ## Best Practices
 
@@ -994,4 +984,3 @@ if (saving) {
 
 - @mysten/sui: >= 2.0.0
 - @mysten/bcs: >= 2.0.0
-- @pythnetwork/pyth-sui-js: ^2.2.0

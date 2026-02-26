@@ -52,9 +52,7 @@
     "build": "pnpm clean && npm-run-all --parallel build:cjs build:esm",
     "test": "vitest"
   },
-  "dependencies": {
-    "@pythnetwork/pyth-sui-js": "^2.2.0"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@mysten/sui": ">=2.0.0",
     "@mysten/bcs": ">=2.0.0"
