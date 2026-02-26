@@ -26,10 +26,7 @@ import {
 } from '@/types/index.js';
 import { CONFIG, DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
-import {
-  fetchPriceFeedsUpdateDataFromHermes,
-  buildPythPriceUpdateCalls,
-} from '@/utils/pyth.js';
+import { buildPythPriceUpdateCalls, fetchPriceFeedsUpdateDataFromHermes, PythCache } from '@/utils/pyth.js';
 
 import { VaultRewarder } from '@/_generated/bucket_v2_borrow_incentive/borrow_incentive.js';
 import { PositionData, Vault } from '@/_generated/bucket_v2_cdp/vault.js';
@@ -61,6 +58,7 @@ export class BucketClient {
    */
   private config: ConfigType;
   private suiClient: SuiGrpcClient;
+  private pythCache = new PythCache();
 
   constructor({ suiClient, network = 'mainnet' }: { suiClient?: SuiGrpcClient; network?: Network }) {
     this.config = CONFIG[network];
@@ -899,10 +897,7 @@ export class BucketClient {
       }
       return aggregator.pythPriceId;
     });
-    const updateData = await fetchPriceFeedsUpdateDataFromHermes(
-      this.config.PRICE_SERVICE_ENDPOINT,
-      pythPriceIds,
-    );
+    const updateData = await fetchPriceFeedsUpdateDataFromHermes(this.config.PRICE_SERVICE_ENDPOINT, pythPriceIds);
     const priceInfoObjIds = await buildPythPriceUpdateCalls(
       tx,
       this.suiClient,
@@ -912,6 +907,7 @@ export class BucketClient {
       },
       updateData,
       pythPriceIds,
+      this.pythCache,
     );
 
     return coinTypes.map((coinType, index) => {
