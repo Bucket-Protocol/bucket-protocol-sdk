@@ -5,8 +5,8 @@ The Bucket Protocol TypeScript SDK is a comprehensive development toolkit for in
 ## Installation
 
 ```bash
-npm install @mysten/sui (>= 1.38.0)
-npm install @mysten/bcs (>= 1.8.0)
+npm install @mysten/sui  # >= 2.0.0
+npm install @mysten/bcs  # >= 2.0.0
 npm install @bucket-protocol/sdk
 ```
 
@@ -16,13 +16,16 @@ npm install @bucket-protocol/sdk
 
 ```typescript
 import { BucketClient } from '@bucket-protocol/sdk';
-import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { SuiGrpcClient } from '@mysten/sui/grpc';
 
 // Use default mainnet configuration
 const client = new BucketClient({ network: 'mainnet' });
 
-// Or with custom SuiClient configuration
-const customSuiClient = new SuiClient({ url: 'your-custom-rpc-url' });
+// Or with custom SuiGrpcClient configuration
+const customSuiClient = new SuiGrpcClient({
+  network: 'mainnet',
+  baseUrl: 'https://your-custom-rpc-url',
+});
 const client = new BucketClient({
   suiClient: customSuiClient,
   network: 'mainnet',
@@ -559,10 +562,10 @@ await client.buildManagePositionTransaction(tx, {
 
 // Simulate execution (won't actually execute on-chain)
 tx.setSender('0x...your-address');
-const dryRunResult = await client.getSuiClient().dryRunTransactionBlock({
-  transactionBlock: await tx.build({ client: client.getSuiClient() }),
+const simResult = await client.getSuiClient().simulateTransaction({
+  transaction: tx,
 });
-console.log('Simulation result:', dryRunResult.effects.status);
+console.log('Simulation result:', simResult.$kind === 'Transaction' ? 'success' : 'failed');
 ```
 
 ## Error Handling
@@ -787,17 +790,7 @@ const accountRequest = client.newAccountRequest(tx, {
 
 ## Integration with Pyth Oracle
 
-The SDK integrates with Pyth Network for real-time price feeds:
-
-```typescript
-// Get Pyth connection
-const pythConnection = client.getPythConnection();
-
-// Get Pyth client
-const pythClient = client.getPythClient();
-
-// Price updates are automatically handled in aggregatePrices()
-```
+The SDK integrates with Pyth Network for price feeds without requiring the Pyth SDK. Price update data is fetched from Hermes (public REST API) and Move calls are built using `SuiGrpcClient`. Price updates are applied automatically when you call methods that use `aggregatePrices()` (e.g. `getOraclePrices`, `buildManagePositionTransaction` with borrow/withdraw, `buildPSMSwapInTransaction`, `buildPSMSwapOutTransaction`).
 
 ## Best Practices
 
@@ -824,7 +817,7 @@ For complete usage examples, refer to [test/e2e/client.test.ts](./test/e2e/clien
 
 ```typescript
 interface BucketClientOptions {
-  suiClient?: SuiClient; // Custom SuiClient instance
+  suiClient?: SuiGrpcClient; // Custom SuiGrpcClient instance
   network?: Network; // Network selection: 'mainnet' | 'testnet'
 }
 ```
@@ -911,7 +904,7 @@ const positions = await client.getUserPositions({ address: '0x...your-address' }
 ```typescript
 // Check balance before attempting transactions
 const address = '0x...your-address';
-const { data: coins } = await client.getSuiClient().getCoins({
+const { objects: coins } = await client.getSuiClient().listCoins({
   owner: address,
   coinType: SUI_TYPE_ARG,
 });
@@ -985,9 +978,9 @@ if (saving) {
 
 ## Version Information
 
-**Current Version**: 0.15.7
-**Node.js Requirement**: >= 20.18.0
+**Current Version**: 1.2.8
+**Node.js Requirement**: >= 20
 **Dependencies**:
 
-- @mysten/sui: 1.28.2
-- @pythnetwork/pyth-sui-js: ^2.1.0
+- @mysten/sui: >= 2.0.0
+- @mysten/bcs: >= 2.0.0

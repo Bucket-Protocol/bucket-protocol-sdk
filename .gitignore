@@ -13,6 +13,9 @@ dist
 
 # misc
 .DS_Store
+
+# docs
+/docs
 *.pem
 
 # debug
@@ -27,5 +30,4 @@ yarn-error.log*
 
 # nvm
 .nvmrc
-CLAUDE.md
 .claude/settings.local.json

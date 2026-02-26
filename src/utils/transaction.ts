@@ -1,5 +1,5 @@
-import { CoinStruct, SuiClient } from '@mysten/sui/client';
-import { Commands, Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
+import type { ClientWithCoreApi, SuiClientTypes } from '@mysten/sui/client';
+import { Transaction, TransactionArgument, TransactionCommands, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 
 import { COIN_WITH_BALANCE_RESOLVER, resolveCoinBalance } from '@/utils/resolvers.js';
@@ -38,17 +38,25 @@ export const getCoinsOfType = async ({
   usedIds,
 }: {
   coinType: string;
-  client: SuiClient;
+  client: ClientWithCoreApi;
   owner: string;
   usedIds: Set<string>;
-}): Promise<CoinStruct[]> => {
-  const coins: CoinStruct[] = [];
+}): Promise<SuiClientTypes.Coin[]> => {
+  const coins: SuiClientTypes.Coin[] = [];
 
-  const loadMoreCoins = async (cursor: string | null = null): Promise<CoinStruct[]> => {
-    const { data, hasNextPage, nextCursor } = await client.getCoins({ owner, coinType, cursor });
+  const loadMoreCoins = async (cursor: string | null = null): Promise<SuiClientTypes.Coin[]> => {
+    const {
+      objects,
+      hasNextPage,
+      cursor: nextCursor,
+    } = await client.core.listCoins({
+      owner,
+      coinType,
+      cursor,
+    });
 
-    for (const coin of data) {
-      if (usedIds.has(coin.coinObjectId)) {
+    for (const coin of objects) {
+      if (usedIds.has(coin.objectId)) {
         continue;
       }
       coins.push(coin);
@@ -83,7 +91,7 @@ export const coinWithBalance = ({
     const coinType = type === 'gas' ? type : normalizeStructTag(type);
 
     coinResult = tx.add(
-      Commands.Intent({
+      TransactionCommands.Intent({
         name: COIN_WITH_BALANCE_RESOLVER,
         inputs: {},
         data: {

@@ -52,12 +52,10 @@
     "build": "pnpm clean && npm-run-all --parallel build:cjs build:esm",
     "test": "vitest"
   },
-  "dependencies": {
-    "@pythnetwork/pyth-sui-js": "^2.2.0"
-  },
+  "dependencies": {},
   "peerDependencies": {
-    "@mysten/sui": ">=1.38.0",
-    "@mysten/bcs": ">=1.8.0"
+    "@mysten/sui": ">=2.0.0",
+    "@mysten/bcs": ">=2.0.0"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.2",
@@ -75,8 +73,8 @@
     "tsc-alias": "^1.8.16",
     "typescript": "5.9.2",
     "vitest": "^0.34.1",
-    "@mysten/bcs": "1.8.0",
-    "@mysten/sui": "1.38.0"
+    "@mysten/bcs": "2.0.2",
+    "@mysten/sui": "2.5.0"
   },
   "engines": {
     "node": ">=20",
