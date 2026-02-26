@@ -47,7 +47,7 @@
   "scripts": {
     "lint": "eslint",
     "clean": "rm -rf tsconfig.tsbuildinfo ./dist",
-    "build:cjs": "(tsc -p ./tsconfig.cjs.json || true) && tsc-alias -p ./tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
+    "build:cjs": "tsc -p ./tsconfig.cjs.json && tsc-alias -p ./tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
     "build:esm": "tsc -p ./tsconfig.esm.json && tsc-alias -p ./tsconfig.esm.json && echo '{\"type\": \"module\"}' > dist/esm/package.json",
     "build": "pnpm clean && npm-run-all --parallel build:cjs build:esm",
     "test": "vitest"

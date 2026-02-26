@@ -45,6 +45,16 @@ import {
   UNIHOUSE_OBJECT,
 } from './consts/price.js';
 
+// Full BCS schema for aggregator::PriceAggregated<T> (phantom T has no effect on layout)
+const PriceAggregatedBcs = bcs.struct('PriceAggregated', {
+  aggregator_id: bcs.Address,
+  sources: bcs.vector(bcs.string()),
+  prices: bcs.vector(bcs.u128()),
+  weights: bcs.vector(bcs.u8()),
+  current_threshold: bcs.u64(),
+  result: bcs.u128(),
+});
+
 const NETWORK_RPC_URLS: Record<string, string> = {
   mainnet: 'https://fullnode.mainnet.sui.io:443',
   testnet: 'https://fullnode.testnet.sui.io:443',
@@ -197,7 +207,7 @@ export class BucketClient {
 
       return {
         ...result,
-        [coinType]: Number(bcs.u128().parse(e.bcs.slice(-16))) / 10 ** 9,
+        [coinType]: Number(PriceAggregatedBcs.parse(e.bcs).result) / 10 ** 9,
       };
     }, {});
   }
