@@ -1,6 +1,7 @@
 import type {
   AggregatorObjectInfo,
   ConfigType,
+  DerivativeKind,
   PsmPoolObjectInfo,
   SavingPoolObjectInfo,
   SharedObjectRef,
@@ -13,11 +14,15 @@ import type { BucketOnchainConfig } from './bucketConfig.js';
 // Helper: parse a shared object ref from on-chain JSON
 // ============================================================
 
-function toSharedObjectRef(json: any, mutable = false): SharedObjectRef {
+function toSharedObjectRef(json: unknown, mutable = false): SharedObjectRef {
+  if (typeof json === 'string') {
+    return { objectId: json, initialSharedVersion: 0, mutable };
+  }
+  const obj = json as Record<string, unknown>;
   return {
-    objectId: json.id ?? json.objectId ?? json,
-    initialSharedVersion: json.initial_shared_version ?? json.initialSharedVersion ?? 0,
-    mutable: json.mutable ?? mutable,
+    objectId: (obj.id ?? obj.objectId ?? '') as string,
+    initialSharedVersion: (obj.initial_shared_version ?? obj.initialSharedVersion ?? 0) as number | string,
+    mutable: (obj.mutable as boolean | undefined) ?? mutable,
   };
 }
 
@@ -38,45 +43,47 @@ function toSharedObjectRef(json: any, mutable = false): SharedObjectRef {
  *   is off-chain and must always be provided externally)
  */
 export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Partial<ConfigType> = {}): ConfigType {
-  const pkg = onchain.packageConfig ?? {};
-  const oracle = onchain.oracleConfig ?? {};
-  const obj = onchain.objectConfig ?? {};
+  const pkg: Record<string, unknown> = onchain.packageConfig ?? {};
+  const oracle: Record<string, unknown> = onchain.oracleConfig ?? {};
+  const obj: Record<string, unknown> = onchain.objectConfig ?? {};
 
   // --- Package IDs ---
   const config: ConfigType = {
     // Off-chain endpoint — must be supplied via overrides or falls back to public Hermes
     PRICE_SERVICE_ENDPOINT:
-      overrides.PRICE_SERVICE_ENDPOINT ?? oracle.price_service_endpoint ?? 'https://hermes.pyth.network',
-    PYTH_STATE_ID: oracle.pyth_state_id ?? '',
-    WORMHOLE_STATE_ID: oracle.wormhole_state_id ?? '',
-    PYTH_RULE_PACKAGE_ID: oracle.pyth_rule_package_id ?? '',
+      overrides.PRICE_SERVICE_ENDPOINT ??
+      (oracle.price_service_endpoint as string | undefined) ??
+      'https://hermes.pyth.network',
+    PYTH_STATE_ID: (oracle.pyth_state_id as string | undefined) ?? '',
+    WORMHOLE_STATE_ID: (oracle.wormhole_state_id as string | undefined) ?? '',
+    PYTH_RULE_PACKAGE_ID: (oracle.pyth_rule_package_id as string | undefined) ?? '',
     PYTH_RULE_CONFIG_OBJ: oracle.pyth_rule_config_obj
       ? toSharedObjectRef(oracle.pyth_rule_config_obj, false)
       : { objectId: '', initialSharedVersion: 0, mutable: false },
 
     // Original (type-origin) package IDs
-    ORIGINAL_FRAMEWORK_PACKAGE_ID: pkg.original_framework_package_id ?? '',
-    ORIGINAL_USDB_PACKAGE_ID: pkg.original_usdb_package_id ?? '',
-    ORIGINAL_ORACLE_PACKAGE_ID: pkg.original_oracle_package_id ?? '',
-    ORIGINAL_CDP_PACKAGE_ID: pkg.original_cdp_package_id ?? '',
-    ORIGINAL_PSM_PACKAGE_ID: pkg.original_psm_package_id ?? '',
-    ORIGINAL_FLASH_PACKAGE_ID: pkg.original_flash_package_id ?? '',
-    ORIGINAL_SAVING_PACKAGE_ID: pkg.original_saving_package_id ?? '',
-    ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: pkg.original_saving_incentive_package_id ?? '',
-    ORIGINAL_BORROW_INCENTIVE_PACKAGE_ID: pkg.original_borrow_incentive_package_id ?? '',
-    ORIGINAL_BLACKLIST_PACKAGE_ID: pkg.original_blacklist_package_id ?? '',
+    ORIGINAL_FRAMEWORK_PACKAGE_ID: (pkg.original_framework_package_id as string | undefined) ?? '',
+    ORIGINAL_USDB_PACKAGE_ID: (pkg.original_usdb_package_id as string | undefined) ?? '',
+    ORIGINAL_ORACLE_PACKAGE_ID: (pkg.original_oracle_package_id as string | undefined) ?? '',
+    ORIGINAL_CDP_PACKAGE_ID: (pkg.original_cdp_package_id as string | undefined) ?? '',
+    ORIGINAL_PSM_PACKAGE_ID: (pkg.original_psm_package_id as string | undefined) ?? '',
+    ORIGINAL_FLASH_PACKAGE_ID: (pkg.original_flash_package_id as string | undefined) ?? '',
+    ORIGINAL_SAVING_PACKAGE_ID: (pkg.original_saving_package_id as string | undefined) ?? '',
+    ORIGINAL_SAVING_INCENTIVE_PACKAGE_ID: (pkg.original_saving_incentive_package_id as string | undefined) ?? '',
+    ORIGINAL_BORROW_INCENTIVE_PACKAGE_ID: (pkg.original_borrow_incentive_package_id as string | undefined) ?? '',
+    ORIGINAL_BLACKLIST_PACKAGE_ID: (pkg.original_blacklist_package_id as string | undefined) ?? '',
 
     // Latest (call-target) package IDs
-    FRAMEWORK_PACKAGE_ID: pkg.framework_package_id ?? '',
-    USDB_PACKAGE_ID: pkg.usdb_package_id ?? '',
-    ORACLE_PACKAGE_ID: pkg.oracle_package_id ?? '',
-    CDP_PACKAGE_ID: pkg.cdp_package_id ?? '',
-    PSM_PACKAGE_ID: pkg.psm_package_id ?? '',
-    FLASH_PACKAGE_ID: pkg.flash_package_id ?? '',
-    SAVING_PACKAGE_ID: pkg.saving_package_id ?? '',
-    SAVING_INCENTIVE_PACKAGE_ID: pkg.saving_incentive_package_id ?? '',
-    BORROW_INCENTIVE_PACKAGE_ID: pkg.borrow_incentive_package_id ?? '',
-    BLACKLIST_PACKAGE_ID: pkg.blacklist_package_id ?? '',
+    FRAMEWORK_PACKAGE_ID: (pkg.framework_package_id as string | undefined) ?? '',
+    USDB_PACKAGE_ID: (pkg.usdb_package_id as string | undefined) ?? '',
+    ORACLE_PACKAGE_ID: (pkg.oracle_package_id as string | undefined) ?? '',
+    CDP_PACKAGE_ID: (pkg.cdp_package_id as string | undefined) ?? '',
+    PSM_PACKAGE_ID: (pkg.psm_package_id as string | undefined) ?? '',
+    FLASH_PACKAGE_ID: (pkg.flash_package_id as string | undefined) ?? '',
+    SAVING_PACKAGE_ID: (pkg.saving_package_id as string | undefined) ?? '',
+    SAVING_INCENTIVE_PACKAGE_ID: (pkg.saving_incentive_package_id as string | undefined) ?? '',
+    BORROW_INCENTIVE_PACKAGE_ID: (pkg.borrow_incentive_package_id as string | undefined) ?? '',
+    BLACKLIST_PACKAGE_ID: (pkg.blacklist_package_id as string | undefined) ?? '',
 
     // Shared object references
     TREASURY_OBJ: obj.treasury_obj
@@ -138,60 +145,68 @@ export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Pa
 // Entry parsers (adjust field names to match on-chain JSON)
 // ============================================================
 
-function parseAggregatorEntry(entry: any): AggregatorObjectInfo {
+function parseAggregatorEntry(entry: unknown): AggregatorObjectInfo {
+  const e = entry as Record<string, unknown>;
   const base = {
-    priceAggregator: toSharedObjectRef(entry.price_aggregator ?? entry.priceAggregator, false),
+    priceAggregator: toSharedObjectRef(e.price_aggregator ?? e.priceAggregator, false),
   };
 
-  if (entry.derivative_info ?? entry.derivativeInfo) {
-    const di = entry.derivative_info ?? entry.derivativeInfo;
+  const derivativeRaw = e.derivative_info ?? e.derivativeInfo;
+  if (derivativeRaw) {
+    const di = derivativeRaw as Record<string, unknown>;
     return {
       ...base,
       derivativeInfo: {
-        underlyingCoinType: di.underlying_coin_type ?? di.underlyingCoinType,
-        derivativeKind: di.derivative_kind ?? di.derivativeKind,
+        underlyingCoinType: (di.underlying_coin_type ?? di.underlyingCoinType) as string,
+        derivativeKind: (di.derivative_kind ?? di.derivativeKind) as DerivativeKind,
       },
     };
   }
 
   return {
     ...base,
-    pythPriceId: entry.pyth_price_id ?? entry.pythPriceId ?? '',
+    pythPriceId: (e.pyth_price_id ?? e.pythPriceId ?? '') as string,
   };
 }
 
-function parseVaultEntry(entry: any): VaultObjectInfo {
+function parseVaultEntry(entry: unknown): VaultObjectInfo {
+  const e = entry as Record<string, unknown>;
   const result: VaultObjectInfo = {
-    vault: toSharedObjectRef(entry.vault, true),
+    vault: toSharedObjectRef(e.vault, true),
   };
 
-  const rewarders = entry.rewarders;
+  const rewarders = e.rewarders;
   if (Array.isArray(rewarders) && rewarders.length > 0) {
-    result.rewarders = rewarders.map((r: any) => ({
-      rewardType: r.reward_type ?? r.rewardType,
-      rewarderId: r.rewarder_id ?? r.rewarderId,
-    }));
+    result.rewarders = rewarders.map((r: unknown) => {
+      const rr = r as Record<string, unknown>;
+      return {
+        rewardType: (rr.reward_type ?? rr.rewardType) as string,
+        rewarderId: (rr.rewarder_id ?? rr.rewarderId) as string,
+      };
+    });
   }
   return result;
 }
 
-function parseSavingPoolEntry(entry: any): SavingPoolObjectInfo {
+function parseSavingPoolEntry(entry: unknown): SavingPoolObjectInfo {
+  const e = entry as Record<string, unknown>;
   const result: SavingPoolObjectInfo = {
-    pool: toSharedObjectRef(entry.pool, true),
+    pool: toSharedObjectRef(e.pool, true),
   };
 
-  const reward = entry.reward;
+  const reward = e.reward as Record<string, unknown> | undefined;
   if (reward) {
     result.reward = {
       rewardManager: toSharedObjectRef(reward.reward_manager ?? reward.rewardManager, true),
-      rewardTypes: reward.reward_types ?? reward.rewardTypes ?? [],
+      rewardTypes: (reward.reward_types ?? reward.rewardTypes ?? []) as string[],
     };
   }
   return result;
 }
 
-function parsePsmPoolEntry(entry: any): PsmPoolObjectInfo {
+function parsePsmPoolEntry(entry: unknown): PsmPoolObjectInfo {
+  const e = entry as Record<string, unknown>;
   return {
-    pool: toSharedObjectRef(entry.pool, true),
+    pool: toSharedObjectRef(e.pool, true),
   };
 }

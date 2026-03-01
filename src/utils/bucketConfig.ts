@@ -22,7 +22,7 @@ const TYPE_PSM_POOL = '::psm_pool::PsmPool';
  * List all dynamic fields under a parent object (handles pagination).
  */
 async function listAllDynamicFields(client: SuiGrpcClient, parentId: string) {
-  const allFields: any[] = [];
+  const allFields: unknown[] = [];
   let cursor: string | null = null;
   let hasNext = true;
 
@@ -44,29 +44,29 @@ async function listAllDynamicFields(client: SuiGrpcClient, parentId: string) {
  * Query all entries from a Table<String, V> by its table UID.
  * Uses JSON representation directly instead of BCS parsing.
  */
-async function queryTableEntries(client: SuiGrpcClient, tableId: string): Promise<Record<string, any>> {
+async function queryTableEntries(client: SuiGrpcClient, tableId: string): Promise<Record<string, unknown>> {
   // 1. List all dynamic fields
   const allFields = await listAllDynamicFields(client, tableId);
   if (allFields.length === 0) return {};
 
   // 2. Batch get all field objects with JSON
-  const fieldIds = allFields.map((f: any) => f.fieldId);
+  const fieldIds = allFields.map((f) => (f as Record<string, unknown>).fieldId as string);
   const { objects: fieldObjects } = await client.getObjects({
     objectIds: fieldIds,
     include: { json: true },
   });
 
   // 3. Extract name/value from JSON
-  const entries: Record<string, any> = {};
+  const entries: Record<string, unknown> = {};
   for (const obj of fieldObjects) {
     if (obj instanceof Error) {
       console.error('Failed to fetch dynamic field:', obj.message);
       continue;
     }
-    const json = obj.json as any;
+    const json = obj.json as Record<string, unknown> | null;
     if (!json) continue;
     try {
-      entries[json.name] = json.value;
+      entries[json.name as string] = json.value;
     } catch (e) {
       console.error(`Failed to read dynamic field ${obj.objectId}:`, e);
     }
@@ -84,24 +84,24 @@ export interface BucketOnchainConfig {
     id: string;
     id_vector: string[];
   };
-  packageConfig?: Record<string, any>;
-  oracleConfig?: Record<string, any>;
-  objectConfig?: Record<string, any>;
+  packageConfig?: Record<string, unknown>;
+  oracleConfig?: Record<string, unknown>;
+  objectConfig?: Record<string, unknown>;
   aggregator?: {
     id: string;
-    entries: Record<string, any>;
+    entries: Record<string, unknown>;
   };
   vault?: {
     id: string;
-    entries: Record<string, any>;
+    entries: Record<string, unknown>;
   };
   savingPool?: {
     id: string;
-    entries: Record<string, any>;
+    entries: Record<string, unknown>;
   };
   psmPool?: {
     id: string;
-    entries: Record<string, any>;
+    entries: Record<string, unknown>;
   };
 }
 
@@ -129,19 +129,20 @@ export async function queryAllConfig(client: SuiGrpcClient): Promise<BucketOncha
     throw new Error('Config object has no JSON content');
   }
 
-  const configJson = configObj.json as any;
+  const configJson = configObj.json as Record<string, unknown>;
+  const idObj = configJson.id as Record<string, unknown>;
   const result: BucketOnchainConfig = {
     config: {
-      id: configJson.id.id,
-      id_vector: configJson.id_vector,
+      id: idObj.id as string,
+      id_vector: configJson.id_vector as string[],
     },
   };
 
-  if (configJson.id_vector.length === 0) return result;
+  if ((configJson.id_vector as string[]).length === 0) return result;
 
   // 2. Batch fetch all sub-objects referenced by id_vector
   const { objects } = await client.getObjects({
-    objectIds: configJson.id_vector,
+    objectIds: configJson.id_vector as string[],
     include: { json: true },
   });
 
@@ -153,7 +154,7 @@ export async function queryAllConfig(client: SuiGrpcClient): Promise<BucketOncha
     }
 
     const type = obj.type;
-    const json = obj.json as any;
+    const json = obj.json as Record<string, unknown> | null;
     if (!json) continue;
 
     try {
@@ -164,18 +165,27 @@ export async function queryAllConfig(client: SuiGrpcClient): Promise<BucketOncha
       } else if (type.endsWith(TYPE_OBJECT_CONFIG)) {
         result.objectConfig = json;
       } else if (type.endsWith(TYPE_AGGREGATOR)) {
-        const entries = await queryTableEntries(client, json.table.id);
-        result.aggregator = { id: json.id.id, entries };
+        const table = json.table as Record<string, unknown>;
+        const idField = json.id as Record<string, unknown>;
+        const entries = await queryTableEntries(client, table.id as string);
+        result.aggregator = { id: idField.id as string, entries };
       } else if (type.endsWith(TYPE_VAULT)) {
-        const entries = await queryTableEntries(client, json.table.id);
-        result.vault = { id: json.id.id, entries };
+        const table = json.table as Record<string, unknown>;
+        const idField = json.id as Record<string, unknown>;
+        const entries = await queryTableEntries(client, table.id as string);
+        result.vault = { id: idField.id as string, entries };
       } else if (type.endsWith(TYPE_SAVING_POOL)) {
-        const entries = await queryTableEntries(client, json.table.id);
-        result.savingPool = { id: json.id.id, entries };
+        const table = json.table as Record<string, unknown>;
+        const idField = json.id as Record<string, unknown>;
+        const entries = await queryTableEntries(client, table.id as string);
+        result.savingPool = { id: idField.id as string, entries };
       } else if (type.endsWith(TYPE_PSM_POOL)) {
-        const entries = await queryTableEntries(client, json.table.id);
-        result.psmPool = { id: json.id.id, entries };
+        const table = json.table as Record<string, unknown>;
+        const idField = json.id as Record<string, unknown>;
+        const entries = await queryTableEntries(client, table.id as string);
+        result.psmPool = { id: idField.id as string, entries };
       } else {
+        // eslint-disable-next-line no-console
         console.warn(`Unknown object type: ${type} (objectId: ${obj.objectId})`);
       }
     } catch (e) {
@@ -190,7 +200,7 @@ export async function queryAllConfig(client: SuiGrpcClient): Promise<BucketOncha
 // JSON serialization (handles BigInt from bcs.u64)
 // ============================================================
 
-function jsonReplacer(_key: string, value: any): any {
+function jsonReplacer(_key: string, value: unknown): unknown {
   if (typeof value === 'bigint') return value.toString();
   return value;
 }
