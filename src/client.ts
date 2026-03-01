@@ -25,6 +25,8 @@ import {
   VaultObjectInfo,
 } from '@/types/index.js';
 import { CONFIG, DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
+import { queryAllConfig } from '@/utils/bucketConfig.js';
+import { convertOnchainConfig } from '@/utils/configAdapter.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
 import { buildPythPriceUpdateCalls, fetchPriceFeedsUpdateDataFromHermes, PythCache } from '@/utils/pyth.js';
 
@@ -70,10 +72,51 @@ export class BucketClient {
   private suiClient: SuiGrpcClient;
   private pythCache = new PythCache();
 
-  constructor({ suiClient, network = 'mainnet' }: { suiClient?: SuiGrpcClient; network?: Network }) {
-    this.config = CONFIG[network];
+  constructor({
+    suiClient,
+    network = 'mainnet',
+    config,
+  }: {
+    suiClient?: SuiGrpcClient;
+    network?: Network;
+    config?: ConfigType;
+  }) {
+    this.config = config ?? CONFIG[network];
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
+  }
+
+  /**
+   * @description Factory method that creates a BucketClient with config fetched from on-chain.
+   * This queries the on-chain Config object and converts it into the ConfigType format,
+   * ensuring the SDK always uses the latest on-chain parameters.
+   *
+   * @param options.suiClient - Optional SuiGrpcClient instance
+   * @param options.network - Network to connect to (default: 'mainnet')
+   * @param options.configOverrides - Optional partial overrides for values not stored on-chain
+   *   (e.g. PRICE_SERVICE_ENDPOINT)
+   *
+   * @example
+   * ```ts
+   * const client = await BucketClient.create({ network: 'mainnet' });
+   * ```
+   */
+  static async create({
+    suiClient,
+    network = 'mainnet',
+    configOverrides,
+  }: {
+    suiClient?: SuiGrpcClient;
+    network?: Network;
+    configOverrides?: Partial<ConfigType>;
+  } = {}): Promise<BucketClient> {
+    const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
+    const client = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
+
+    const onchainConfig = await queryAllConfig(client);
+    const config = convertOnchainConfig(onchainConfig, configOverrides);
+
+    return new BucketClient({ suiClient: client, network, config });
   }
 
   /* ----- Getter ----- */
@@ -90,6 +133,16 @@ export class BucketClient {
    */
   async getConfig(): Promise<ConfigType | undefined> {
     return this.config;
+  }
+
+  /**
+   * @description Re-fetch config from on-chain and update this client's config.
+   * Useful when on-chain parameters may have changed (e.g. new vaults added).
+   * @param overrides - Optional partial overrides for off-chain values
+   */
+  async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
+    const onchainConfig = await queryAllConfig(this.suiClient);
+    this.config = convertOnchainConfig(onchainConfig, overrides);
   }
 
   /**

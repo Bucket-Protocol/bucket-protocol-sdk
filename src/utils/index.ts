@@ -1,4 +1,6 @@
 export * from './transaction.js';
+export * from './bucketConfig.js';
+export * from './configAdapter.js';
 
 export function splitIntoChunks<T>(arr: T[], chunkSize: number): T[][] {
   const result: T[][] = [];
