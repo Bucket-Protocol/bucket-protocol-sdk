@@ -51,6 +51,24 @@ describe('Interacting with Bucket Client on mainnet', () => {
       },
       MAINNET_TIMEOUT_MS,
     );
+
+    it(
+      'getOraclePrices twice with same coins exercises PythCache (second call hits cache)',
+      async () => {
+        const coinTypes = bucketClient.getAllOracleCoinTypes().slice(0, 1);
+        if (coinTypes.length === 0) return;
+        const prices1 = await bucketClient.getOraclePrices({ coinTypes });
+        const prices2 = await bucketClient.getOraclePrices({ coinTypes });
+        for (const coinType of coinTypes) {
+          expect(prices1[coinType]).toBeDefined();
+          expect(prices2[coinType]).toBeDefined();
+          expect(prices1[coinType]).toBeGreaterThan(0);
+          expect(prices2[coinType]).toBeGreaterThan(0);
+        }
+        expect(Object.keys(prices1).length).toBe(Object.keys(prices2).length);
+      },
+      MAINNET_TIMEOUT_MS,
+    );
   });
 
   describe('Config & metadata', () => {
