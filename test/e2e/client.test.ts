@@ -154,6 +154,16 @@ describe('Interacting with Bucket Client on mainnet', () => {
     );
 
     it(
+      'getAggregatorObjectInfo throws for unsupported coin type',
+      () => {
+        expect(() =>
+          bucketClient.getAggregatorObjectInfo({ coinType: '0x1::invalid::INVALID' }),
+        ).toThrow('Unsupported coin type');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
       'getSavingPoolObjectInfo returns pool info for SUSDB',
       () => {
         const info = bucketClient.getSavingPoolObjectInfo({ lpType: susdbLpType });
@@ -164,11 +174,41 @@ describe('Interacting with Bucket Client on mainnet', () => {
     );
 
     it(
+      'getSavingPoolObjectInfo throws for unsupported lp type',
+      () => {
+        expect(() =>
+          bucketClient.getSavingPoolObjectInfo({ lpType: '0x1::invalid::INVALID' }),
+        ).toThrow('Unsupported coin type');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
       'getPsmPoolObjectInfo returns pool info for USDC',
       () => {
         const info = bucketClient.getPsmPoolObjectInfo({ coinType: usdcCoinType });
         expect(info).toHaveProperty('pool');
         expect(info.pool).toHaveProperty('objectId');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getPsmPoolObjectInfo throws for unsupported coin type',
+      () => {
+        expect(() =>
+          bucketClient.getPsmPoolObjectInfo({ coinType: '0x1::invalid::INVALID' }),
+        ).toThrow('Unsupported coin type');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getVaultObjectInfo throws for unsupported collateral type',
+      () => {
+        expect(() =>
+          bucketClient.getVaultObjectInfo({ coinType: '0x1::invalid::INVALID' }),
+        ).toThrow('Unsupported collateral type');
       },
       MAINNET_TIMEOUT_MS,
     );
@@ -202,6 +242,27 @@ describe('Interacting with Bucket Client on mainnet', () => {
           expect(pos).toHaveProperty('debtAmount');
           expect(pos).toHaveProperty('debtor');
         }
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAllPositions fetches next page when cursor is provided',
+      async () => {
+        const first = await bucketClient.getAllPositions({
+          coinType: SUI_TYPE_ARG,
+          pageSize: 2,
+          cursor: null,
+        });
+        if (!first.nextCursor) return;
+        const next = await bucketClient.getAllPositions({
+          coinType: SUI_TYPE_ARG,
+          pageSize: 2,
+          cursor: first.nextCursor,
+        });
+        expect(next).toHaveProperty('positions');
+        expect(next).toHaveProperty('nextCursor');
+        expect(Array.isArray(next.positions)).toBe(true);
       },
       MAINNET_TIMEOUT_MS,
     );
@@ -260,6 +321,27 @@ describe('Interacting with Bucket Client on mainnet', () => {
           }
         }
         // May be empty if vault has no rewarders
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAccountBorrowRewards with multiple collateral types exercises vault iteration',
+      async () => {
+        const coinTypes = bucketClient.getAllCollateralTypes().slice(0, 3);
+        const rewards = await bucketClient.getAccountBorrowRewards({
+          address: testAccount,
+          coinTypes,
+        });
+        expect(typeof rewards).toBe('object');
+        for (const [, vaultRewards] of Object.entries(rewards)) {
+          if (vaultRewards) {
+            for (const amount of Object.values(vaultRewards)) {
+              expect(typeof amount).toBe('bigint');
+              expect(amount).toBeGreaterThanOrEqual(0n);
+            }
+          }
+        }
       },
       MAINNET_TIMEOUT_MS,
     );
@@ -375,6 +457,24 @@ describe('Interacting with Bucket Client on mainnet', () => {
       },
       MAINNET_TIMEOUT_MS,
     );
+
+    it(
+      'buildPSMSwapOutTransaction with balance as bigint',
+      async () => {
+        const tx = new Transaction();
+        tx.setSender(testAccount);
+        const amount = 1n * 10n ** 6n;
+        const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
+        const usdcCoin = await bucketClient.buildPSMSwapOutTransaction(tx, {
+          coinType: usdcCoinType,
+          usdbCoinOrAmount: usdbCoin,
+        });
+        tx.transferObjects([usdcCoin], testAccount);
+        const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
+        expect(dryrunRes.$kind).toBe('Transaction');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
   });
 
   describe('Saving', () => {
@@ -456,6 +556,28 @@ describe('Interacting with Bucket Client on mainnet', () => {
         const tx = new Transaction();
         tx.setSender(testAccount);
         const zeroUsdbCoin = getZeroCoin(tx, { coinType: usdbCoinType });
+        bucketClient.buildDepositToSavingPoolTransaction(tx, {
+          lpType: susdbLpType,
+          address: testAccount,
+          depositCoinOrAmount: zeroUsdbCoin,
+        });
+        const usdbOut = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+          lpType: susdbLpType,
+          amount: 0,
+        });
+        destroyZeroCoin(tx, { coinType: usdbCoinType, coin: usdbOut });
+        const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
+        expect(dryrunRes.$kind).toBe('Transaction');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'deposit zero via coinWithBalance(balance:0) exercises resolver zero-coin path',
+      async () => {
+        const tx = new Transaction();
+        tx.setSender(testAccount);
+        const zeroUsdbCoin = coinWithBalance({ type: usdbCoinType, balance: 0 });
         bucketClient.buildDepositToSavingPoolTransaction(tx, {
           lpType: susdbLpType,
           address: testAccount,
@@ -633,6 +755,56 @@ describe('Interacting with Bucket Client on mainnet', () => {
         expect(+data.borrow_amount).toBe(borrowAmount);
         expect(+data.withdraw_amount).toBe(0);
         expect(+data.repay_amount).toBe(0);
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'buildManagePositionTransaction with type:gas uses gas coin as collateral',
+      async () => {
+        const prices = await bucketClient.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
+        const suiPrice = prices[SUI_TYPE_ARG];
+        expect(suiPrice).toBeDefined();
+        const depositAmount = Math.ceil((1.15 / suiPrice) * 10 ** 9);
+        const borrowAmount = 1 * 10 ** 6;
+        const tx = new Transaction();
+        tx.setSender(testAccount);
+        const depositCoin = coinWithBalance({ type: 'gas', balance: depositAmount });
+        const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
+          coinType: SUI_TYPE_ARG,
+          depositCoinOrAmount: depositCoin,
+          borrowAmount,
+        });
+        tx.transferObjects([usdbCoin], testAccount);
+        const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
+        expect(dryrunRes.$kind).toBe('Transaction');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'buildManagePositionTransaction with useGasCoin:false uses SUI coins instead of gas',
+      async () => {
+        const prices = await bucketClient.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
+        const suiPrice = prices[SUI_TYPE_ARG];
+        expect(suiPrice).toBeDefined();
+        const depositAmount = Math.ceil((1.15 / suiPrice) * 10 ** 9);
+        const borrowAmount = 1 * 10 ** 6;
+        const tx = new Transaction();
+        tx.setSender(testAccount);
+        const depositCoin = coinWithBalance({
+          type: SUI_TYPE_ARG,
+          balance: depositAmount,
+          useGasCoin: false,
+        });
+        const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
+          coinType: SUI_TYPE_ARG,
+          depositCoinOrAmount: depositCoin,
+          borrowAmount,
+        });
+        tx.transferObjects([usdbCoin], testAccount);
+        const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
+        expect(dryrunRes.$kind).toBe('Transaction');
       },
       MAINNET_TIMEOUT_MS,
     );
