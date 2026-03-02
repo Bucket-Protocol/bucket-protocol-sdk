@@ -68,9 +68,7 @@ export class PythCache {
 export async function fetchPriceFeedsUpdateDataFromHermes(endpoint: string, priceIds: string[]): Promise<Uint8Array[]> {
   if (priceIds.length === 0) return [];
 
-  const invalid = priceIds
-    .map((id, index) => ({ id, index }))
-    .filter(({ id }) => !isValidPythPriceId(id));
+  const invalid = priceIds.map((id, index) => ({ id, index })).filter(({ id }) => !isValidPythPriceId(id));
   if (invalid.length) {
     throw new Error(formatInvalidPriceIdsError(invalid));
   }
