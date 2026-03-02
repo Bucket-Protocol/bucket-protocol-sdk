@@ -9,5 +9,13 @@ export default defineConfig({
   },
   test: {
     include: ['./test/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    testTimeout: 10000,
+    hookTimeout: 10000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'html'],
+      include: ['src/**/*.ts'],
+      exclude: ['src/_generated/**', '**/*.d.ts'],
+    },
   },
 });
