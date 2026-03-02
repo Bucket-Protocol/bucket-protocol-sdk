@@ -7,6 +7,23 @@ import { bcs } from '@mysten/sui/bcs';
 import type { SuiGrpcClient } from '@mysten/sui/grpc';
 import type { Transaction, TransactionArgument } from '@mysten/sui/transactions';
 
+function isValidPythPriceId(id: string): boolean {
+  if (typeof id !== 'string') return false;
+  const trimmed = id.trim();
+  if (trimmed.length === 0) return false;
+  const noPrefix = trimmed.startsWith('0x') || trimmed.startsWith('0X') ? trimmed.slice(2) : trimmed;
+  return /^[0-9a-fA-F]{64}$/.test(noPrefix);
+}
+
+function formatInvalidPriceIdsError(invalid: { id: string; index: number }[]): string {
+  const preview = invalid
+    .slice(0, 5)
+    .map((e) => `#${e.index}: "${e.id}"`)
+    .join(', ');
+  const suffix = invalid.length > 5 ? ` (and ${invalid.length - 5} more)` : '';
+  return `Invalid Pyth price feed id(s): ${preview}${suffix}. Expected a 32-byte hex string (64 hex chars), optionally prefixed with 0x.`;
+}
+
 async function runWithConcurrency<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
   for (let i = 0; i < items.length; i += concurrency) {
@@ -51,8 +68,17 @@ export class PythCache {
 export async function fetchPriceFeedsUpdateDataFromHermes(endpoint: string, priceIds: string[]): Promise<Uint8Array[]> {
   if (priceIds.length === 0) return [];
 
+  const invalid = priceIds
+    .map((id, index) => ({ id, index }))
+    .filter(({ id }) => !isValidPythPriceId(id));
+  if (invalid.length) {
+    throw new Error(formatInvalidPriceIdsError(invalid));
+  }
+
   const url = new URL('/v2/updates/price/latest', endpoint);
   priceIds.forEach((id) => url.searchParams.append('ids[]', id));
+  url.searchParams.set('encoding', 'hex');
+  url.searchParams.set('parsed', 'false');
 
   const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) {

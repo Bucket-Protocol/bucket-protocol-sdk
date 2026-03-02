@@ -62,6 +62,14 @@ const NETWORK_RPC_URLS: Record<string, string> = {
   testnet: 'https://fullnode.testnet.sui.io:443',
 };
 
+function isValidPythPriceId(id: string): boolean {
+  if (typeof id !== 'string') return false;
+  const trimmed = id.trim();
+  if (trimmed.length === 0) return false;
+  const noPrefix = trimmed.startsWith('0x') || trimmed.startsWith('0X') ? trimmed.slice(2) : trimmed;
+  return /^[0-9a-fA-F]{64}$/.test(noPrefix);
+}
+
 export class BucketClient {
   /**
    * @description a TypeScript wrapper over Bucket V2 client.
@@ -162,7 +170,23 @@ export class BucketClient {
    * @description Get all Oracle coin types
    */
   getAllOracleCoinTypes(): string[] {
-    return Object.keys(this.config.AGGREGATOR_OBJS);
+    const isPriceable = (coinType: string, visiting: Set<string>): boolean => {
+      const normalized = normalizeStructTag(coinType);
+      if (visiting.has(normalized)) return false;
+      visiting.add(normalized);
+
+      const aggregatorInfo = this.config.AGGREGATOR_OBJS[normalized];
+      if (!aggregatorInfo) return false;
+
+      if ('pythPriceId' in aggregatorInfo) {
+        return isValidPythPriceId(aggregatorInfo.pythPriceId);
+      }
+
+      // Derivative: only priceable if its underlying is priceable.
+      return isPriceable(aggregatorInfo.derivativeInfo.underlyingCoinType, visiting);
+    };
+
+    return Object.keys(this.config.AGGREGATOR_OBJS).filter((coinType) => isPriceable(coinType, new Set()));
   }
 
   /**
@@ -958,48 +982,66 @@ export class BucketClient {
     if (!coinTypes.length) {
       return [];
     }
-    const pythPriceIds = coinTypes.map((coinType) => {
+
+    // Hermes uses query-string `ids[]` parameters; when many feeds are requested, keep requests small
+    // to avoid server-side query deserialization limits.
+    const MAX_FEEDS_PER_HERMES_REQUEST = 50;
+
+    const entries = coinTypes.map((coinType) => {
       const aggregator = this.getAggregatorObjectInfo({ coinType });
 
       if (!('pythPriceId' in aggregator)) {
         throw new Error(`${coinType} has no basic price`);
       }
-      return aggregator.pythPriceId;
+      if (!isValidPythPriceId(aggregator.pythPriceId)) {
+        throw new Error(`Invalid or missing pythPriceId for ${coinType}: "${aggregator.pythPriceId}"`);
+      }
+      return { coinType, pythPriceId: aggregator.pythPriceId };
     });
-    const updateData = await fetchPriceFeedsUpdateDataFromHermes(this.config.PRICE_SERVICE_ENDPOINT, pythPriceIds);
-    const priceInfoObjIds = await buildPythPriceUpdateCalls(
-      tx,
-      this.suiClient,
-      {
-        pythStateId: this.config.PYTH_STATE_ID,
-        wormholeStateId: this.config.WORMHOLE_STATE_ID,
-      },
-      updateData,
-      pythPriceIds,
-      this.pythCache,
-    );
 
-    return coinTypes.map((coinType, index) => {
-      const collector = this.newPriceCollector(tx, { coinType });
+    const resultsByCoinType: Record<string, TransactionResult> = {};
 
-      tx.moveCall({
-        target: `${this.config.PYTH_RULE_PACKAGE_ID}::pyth_rule::feed`,
-        typeArguments: [coinType],
-        arguments: [
-          collector,
-          tx.sharedObjectRef(this.config.PYTH_RULE_CONFIG_OBJ),
-          tx.object.clock(),
-          tx.object(this.config.PYTH_STATE_ID),
-          tx.object(priceInfoObjIds[index]!),
-        ],
+    for (let i = 0; i < entries.length; i += MAX_FEEDS_PER_HERMES_REQUEST) {
+      const chunk = entries.slice(i, i + MAX_FEEDS_PER_HERMES_REQUEST);
+      const chunkPriceIds = chunk.map((e) => e.pythPriceId);
+
+      const updateData = await fetchPriceFeedsUpdateDataFromHermes(this.config.PRICE_SERVICE_ENDPOINT, chunkPriceIds);
+      const priceInfoObjIds = await buildPythPriceUpdateCalls(
+        tx,
+        this.suiClient,
+        {
+          pythStateId: this.config.PYTH_STATE_ID,
+          wormholeStateId: this.config.WORMHOLE_STATE_ID,
+        },
+        updateData,
+        chunkPriceIds,
+        this.pythCache,
+      );
+
+      chunk.forEach(({ coinType }, index) => {
+        const collector = this.newPriceCollector(tx, { coinType });
+
+        tx.moveCall({
+          target: `${this.config.PYTH_RULE_PACKAGE_ID}::pyth_rule::feed`,
+          typeArguments: [coinType],
+          arguments: [
+            collector,
+            tx.sharedObjectRef(this.config.PYTH_RULE_CONFIG_OBJ),
+            tx.object.clock(),
+            tx.object(this.config.PYTH_STATE_ID),
+            tx.object(priceInfoObjIds[index]!),
+          ],
+        });
+        const priceResult = tx.moveCall({
+          target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
+          typeArguments: [coinType],
+          arguments: [tx.sharedObjectRef(this.getAggregatorObjectInfo({ coinType }).priceAggregator), collector],
+        });
+        resultsByCoinType[coinType] = priceResult;
       });
-      const priceResult = tx.moveCall({
-        target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
-        typeArguments: [coinType],
-        arguments: [tx.sharedObjectRef(this.getAggregatorObjectInfo({ coinType }).priceAggregator), collector],
-      });
-      return priceResult;
-    });
+    }
+
+    return coinTypes.map((coinType) => resultsByCoinType[coinType]!);
   }
 
   /**
