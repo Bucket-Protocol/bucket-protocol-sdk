@@ -33,9 +33,40 @@ describe('Interacting with Bucket Client on mainnet', () => {
       },
       MAINNET_TIMEOUT_MS,
     );
+
+    it(
+      'getOraclePrices returns prices for requested coin types',
+      async () => {
+        const allCoinTypes = bucketClient.getAllOracleCoinTypes();
+        const coinTypes = allCoinTypes.slice(0, 2);
+        if (coinTypes.length === 0) return;
+        const prices = await bucketClient.getOraclePrices({ coinTypes });
+        expect(Object.keys(prices).length).toBeGreaterThan(0);
+        for (const coinType of coinTypes) {
+          const price = prices[coinType];
+          expect(price).toBeDefined();
+          expect(typeof price).toBe('number');
+          expect(price).toBeGreaterThan(0);
+        }
+      },
+      MAINNET_TIMEOUT_MS,
+    );
   });
 
   describe('Config & metadata', () => {
+    it(
+      'getConfig returns config with package IDs and object refs',
+      async () => {
+        const config = await bucketClient.getConfig();
+        expect(config).toBeDefined();
+        expect(config).toHaveProperty('ORIGINAL_USDB_PACKAGE_ID');
+        expect(config).toHaveProperty('TREASURY_OBJ');
+        expect(config).toHaveProperty('AGGREGATOR_OBJS');
+        expect(config).toHaveProperty('VAULT_OBJS');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
     it(
       'usdbCoinType returns USDB metadata (6 decimals)',
       async () => {
@@ -63,6 +94,86 @@ describe('Interacting with Bucket Client on mainnet', () => {
     );
   });
 
+  describe('Supply & pools', () => {
+    it(
+      'getUsdbSupply returns non-negative bigint',
+      async () => {
+        const supply = await bucketClient.getUsdbSupply();
+        expect(typeof supply).toBe('bigint');
+        expect(supply).toBeGreaterThanOrEqual(0n);
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAllSavingPoolObjects returns pools with SavingPoolInfo shape',
+      async () => {
+        const pools = await bucketClient.getAllSavingPoolObjects();
+        expect(typeof pools).toBe('object');
+        expect(Object.keys(pools).length).toBeGreaterThan(0);
+        for (const [lpType, pool] of Object.entries(pools)) {
+          expect(pool).toHaveProperty('lpType', lpType);
+          expect(typeof pool.lpSupply).toBe('bigint');
+          expect(typeof pool.usdbBalance).toBe('bigint');
+          expect(typeof pool.savingRate).toBe('number');
+          expect(typeof pool.rewardRate).toBe('object');
+        }
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAllPsmPoolObjects returns pools with PsmPoolInfo shape',
+      async () => {
+        const pools = await bucketClient.getAllPsmPoolObjects();
+        expect(typeof pools).toBe('object');
+        expect(Object.keys(pools).length).toBeGreaterThan(0);
+        for (const [coinType, pool] of Object.entries(pools)) {
+          expect(pool).toHaveProperty('coinType', coinType);
+          expect(typeof pool.decimal).toBe('number');
+          expect(typeof pool.balance).toBe('bigint');
+          expect(typeof pool.usdbSupply).toBe('bigint');
+          expect(pool.feeRate).toHaveProperty('swapIn');
+          expect(pool.feeRate).toHaveProperty('swapOut');
+          expect(typeof pool.partnerFeeRate).toBe('object');
+        }
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+  });
+
+  describe('Object info helpers', () => {
+    it(
+      'getAggregatorObjectInfo returns aggregator for SUI',
+      () => {
+        const info = bucketClient.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
+        expect(info).toHaveProperty('priceAggregator');
+        expect(info.priceAggregator).toHaveProperty('objectId');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getSavingPoolObjectInfo returns pool info for SUSDB',
+      () => {
+        const info = bucketClient.getSavingPoolObjectInfo({ lpType: susdbLpType });
+        expect(info).toHaveProperty('pool');
+        expect(info.pool).toHaveProperty('objectId');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getPsmPoolObjectInfo returns pool info for USDC',
+      () => {
+        const info = bucketClient.getPsmPoolObjectInfo({ coinType: usdcCoinType });
+        expect(info).toHaveProperty('pool');
+        expect(info.pool).toHaveProperty('objectId');
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+  });
+
   describe('Positions & accounts', () => {
     it(
       'getAccountPositions length <= getUserPositions length',
@@ -70,6 +181,118 @@ describe('Interacting with Bucket Client on mainnet', () => {
         const accountPositions = await bucketClient.getAccountPositions({ address: testAccount });
         const userPositions = await bucketClient.getUserPositions({ address: testAccount });
         expect(accountPositions.length).toBeLessThanOrEqual(userPositions.length);
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAllPositions returns paginated positions for SUI vault',
+      async () => {
+        const result = await bucketClient.getAllPositions({
+          coinType: SUI_TYPE_ARG,
+          pageSize: 10,
+          cursor: null,
+        });
+        expect(result).toHaveProperty('positions');
+        expect(result).toHaveProperty('nextCursor');
+        expect(Array.isArray(result.positions)).toBe(true);
+        for (const pos of result.positions) {
+          expect(pos).toHaveProperty('collateralType', SUI_TYPE_ARG);
+          expect(pos).toHaveProperty('collateralAmount');
+          expect(pos).toHaveProperty('debtAmount');
+          expect(pos).toHaveProperty('debtor');
+        }
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getUserAccounts returns array (may be empty)',
+      async () => {
+        const accounts = await bucketClient.getUserAccounts({ address: testAccount });
+        expect(Array.isArray(accounts)).toBe(true);
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+  });
+
+  describe('Savings & rewards', () => {
+    it(
+      'getUserSavings returns array with SavingInfo shape',
+      async () => {
+        const savings = await bucketClient.getUserSavings({ address: testAccount });
+        expect(Array.isArray(savings)).toBe(true);
+        for (const s of savings) {
+          expect(s).toHaveProperty('lpType');
+          expect(s).toHaveProperty('address', testAccount);
+          expect(typeof s.usdbBalance).toBe('bigint');
+          expect(typeof s.lpBalance).toBe('bigint');
+          expect(s.rewards == null || typeof s.rewards === 'object').toBe(true);
+        }
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAccountSavings returns array (same or subset of getUserSavings)',
+      async () => {
+        const accountSavings = await bucketClient.getAccountSavings({ address: testAccount });
+        const userSavings = await bucketClient.getUserSavings({ address: testAccount });
+        expect(accountSavings.length).toBeLessThanOrEqual(userSavings.length);
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAccountBorrowRewards returns record for SUI vault',
+      async () => {
+        const rewards = await bucketClient.getAccountBorrowRewards({
+          address: testAccount,
+          coinTypes: [SUI_TYPE_ARG],
+        });
+        expect(typeof rewards).toBe('object');
+        const suiKey = Object.keys(rewards).find((k) => normalizeStructTag(k) === normalizeStructTag(SUI_TYPE_ARG));
+        const suiRewards = suiKey ? rewards[suiKey] : undefined;
+        if (suiRewards) {
+          for (const [rewardType, amount] of Object.entries(suiRewards)) {
+            expect(typeof amount).toBe('bigint');
+            expect(amount).toBeGreaterThanOrEqual(0n);
+          }
+        }
+        // May be empty if vault has no rewarders
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getSavingPoolRewardFlowRate returns record for SUSDB',
+      async () => {
+        const flowRates = await bucketClient.getSavingPoolRewardFlowRate({ lpType: susdbLpType });
+        expect(typeof flowRates).toBe('object');
+        for (const [rewardType, rate] of Object.entries(flowRates)) {
+          expect(typeof rate).toBe('bigint');
+          expect(rate).toBeGreaterThanOrEqual(0n);
+        }
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAccountSavingPoolRewards returns record for SUSDB',
+      async () => {
+        const rewards = await bucketClient.getAccountSavingPoolRewards({
+          address: testAccount,
+          lpTypes: [susdbLpType],
+        });
+        expect(typeof rewards).toBe('object');
+        const susdbRewards = rewards[susdbLpType];
+        if (susdbRewards) {
+          for (const [rewardType, amount] of Object.entries(susdbRewards)) {
+            expect(typeof amount).toBe('bigint');
+            expect(amount).toBeGreaterThanOrEqual(0n);
+          }
+        }
+        // May be empty if pool has no reward types
       },
       MAINNET_TIMEOUT_MS,
     );
