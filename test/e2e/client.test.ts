@@ -1,7 +1,7 @@
 import { SuiGrpcClient } from '@mysten/sui/grpc';
 import { Transaction, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import { PositionUpdated } from '../../src/_generated/bucket_v2_cdp/events.js';
 import { BucketClient } from '../../src/client.js';
@@ -11,10 +11,15 @@ const MAINNET_TIMEOUT_MS = 20_000;
 const network = 'mainnet';
 const testAccount = '0x7a718956581fbe4a568d135fef5161024e74af87a073a1489e57ebef53744652';
 const suiClient = new SuiGrpcClient({ network, baseUrl: 'https://fullnode.mainnet.sui.io:443' });
-const bucketClient = new BucketClient({ suiClient, network });
-const usdbCoinType = bucketClient.getUsdbCoinType();
+let bucketClient: BucketClient;
+let usdbCoinType: string;
 const usdcCoinType = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
 const susdbLpType = '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB';
+
+beforeAll(async () => {
+  bucketClient = await BucketClient.create({ suiClient, network });
+  usdbCoinType = bucketClient.getUsdbCoinType();
+}, MAINNET_TIMEOUT_MS);
 
 describe('Interacting with Bucket Client on mainnet', () => {
   describe('Oracle', () => {

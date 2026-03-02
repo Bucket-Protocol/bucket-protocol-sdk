@@ -1,5 +1,6 @@
 import type { SuiGrpcClient } from '@mysten/sui/grpc';
 
+import type { Network } from '@/types/index.js';
 import { ENTRY_CONFIG_ID } from '@/consts/entry.js';
 
 // ============================================================
@@ -113,12 +114,20 @@ export interface BucketOnchainConfig {
  * Query the entry Config object, resolve all referenced sub-objects by type,
  * and return the complete onchain config as a structured JSON-serializable object.
  */
-export async function queryAllConfig(client: SuiGrpcClient): Promise<BucketOnchainConfig> {
+export async function queryAllConfig(
+  client: SuiGrpcClient,
+  network: Network = 'mainnet',
+): Promise<BucketOnchainConfig> {
+  const entryId = ENTRY_CONFIG_ID[network];
+  if (!entryId) {
+    throw new Error(`No ENTRY_CONFIG_ID configured for network "${network}".`);
+  }
+
   // 1. Fetch entry Config object
   const {
     objects: [configObj],
   } = await client.getObjects({
-    objectIds: [ENTRY_CONFIG_ID],
+    objectIds: [entryId],
     include: { json: true },
   });
 
@@ -130,10 +139,9 @@ export async function queryAllConfig(client: SuiGrpcClient): Promise<BucketOncha
   }
 
   const configJson = configObj.json as Record<string, unknown>;
-  const idObj = configJson.id as Record<string, unknown>;
   const result: BucketOnchainConfig = {
     config: {
-      id: idObj.id as string,
+      id: configJson.id as string,
       id_vector: configJson.id_vector as string[],
     },
   };
@@ -166,24 +174,20 @@ export async function queryAllConfig(client: SuiGrpcClient): Promise<BucketOncha
         result.objectConfig = json;
       } else if (type.endsWith(TYPE_AGGREGATOR)) {
         const table = json.table as Record<string, unknown>;
-        const idField = json.id as Record<string, unknown>;
-        const entries = await queryTableEntries(client, table.id as string);
-        result.aggregator = { id: idField.id as string, entries };
+        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        result.aggregator = { id: json.id as string, entries };
       } else if (type.endsWith(TYPE_VAULT)) {
         const table = json.table as Record<string, unknown>;
-        const idField = json.id as Record<string, unknown>;
-        const entries = await queryTableEntries(client, table.id as string);
-        result.vault = { id: idField.id as string, entries };
+        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        result.vault = { id: json.id as string, entries };
       } else if (type.endsWith(TYPE_SAVING_POOL)) {
         const table = json.table as Record<string, unknown>;
-        const idField = json.id as Record<string, unknown>;
-        const entries = await queryTableEntries(client, table.id as string);
-        result.savingPool = { id: idField.id as string, entries };
+        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        result.savingPool = { id: json.id as string, entries };
       } else if (type.endsWith(TYPE_PSM_POOL)) {
         const table = json.table as Record<string, unknown>;
-        const idField = json.id as Record<string, unknown>;
-        const entries = await queryTableEntries(client, table.id as string);
-        result.psmPool = { id: idField.id as string, entries };
+        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        result.psmPool = { id: json.id as string, entries };
       } else {
         // eslint-disable-next-line no-console
         console.warn(`Unknown object type: ${type} (objectId: ${obj.objectId})`);

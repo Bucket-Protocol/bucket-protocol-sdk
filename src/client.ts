@@ -24,7 +24,7 @@ import {
   VaultInfo,
   VaultObjectInfo,
 } from '@/types/index.js';
-import { CONFIG, DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
+import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
 import { queryAllConfig } from '@/utils/bucketConfig.js';
 import { convertOnchainConfig } from '@/utils/configAdapter.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
@@ -70,8 +70,13 @@ export class BucketClient {
    */
   private config: ConfigType;
   private suiClient: SuiGrpcClient;
+  private network: Network;
   private pythCache = new PythCache();
 
+  /**
+   * @description Synchronous constructor. You must pass a `config` object.
+   * For automatic on-chain config fetching, use the async factory `BucketClient.create()` instead.
+   */
   constructor({
     suiClient,
     network = 'mainnet',
@@ -79,9 +84,10 @@ export class BucketClient {
   }: {
     suiClient?: SuiGrpcClient;
     network?: Network;
-    config?: ConfigType;
+    config: ConfigType;
   }) {
-    this.config = config ?? CONFIG[network];
+    this.config = config;
+    this.network = network;
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
   }
@@ -113,7 +119,7 @@ export class BucketClient {
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     const client = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
 
-    const onchainConfig = await queryAllConfig(client);
+    const onchainConfig = await queryAllConfig(client, network);
     const config = convertOnchainConfig(onchainConfig, configOverrides);
 
     return new BucketClient({ suiClient: client, network, config });
@@ -141,7 +147,7 @@ export class BucketClient {
    * @param overrides - Optional partial overrides for off-chain values
    */
   async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
-    const onchainConfig = await queryAllConfig(this.suiClient);
+    const onchainConfig = await queryAllConfig(this.suiClient, this.network);
     this.config = convertOnchainConfig(onchainConfig, overrides);
   }
 
