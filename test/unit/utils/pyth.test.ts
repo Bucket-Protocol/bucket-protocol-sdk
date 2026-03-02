@@ -5,66 +5,52 @@ import {
   buildPythPriceUpdateCalls,
   fetchPriceFeedsUpdateDataFromHermes,
   PythCache,
-  type PythConfig,
-} from '../../src/utils/pyth.js';
+} from '@/utils/pyth.js';
 
-describe('pyth utils', () => {
+import { mockFetchFail, mockFetchOk } from '../../__mocks__/fetch.js';
+import { PYTH_CONFIG, SUI_PYTH_PRICE_ID } from '../../fixtures/pyth-config.js';
+
+const HERMES_ENDPOINT = 'https://hermes.pyth.network';
+
+describe('unit/utils/pyth', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
   describe('fetchPriceFeedsUpdateDataFromHermes', () => {
     it('returns empty array when priceIds is empty', async () => {
-      const result = await fetchPriceFeedsUpdateDataFromHermes('https://hermes.pyth.network', []);
+      const result = await fetchPriceFeedsUpdateDataFromHermes(HERMES_ENDPOINT, []);
       expect(result).toEqual([]);
     });
 
     it('throws when Hermes returns non-ok response', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 500,
-          text: () => Promise.resolve('Internal Server Error'),
-        }),
-      );
+      vi.stubGlobal('fetch', mockFetchFail(500, 'Internal Server Error'));
       await expect(
-        fetchPriceFeedsUpdateDataFromHermes('https://hermes.pyth.network', [
-          '0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744',
-        ]),
+        fetchPriceFeedsUpdateDataFromHermes(HERMES_ENDPOINT, [SUI_PYTH_PRICE_ID]),
       ).rejects.toThrow('Hermes price fetch failed');
     });
 
     it('throws when Hermes returns no binary data', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ binary: {} }) }));
+      vi.stubGlobal('fetch', mockFetchOk({ binary: {} }));
       await expect(
-        fetchPriceFeedsUpdateDataFromHermes('https://hermes.pyth.network', [
-          '0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744',
-        ]),
+        fetchPriceFeedsUpdateDataFromHermes(HERMES_ENDPOINT, [SUI_PYTH_PRICE_ID]),
       ).rejects.toThrow('Hermes returned no binary price data');
     });
 
     it('throws when Hermes returns empty data array', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ binary: { data: [] } }) }));
+      vi.stubGlobal('fetch', mockFetchOk({ binary: { data: [] } }));
       await expect(
-        fetchPriceFeedsUpdateDataFromHermes('https://hermes.pyth.network', [
-          '0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744',
-        ]),
+        fetchPriceFeedsUpdateDataFromHermes(HERMES_ENDPOINT, [SUI_PYTH_PRICE_ID]),
       ).rejects.toThrow('Hermes returned no binary price data');
     });
   });
 
   describe('buildPythPriceUpdateCalls', () => {
-    const config: PythConfig = {
-      pythStateId: '0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8',
-      wormholeStateId: '0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c',
-    };
-
     it('throws when updates array is empty', async () => {
       const tx = new Transaction();
       const client = {} as Parameters<typeof buildPythPriceUpdateCalls>[1];
       await expect(
-        buildPythPriceUpdateCalls(tx, client, config, [], [], undefined),
+        buildPythPriceUpdateCalls(tx, client, PYTH_CONFIG, [], [], undefined),
       ).rejects.toThrow('No price update data provided');
     });
 
@@ -73,7 +59,7 @@ describe('pyth utils', () => {
       const client = {} as Parameters<typeof buildPythPriceUpdateCalls>[1];
       const dummyUpdate = new Uint8Array(100);
       await expect(
-        buildPythPriceUpdateCalls(tx, client, config, [dummyUpdate, dummyUpdate], ['0xabc'], undefined),
+        buildPythPriceUpdateCalls(tx, client, PYTH_CONFIG, [dummyUpdate, dummyUpdate], ['0xabc'], undefined),
       ).rejects.toThrow('Only a single accumulator message is supported');
     });
   });

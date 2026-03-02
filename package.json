@@ -50,7 +50,11 @@
     "build:cjs": "tsc -p ./tsconfig.cjs.json && tsc-alias -p ./tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
     "build:esm": "tsc -p ./tsconfig.esm.json && tsc-alias -p ./tsconfig.esm.json && echo '{\"type\": \"module\"}' > dist/esm/package.json",
     "build": "pnpm clean && npm-run-all --parallel build:cjs build:esm",
-    "test": "vitest"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run test/unit",
+    "test:e2e": "vitest run test/e2e --testTimeout=25000",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {},
   "peerDependencies": {
@@ -72,6 +76,7 @@
     "prettier": "^3.6.2",
     "tsc-alias": "^1.8.16",
     "typescript": "5.9.2",
+    "@vitest/coverage-v8": "^0.34.1",
     "vitest": "^0.34.1",
     "@mysten/bcs": "2.0.2",
     "@mysten/sui": "2.5.0"
