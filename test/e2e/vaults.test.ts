@@ -1,9 +1,19 @@
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { bucketClient, MAINNET_TIMEOUT_MS } from './helpers/setup.js';
+import {
+  afterFileEnd,
+  afterTestDelay,
+  bucketClient,
+  MAINNET_TIMEOUT_MS,
+  setupE2E,
+} from './helpers/setup.js';
 
 describe('E2E Vaults', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'getAllVaultObjects: one entry per collateral type, all with required VaultInfo fields',
     async () => {

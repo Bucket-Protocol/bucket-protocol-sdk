@@ -1,20 +1,27 @@
 import { Transaction } from '@mysten/sui/transactions';
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '../../src/utils/transaction.js';
 import {
+  afterFileEnd,
+  afterTestDelay,
   bucketClient,
+  getUsdbCoinType,
   MAINNET_TIMEOUT_MS,
+  setupE2E,
   suiClient,
   susdbLpType,
   testAccount,
-  usdbCoinType,
   usdcCoinType,
 } from './helpers/setup.js';
 
 const TEST_AMOUNT_USDB = 0.1 * 10 ** 6;
 
 describe('E2E Saving', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'psmSwapIn then deposit to saving pool',
     async () => {
@@ -43,7 +50,7 @@ describe('E2E Saving', () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
       const amount = TEST_AMOUNT_USDB;
-      const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
+      const usdbCoin = coinWithBalance({ type: getUsdbCoinType(), balance: amount });
       bucketClient.buildDepositToSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         address: testAccount,
@@ -92,7 +99,7 @@ describe('E2E Saving', () => {
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const zeroUsdbCoin = getZeroCoin(tx, { coinType: usdbCoinType });
+      const zeroUsdbCoin = getZeroCoin(tx, { coinType: getUsdbCoinType() });
       bucketClient.buildDepositToSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         address: testAccount,
@@ -102,7 +109,7 @@ describe('E2E Saving', () => {
         lpType: susdbLpType,
         amount: 0,
       });
-      destroyZeroCoin(tx, { coinType: usdbCoinType, coin: usdbOut });
+      destroyZeroCoin(tx, { coinType: getUsdbCoinType(), coin: usdbOut });
       const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
       expect(dryrunRes.$kind).toBe('Transaction');
     },
@@ -114,7 +121,7 @@ describe('E2E Saving', () => {
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const zeroUsdbCoin = coinWithBalance({ type: usdbCoinType, balance: 0 });
+      const zeroUsdbCoin = coinWithBalance({ type: getUsdbCoinType(), balance: 0 });
       bucketClient.buildDepositToSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         address: testAccount,
@@ -124,7 +131,7 @@ describe('E2E Saving', () => {
         lpType: susdbLpType,
         amount: 0,
       });
-      destroyZeroCoin(tx, { coinType: usdbCoinType, coin: usdbOut });
+      destroyZeroCoin(tx, { coinType: getUsdbCoinType(), coin: usdbOut });
       const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
       expect(dryrunRes.$kind).toBe('Transaction');
     },

@@ -1,10 +1,23 @@
 import { Transaction } from '@mysten/sui/transactions';
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { coinWithBalance } from '../../src/utils/transaction.js';
-import { bucketClient, MAINNET_TIMEOUT_MS, suiClient, testAccount, usdcCoinType } from './helpers/setup.js';
+import {
+  afterFileEnd,
+  afterTestDelay,
+  bucketClient,
+  MAINNET_TIMEOUT_MS,
+  setupE2E,
+  suiClient,
+  testAccount,
+  usdcCoinType,
+} from './helpers/setup.js';
 
 describe('E2E Flash', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'flashMint 1000 USDB then flashBurn',
     async () => {

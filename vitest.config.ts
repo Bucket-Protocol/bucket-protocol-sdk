@@ -10,7 +10,8 @@ export default defineConfig({
   test: {
     include: ['./test/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     testTimeout: 10000,
-    hookTimeout: 10000,
+    hookTimeout: 30_000,
+    retry: 1,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'html'],

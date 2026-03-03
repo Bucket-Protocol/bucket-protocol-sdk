@@ -1,17 +1,24 @@
 import { Transaction } from '@mysten/sui/transactions';
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { coinWithBalance } from '../../src/utils/transaction.js';
 import {
+  afterFileEnd,
+  afterTestDelay,
   bucketClient,
+  getUsdbCoinType,
   MAINNET_TIMEOUT_MS,
+  setupE2E,
   suiClient,
   testAccount,
-  usdbCoinType,
   usdcCoinType,
 } from './helpers/setup.js';
 
 describe('E2E PSM', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'buildPSMSwapInTransaction: 1 USDC -> USDB, dry run and balance delta',
     async () => {
@@ -31,7 +38,7 @@ describe('E2E PSM', () => {
       expect(dryrunRes.$kind).toBe('Transaction');
       const balanceChanges = (dryrunRes.Transaction ?? dryrunRes.FailedTransaction)!.balanceChanges!;
       expect(balanceChanges.find((c) => c.coinType === usdcCoinType)?.amount).toBe('-1000000');
-      expect(balanceChanges.find((c) => c.coinType === usdbCoinType)?.amount).toBe('1000000');
+      expect(balanceChanges.find((c) => c.coinType === getUsdbCoinType())?.amount).toBe('1000000');
     },
     MAINNET_TIMEOUT_MS,
   );
@@ -42,7 +49,7 @@ describe('E2E PSM', () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
       const amount = 1 * 10 ** 6;
-      const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
+      const usdbCoin = coinWithBalance({ type: getUsdbCoinType(), balance: amount });
       const usdcCoin = await bucketClient.buildPSMSwapOutTransaction(tx, {
         coinType: usdcCoinType,
         usdbCoinOrAmount: usdbCoin,
@@ -60,7 +67,7 @@ describe('E2E PSM', () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
       const amount = 1n * 10n ** 6n;
-      const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
+      const usdbCoin = coinWithBalance({ type: getUsdbCoinType(), balance: amount });
       const usdcCoin = await bucketClient.buildPSMSwapOutTransaction(tx, {
         coinType: usdcCoinType,
         usdbCoinOrAmount: usdbCoin,
