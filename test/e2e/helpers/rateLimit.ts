@@ -4,7 +4,7 @@
  */
 
 const INTER_FILE_DELAY_MS = 2000;
-const AFTER_EACH_DELAY_MS = 600;
+const AFTER_EACH_DELAY_MS = 2000;
 
 let lastFileFinishedAt = 0;
 

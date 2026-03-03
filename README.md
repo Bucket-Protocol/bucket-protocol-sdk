@@ -19,14 +19,14 @@ import { BucketClient } from '@bucket-protocol/sdk';
 import { SuiGrpcClient } from '@mysten/sui/grpc';
 
 // Create client with config fetched from chain (recommended)
-const client = await BucketClient.create({ network: 'mainnet' });
+const client = await BucketClient.initialize({ network: 'mainnet' });
 
 // Or with custom SuiGrpcClient configuration
 const customSuiClient = new SuiGrpcClient({
   network: 'mainnet',
   baseUrl: 'https://your-custom-rpc-url',
 });
-const client = await BucketClient.create({
+const client = await BucketClient.initialize({
   suiClient: customSuiClient,
   network: 'mainnet',
 });
@@ -815,12 +815,12 @@ For complete usage examples, refer to [test/e2e/client.test.ts](./test/e2e/clien
 
 ### Client Initialization
 
-**Recommended: `BucketClient.create()` (async factory)**
+**Recommended: `BucketClient.initialize()` (async factory)**
 
 Fetches config from chain and returns a ready-to-use client:
 
 ```typescript
-const client = await BucketClient.create({
+const client = await BucketClient.initialize({
   suiClient,       // Optional: custom SuiGrpcClient
   network,         // Optional: 'mainnet' | 'testnet' (default: 'mainnet')
   configOverrides, // Optional: e.g. { PRICE_SERVICE_ENDPOINT: 'https://...' }

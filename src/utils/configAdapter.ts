@@ -107,6 +107,7 @@ export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Pa
     VAULT_OBJS: {},
     SAVING_POOL_OBJS: {},
     PSM_POOL_OBJS: {},
+    PRICE_OBJS: {},
   };
 
   // --- Aggregator entries ---
@@ -134,6 +135,13 @@ export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Pa
   if (onchain.psmPool?.entries) {
     for (const [coinType, entry] of Object.entries(onchain.psmPool.entries)) {
       config.PSM_POOL_OBJS[coinType] = parsePsmPoolEntry(entry);
+    }
+  }
+
+  // --- Price config entries ---
+  if (onchain.priceConfig?.entries) {
+    for (const [key, entry] of Object.entries(onchain.priceConfig.entries)) {
+      config.PRICE_OBJS[key] = parsePriceEntry(entry);
     }
   }
 
@@ -209,4 +217,8 @@ function parsePsmPoolEntry(entry: unknown): PsmPoolObjectInfo {
   return {
     pool: toSharedObjectRef(e.pool, true),
   };
+}
+
+function parsePriceEntry(entry: unknown): SharedObjectRef {
+  return toSharedObjectRef(entry, false);
 }
