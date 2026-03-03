@@ -2,14 +2,7 @@ import { Transaction } from '@mysten/sui/transactions';
 import { describe, expect, it } from 'vitest';
 
 import { coinWithBalance } from '../../src/utils/transaction.js';
-
-import {
-  MAINNET_TIMEOUT_MS,
-  bucketClient,
-  suiClient,
-  testAccount,
-  usdcCoinType,
-} from './helpers/setup.js';
+import { bucketClient, MAINNET_TIMEOUT_MS, suiClient, testAccount, usdcCoinType } from './helpers/setup.js';
 
 describe('E2E Flash', () => {
   it(

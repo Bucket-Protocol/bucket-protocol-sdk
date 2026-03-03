@@ -2,13 +2,7 @@ import { Transaction, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import {
-  MAINNET_TIMEOUT_MS,
-  bucketClient,
-  suiClient,
-  susdbLpType,
-  testAccount,
-} from './helpers/setup.js';
+import { bucketClient, MAINNET_TIMEOUT_MS, suiClient, susdbLpType, testAccount } from './helpers/setup.js';
 
 describe('E2E Savings & rewards', () => {
   it(

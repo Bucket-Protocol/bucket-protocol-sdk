@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { BucketClient } from '../../src/client.js';
-
-import { MAINNET_TIMEOUT_MS, bucketClient, suiClient } from './helpers/setup.js';
+import { bucketClient, MAINNET_TIMEOUT_MS, suiClient } from './helpers/setup.js';
 
 describe('E2E Oracle', () => {
   afterEach(() => {

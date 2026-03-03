@@ -1,7 +1,7 @@
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import { MAINNET_TIMEOUT_MS, bucketClient, susdbLpType, usdcCoinType } from './helpers/setup.js';
+import { bucketClient, MAINNET_TIMEOUT_MS, susdbLpType, usdcCoinType } from './helpers/setup.js';
 
 describe('E2E Object info helpers', () => {
   it(
@@ -17,9 +17,9 @@ describe('E2E Object info helpers', () => {
   it(
     'getAggregatorObjectInfo throws for unsupported coin type',
     () => {
-      expect(() =>
-        bucketClient.getAggregatorObjectInfo({ coinType: '0x1::invalid::INVALID' }),
-      ).toThrow('Unsupported coin type');
+      expect(() => bucketClient.getAggregatorObjectInfo({ coinType: '0x1::invalid::INVALID' })).toThrow(
+        'Unsupported coin type',
+      );
     },
     MAINNET_TIMEOUT_MS,
   );
@@ -37,9 +37,9 @@ describe('E2E Object info helpers', () => {
   it(
     'getSavingPoolObjectInfo throws for unsupported lp type',
     () => {
-      expect(() =>
-        bucketClient.getSavingPoolObjectInfo({ lpType: '0x1::invalid::INVALID' }),
-      ).toThrow('Unsupported coin type');
+      expect(() => bucketClient.getSavingPoolObjectInfo({ lpType: '0x1::invalid::INVALID' })).toThrow(
+        'Unsupported coin type',
+      );
     },
     MAINNET_TIMEOUT_MS,
   );
@@ -57,9 +57,9 @@ describe('E2E Object info helpers', () => {
   it(
     'getPsmPoolObjectInfo throws for unsupported coin type',
     () => {
-      expect(() =>
-        bucketClient.getPsmPoolObjectInfo({ coinType: '0x1::invalid::INVALID' }),
-      ).toThrow('Unsupported coin type');
+      expect(() => bucketClient.getPsmPoolObjectInfo({ coinType: '0x1::invalid::INVALID' })).toThrow(
+        'Unsupported coin type',
+      );
     },
     MAINNET_TIMEOUT_MS,
   );
@@ -67,9 +67,9 @@ describe('E2E Object info helpers', () => {
   it(
     'getVaultObjectInfo throws for unsupported collateral type',
     () => {
-      expect(() =>
-        bucketClient.getVaultObjectInfo({ coinType: '0x1::invalid::INVALID' }),
-      ).toThrow('Unsupported collateral type');
+      expect(() => bucketClient.getVaultObjectInfo({ coinType: '0x1::invalid::INVALID' })).toThrow(
+        'Unsupported collateral type',
+      );
     },
     MAINNET_TIMEOUT_MS,
   );
