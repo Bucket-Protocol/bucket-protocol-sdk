@@ -12,13 +12,15 @@ import {
   usdcCoinType,
 } from './helpers/setup.js';
 
+const TEST_AMOUNT_USDB = 0.1 * 10 ** 6;
+
 describe('E2E Saving', () => {
   it(
     'psmSwapIn then deposit to saving pool',
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const amount = 0.1 * 10 ** 6;
+      const amount = TEST_AMOUNT_USDB;
       const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: amount });
       const usdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
         coinType: usdcCoinType,
@@ -40,7 +42,7 @@ describe('E2E Saving', () => {
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const amount = 0.1 * 10 ** 6;
+      const amount = TEST_AMOUNT_USDB;
       const usdbCoin = coinWithBalance({ type: usdbCoinType, balance: amount });
       bucketClient.buildDepositToSavingPoolTransaction(tx, {
         lpType: susdbLpType,
@@ -58,7 +60,7 @@ describe('E2E Saving', () => {
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const amount = 0.1 * 10 ** 6;
+      const amount = TEST_AMOUNT_USDB;
       const usdbCoin = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         amount,

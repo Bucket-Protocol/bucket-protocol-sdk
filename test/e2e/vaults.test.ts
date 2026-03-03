@@ -16,9 +16,9 @@ describe('E2E Vaults', () => {
         expect(typeof vault.positionTableSize).toBe('number');
         expect(vault.positionTableSize).toBeGreaterThanOrEqual(0);
         expect(typeof vault.collateralDecimal).toBe('number');
-        expect(vault.collateralBalance >= 0n).toBe(true);
-        expect(vault.usdbSupply >= 0n).toBe(true);
-        expect(vault.maxUsdbSupply > 0n).toBe(true);
+        expect(vault.collateralBalance).toBeGreaterThanOrEqual(0n);
+        expect(vault.usdbSupply).toBeGreaterThanOrEqual(0n);
+        expect(vault.maxUsdbSupply).toBeGreaterThan(0n);
         expect(typeof vault.interestRate).toBe('number');
         expect(typeof vault.minCollateralRatio).toBe('number');
         expect(vault.minCollateralRatio).toBeGreaterThanOrEqual(1);
@@ -65,8 +65,8 @@ describe('E2E Vaults', () => {
       expect(typeof flowRates).toBe('object');
       for (const [rewardType, rate] of Object.entries(flowRates)) {
         expect(typeof rewardType).toBe('string');
-        expect(typeof rate === 'bigint').toBe(true);
-        expect(rate >= 0n).toBe(true);
+        expect(typeof rate).toBe('bigint');
+        expect(rate).toBeGreaterThanOrEqual(0n);
       }
     },
     MAINNET_TIMEOUT_MS,
