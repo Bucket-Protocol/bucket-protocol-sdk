@@ -54,7 +54,8 @@
     "test:watch": "vitest",
     "test:unit": "vitest run test/unit",
     "test:e2e": "vitest run test/e2e --testTimeout=25000",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage --testTimeout=30000",
+    "test:coverage:unit": "vitest run test/unit --coverage"
   },
   "dependencies": {},
   "peerDependencies": {

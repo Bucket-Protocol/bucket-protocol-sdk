@@ -5,6 +5,7 @@ import {
   afterTestDelay,
   bucketClient,
   MAINNET_TIMEOUT_MS,
+  runWithRpcRetry,
   setupE2E,
 } from './helpers/setup.js';
 
@@ -26,7 +27,7 @@ describe('E2E Supply & pools', () => {
   it(
     'getAllSavingPoolObjects returns pools with SavingPoolInfo shape',
     async () => {
-      const pools = await bucketClient.getAllSavingPoolObjects();
+      const pools = await runWithRpcRetry(() => bucketClient.getAllSavingPoolObjects());
       expect(typeof pools).toBe('object');
       expect(Object.keys(pools).length).toBeGreaterThan(0);
       for (const [lpType, pool] of Object.entries(pools)) {
@@ -43,7 +44,7 @@ describe('E2E Supply & pools', () => {
   it(
     'getAllPsmPoolObjects returns pools with PsmPoolInfo shape',
     async () => {
-      const pools = await bucketClient.getAllPsmPoolObjects();
+      const pools = await runWithRpcRetry(() => bucketClient.getAllPsmPoolObjects());
       expect(typeof pools).toBe('object');
       expect(Object.keys(pools).length).toBeGreaterThan(0);
       for (const [coinType, pool] of Object.entries(pools)) {

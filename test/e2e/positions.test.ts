@@ -54,7 +54,14 @@ describe('E2E Positions & accounts', () => {
         pageSize: 2,
         cursor: null,
       });
-      if (!first.nextCursor) return;
+      expect(first).toHaveProperty('positions');
+      expect(first).toHaveProperty('nextCursor');
+      expect(Array.isArray(first.positions)).toBe(true);
+      if (!first.nextCursor) {
+        // Single page only (positions.length <= pageSize) — skip pagination assertion
+        expect(first.positions.length).toBeLessThanOrEqual(2);
+        return;
+      }
       const next = await bucketClient.getAllPositions({
         coinType: SUI_TYPE_ARG,
         pageSize: 2,

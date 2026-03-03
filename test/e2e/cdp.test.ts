@@ -152,7 +152,9 @@ describe('E2E CDP', () => {
         (p) => normalizeStructTag(p.collateralType) === normalizeStructTag(SUI_TYPE_ARG) && p.debtAmount > 0n,
       );
       if (!hasSuiPosition) {
-        return; // skip: no SUI position to close
+        // Conditionally skipped: test account has no SUI position. Test passes without exercising
+        // buildClosePositionTransaction. Run with an account that has a position to verify close logic.
+        return;
       }
       const tx = new Transaction();
       tx.setSender(testAccount);
