@@ -1,9 +1,20 @@
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { bucketClient, MAINNET_TIMEOUT_MS, testAccount } from './helpers/setup.js';
+import {
+  afterFileEnd,
+  afterTestDelay,
+  bucketClient,
+  MAINNET_TIMEOUT_MS,
+  setupE2E,
+  testAccount,
+} from './helpers/setup.js';
 
 describe('E2E Positions & accounts', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'getAccountPositions length <= getUserPositions length',
     async () => {

@@ -1,8 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { bucketClient, MAINNET_TIMEOUT_MS } from './helpers/setup.js';
+import {
+  afterFileEnd,
+  afterTestDelay,
+  bucketClient,
+  MAINNET_TIMEOUT_MS,
+  setupE2E,
+} from './helpers/setup.js';
 
 describe('E2E Supply & pools', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'getUsdbSupply returns non-negative bigint',
     async () => {

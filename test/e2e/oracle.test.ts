@@ -1,12 +1,21 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { BucketClient } from '../../src/client.js';
-import { bucketClient, MAINNET_TIMEOUT_MS, suiClient } from './helpers/setup.js';
+import {
+  afterFileEnd,
+  afterTestDelay,
+  bucketClient,
+  MAINNET_TIMEOUT_MS,
+  setupE2E,
+  suiClient,
+} from './helpers/setup.js';
 
 describe('E2E Oracle', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
   afterEach(() => {
     vi.restoreAllMocks();
   });
+  afterEach(afterTestDelay);
 
   // Expect this to fail until Scallop upgrade or batching: fetching all 26 triggers version::assert_current_version abort.
   it(
@@ -49,15 +58,14 @@ describe('E2E Oracle', () => {
       const coinTypes = bucketClient.getAllOracleCoinTypes().slice(0, 1);
       expect(coinTypes.length).toBeGreaterThan(0);
 
-      const freshClient = new BucketClient({ suiClient, network: 'mainnet' });
       const getObjectSpy = vi.spyOn(suiClient, 'getObject');
 
-      const prices1 = await freshClient.getOraclePrices({ coinTypes });
+      const prices1 = await bucketClient.getOraclePrices({ coinTypes });
       expect(prices1[coinTypes[0]!]).toBeDefined();
       expect(prices1[coinTypes[0]!]).toBeGreaterThan(0);
 
       getObjectSpy.mockClear();
-      const prices2 = await freshClient.getOraclePrices({ coinTypes });
+      const prices2 = await bucketClient.getOraclePrices({ coinTypes });
       expect(getObjectSpy).toHaveBeenCalledTimes(0);
       expect(prices2[coinTypes[0]!]).toBeDefined();
       expect(prices2[coinTypes[0]!]).toBeGreaterThan(0);

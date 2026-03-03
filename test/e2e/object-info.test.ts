@@ -1,9 +1,21 @@
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { bucketClient, MAINNET_TIMEOUT_MS, susdbLpType, usdcCoinType } from './helpers/setup.js';
+import {
+  afterFileEnd,
+  afterTestDelay,
+  bucketClient,
+  MAINNET_TIMEOUT_MS,
+  setupE2E,
+  susdbLpType,
+  usdcCoinType,
+} from './helpers/setup.js';
 
 describe('E2E Object info helpers', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'getAggregatorObjectInfo returns aggregator for SUI',
     () => {

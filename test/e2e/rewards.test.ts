@@ -1,10 +1,22 @@
 import { Transaction, TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag } from '@mysten/sui/utils';
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { bucketClient, MAINNET_TIMEOUT_MS, suiClient, testAccount } from './helpers/setup.js';
+import {
+  afterFileEnd,
+  afterTestDelay,
+  bucketClient,
+  MAINNET_TIMEOUT_MS,
+  setupE2E,
+  suiClient,
+  testAccount,
+} from './helpers/setup.js';
 
 describe('E2E Rewards', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'buildClaimBorrowRewardsTransaction dry run succeeds and has reward balance changes',
     async () => {

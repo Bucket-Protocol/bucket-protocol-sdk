@@ -24,8 +24,10 @@ import {
   VaultInfo,
   VaultObjectInfo,
 } from '@/types/index.js';
-import { CONFIG, DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
+import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
+import { queryAllConfig } from '@/utils/bucketConfig.js';
+import { convertOnchainConfig } from '@/utils/configAdapter.js';
 import { buildPythPriceUpdateCalls, fetchPriceFeedsUpdateDataFromHermes, PythCache } from '@/utils/pyth.js';
 
 import { VaultRewarder } from '@/_generated/bucket_v2_borrow_incentive/borrow_incentive.js';
@@ -60,20 +62,59 @@ const NETWORK_RPC_URLS: Record<string, string> = {
   testnet: 'https://fullnode.testnet.sui.io:443',
 };
 
+function isValidPythPriceId(id: string): boolean {
+  if (typeof id !== 'string') return false;
+  const trimmed = id.trim();
+  if (trimmed.length === 0) return false;
+  const noPrefix = trimmed.startsWith('0x') || trimmed.startsWith('0X') ? trimmed.slice(2) : trimmed;
+  return /^[0-9a-fA-F]{64}$/.test(noPrefix);
+}
+
 export class BucketClient {
   /**
    * @description a TypeScript wrapper over Bucket V2 client.
-   * @param suiClient
-   * @param network
+   * You must pass a `config` object. For on-chain config use the async factory `BucketClient.create()` instead.
    */
   private config: ConfigType;
   private suiClient: SuiGrpcClient;
+  private network: Network;
   private pythCache = new PythCache();
 
-  constructor({ suiClient, network = 'mainnet' }: { suiClient?: SuiGrpcClient; network?: Network }) {
-    this.config = CONFIG[network];
+  constructor({
+    suiClient,
+    network = 'mainnet',
+    config,
+  }: {
+    suiClient?: SuiGrpcClient;
+    network?: Network;
+    config: ConfigType;
+  }) {
+    this.config = config;
+    this.network = network;
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
+  }
+
+  /**
+   * @description Factory that creates a BucketClient with config fetched from on-chain.
+   * Use this when you want the SDK to always use the latest on-chain parameters.
+   *
+   * @param options.configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT).
+   */
+  static async create({
+    suiClient,
+    network = 'mainnet',
+    configOverrides,
+  }: {
+    suiClient?: SuiGrpcClient;
+    network?: Network;
+    configOverrides?: Partial<ConfigType>;
+  } = {}): Promise<BucketClient> {
+    const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
+    const client = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
+    const onchainConfig = await queryAllConfig(client, network);
+    const config = convertOnchainConfig(onchainConfig, configOverrides);
+    return new BucketClient({ suiClient: client, network, config });
   }
 
   /* ----- Getter ----- */
@@ -93,6 +134,14 @@ export class BucketClient {
   }
 
   /**
+   * @description Re-fetch config from on-chain and update this client's config.
+   */
+  async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
+    const onchainConfig = await queryAllConfig(this.suiClient, this.network);
+    this.config = convertOnchainConfig(onchainConfig, overrides);
+  }
+
+  /**
    * @description
    */
   getUsdbCoinType(): string {
@@ -100,10 +149,21 @@ export class BucketClient {
   }
 
   /**
-   * @description Get all Oracle coin types
+   * @description Get all Oracle coin types that have a valid Pyth price (basic or derivative with priceable underlying).
    */
   getAllOracleCoinTypes(): string[] {
-    return Object.keys(this.config.AGGREGATOR_OBJS);
+    const isPriceable = (coinType: string, visiting: Set<string>): boolean => {
+      const normalized = normalizeStructTag(coinType);
+      if (visiting.has(normalized)) return false;
+      visiting.add(normalized);
+      const aggregatorInfo = this.config.AGGREGATOR_OBJS[normalized];
+      if (!aggregatorInfo) return false;
+      if ('pythPriceId' in aggregatorInfo) {
+        return isValidPythPriceId(aggregatorInfo.pythPriceId);
+      }
+      return isPriceable(aggregatorInfo.derivativeInfo.underlyingCoinType, visiting);
+    };
+    return Object.keys(this.config.AGGREGATOR_OBJS).filter((coinType) => isPriceable(coinType, new Set()));
   }
 
   /**

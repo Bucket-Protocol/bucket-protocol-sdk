@@ -1,8 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { bucketClient, MAINNET_TIMEOUT_MS, suiClient, usdbCoinType } from './helpers/setup.js';
+import {
+  afterFileEnd,
+  afterTestDelay,
+  bucketClient,
+  getUsdbCoinType,
+  MAINNET_TIMEOUT_MS,
+  setupE2E,
+  suiClient,
+} from './helpers/setup.js';
 
 describe('E2E Config & metadata', () => {
+  beforeAll(setupE2E);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
   it(
     'getConfig returns config with package IDs and object refs',
     async () => {
@@ -20,7 +32,7 @@ describe('E2E Config & metadata', () => {
     'usdbCoinType returns USDB metadata (6 decimals)',
     async () => {
       const { coinMetadata: usdbMetadata } = await suiClient.getCoinMetadata({
-        coinType: usdbCoinType,
+        coinType: getUsdbCoinType(),
       });
       expect(usdbMetadata?.decimals).toBe(6);
       expect(usdbMetadata?.symbol).toBe('USDB');
