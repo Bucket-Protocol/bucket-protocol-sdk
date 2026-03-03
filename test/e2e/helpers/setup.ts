@@ -1,13 +1,7 @@
 import { SuiGrpcClient } from '@mysten/sui/grpc';
 
 import { BucketClient } from '../../../src/client.js';
-
-import {
-  afterFileEnd,
-  afterTestDelay,
-  beforeFileStart,
-  runWithRpcRetry,
-} from './rateLimit.js';
+import { afterFileEnd, afterTestDelay, beforeFileStart, runWithRpcRetry } from './rateLimit.js';
 
 export const MAINNET_TIMEOUT_MS = 20_000;
 export const network = 'mainnet';
@@ -35,7 +29,7 @@ export async function ensureBucketClient(): Promise<BucketClient> {
   if (!bucketClient) {
     for (let i = 0; i < MAX_RETRIES; i++) {
       try {
-        bucketClient = await BucketClient.create({ suiClient, network });
+        bucketClient = await BucketClient.initialize({ suiClient, network });
         await new Promise((r) => setTimeout(r, COOLDOWN_AFTER_CREATE_MS));
         return bucketClient;
       } catch (e) {

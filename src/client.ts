@@ -24,10 +24,11 @@ import {
   VaultInfo,
   VaultObjectInfo,
 } from '@/types/index.js';
+import type { SharedObjectRef } from '@/types/index.js';
 import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
-import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
 import { queryAllConfig } from '@/utils/bucketConfig.js';
 import { convertOnchainConfig } from '@/utils/configAdapter.js';
+import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
 import { buildPythPriceUpdateCalls, fetchPriceFeedsUpdateDataFromHermes, PythCache } from '@/utils/pyth.js';
 
 import { VaultRewarder } from '@/_generated/bucket_v2_borrow_incentive/borrow_incentive.js';
@@ -39,13 +40,6 @@ import { Rewarder, RewarderKey } from '@/_generated/bucket_v2_saving_incentive/s
 import { SavingPool } from '@/_generated/bucket_v2_saving/saving.js';
 
 import { GlobalConfig } from './_generated/bucket_v2_flash/config.js';
-import {
-  GCOIN_RULE_CONFIG,
-  SCALLOP_MARKET,
-  SCALLOP_VERSION,
-  SCOIN_RULE_CONFIG,
-  UNIHOUSE_OBJECT,
-} from './consts/price.js';
 
 // Full BCS schema for aggregator::PriceAggregated<T> (phantom T has no effect on layout)
 const PriceAggregatedBcs = bcs.struct('PriceAggregated', {
@@ -73,9 +67,11 @@ function isValidPythPriceId(id: string): boolean {
 export class BucketClient {
   /**
    * @description a TypeScript wrapper over Bucket V2 client.
-   * You must pass a `config` object. For on-chain config use the async factory `BucketClient.create()` instead.
+   * Use `BucketClient.initialize()` to create with on-chain config,
+   * or pass a `config` to the constructor for custom/override usage.
    */
-  private config: ConfigType;
+  private _config: ConfigType | null;
+  private configOverrides?: Partial<ConfigType>;
   private suiClient: SuiGrpcClient;
   private network: Network;
   private pythCache = new PythCache();
@@ -87,9 +83,9 @@ export class BucketClient {
   }: {
     suiClient?: SuiGrpcClient;
     network?: Network;
-    config: ConfigType;
-  }) {
-    this.config = config;
+    config?: ConfigType;
+  } = {}) {
+    this._config = config ?? null;
     this.network = network;
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
@@ -101,7 +97,7 @@ export class BucketClient {
    *
    * @param options.configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT).
    */
-  static async create({
+  static async initialize({
     suiClient,
     network = 'mainnet',
     configOverrides,
@@ -114,7 +110,32 @@ export class BucketClient {
     const client = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
     const onchainConfig = await queryAllConfig(client, network);
     const config = convertOnchainConfig(onchainConfig, configOverrides);
-    return new BucketClient({ suiClient: client, network, config });
+    const bc = new BucketClient({ suiClient: client, network, config });
+    bc.configOverrides = configOverrides;
+    return bc;
+  }
+
+  /**
+   * @description Ensures config is loaded. If not yet fetched, fetches from on-chain.
+   */
+  private async ensureConfig(): Promise<void> {
+    if (!this._config) {
+      await this.refreshConfig(this.configOverrides);
+    }
+  }
+
+  /**
+   * @description Returns the current config, throwing if not yet initialized.
+   * For sync methods that cannot await ensureConfig().
+   */
+  private get config(): ConfigType {
+    if (!this._config) {
+      throw new Error(
+        'BucketClient config not initialized. ' +
+          'Call an async method first, use BucketClient.initialize(), or pass config to the constructor.',
+      );
+    }
+    return this._config;
   }
 
   /* ----- Getter ----- */
@@ -130,6 +151,7 @@ export class BucketClient {
    * @description
    */
   async getConfig(): Promise<ConfigType | undefined> {
+    await this.ensureConfig();
     return this.config;
   }
 
@@ -138,7 +160,18 @@ export class BucketClient {
    */
   async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
     const onchainConfig = await queryAllConfig(this.suiClient, this.network);
-    this.config = convertOnchainConfig(onchainConfig, overrides);
+    this._config = convertOnchainConfig(onchainConfig, overrides);
+  }
+
+  /**
+   * @description Get a price-related shared object ref from on-chain config.
+   */
+  private getPriceObj(key: string): SharedObjectRef {
+    const ref = this.config.PRICE_OBJS[key];
+    if (!ref) {
+      throw new Error(`Price object "${key}" not found in on-chain config PRICE_OBJS.`);
+    }
+    return ref;
   }
 
   /**
@@ -227,6 +260,7 @@ export class BucketClient {
    * @description
    */
   async getUsdbSupply(): Promise<bigint> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     const treasury = tx.moveCall({
@@ -250,6 +284,7 @@ export class BucketClient {
    * @description
    */
   async getOraclePrices({ coinTypes }: { coinTypes: string[] }): Promise<Record<string, number>> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     await this.aggregatePrices(tx, { coinTypes });
@@ -276,6 +311,7 @@ export class BucketClient {
    * @description
    */
   async getAllOraclePrices(): Promise<Record<string, number>> {
+    await this.ensureConfig();
     const coinTypes = this.getAllOracleCoinTypes();
 
     return this.getOraclePrices({ coinTypes });
@@ -285,6 +321,7 @@ export class BucketClient {
    * @description
    */
   async getBorrowRewardFlowRate({ coinType }: { coinType: string }): Promise<Record<string, bigint>> {
+    await this.ensureConfig();
     const vault = this.getVaultObjectInfo({ coinType });
 
     if (!vault.rewarders) {
@@ -317,6 +354,7 @@ export class BucketClient {
    * @description Get all vault objects
    */
   async getAllVaultObjects(): Promise<Record<string, VaultInfo>> {
+    await this.ensureConfig();
     const vaultObjectIds = Object.values(this.config.VAULT_OBJS).map((v) => v.vault.objectId);
     const allCollateralTypes = this.getAllCollateralTypes();
 
@@ -369,6 +407,7 @@ export class BucketClient {
    * @description
    */
   async getSavingPoolRewardFlowRate({ lpType }: { lpType: string }): Promise<Record<string, bigint>> {
+    await this.ensureConfig();
     const pool = this.getSavingPoolObjectInfo({ lpType });
 
     if (!pool.reward) {
@@ -403,6 +442,7 @@ export class BucketClient {
    * @description Get all Saving pool objects
    */
   async getAllSavingPoolObjects(): Promise<Record<string, SavingPoolInfo>> {
+    await this.ensureConfig();
     const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
     const poolObjectIds = Object.values(this.config.SAVING_POOL_OBJS).map((v) => v.pool.objectId);
 
@@ -451,6 +491,7 @@ export class BucketClient {
    * @description Get all PSM pool objects
    */
   async getAllPsmPoolObjects(): Promise<Record<string, PsmPoolInfo>> {
+    await this.ensureConfig();
     const poolObjectIds = Object.values(this.config.PSM_POOL_OBJS).map((v) => v.pool.objectId);
 
     const res = await this.suiClient.getObjects({
@@ -498,6 +539,7 @@ export class BucketClient {
    * @description
    */
   async getFlashMintInfo(): Promise<FlashMintInfo> {
+    await this.ensureConfig();
     const data = await this.suiClient.getObject({
       objectId: this.config.FLASH_GLOBAL_CONFIG_OBJ.objectId,
       include: {
@@ -533,6 +575,7 @@ export class BucketClient {
     pageSize?: number;
     cursor?: string | null;
   }): Promise<PaginatedPositionsResult> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     tx.moveCall({
@@ -573,6 +616,7 @@ export class BucketClient {
    * @description
    */
   async getUserAccounts({ address }: { address: string }) {
+    await this.ensureConfig();
     const accountRes = await this.suiClient.listOwnedObjects({
       owner: address,
       type: `${this.config.ORIGINAL_FRAMEWORK_PACKAGE_ID}::account::Account`,
@@ -600,6 +644,7 @@ export class BucketClient {
     accountId?: string;
     coinTypes: string[];
   }): Promise<Record<string, Record<string, bigint>>> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     coinTypes.forEach((coinType) => {
@@ -652,6 +697,7 @@ export class BucketClient {
    * @description Get position data given account (can be wallet address or Account object ID)
    */
   async getAccountPositions({ address, accountId }: { address: string; accountId?: string }): Promise<PositionInfo[]> {
+    await this.ensureConfig();
     const tx = new Transaction();
     const allCollateralTypes = this.getAllCollateralTypes();
 
@@ -697,6 +743,7 @@ export class BucketClient {
    * @description Get position data given wallet address
    */
   async getUserPositions({ address }: { address: string }): Promise<PositionInfo[]> {
+    await this.ensureConfig();
     const accounts = await this.getUserAccounts({ address });
     const accountObjectIds = accounts.map((account) => account.id.id);
 
@@ -719,6 +766,7 @@ export class BucketClient {
     accountId?: string;
     lpTypes: string[];
   }): Promise<Record<string, Record<string, bigint>>> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     lpTypes.forEach((lpType) => {
@@ -776,6 +824,7 @@ export class BucketClient {
    * @description
    */
   async getAccountSavings({ address, accountId }: { address: string; accountId?: string }): Promise<SavingInfo[]> {
+    await this.ensureConfig();
     const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
 
     const tx = new Transaction();
@@ -822,6 +871,7 @@ export class BucketClient {
    * @description Get position data given wallet address
    */
   async getUserSavings({ address }: { address: string }): Promise<SavingInfo[]> {
+    await this.ensureConfig();
     const accounts = await this.getUserAccounts({ address });
     const accountObjectIds = accounts.map((account) => account.id.id);
 
@@ -956,6 +1006,7 @@ export class BucketClient {
    * @return [PriceResult]
    */
   async aggregateBasicPrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
+    await this.ensureConfig();
     if (!coinTypes.length) {
       return [];
     }
@@ -1031,10 +1082,10 @@ export class BucketClient {
           typeArguments: [coinType, derivativeInfo.underlyingCoinType],
           arguments: [
             collector,
-            tx.sharedObjectRef(SCOIN_RULE_CONFIG),
+            tx.sharedObjectRef(this.getPriceObj('SCOIN_RULE_CONFIG')),
             underlyingPriceResult,
-            tx.sharedObjectRef(SCALLOP_VERSION),
-            tx.sharedObjectRef(SCALLOP_MARKET),
+            tx.sharedObjectRef(this.getPriceObj('SCALLOP_VERSION')),
+            tx.sharedObjectRef(this.getPriceObj('SCALLOP_MARKET')),
             tx.object.clock(),
           ],
         });
@@ -1046,8 +1097,8 @@ export class BucketClient {
           arguments: [
             collector,
             underlyingPriceResult,
-            tx.sharedObjectRef(GCOIN_RULE_CONFIG),
-            tx.sharedObjectRef(UNIHOUSE_OBJECT),
+            tx.sharedObjectRef(this.getPriceObj('GCOIN_RULE_CONFIG')),
+            tx.sharedObjectRef(this.getPriceObj('UNIHOUSE_OBJECT')),
           ],
         });
         break;
@@ -1073,6 +1124,7 @@ export class BucketClient {
    * @description
    */
   async aggregatePrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
+    await this.ensureConfig();
     const allBasicCoinTypes = Array.from(
       new Set(
         coinTypes.map((coinType) => {
@@ -1619,6 +1671,7 @@ export class BucketClient {
       withdrawAmount?: number | TransactionArgument;
     },
   ): Promise<TransactionNestedResult[]> {
+    await this.ensureConfig();
     const depositCoin =
       typeof depositCoinOrAmount === 'number'
         ? coinWithBalance({ balance: depositCoinOrAmount, type: coinType })
@@ -1854,6 +1907,7 @@ export class BucketClient {
       inputCoinOrAmount: number | TransactionArgument;
     },
   ): Promise<TransactionResult> {
+    await this.ensureConfig();
     const inputCoin =
       typeof inputCoinOrAmount === 'number'
         ? coinWithBalance({ balance: inputCoinOrAmount, type: coinType })
@@ -1879,6 +1933,7 @@ export class BucketClient {
       usdbCoinOrAmount: number | TransactionArgument;
     },
   ): Promise<TransactionResult> {
+    await this.ensureConfig();
     const usdbCoin =
       typeof usdbCoinOrAmount === 'number'
         ? coinWithBalance({ balance: usdbCoinOrAmount, type: this.getUsdbCoinType() })

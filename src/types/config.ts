@@ -79,4 +79,5 @@ export type ConfigType = {
   VAULT_OBJS: Record<string, VaultObjectInfo>;
   SAVING_POOL_OBJS: Record<string, SavingPoolObjectInfo>;
   PSM_POOL_OBJS: Record<string, PsmPoolObjectInfo>;
+  PRICE_OBJS: Record<string, SharedObjectRef>;
 };
