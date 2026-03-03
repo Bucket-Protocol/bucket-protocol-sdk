@@ -1,7 +1,7 @@
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import { MAINNET_TIMEOUT_MS, bucketClient, testAccount } from './helpers/setup.js';
+import { bucketClient, MAINNET_TIMEOUT_MS, testAccount } from './helpers/setup.js';
 
 describe('E2E Positions & accounts', () => {
   it(

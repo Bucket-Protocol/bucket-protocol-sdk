@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAINNET_TIMEOUT_MS, bucketClient } from './helpers/setup.js';
+import { bucketClient, MAINNET_TIMEOUT_MS } from './helpers/setup.js';
 
 describe('E2E Supply & pools', () => {
   it(

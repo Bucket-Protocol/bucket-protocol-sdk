@@ -4,13 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PositionUpdated } from '../../src/_generated/bucket_v2_cdp/events.js';
 import { coinWithBalance } from '../../src/utils/transaction.js';
-
-import {
-  MAINNET_TIMEOUT_MS,
-  bucketClient,
-  suiClient,
-  testAccount,
-} from './helpers/setup.js';
+import { bucketClient, MAINNET_TIMEOUT_MS, suiClient, testAccount } from './helpers/setup.js';
 
 describe('E2E CDP', () => {
   it(

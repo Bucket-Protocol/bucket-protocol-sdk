@@ -10,7 +10,9 @@ function getIntentCommand(tx: Transaction) {
   return data.commands.find((c) => c.$Intent?.name === COIN_WITH_BALANCE_RESOLVER);
 }
 
-function getMoveCallTarget(cmd: { MoveCall?: { package?: string; module?: string; function?: string } }): string | undefined {
+function getMoveCallTarget(cmd: {
+  MoveCall?: { package?: string; module?: string; function?: string };
+}): string | undefined {
   const mc = cmd.MoveCall;
   if (!mc) return undefined;
   return `${mc.package}::${mc.module}::${mc.function}`;
@@ -23,7 +25,9 @@ describe('unit/utils/transaction', () => {
       const coinType = '0x2::sui::SUI';
       const result = getZeroCoin(tx, { coinType });
       expect(result).toBeDefined();
-      const data = tx.getData() as { commands: Array<{ MoveCall?: { package: string; module: string; function: string; typeArguments: string[] } }> };
+      const data = tx.getData() as {
+        commands: Array<{ MoveCall?: { package: string; module: string; function: string; typeArguments: string[] } }>;
+      };
       expect(data.commands.length).toBe(1);
       expect(getMoveCallTarget(data.commands[0]!)).toMatch(/::coin::zero$/);
       expect(data.commands[0]!.MoveCall?.module).toBe('coin');
@@ -77,7 +81,10 @@ describe('unit/utils/transaction', () => {
       const r2 = fn(tx);
       expect(r1).toBe(r2);
       const data = tx.getData() as { commands: unknown[] };
-      expect(data.commands.filter((c: { $Intent?: { name: string } }) => c.$Intent?.name === COIN_WITH_BALANCE_RESOLVER).length).toBe(1);
+      expect(
+        data.commands.filter((c: { $Intent?: { name: string } }) => c.$Intent?.name === COIN_WITH_BALANCE_RESOLVER)
+          .length,
+      ).toBe(1);
     });
 
     it('adds Intent with "gas" when default SUI and useGasCoin true', () => {

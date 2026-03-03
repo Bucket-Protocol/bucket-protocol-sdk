@@ -2,10 +2,9 @@ import { Transaction } from '@mysten/sui/transactions';
 import { describe, expect, it } from 'vitest';
 
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '../../src/utils/transaction.js';
-
 import {
-  MAINNET_TIMEOUT_MS,
   bucketClient,
+  MAINNET_TIMEOUT_MS,
   suiClient,
   susdbLpType,
   testAccount,

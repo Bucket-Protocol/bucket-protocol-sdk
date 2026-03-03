@@ -1,7 +1,7 @@
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { describe, expect, it } from 'vitest';
 
-import { MAINNET_TIMEOUT_MS, bucketClient } from './helpers/setup.js';
+import { bucketClient, MAINNET_TIMEOUT_MS } from './helpers/setup.js';
 
 describe('E2E Vaults', () => {
   it(
