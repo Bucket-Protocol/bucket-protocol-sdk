@@ -30,7 +30,7 @@ describe('E2E Oracle', () => {
     async () => {
       const allCoinTypes = bucketClient.getAllOracleCoinTypes();
       const coinTypes = allCoinTypes.slice(0, 2);
-      if (coinTypes.length === 0) return;
+      expect(coinTypes.length).toBeGreaterThan(0);
       const prices = await bucketClient.getOraclePrices({ coinTypes });
       expect(Object.keys(prices).length).toBeGreaterThan(0);
       for (const coinType of coinTypes) {
@@ -47,7 +47,7 @@ describe('E2E Oracle', () => {
     'getOraclePrices twice with same coins exercises PythCache (second call hits cache)',
     async () => {
       const coinTypes = bucketClient.getAllOracleCoinTypes().slice(0, 1);
-      if (coinTypes.length === 0) return;
+      expect(coinTypes.length).toBeGreaterThan(0);
 
       const freshClient = new BucketClient({ suiClient, network: 'mainnet' });
       const getObjectSpy = vi.spyOn(suiClient, 'getObject');
