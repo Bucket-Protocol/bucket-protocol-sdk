@@ -18,25 +18,26 @@ npm install @bucket-protocol/sdk
 import { BucketClient } from '@bucket-protocol/sdk';
 import { SuiGrpcClient } from '@mysten/sui/grpc';
 
-// Create client with config fetched from chain (recommended)
+// Create client (fetches config from chain)
 const client = await BucketClient.initialize({ network: 'mainnet' });
 
-// Or with custom SuiGrpcClient configuration
+// With custom SuiGrpcClient
 const customSuiClient = new SuiGrpcClient({
   network: 'mainnet',
   baseUrl: 'https://your-custom-rpc-url',
 });
-const client = await BucketClient.initialize({
-  suiClient: customSuiClient,
-  network: 'mainnet',
-});
+const client = await BucketClient.initialize({ suiClient: customSuiClient, network: 'mainnet' });
+
+// For testing: pass config directly or use configObjectId
+const client = await BucketClient.initialize({ network: 'mainnet', config: myConfig });
+const client = await BucketClient.initialize({ network: 'mainnet', configObjectId: '0x...' });
 ```
 
 ### Basic Queries
 
 ```typescript
-// Get all supported collateral types
-const collateralTypes = await client.getAllCollateralTypes();
+// Get all supported collateral types (sync)
+const collateralTypes = client.getAllCollateralTypes();
 console.log('Supported collaterals:', collateralTypes);
 // Example: ['0x2::sui::SUI', '0x...::btc::BTC', ...]
 
@@ -117,7 +118,7 @@ await client.buildManagePositionTransaction(tx, {
 // Close entire position (repay all debt, withdraw all collateral)
 const tx = new Transaction();
 const address = keypair.getPublicKey().toSuiAddress();
-await client.buildClosePositionTransaction(tx, {
+client.buildClosePositionTransaction(tx, {
   coinType: SUI_TYPE_ARG,
   address,
 });
@@ -239,7 +240,7 @@ const usdbAmount = 100 * 10 ** 6; // 100 USDB
 const SUSDB_TYPE = '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB';
 const userAddress = keypair.getPublicKey().toSuiAddress();
 
-await client.buildDepositToSavingPoolTransaction(tx, {
+client.buildDepositToSavingPoolTransaction(tx, {
   lpType: SUSDB_TYPE,
   address: userAddress,
   depositCoinOrAmount: usdbAmount, // Can also pass a coin object
@@ -260,7 +261,7 @@ const tx = new Transaction();
 // Withdraw 50 LP tokens worth of USDB
 const lpAmount = 50 * 10 ** 6; // 50 SUSDB (LP tokens)
 
-const usdbCoin = await client.buildWithdrawFromSavingPoolTransaction(tx, {
+const usdbCoin = client.buildWithdrawFromSavingPoolTransaction(tx, {
   lpType: SUSDB_TYPE,
   amount: lpAmount,
 });
@@ -281,7 +282,7 @@ const result = await client.getSuiClient().signAndExecuteTransaction({
 const tx = new Transaction();
 
 // Claim all available rewards
-const rewardsRecord = await client.buildClaimSavingRewardsTransaction(tx, {
+const rewardsRecord = client.buildClaimSavingRewardsTransaction(tx, {
   lpType: SUSDB_TYPE,
 });
 
@@ -321,14 +322,14 @@ const tx = new Transaction();
 
 // Deposit zero to distribute interest
 const zeroUsdb = tx.splitCoins(tx.gas, [0]); // Zero coin
-await client.buildDepositToSavingPoolTransaction(tx, {
+client.buildDepositToSavingPoolTransaction(tx, {
   lpType: SUSDB_TYPE,
   address: userAddress,
   depositCoinOrAmount: zeroUsdb,
 });
 
 // Withdraw zero to claim accumulated interest
-const accruedUsdb = await client.buildWithdrawFromSavingPoolTransaction(tx, {
+const accruedUsdb = client.buildWithdrawFromSavingPoolTransaction(tx, {
   lpType: SUSDB_TYPE,
   amount: 0,
 });
@@ -347,7 +348,7 @@ const tx = new Transaction();
 
 // Flash mint 1000 USDB
 const amount = 1000 * 10 ** 6; // 1000 USDB
-const [usdbCoin, flashReceipt] = await client.flashMint(tx, { amount });
+const [usdbCoin, flashReceipt] = client.flashMint(tx, { amount });
 
 // Use USDB for operations...
 // (e.g., arbitrage, liquidation, swaps)
@@ -360,7 +361,7 @@ const totalRepayment = amount + feeAmount;
 // ...
 
 // Burn to repay flash loan
-await client.flashBurn(tx, { usdbCoin, flashMintReceipt: flashReceipt });
+client.flashBurn(tx, { usdbCoin, flashMintReceipt: flashReceipt });
 ```
 
 ### 7. Integration Patterns
@@ -378,7 +379,7 @@ const usdbCoin = await client.buildPSMSwapInTransaction(tx, {
 });
 
 // Step 2: Deposit USDB to saving pool
-await client.buildDepositToSavingPoolTransaction(tx, {
+client.buildDepositToSavingPoolTransaction(tx, {
   lpType: SUSDB_TYPE,
   address: userAddress,
   depositCoinOrAmount: usdbCoin,
@@ -398,7 +399,7 @@ const tx = new Transaction();
 
 // Step 1: Flash mint USDB
 const amount = 1000 * 10 ** 6; // 1000 USDB
-const [usdbCoin, flashReceipt] = await client.flashMint(tx, { amount });
+const [usdbCoin, flashReceipt] = client.flashMint(tx, { amount });
 
 // Step 2: Use USDB for operations...
 // (e.g., arbitrage, liquidation, etc.)
@@ -412,7 +413,7 @@ const feeUsdbCoin = await client.buildPSMSwapInTransaction(tx, {
 
 // Step 4: Repay flash loan
 tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
-await client.flashBurn(tx, { usdbCoin, flashReceipt });
+client.flashBurn(tx, { usdbCoin, flashMintReceipt: flashReceipt });
 
 tx.setSender(userAddress);
 const result = await client.getSuiClient().signAndExecuteTransaction({
@@ -437,7 +438,7 @@ const usdbCoin = await client.buildPSMSwapInTransaction(tx, {
 });
 
 // Deposit to saving pool with partner account
-await client.buildDepositToSavingPoolTransaction(tx, {
+client.buildDepositToSavingPoolTransaction(tx, {
   accountObjectOrId: partnerAccountId,
   lpType: SUSDB_TYPE,
   address: userAddress,
@@ -508,7 +509,7 @@ const allPrices = await client.getAllOraclePrices();
 ```typescript
 // Create a price collector (within a transaction)
 const tx = new Transaction();
-const collector = await client.newPriceCollector(tx, { coinType: SUI_TYPE_ARG });
+const collector = client.newPriceCollector(tx, { coinType: SUI_TYPE_ARG });
 ```
 
 ## Advanced Usage
@@ -524,26 +525,26 @@ const coinTypes = [SUI_TYPE_ARG];
 const [priceResult] = await client.aggregatePrices(tx, { coinTypes });
 
 // Create debtor request
-const debtorReq = await client.debtorRequest(tx, {
+const debtorReq = client.debtorRequest(tx, {
   coinType: SUI_TYPE_ARG,
   borrowAmount: 1 * 10 ** 6,
 });
 
 // Check update position request
-const updateRequest = await client.checkUpdatePositionRequest(tx, {
+const updateRequest = client.checkUpdatePositionRequest(tx, {
   coinType: SUI_TYPE_ARG,
   request: debtorReq,
 });
 
 // Update position
-const [collCoin, usdbCoin, response] = await client.updatePosition(tx, {
+const [collCoin, usdbCoin, response] = client.updatePosition(tx, {
   coinType: SUI_TYPE_ARG,
   updateRequest,
   priceResult,
 });
 
 // Check response
-await client.checkUpdatePositionResponse(tx, {
+client.checkUpdatePositionResponse(tx, {
   coinType: SUI_TYPE_ARG,
   response,
 });
@@ -742,11 +743,11 @@ type SavingPoolObjectInfo = {
 The new version separates price aggregator configuration from vault configuration, providing better modularity:
 
 ```typescript
-// Get aggregator information
-const aggInfo = await client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
+// Get aggregator information (sync)
+const aggInfo = client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
 
-// Get vault information
-const vaultInfo = await client.getVaultObjectInfo({ coinType: SUI_TYPE_ARG });
+// Get vault information (sync)
+const vaultInfo = client.getVaultObjectInfo({ coinType: SUI_TYPE_ARG });
 ```
 
 ### Enhanced Price Aggregation
@@ -769,8 +770,8 @@ const priceResults = await client.aggregatePrices(tx, {
 ### USDB Token Type
 
 ```typescript
-// Get USDB token type
-const usdbType = await client.getUsdbCoinType();
+// Get USDB token type (sync)
+const usdbType = client.getUsdbCoinType();
 console.log('USDB Type:', usdbType);
 ```
 
@@ -780,10 +781,10 @@ console.log('USDB Type:', usdbType);
 const tx = new Transaction();
 
 // Create account request for EOA (Externally Owned Account)
-const accountRequest = await client.newAccountRequest(tx, {});
+const accountRequest = client.newAccountRequest(tx, {});
 
 // Create account request with account object
-const accountRequest = await client.newAccountRequest(tx, {
+const accountRequest = client.newAccountRequest(tx, {
   accountObjectOrId: '0x...account-object-id',
 });
 ```
@@ -823,21 +824,19 @@ Fetches config from chain and returns a ready-to-use client:
 const client = await BucketClient.initialize({
   suiClient,       // Optional: custom SuiGrpcClient
   network,         // Optional: 'mainnet' | 'testnet' (default: 'mainnet')
+  configObjectId,  // Optional: override entry config object ID (e.g. for testing)
+  config,          // Optional: pre-built ConfigType (skips chain fetch)
   configOverrides, // Optional: e.g. { PRICE_SERVICE_ENDPOINT: 'https://...' }
 });
 ```
 
-**Advanced: Constructor**
-
-For custom config (e.g. caching, testing, or pre-built config). If `config` is omitted, the client will lazy-load from chain on first async call.
+**Constructor** (for testing with pre-built config)
 
 ```typescript
-const client = new BucketClient({
-  suiClient?: SuiGrpcClient;
-  network?: Network;
-  config?: ConfigType; // Optional — use convertOnchainConfig() if building from chain data
-});
+const client = new BucketClient({ network: 'mainnet', config: myConfig });
 ```
+
+- `config` is required. Use `BucketClient.initialize()` to create a client (fetches config from chain).
 
 ### Transaction Options
 
@@ -932,7 +931,7 @@ console.log('Available balance:', coins);
 
 ```typescript
 // Use supported collateral types
-const supportedTypes = await client.getAllCollateralTypes();
+const supportedTypes = client.getAllCollateralTypes();
 console.log('Supported types:', supportedTypes);
 ```
 
@@ -940,7 +939,7 @@ console.log('Supported types:', supportedTypes);
 
 ```typescript
 // Ensure the coin type has a valid price feed
-const aggInfo = await client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
+const aggInfo = client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
 console.log('Pyth Price ID:', aggInfo.pythPriceId);
 ```
 

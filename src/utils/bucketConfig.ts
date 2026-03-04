@@ -90,12 +90,15 @@ export interface BucketOnchainConfig {
 /**
  * Query the entry Config object, resolve all referenced sub-objects by type,
  * and return the complete onchain config as a structured JSON-serializable object.
+ *
+ * @param configObjectId - Optional. Override the default entry config object ID (e.g. for testing).
  */
 export async function queryAllConfig(
   client: SuiGrpcClient,
   network: Network = 'mainnet',
+  configObjectId?: string,
 ): Promise<BucketOnchainConfig> {
-  const entryId = ENTRY_CONFIG_ID[network];
+  const entryId = configObjectId ?? ENTRY_CONFIG_ID[network];
   if (!entryId) {
     throw new Error(`No ENTRY_CONFIG_ID configured for network "${network}".`);
   }
