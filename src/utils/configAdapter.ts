@@ -1,3 +1,5 @@
+import type { SuiGrpcClient } from '@mysten/sui/grpc';
+
 import type {
   AggregatorObjectInfo,
   ConfigType,
@@ -24,6 +26,12 @@ function toSharedObjectRef(json: unknown, mutable = false): SharedObjectRef {
     initialSharedVersion: (obj.initial_shared_version ?? obj.initialSharedVersion ?? 0) as number | string,
     mutable: (obj.mutable as boolean | undefined) ?? mutable,
   };
+}
+
+function needsVersionEnrichment(ref: SharedObjectRef): boolean {
+  if (!ref.objectId || ref.objectId === '') return false;
+  const v = ref.initialSharedVersion;
+  return v === 0 || v === '0';
 }
 
 // ============================================================
@@ -244,4 +252,83 @@ function parsePsmPoolEntry(entry: unknown): PsmPoolObjectInfo {
 
 function parsePriceEntry(entry: unknown): SharedObjectRef {
   return toSharedObjectRef(entry, false);
+}
+
+// ============================================================
+// Enrichment: fetch initialSharedVersion for refs that only have objectId
+// ============================================================
+
+/**
+ * Fetches initialSharedVersion for SharedObjectRefs that have objectId but
+ * initialSharedVersion 0 (e.g. from on-chain JSON storing just the ID string).
+ * Sui PTB requires correct initialSharedVersion; using 0 causes tx failure.
+ */
+export async function enrichSharedObjectRefs(
+  config: ConfigType,
+  client: SuiGrpcClient,
+): Promise<ConfigType> {
+  const refsToEnrich: SharedObjectRef[] = [];
+
+  const collect = (ref: SharedObjectRef) => {
+    if (needsVersionEnrichment(ref)) refsToEnrich.push(ref);
+  };
+
+  collect(config.PYTH_RULE_CONFIG_OBJ);
+  collect(config.TREASURY_OBJ);
+  collect(config.VAULT_REWARDER_REGISTRY);
+  collect(config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ);
+  collect(config.FLASH_GLOBAL_CONFIG_OBJ);
+  collect(config.BLACKLIST_OBJ);
+  for (const ref of Object.values(config.PRICE_OBJS)) collect(ref);
+  for (const info of Object.values(config.AGGREGATOR_OBJS)) {
+    collect(info.priceAggregator);
+  }
+  for (const info of Object.values(config.VAULT_OBJS)) {
+    collect(info.vault);
+  }
+  for (const info of Object.values(config.SAVING_POOL_OBJS)) {
+    collect(info.pool);
+    if (info.reward) collect(info.reward.rewardManager);
+  }
+  for (const info of Object.values(config.PSM_POOL_OBJS)) {
+    collect(info.pool);
+  }
+
+  const objectIds = [...new Set(refsToEnrich.map((r) => r.objectId))];
+  if (objectIds.length === 0) return config;
+
+  const { objects } = await client.getObjects({ objectIds, include: { json: false } });
+  const versionMap = new Map<string, string>();
+
+  for (const obj of objects) {
+    if (obj instanceof Error) continue;
+    const owner = (obj as { owner?: { $kind?: string; Shared?: { initialSharedVersion?: string } } }).owner;
+    if (owner?.$kind === 'Shared' && owner.Shared?.initialSharedVersion) {
+      versionMap.set(obj.objectId, owner.Shared.initialSharedVersion);
+    }
+  }
+
+  const enriched = JSON.parse(JSON.stringify(config)) as ConfigType;
+
+  const apply = (ref: SharedObjectRef) => {
+    const v = versionMap.get(ref.objectId);
+    if (v) ref.initialSharedVersion = v;
+  };
+
+  apply(enriched.PYTH_RULE_CONFIG_OBJ);
+  apply(enriched.TREASURY_OBJ);
+  apply(enriched.VAULT_REWARDER_REGISTRY);
+  apply(enriched.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ);
+  apply(enriched.FLASH_GLOBAL_CONFIG_OBJ);
+  apply(enriched.BLACKLIST_OBJ);
+  for (const ref of Object.values(enriched.PRICE_OBJS)) apply(ref);
+  for (const info of Object.values(enriched.AGGREGATOR_OBJS)) apply(info.priceAggregator);
+  for (const info of Object.values(enriched.VAULT_OBJS)) apply(info.vault);
+  for (const info of Object.values(enriched.SAVING_POOL_OBJS)) {
+    apply(info.pool);
+    if (info.reward) apply(info.reward.rewardManager);
+  }
+  for (const info of Object.values(enriched.PSM_POOL_OBJS)) apply(info.pool);
+
+  return enriched;
 }

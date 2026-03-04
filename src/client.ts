@@ -27,7 +27,7 @@ import {
 import type { SharedObjectRef } from '@/types/index.js';
 import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
 import { queryAllConfig } from '@/utils/bucketConfig.js';
-import { convertOnchainConfig } from '@/utils/configAdapter.js';
+import { convertOnchainConfig, enrichSharedObjectRefs } from '@/utils/configAdapter.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
 import { buildPythPriceUpdateCalls, fetchPriceFeedsUpdateDataFromHermes, PythCache } from '@/utils/pyth.js';
 
@@ -75,6 +75,7 @@ export class BucketClient {
   private suiClient: SuiGrpcClient;
   private network: Network;
   private pythCache = new PythCache();
+  private _configInitPromise: Promise<void> | null = null;
 
   constructor({
     suiClient,
@@ -109,7 +110,8 @@ export class BucketClient {
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     const client = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
     const onchainConfig = await queryAllConfig(client, network);
-    const config = convertOnchainConfig(onchainConfig, configOverrides);
+    let config = convertOnchainConfig(onchainConfig, configOverrides);
+    config = await enrichSharedObjectRefs(config, client);
     const bc = new BucketClient({ suiClient: client, network, config });
     bc.configOverrides = configOverrides;
     return bc;
@@ -117,11 +119,14 @@ export class BucketClient {
 
   /**
    * @description Ensures config is loaded. If not yet fetched, fetches from on-chain.
+   * Uses cached promise to avoid race when multiple async methods call concurrently.
    */
   private async ensureConfig(): Promise<void> {
-    if (!this._config) {
-      await this.refreshConfig(this.configOverrides);
+    if (this._config) return;
+    if (!this._configInitPromise) {
+      this._configInitPromise = this.refreshConfig(this.configOverrides);
     }
+    await this._configInitPromise;
   }
 
   /**
@@ -157,10 +162,12 @@ export class BucketClient {
 
   /**
    * @description Re-fetch config from on-chain and update this client's config.
+   * When overrides is omitted, preserves configOverrides from initialize().
    */
   async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
     const onchainConfig = await queryAllConfig(this.suiClient, this.network);
-    this._config = convertOnchainConfig(onchainConfig, overrides);
+    let config = convertOnchainConfig(onchainConfig, overrides ?? this.configOverrides);
+    this._config = await enrichSharedObjectRefs(config, this.suiClient);
   }
 
   /**

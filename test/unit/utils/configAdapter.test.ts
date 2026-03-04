@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import type { SuiGrpcClient } from '@mysten/sui/grpc';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { ConfigType } from '../../../src/types/index.js';
 import type { BucketOnchainConfig } from '../../../src/utils/bucketConfig.js';
-import { convertOnchainConfig } from '../../../src/utils/configAdapter.js';
+import { convertOnchainConfig, enrichSharedObjectRefs } from '../../../src/utils/configAdapter.js';
 
 describe('unit/utils/configAdapter', () => {
   const minimalOnchain: BucketOnchainConfig = {
@@ -374,6 +376,86 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.TREASURY_OBJ.mutable).toBe(true);
+    });
+  });
+
+  describe('enrichSharedObjectRefs', () => {
+    const asSuiClient = (m: unknown) => m as unknown as SuiGrpcClient;
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    function minimalConfigWithRefsNeedingEnrichment(): ConfigType {
+      return convertOnchainConfig(
+        {
+          ...minimalOnchain,
+          oracleConfig: { pyth_rule_config_obj: '0xrule' },
+          aggregator: {
+            id: '0xagg',
+            entries: {
+              '0x2::sui::SUI': { '@variant': 'Pyth', priceAggregator: '0xpa', pythPriceId: '0xprice' },
+            },
+          },
+        },
+        {},
+      );
+    }
+
+    it('enriches refs with initialSharedVersion 0 when getObjects returns Shared owner', async () => {
+      const config = minimalConfigWithRefsNeedingEnrichment();
+      const getObjects = vi.fn().mockResolvedValue({
+        objects: [
+          {
+            objectId: '0xrule',
+            owner: { $kind: 'Shared', Shared: { initialSharedVersion: '42' } },
+          },
+          {
+            objectId: '0xpa',
+            owner: { $kind: 'Shared', Shared: { initialSharedVersion: '100' } },
+          },
+        ],
+      });
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('42');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
+      expect(getObjects).toHaveBeenCalledWith({
+        objectIds: expect.arrayContaining(['0xrule', '0xpa']),
+        include: { json: false },
+      });
+    });
+
+    it('returns config unchanged when no refs need enrichment', async () => {
+      const config = minimalConfigWithRefsNeedingEnrichment();
+      config.PYTH_RULE_CONFIG_OBJ.initialSharedVersion = 5;
+      config.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion = 10;
+      const getObjects = vi.fn();
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(5);
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe(10);
+      expect(getObjects).not.toHaveBeenCalled();
+    });
+
+    it('skips refs when fetch returns Error', async () => {
+      const config = minimalConfigWithRefsNeedingEnrichment();
+      const getObjects = vi.fn().mockResolvedValue({
+        objects: [
+          new Error('Object not found'),
+          { objectId: '0xpa', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '100' } } },
+        ],
+      });
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(0);
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
     });
   });
 });
