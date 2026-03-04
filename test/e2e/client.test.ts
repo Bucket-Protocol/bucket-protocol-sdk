@@ -226,7 +226,7 @@ describe('Interacting with Bucket Client on mainnet', () => {
 
   it('test buildManagePositionTransaction()', async () => {
     const depositAmount = 1 * 10 ** 9; // 1 SUI
-    const borrowAmount = 1 * 10 ** 6; // 1 USDB
+    const borrowAmount = 0.1 * 10 ** 6; // 0.1 USDB
     const tx = new Transaction();
     tx.setSender(testAccount);
 
