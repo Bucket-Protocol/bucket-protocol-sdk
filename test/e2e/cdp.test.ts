@@ -130,7 +130,7 @@ describe('E2E CDP', () => {
         return;
       }
       const tx = txWithSender();
-      const [collateralCoin, repayCoin] = await bucketClient.buildClosePositionTransaction(tx, {
+      const [collateralCoin, repayCoin] = bucketClient.buildClosePositionTransaction(tx, {
         address: testAccount,
         coinType: SUI_TYPE_ARG,
       });
