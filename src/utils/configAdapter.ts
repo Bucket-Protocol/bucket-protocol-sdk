@@ -263,10 +263,7 @@ function parsePriceEntry(entry: unknown): SharedObjectRef {
  * initialSharedVersion 0 (e.g. from on-chain JSON storing just the ID string).
  * Sui PTB requires correct initialSharedVersion; using 0 causes tx failure.
  */
-export async function enrichSharedObjectRefs(
-  config: ConfigType,
-  client: SuiGrpcClient,
-): Promise<ConfigType> {
+export async function enrichSharedObjectRefs(config: ConfigType, client: SuiGrpcClient): Promise<ConfigType> {
   const refsToEnrich: SharedObjectRef[] = [];
 
   const collect = (ref: SharedObjectRef) => {

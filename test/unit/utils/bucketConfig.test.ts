@@ -67,9 +67,7 @@ describe('unit/utils/bucketConfig', () => {
         getObjects: vi
           .fn()
           .mockResolvedValueOnce({
-            objects: [
-              { type: '0x1::config::Config', objectId: '0xc', json: { id: '0xc', id_vector: ['0xo1'] } },
-            ],
+            objects: [{ type: '0x1::config::Config', objectId: '0xc', json: { id: '0xc', id_vector: ['0xo1'] } }],
           })
           .mockResolvedValueOnce({
             objects: [
@@ -252,9 +250,7 @@ describe('unit/utils/bucketConfig', () => {
             ],
           }),
       });
-      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
-        /Failed to process config sub-object 0xbad/,
-      );
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(/Failed to process config sub-object 0xbad/);
     });
 
     it('assigns packageConfig, oracleConfig, objectConfig from sub-objects', async () => {
@@ -296,7 +292,7 @@ describe('unit/utils/bucketConfig', () => {
       expect(result.objectConfig?.treasury_obj).toBeDefined();
     });
 
-    it('throws when required section is missing (e.g. unknown types only)', async () => {
+    it('throws when required section is missing - expect.fail if no throw', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const client = asSuiClient({
         getObjects: vi
@@ -320,9 +316,13 @@ describe('unit/utils/bucketConfig', () => {
             ],
           }),
       });
-      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
-        'Config incomplete: required section "PackageConfig" (packageConfig) is missing',
-      );
+      try {
+        await queryAllConfig(client, 'mainnet');
+        expect.fail('Should have thrown for missing required section');
+      } catch (e) {
+        expect(e).toBeInstanceOf(Error);
+        expect((e as Error).message).toContain('required section "PackageConfig"');
+      }
       warnSpy.mockRestore();
     });
 

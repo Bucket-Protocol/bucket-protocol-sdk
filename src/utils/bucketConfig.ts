@@ -200,9 +200,7 @@ export async function queryAllConfig(
         isEmpty = id === '';
       }
       if (isEmpty) {
-        throw new Error(
-          `Config incomplete: required field "${keyField}" in ${label} is missing or empty.`,
-        );
+        throw new Error(`Config incomplete: required field "${keyField}" in ${label} is missing or empty.`);
       }
     }
   }

@@ -120,13 +120,19 @@ export class BucketClient {
   /**
    * @description Ensures config is loaded. If not yet fetched, fetches from on-chain.
    * Uses cached promise to avoid race when multiple async methods call concurrently.
+   * Clears the promise on failure so callers can retry.
    */
   private async ensureConfig(): Promise<void> {
     if (this._config) return;
     if (!this._configInitPromise) {
       this._configInitPromise = this.refreshConfig(this.configOverrides);
     }
-    await this._configInitPromise;
+    try {
+      await this._configInitPromise;
+    } catch (e) {
+      this._configInitPromise = null;
+      throw e;
+    }
   }
 
   /**

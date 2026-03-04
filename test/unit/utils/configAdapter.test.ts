@@ -520,5 +520,20 @@ describe('unit/utils/configAdapter', () => {
       expect(enriched).toEqual(config);
       expect(getObjects).not.toHaveBeenCalled();
     });
+
+    it('does not mutate original config (returns new object)', async () => {
+      const config = minimalConfigWithRefsNeedingEnrichment();
+      const originalVersion = config.PYTH_RULE_CONFIG_OBJ.initialSharedVersion;
+      const getObjects = vi.fn().mockResolvedValue({
+        objects: [{ objectId: '0xrule', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '99' } } }],
+      });
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(config.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(originalVersion);
+      expect(enriched).not.toBe(config);
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('99');
+    });
   });
 });
