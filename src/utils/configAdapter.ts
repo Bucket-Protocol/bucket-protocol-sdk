@@ -155,6 +155,29 @@ export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Pa
 
 function parseAggregatorEntry(entry: unknown): AggregatorObjectInfo {
   const e = entry as Record<string, unknown>;
+
+  // Move enum variants serialize in JSON with "@variant" field:
+  // { "@variant": "Pyth", "priceAggregator": {...}, "pythPriceId": "..." }
+  const variant = e['@variant'] as string | undefined;
+
+  if (variant === 'Pyth') {
+    return {
+      priceAggregator: toSharedObjectRef(e.priceAggregator, false),
+      pythPriceId: (e.pythPriceId ?? '') as string,
+    };
+  }
+
+  if (variant === 'DerivativeInfo') {
+    return {
+      priceAggregator: toSharedObjectRef(e.priceAggregator, false),
+      derivativeInfo: {
+        underlyingCoinType: (e.underlying_coin_type ?? e.underlyingCoinType) as string,
+        derivativeKind: (e.derivative_kind ?? e.derivativeKind) as DerivativeKind,
+      },
+    };
+  }
+
+  // Fallback: flat struct format (legacy / non-enum)
   const base = {
     priceAggregator: toSharedObjectRef(e.price_aggregator ?? e.priceAggregator, false),
   };
