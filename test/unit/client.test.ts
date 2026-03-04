@@ -86,6 +86,33 @@ describe('unit/client', () => {
       const config = await client.getConfig();
       expect(config!.PRICE_SERVICE_ENDPOINT).toBe('https://custom.hermes.test');
     });
+
+    it('when refreshConfig(overrides) is called with explicit overrides, uses those instead of configOverrides', async () => {
+      vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
+        config: { id: '0x1', id_vector: [] },
+      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
+      const mockConvert = vi
+        .spyOn(configAdapter, 'convertOnchainConfig')
+        .mockImplementation((_onchain, overrides = {}) => minimalConfig(overrides));
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+
+      const client = await BucketClient.initialize({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+        configOverrides: { PRICE_SERVICE_ENDPOINT: 'https://original.override.test' },
+      });
+
+      mockConvert.mockClear();
+
+      await client.refreshConfig({ PRICE_SERVICE_ENDPOINT: 'https://explicit.override.test' });
+
+      expect(mockConvert).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ PRICE_SERVICE_ENDPOINT: 'https://explicit.override.test' }),
+      );
+      const config = await client.getConfig();
+      expect(config!.PRICE_SERVICE_ENDPOINT).toBe('https://explicit.override.test');
+    });
   });
 
   describe('ensureConfig race condition', () => {
@@ -111,6 +138,25 @@ describe('unit/client', () => {
       ]);
 
       expect(mockQueryAllConfig).toHaveBeenCalledTimes(1);
+    });
+
+    it('when config already loaded, ensureConfig does not call refreshConfig', async () => {
+      const mockQueryAllConfig = vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
+        config: { id: '0x1', id_vector: [] },
+      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockReturnValue(minimalConfig());
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockResolvedValue(minimalConfig());
+
+      const client = new BucketClient({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+        config: minimalConfig(),
+      });
+
+      await client.getConfig();
+      await client.getConfig();
+
+      expect(mockQueryAllConfig).not.toHaveBeenCalled();
     });
   });
 });

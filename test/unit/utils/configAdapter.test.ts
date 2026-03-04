@@ -457,5 +457,68 @@ describe('unit/utils/configAdapter', () => {
       expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(0);
       expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
     });
+
+    it('does not fetch refs with empty objectId', async () => {
+      const config = minimalConfigWithRefsNeedingEnrichment();
+      config.PYTH_RULE_CONFIG_OBJ.objectId = '';
+      const getObjects = vi.fn().mockResolvedValue({
+        objects: [{ objectId: '0xpa', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '100' } } }],
+      });
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(getObjects).toHaveBeenCalledWith({
+        objectIds: ['0xpa'],
+        include: { json: false },
+      });
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.objectId).toBe('');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
+    });
+
+    it('deduplicates objectIds when multiple refs point to same object', async () => {
+      const config = minimalConfigWithRefsNeedingEnrichment();
+      config.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.objectId = '0xrule';
+      const getObjects = vi.fn().mockResolvedValue({
+        objects: [{ objectId: '0xrule', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '99' } } }],
+      });
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(getObjects).toHaveBeenCalledWith({
+        objectIds: ['0xrule'],
+        include: { json: false },
+      });
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('99');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('99');
+    });
+
+    it('skips objects with non-Shared owner', async () => {
+      const config = minimalConfigWithRefsNeedingEnrichment();
+      const getObjects = vi.fn().mockResolvedValue({
+        objects: [
+          { objectId: '0xrule', owner: { $kind: 'AddressOwner', AddressOwner: '0xaddr' } },
+          { objectId: '0xpa', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '100' } } },
+        ],
+      });
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(0);
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
+    });
+
+    it('returns config unchanged when config has no refs needing enrichment', async () => {
+      const config = convertOnchainConfig(minimalOnchain);
+      const getObjects = vi.fn();
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(enriched).toEqual(config);
+      expect(getObjects).not.toHaveBeenCalled();
+    });
   });
 });
