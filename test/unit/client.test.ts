@@ -144,7 +144,7 @@ describe('unit/client', () => {
       const querySpy = vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
         config: { id: '0x1', id_vector: [] },
       } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
-      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation((c) => minimalConfig());
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation(() => minimalConfig());
       vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
 
       const customConfigId = '0xcustom-config-for-testing';
@@ -157,11 +157,7 @@ describe('unit/client', () => {
       querySpy.mockClear();
       await client.refreshConfig();
 
-      expect(querySpy).toHaveBeenCalledWith(
-        expect.anything(),
-        'mainnet',
-        customConfigId,
-      );
+      expect(querySpy).toHaveBeenCalledWith(expect.anything(), 'mainnet', customConfigId);
     });
   });
 
@@ -249,7 +245,7 @@ describe('unit/client', () => {
       vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
         config: { id: '0x1', id_vector: [] },
       } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
-      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation((c) => minimalConfig());
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation(() => minimalConfig());
       vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockRejectedValue(new Error('Enrich failed'));
 
       await expect(

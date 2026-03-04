@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, it } from 'vitest';
 
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '../../src/utils/transaction.js';
 import {
