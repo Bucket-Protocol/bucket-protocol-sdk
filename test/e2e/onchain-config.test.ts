@@ -56,21 +56,21 @@ describe('On-chain config (testnet)', () => {
     it(
       'getConfig returns a populated ConfigType',
       async () => {
-        const config = await bucketClient.getConfig();
+        const config = bucketClient.getConfig();
         expect(config).toBeDefined();
-        expect(config!.ORIGINAL_FRAMEWORK_PACKAGE_ID).toBeTruthy();
-        expect(config!.ORIGINAL_USDB_PACKAGE_ID).toBeTruthy();
-        expect(config!.FRAMEWORK_PACKAGE_ID).toBeTruthy();
-        expect(config!.USDB_PACKAGE_ID).toBeTruthy();
-        expect(config!.ORACLE_PACKAGE_ID).toBeTruthy();
-        expect(config!.CDP_PACKAGE_ID).toBeTruthy();
-        expect(config!.PSM_PACKAGE_ID).toBeTruthy();
+        expect(config.ORIGINAL_FRAMEWORK_PACKAGE_ID).toBeTruthy();
+        expect(config.ORIGINAL_USDB_PACKAGE_ID).toBeTruthy();
+        expect(config.FRAMEWORK_PACKAGE_ID).toBeTruthy();
+        expect(config.USDB_PACKAGE_ID).toBeTruthy();
+        expect(config.ORACLE_PACKAGE_ID).toBeTruthy();
+        expect(config.CDP_PACKAGE_ID).toBeTruthy();
+        expect(config.PSM_PACKAGE_ID).toBeTruthy();
       },
       TIMEOUT_MS,
     );
 
-    it('getUsdbCoinType returns a valid coin type string', async () => {
-      const usdbType = await bucketClient.getUsdbCoinType();
+    it('getUsdbCoinType returns a valid coin type string', () => {
+      const usdbType = bucketClient.getUsdbCoinType();
       expect(usdbType).toContain('::usdb::USDB');
       expect(usdbType.startsWith('0x')).toBe(true);
     });
@@ -104,10 +104,10 @@ describe('On-chain price config (mainnet)', () => {
     'PRICE_OBJS contains required derivative price keys',
     async () => {
       const client = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
-      const config = await client.getConfig();
+      const config = client.getConfig();
       expect(config).toBeDefined();
 
-      const priceObjs = config!.PRICE_OBJS;
+      const priceObjs = config.PRICE_OBJS;
       expect(priceObjs).toBeDefined();
       expect(typeof priceObjs).toBe('object');
 
@@ -132,8 +132,8 @@ describe('On-chain price config (mainnet)', () => {
     'PRICE_OBJS entries have valid SharedObjectRef shape',
     async () => {
       const client = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
-      const config = await client.getConfig();
-      const priceObjs = config!.PRICE_OBJS;
+      const config = client.getConfig();
+      const priceObjs = config.PRICE_OBJS;
 
       for (const [key, ref] of Object.entries(priceObjs)) {
         expect(ref, `${key} should have objectId`).toHaveProperty('objectId');

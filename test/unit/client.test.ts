@@ -83,8 +83,8 @@ describe('unit/client', () => {
         expect.anything(),
         expect.objectContaining({ PRICE_SERVICE_ENDPOINT: 'https://custom.hermes.test' }),
       );
-      const config = await client.getConfig();
-      expect(config!.PRICE_SERVICE_ENDPOINT).toBe('https://custom.hermes.test');
+      const config = client.getConfig();
+      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://custom.hermes.test');
     });
 
     it('refreshConfig({}) uses empty overrides, not configOverrides', async () => {
@@ -136,94 +136,32 @@ describe('unit/client', () => {
         expect.anything(),
         expect.objectContaining({ PRICE_SERVICE_ENDPOINT: 'https://explicit.override.test' }),
       );
-      const config = await client.getConfig();
-      expect(config!.PRICE_SERVICE_ENDPOINT).toBe('https://explicit.override.test');
+      const config = client.getConfig();
+      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://explicit.override.test');
     });
   });
 
-  describe('ensureConfig race condition', () => {
-    it('concurrent getConfig() calls invoke queryAllConfig only once', async () => {
-      type OnchainConfig = Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>;
-      const mockOnchainConfig: OnchainConfig = { config: { id: '0x1', id_vector: [] } };
-      const mockQueryAllConfig = vi
-        .spyOn(bucketConfig, 'queryAllConfig')
-        .mockImplementation(
-          (): Promise<OnchainConfig> => new Promise((r) => setTimeout(() => r(mockOnchainConfig), 10)),
-        );
-      vi.spyOn(configAdapter, 'convertOnchainConfig').mockReturnValue(minimalConfig());
-      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockResolvedValue(minimalConfig());
-
-      const client = new BucketClient({
-        suiClient: asSuiClient({ getObjects: vi.fn() }),
-        network: 'mainnet',
-      });
-
-      await Promise.all([client.getConfig(), client.getConfig(), client.getConfig()]);
-
-      expect(mockQueryAllConfig).toHaveBeenCalledTimes(1);
+  describe('constructor requires config', () => {
+    it('throws when config is not passed', () => {
+      expect(
+        () =>
+          new BucketClient({
+            suiClient: asSuiClient({}),
+            network: 'mainnet',
+            config: undefined as unknown as ConfigType,
+          }),
+      ).toThrow('BucketClient requires config');
     });
 
-    it('when config already loaded, ensureConfig does not call refreshConfig', async () => {
-      const mockQueryAllConfig = vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
-        config: { id: '0x1', id_vector: [] },
-      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
-      vi.spyOn(configAdapter, 'convertOnchainConfig').mockReturnValue(minimalConfig());
-      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockResolvedValue(minimalConfig());
-
+    it('accepts config for testing', () => {
       const client = new BucketClient({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
         config: minimalConfig(),
       });
-
-      await client.getConfig();
-      await client.getConfig();
-
-      expect(mockQueryAllConfig).not.toHaveBeenCalled();
-    });
-
-    it('clears _configInitPromise on failure so subsequent calls can retry', async () => {
-      const mockQueryAllConfig = vi
-        .spyOn(bucketConfig, 'queryAllConfig')
-        .mockRejectedValueOnce(new Error('RPC failed'))
-        .mockResolvedValueOnce({ config: { id: '0x1', id_vector: [] } } as Awaited<
-          ReturnType<typeof bucketConfig.queryAllConfig>
-        >);
-      vi.spyOn(configAdapter, 'convertOnchainConfig').mockReturnValue(minimalConfig());
-      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockResolvedValue(minimalConfig());
-
-      const client = new BucketClient({
-        suiClient: asSuiClient({ getObjects: vi.fn() }),
-        network: 'mainnet',
-      });
-
-      await expect(client.getConfig()).rejects.toThrow('RPC failed');
-
-      const config = await client.getConfig();
+      const config = client.getConfig();
       expect(config).toBeDefined();
-      expect(mockQueryAllConfig).toHaveBeenCalledTimes(2);
-    });
-
-    it('does NOT retry after success (queryAllConfig called once)', async () => {
-      type OnchainConfig = Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>;
-      const mockOnchainConfig: OnchainConfig = { config: { id: '0x1', id_vector: [] } };
-      const mockQueryAllConfig = vi
-        .spyOn(bucketConfig, 'queryAllConfig')
-        .mockImplementation(() => {
-          return Promise.resolve(mockOnchainConfig);
-        });
-      vi.spyOn(configAdapter, 'convertOnchainConfig').mockReturnValue(minimalConfig());
-      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockResolvedValue(minimalConfig());
-
-      const client = new BucketClient({
-        suiClient: asSuiClient({ getObjects: vi.fn() }),
-        network: 'mainnet',
-      });
-
-      await client.getConfig();
-      await client.getConfig();
-
-      expect(mockQueryAllConfig).toHaveBeenCalledTimes(1);
+      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://hermes.pyth.network');
     });
   });
 });
