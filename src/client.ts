@@ -11,10 +11,12 @@ import { normalizeStructTag, parseStructTag } from '@mysten/sui/utils';
 import {
   AggregatorObjectInfo,
   ConfigType,
+  DerivativeKind,
   FlashMintInfo,
   Network,
   PaginatedPositionsResult,
   PositionInfo,
+  PriceConfigInfo,
   PsmPoolInfo,
   PsmPoolObjectInfo,
   SavingInfo,
@@ -24,7 +26,6 @@ import {
   VaultInfo,
   VaultObjectInfo,
 } from '@/types/index.js';
-import type { SharedObjectRef } from '@/types/index.js';
 import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
 import { queryAllConfig } from '@/utils/bucketConfig.js';
 import { convertOnchainConfig, enrichSharedObjectRefs } from '@/utils/configAdapter.js';
@@ -165,14 +166,22 @@ export class BucketClient {
   }
 
   /**
-   * @description Get a price-related shared object ref from on-chain config.
+   * @description Get a price config info entry matching the given derivative kind.
    */
-  private getPriceObj(key: string): SharedObjectRef {
-    const ref = this.config.PRICE_OBJS[key];
-    if (!ref) {
-      throw new Error(`Price object "${key}" not found in on-chain config PRICE_OBJS.`);
+  private getPriceConfigInfo(derivativeKind: DerivativeKind): PriceConfigInfo {
+    const variantMap: Partial<Record<DerivativeKind, PriceConfigInfo['variant']>> = {
+      sCoin: 'SCOIN',
+      gCoin: 'GCOIN',
+      BFBTC: 'BFBTC',
+    };
+    const targetVariant = variantMap[derivativeKind];
+    if (!targetVariant) {
+      throw new Error(`No PriceConfigInfo mapping for derivativeKind "${derivativeKind}".`);
     }
-    return ref;
+    for (const info of Object.values(this.config.PRICE_OBJS)) {
+      if (info.variant === targetVariant) return info;
+    }
+    throw new Error(`PriceConfigInfo for derivativeKind "${derivativeKind}" not found in PRICE_OBJS.`);
   }
 
   getUsdbCoinType(): string {
@@ -1033,44 +1042,48 @@ export class BucketClient {
     }
     const { priceAggregator, derivativeInfo } = aggregator;
     const collector = this.newPriceCollector(tx, { coinType });
+    const priceConfig = this.getPriceConfigInfo(derivativeInfo.derivativeKind);
 
     switch (derivativeInfo.derivativeKind) {
-      case 'sCoin':
+      case 'sCoin': {
+        if (priceConfig.variant !== 'SCOIN') throw new Error('Unexpected price config variant for sCoin');
         tx.moveCall({
-          target: '0xb7c0792630fe4b028437a5554e5c0bef16edaf793210ef32a88fcea443e4d76b::scoin_rule::feed',
+          target: `${priceConfig.package}::scoin_rule::feed`,
           typeArguments: [coinType, derivativeInfo.underlyingCoinType],
           arguments: [
             collector,
-            tx.sharedObjectRef(this.getPriceObj('SCOIN_RULE_CONFIG')),
+            tx.sharedObjectRef(priceConfig.scoinRuleConfig),
             underlyingPriceResult,
-            tx.sharedObjectRef(this.getPriceObj('SCALLOP_VERSION')),
-            tx.sharedObjectRef(this.getPriceObj('SCALLOP_MARKET')),
+            tx.sharedObjectRef(priceConfig.scallopVersion),
+            tx.sharedObjectRef(priceConfig.scallopMarket),
             tx.object.clock(),
           ],
         });
         break;
-      case 'gCoin':
+      }
+      case 'gCoin': {
+        if (priceConfig.variant !== 'GCOIN') throw new Error('Unexpected price config variant for gCoin');
         tx.moveCall({
-          target: '0xba3c970933047c6e235424d7040a9a4e89d8fc1200d780a69b2666434f3a7313::gcoin_rule::feed',
+          target: `${priceConfig.package}::gcoin_rule::feed`,
           typeArguments: [coinType, derivativeInfo.underlyingCoinType],
           arguments: [
             collector,
             underlyingPriceResult,
-            tx.sharedObjectRef(this.getPriceObj('GCOIN_RULE_CONFIG')),
-            tx.sharedObjectRef(this.getPriceObj('UNIHOUSE_OBJECT')),
+            tx.sharedObjectRef(priceConfig.gcoinRuleConfig),
+            tx.sharedObjectRef(priceConfig.unihouseObject),
           ],
         });
         break;
-      case 'BFBTC':
+      }
+      case 'BFBTC': {
+        if (priceConfig.variant !== 'BFBTC') throw new Error('Unexpected price config variant for BFBTC');
         tx.moveCall({
-          target: '0x6043cfb7e941a06526ed11e396d305ea547f55c55ae0e140d78652e8637ff60e::bfbtc_rule::feed',
+          target: `${priceConfig.package}::bfbtc_rule::feed`,
           typeArguments: [derivativeInfo.underlyingCoinType],
-          arguments: [
-            collector,
-            underlyingPriceResult,
-            tx.object('0x05b526a3cb659b9074d3f3f84f10ee19971c4b7cf15e9079da084f9edcf835e6'),
-          ],
+          arguments: [collector, underlyingPriceResult, tx.sharedObjectRef(priceConfig.bfbtcRuleConfig)],
         });
+        break;
+      }
     }
     return tx.moveCall({
       target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,

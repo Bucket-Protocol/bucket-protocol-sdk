@@ -1,8 +1,8 @@
 import type { Network } from '@/types/index.js';
 
 export const ENTRY_CONFIG_ID: Record<Network, string> = {
-  mainnet: '0xdfef33c762d3a0e23e312b49b6e2c4a059aac9bbbaabe2d4e288f2a02e085091',
+  mainnet: '0x03e79aa64ac007d200aefdcb445e31e24f460279bab6c73babfb031b7464072e',
   testnet: '0xfe75daec73f2aab6aeb5ae8b575c613c734979a43551160fb57792a0df16faea',
 };
-export const PACKAGE_ID: string = '0xa272ddf2b82066bf2d729ad1268de3308cda81564028b6ae1ab9ff9e94f10cd2';
-export const ADMIN_CAP_ID: string = '0x92ebb8fea112d24519698df0717e3801514d6909a0528ed3751a47d1d0b27f09';
+export const PACKAGE_ID: string = '0x1906a868f05cec861532d92aa49059580caf72d900ba2c387d5135b6a9727f52';
+export const ADMIN_CAP_ID: string = '0xd1ce0affeda5aa8f3ec50ff617f27717673acd74fecaf850a7d1096f421d4131';

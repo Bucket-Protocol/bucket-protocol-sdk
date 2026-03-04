@@ -101,7 +101,7 @@ describe('On-chain price config (mainnet)', () => {
   );
 
   it(
-    'PRICE_OBJS contains required derivative price keys',
+    'PRICE_OBJS contains required derivative price variants',
     async () => {
       const client = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
       const config = client.getConfig();
@@ -111,35 +111,43 @@ describe('On-chain price config (mainnet)', () => {
       expect(priceObjs).toBeDefined();
       expect(typeof priceObjs).toBe('object');
 
-      // These keys are used by getDerivativePrice for sCoin and gCoin feeds
-      const requiredKeys = [
-        'SCOIN_RULE_CONFIG',
-        'SCALLOP_VERSION',
-        'SCALLOP_MARKET',
-        'GCOIN_RULE_CONFIG',
-        'UNIHOUSE_OBJECT',
-      ];
-      for (const key of requiredKeys) {
-        expect(priceObjs).toHaveProperty(key);
-        expect(priceObjs[key].objectId).toBeTruthy();
-        expect(priceObjs[key].objectId.startsWith('0x')).toBe(true);
-      }
+      // Collect all variants present
+      const variants = Object.values(priceObjs).map((info) => info.variant);
+
+      // sCoin and gCoin feeds should be present
+      expect(variants).toContain('SCOIN');
+      expect(variants).toContain('GCOIN');
     },
     TIMEOUT_MS,
   );
 
   it(
-    'PRICE_OBJS entries have valid SharedObjectRef shape',
+    'PRICE_OBJS entries have valid PriceConfigInfo shape',
     async () => {
       const client = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
       const config = client.getConfig();
       const priceObjs = config.PRICE_OBJS;
 
-      for (const [key, ref] of Object.entries(priceObjs)) {
-        expect(ref, `${key} should have objectId`).toHaveProperty('objectId');
-        expect(ref, `${key} should have initialSharedVersion`).toHaveProperty('initialSharedVersion');
-        expect(ref, `${key} should have mutable`).toHaveProperty('mutable');
-        expect(typeof ref.objectId).toBe('string');
+      for (const [key, info] of Object.entries(priceObjs)) {
+        expect(info, `${key} should have variant`).toHaveProperty('variant');
+        expect(info, `${key} should have package`).toHaveProperty('package');
+        expect(typeof info.package).toBe('string');
+        expect(info.package).toBeTruthy();
+
+        switch (info.variant) {
+          case 'SCOIN':
+            expect(info.scoinRuleConfig.objectId).toBeTruthy();
+            expect(info.scallopVersion.objectId).toBeTruthy();
+            expect(info.scallopMarket.objectId).toBeTruthy();
+            break;
+          case 'GCOIN':
+            expect(info.gcoinRuleConfig.objectId).toBeTruthy();
+            expect(info.unihouseObject.objectId).toBeTruthy();
+            break;
+          case 'BFBTC':
+            expect(info.bfbtcRuleConfig.objectId).toBeTruthy();
+            break;
+        }
       }
     },
     TIMEOUT_MS,

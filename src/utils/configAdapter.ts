@@ -4,6 +4,7 @@ import type {
   AggregatorObjectInfo,
   ConfigType,
   DerivativeKind,
+  PriceConfigInfo,
   PsmPoolObjectInfo,
   SavingPoolObjectInfo,
   SharedObjectRef,
@@ -250,8 +251,35 @@ function parsePsmPoolEntry(entry: unknown): PsmPoolObjectInfo {
   };
 }
 
-function parsePriceEntry(entry: unknown): SharedObjectRef {
-  return toSharedObjectRef(entry, false);
+function parsePriceEntry(entry: unknown): PriceConfigInfo {
+  const e = entry as Record<string, unknown>;
+  const variant = e['@variant'] as string | undefined;
+
+  switch (variant) {
+    case 'SCOIN':
+      return {
+        variant: 'SCOIN',
+        package: (e.package ?? '') as string,
+        scoinRuleConfig: toSharedObjectRef(e.scoin_rule_config ?? e.scoinRuleConfig, false),
+        scallopVersion: toSharedObjectRef(e.scallop_version ?? e.scallopVersion, false),
+        scallopMarket: toSharedObjectRef(e.scallop_market ?? e.scallopMarket, false),
+      };
+    case 'GCOIN':
+      return {
+        variant: 'GCOIN',
+        package: (e.package ?? '') as string,
+        gcoinRuleConfig: toSharedObjectRef(e.gcoin_rule_config ?? e.gcoinRuleConfig, false),
+        unihouseObject: toSharedObjectRef(e.unihouse_object ?? e.unihouseObject, false),
+      };
+    case 'BFBTC':
+      return {
+        variant: 'BFBTC',
+        package: (e.package ?? '') as string,
+        bfbtcRuleConfig: toSharedObjectRef(e.bfbtc_rule_config ?? e.bfbtcRuleConfig, false),
+      };
+    default:
+      throw new Error(`Unknown PriceConfigInfo variant: ${variant}`);
+  }
 }
 
 // ============================================================
@@ -276,7 +304,22 @@ export async function enrichSharedObjectRefs(config: ConfigType, client: SuiGrpc
   collect(config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ);
   collect(config.FLASH_GLOBAL_CONFIG_OBJ);
   collect(config.BLACKLIST_OBJ);
-  for (const ref of Object.values(config.PRICE_OBJS)) collect(ref);
+  for (const priceInfo of Object.values(config.PRICE_OBJS)) {
+    switch (priceInfo.variant) {
+      case 'SCOIN':
+        collect(priceInfo.scoinRuleConfig);
+        collect(priceInfo.scallopVersion);
+        collect(priceInfo.scallopMarket);
+        break;
+      case 'GCOIN':
+        collect(priceInfo.gcoinRuleConfig);
+        collect(priceInfo.unihouseObject);
+        break;
+      case 'BFBTC':
+        collect(priceInfo.bfbtcRuleConfig);
+        break;
+    }
+  }
   for (const info of Object.values(config.AGGREGATOR_OBJS)) {
     collect(info.priceAggregator);
   }
@@ -318,7 +361,22 @@ export async function enrichSharedObjectRefs(config: ConfigType, client: SuiGrpc
   apply(enriched.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ);
   apply(enriched.FLASH_GLOBAL_CONFIG_OBJ);
   apply(enriched.BLACKLIST_OBJ);
-  for (const ref of Object.values(enriched.PRICE_OBJS)) apply(ref);
+  for (const priceInfo of Object.values(enriched.PRICE_OBJS)) {
+    switch (priceInfo.variant) {
+      case 'SCOIN':
+        apply(priceInfo.scoinRuleConfig);
+        apply(priceInfo.scallopVersion);
+        apply(priceInfo.scallopMarket);
+        break;
+      case 'GCOIN':
+        apply(priceInfo.gcoinRuleConfig);
+        apply(priceInfo.unihouseObject);
+        break;
+      case 'BFBTC':
+        apply(priceInfo.bfbtcRuleConfig);
+        break;
+    }
+  }
   for (const info of Object.values(enriched.AGGREGATOR_OBJS)) apply(info.priceAggregator);
   for (const info of Object.values(enriched.VAULT_OBJS)) apply(info.vault);
   for (const info of Object.values(enriched.SAVING_POOL_OBJS)) {
