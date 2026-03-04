@@ -21,57 +21,29 @@ const TYPE_PRICE_CONFIG = '::price::PriceConfig';
 // ============================================================
 
 /**
- * List all dynamic fields under a parent object (handles pagination).
+ * Parse a VecMap JSON representation into a Record<string, unknown>.
+ *
+ * VecMap<K,V> on-chain serializes to JSON as an array of { key, value } entries.
+ * This replaces the old Table-based dynamic field queries — VecMap data is
+ * embedded directly in the parent object's JSON, eliminating extra RPC calls.
  */
-async function listAllDynamicFields(client: SuiGrpcClient, parentId: string) {
-  const allFields: unknown[] = [];
-  let cursor: string | null = null;
-  let hasNext = true;
+function parseVecMap(vecMap: unknown): Record<string, unknown> {
+  const entries: Record<string, unknown> = {};
+  if (!vecMap) return entries;
 
-  while (hasNext) {
-    const page = await client.listDynamicFields({
-      parentId,
-      cursor,
-      limit: 50,
-    });
-    allFields.push(...page.dynamicFields);
-    hasNext = page.hasNextPage;
-    cursor = page.cursor;
+  // VecMap serializes as { contents: [{ key, value }, ...] }
+  let items: unknown[];
+  if (Array.isArray(vecMap)) {
+    items = vecMap;
+  } else if (typeof vecMap === 'object' && vecMap !== null && 'contents' in vecMap) {
+    items = (vecMap as Record<string, unknown>).contents as unknown[];
+  } else {
+    return entries;
   }
 
-  return allFields;
-}
-
-/**
- * Query all entries from a Table<String, V> by its table UID.
- * Uses JSON representation directly instead of BCS parsing.
- */
-async function queryTableEntries(client: SuiGrpcClient, tableId: string): Promise<Record<string, unknown>> {
-  // 1. List all dynamic fields
-  const allFields = await listAllDynamicFields(client, tableId);
-  if (allFields.length === 0) return {};
-
-  // 2. Batch get all field objects with JSON
-  const fieldIds = allFields.map((f) => (f as Record<string, unknown>).fieldId as string);
-  const { objects: fieldObjects } = await client.getObjects({
-    objectIds: fieldIds,
-    include: { json: true },
-  });
-
-  // 3. Extract name/value from JSON
-  const entries: Record<string, unknown> = {};
-  for (const obj of fieldObjects) {
-    if (obj instanceof Error) {
-      console.error('Failed to fetch dynamic field:', obj.message);
-      continue;
-    }
-    const json = obj.json as Record<string, unknown> | null;
-    if (!json) continue;
-    try {
-      entries[json.name as string] = json.value;
-    } catch (e) {
-      console.error(`Failed to read dynamic field ${obj.objectId}:`, e);
-    }
+  for (const item of items) {
+    const entry = item as Record<string, unknown>;
+    entries[entry.key as string] = entry.value;
   }
 
   return entries;
@@ -178,24 +150,19 @@ export async function queryAllConfig(
       } else if (type.endsWith(TYPE_OBJECT_CONFIG)) {
         result.objectConfig = json;
       } else if (type.endsWith(TYPE_AGGREGATOR)) {
-        const table = json.table as Record<string, unknown>;
-        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        const entries = parseVecMap(json.table);
         result.aggregator = { id: json.id as string, entries };
       } else if (type.endsWith(TYPE_VAULT)) {
-        const table = json.table as Record<string, unknown>;
-        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        const entries = parseVecMap(json.table);
         result.vault = { id: json.id as string, entries };
       } else if (type.endsWith(TYPE_SAVING_POOL)) {
-        const table = json.table as Record<string, unknown>;
-        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        const entries = parseVecMap(json.table);
         result.savingPool = { id: json.id as string, entries };
       } else if (type.endsWith(TYPE_PSM_POOL)) {
-        const table = json.table as Record<string, unknown>;
-        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        const entries = parseVecMap(json.table);
         result.psmPool = { id: json.id as string, entries };
       } else if (type.endsWith(TYPE_PRICE_CONFIG)) {
-        const table = json.table as Record<string, unknown>;
-        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        const entries = parseVecMap(json.table);
         result.priceConfig = { id: json.id as string, entries };
       } else {
         // eslint-disable-next-line no-console
