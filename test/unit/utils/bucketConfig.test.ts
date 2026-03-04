@@ -363,6 +363,120 @@ describe('unit/utils/bucketConfig', () => {
         'required field "framework_package_id" in PackageConfig is missing or empty',
       );
     });
+
+    it('throws when oracleConfig section is missing', async () => {
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::config::Config',
+                objectId: '0xc',
+                json: { id: '0xc', id_vector: ['0xpkg', '0xobj'] },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { treasury_obj: { objectId: '0xt' } },
+              },
+            ],
+          }),
+      });
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        'Config incomplete: required section "OracleConfig" (oracleConfig) is missing',
+      );
+    });
+
+    it('throws when objectConfig section is missing', async () => {
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::config::Config',
+                objectId: '0xc',
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle'] },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              { type: `0x1${TYPE_ORACLE_CONFIG}`, objectId: '0xoracle', json: { pyth_state_id: '0xpyth' } },
+            ],
+          }),
+      });
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        'Config incomplete: required section "ObjectConfig" (objectConfig) is missing',
+      );
+    });
+
+    it('throws when pyth_state_id is empty', async () => {
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::config::Config',
+                objectId: '0xc',
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj'] },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              { type: `0x1${TYPE_ORACLE_CONFIG}`, objectId: '0xoracle', json: { pyth_state_id: '' } },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { treasury_obj: { objectId: '0xt' } },
+              },
+            ],
+          }),
+      });
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        'required field "pyth_state_id" in OracleConfig is missing or empty',
+      );
+    });
+
+    it('throws when treasury_obj has empty objectId', async () => {
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::config::Config',
+                objectId: '0xc',
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj'] },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              { type: `0x1${TYPE_ORACLE_CONFIG}`, objectId: '0xoracle', json: { pyth_state_id: '0xpyth' } },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { treasury_obj: { objectId: '', initial_shared_version: 1 } },
+              },
+            ],
+          }),
+      });
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        'required field "treasury_obj" in ObjectConfig is missing or empty',
+      );
+    });
   });
 
   describe('toJson', () => {
