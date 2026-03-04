@@ -18,7 +18,7 @@ npm install @bucket-protocol/sdk
 import { BucketClient } from '@bucket-protocol/sdk';
 import { SuiGrpcClient } from '@mysten/sui/grpc';
 
-// Create client (fetches config from chain)
+// Create client with config fetched from chain (recommended)
 const client = await BucketClient.initialize({ network: 'mainnet' });
 
 // With custom SuiGrpcClient
@@ -26,17 +26,16 @@ const customSuiClient = new SuiGrpcClient({
   network: 'mainnet',
   baseUrl: 'https://your-custom-rpc-url',
 });
-const client = await BucketClient.initialize({ suiClient: customSuiClient, network: 'mainnet' });
-
-// For testing: pass config directly or use configObjectId
-const client = await BucketClient.initialize({ network: 'mainnet', config: myConfig });
-const client = await BucketClient.initialize({ network: 'mainnet', configObjectId: '0x...' });
+const client = await BucketClient.initialize({
+  suiClient: customSuiClient,
+  network: 'mainnet',
+});
 ```
 
 ### Basic Queries
 
 ```typescript
-// Get all supported collateral types (sync)
+// Get all supported collateral types
 const collateralTypes = client.getAllCollateralTypes();
 console.log('Supported collaterals:', collateralTypes);
 // Example: ['0x2::sui::SUI', '0x...::btc::BTC', ...]
@@ -743,10 +742,10 @@ type SavingPoolObjectInfo = {
 The new version separates price aggregator configuration from vault configuration, providing better modularity:
 
 ```typescript
-// Get aggregator information (sync)
+// Get aggregator information
 const aggInfo = client.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
 
-// Get vault information (sync)
+// Get vault information
 const vaultInfo = client.getVaultObjectInfo({ coinType: SUI_TYPE_ARG });
 ```
 
@@ -770,7 +769,7 @@ const priceResults = await client.aggregatePrices(tx, {
 ### USDB Token Type
 
 ```typescript
-// Get USDB token type (sync)
+// Get USDB token type
 const usdbType = client.getUsdbCoinType();
 console.log('USDB Type:', usdbType);
 ```
@@ -810,7 +809,7 @@ The SDK integrates with Pyth Network for price feeds without requiring the Pyth 
 
 ## Example Project
 
-For complete usage examples, refer to the e2e tests in [test/e2e/](./test/e2e/) (e.g. `config.test.ts`, `cdp.test.ts`, `psm.test.ts`, `supply-pools.test.ts`).
+For complete usage examples, refer to the [test/e2e/](./test/e2e/) directory (e.g. [cdp.test.ts](./test/e2e/cdp.test.ts), [psm.test.ts](./test/e2e/psm.test.ts), [saving.test.ts](./test/e2e/saving.test.ts), [flash.test.ts](./test/e2e/flash.test.ts)).
 
 ## API Reference
 
@@ -824,19 +823,21 @@ Fetches config from chain and returns a ready-to-use client:
 const client = await BucketClient.initialize({
   suiClient,       // Optional: custom SuiGrpcClient
   network,         // Optional: 'mainnet' | 'testnet' (default: 'mainnet')
-  configObjectId,  // Optional: override entry config object ID (e.g. for testing)
-  config,          // Optional: pre-built ConfigType (skips chain fetch)
   configOverrides, // Optional: e.g. { PRICE_SERVICE_ENDPOINT: 'https://...' }
 });
 ```
 
-**Constructor** (for testing with pre-built config)
+**Advanced: Constructor (requires `config`)**
+
+For custom config (e.g. caching, testing, or pre-built config):
 
 ```typescript
-const client = new BucketClient({ network: 'mainnet', config: myConfig });
+const client = new BucketClient({
+  suiClient?: SuiGrpcClient;
+  network?: Network;
+  config: ConfigType; // Required — use convertOnchainConfig() if building from chain data
+});
 ```
-
-- `config` is required. Use `BucketClient.initialize()` to create a client (fetches config from chain).
 
 ### Transaction Options
 
