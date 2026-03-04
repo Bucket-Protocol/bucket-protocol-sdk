@@ -175,6 +175,38 @@ export async function queryAllConfig(
     }
   }
 
+  // 4. Validate required sections (fail-fast; avoid delayed failure in convertOnchainConfig)
+  const required: Array<{ section: keyof BucketOnchainConfig; label: string; keyField?: string }> = [
+    { section: 'packageConfig', label: 'PackageConfig', keyField: 'framework_package_id' },
+    { section: 'oracleConfig', label: 'OracleConfig', keyField: 'pyth_state_id' },
+    { section: 'objectConfig', label: 'ObjectConfig', keyField: 'treasury_obj' },
+  ];
+  for (const { section, label, keyField } of required) {
+    const val = result[section];
+    if (!val || typeof val !== 'object') {
+      throw new Error(
+        `Config incomplete: required section "${label}" (${section}) is missing. ` +
+          'RPC may have returned incomplete data or unknown object types were skipped.',
+      );
+    }
+    if (keyField) {
+      const fieldVal = (val as Record<string, unknown>)[keyField];
+      let isEmpty = fieldVal === undefined || fieldVal === null;
+      if (!isEmpty && typeof fieldVal === 'string') {
+        isEmpty = fieldVal.trim() === '';
+      } else if (!isEmpty && typeof fieldVal === 'object' && fieldVal !== null) {
+        const obj = fieldVal as Record<string, unknown>;
+        const id = String(obj.objectId ?? obj.id ?? '').trim();
+        isEmpty = id === '';
+      }
+      if (isEmpty) {
+        throw new Error(
+          `Config incomplete: required field "${keyField}" in ${label} is missing or empty.`,
+        );
+      }
+    }
+  }
+
   return result;
 }
 

@@ -7,6 +7,7 @@ import type { BucketOnchainConfig } from '../../../src/utils/bucketConfig.js';
 
 const TYPE_PACKAGE_CONFIG = '::package_config::PackageConfig';
 const TYPE_ORACLE_CONFIG = '::oracle_config::OracleConfig';
+const TYPE_OBJECT_CONFIG = '::object_config::ObjectConfig';
 const TYPE_AGGREGATOR = '::aggregator::Aggregator';
 
 describe('unit/utils/bucketConfig', () => {
@@ -119,12 +120,19 @@ describe('unit/utils/bucketConfig', () => {
               {
                 type: '0x1::config::Config',
                 objectId: '0xc',
-                json: { id: '0xc', id_vector: ['0xagg'] },
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj', '0xagg'] },
               },
             ],
           })
           .mockResolvedValueOnce({
             objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              { type: `0x1${TYPE_ORACLE_CONFIG}`, objectId: '0xoracle', json: { pyth_state_id: '0xpyth' } },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { treasury_obj: { objectId: '0xt' } },
+              },
               {
                 type: `0x1${TYPE_AGGREGATOR}`,
                 objectId: '0xagg',
@@ -149,12 +157,19 @@ describe('unit/utils/bucketConfig', () => {
               {
                 type: '0x1::config::Config',
                 objectId: '0xc',
-                json: { id: '0xc', id_vector: ['0xagg'] },
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj', '0xagg'] },
               },
             ],
           })
           .mockResolvedValueOnce({
             objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              { type: `0x1${TYPE_ORACLE_CONFIG}`, objectId: '0xoracle', json: { pyth_state_id: '0xpyth' } },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { treasury_obj: { objectId: '0xt' } },
+              },
               {
                 type: `0x1${TYPE_AGGREGATOR}`,
                 objectId: '0xagg',
@@ -182,12 +197,19 @@ describe('unit/utils/bucketConfig', () => {
               {
                 type: '0x1::config::Config',
                 objectId: '0xc',
-                json: { id: '0xc', id_vector: ['0xunknown'] },
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj', '0xunknown'] },
               },
             ],
           })
           .mockResolvedValueOnce({
             objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              { type: `0x1${TYPE_ORACLE_CONFIG}`, objectId: '0xoracle', json: { pyth_state_id: '0xpyth' } },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { treasury_obj: { objectId: '0xt' } },
+              },
               {
                 type: '0x1::unknown::UnknownType',
                 objectId: '0xunknown',
@@ -196,8 +218,9 @@ describe('unit/utils/bucketConfig', () => {
             ],
           }),
       });
-      await queryAllConfig(client, 'mainnet');
+      const result = await queryAllConfig(client, 'mainnet');
       expect(warnSpy).toHaveBeenCalledWith('Unknown object type: 0x1::unknown::UnknownType (objectId: 0xunknown)');
+      expect(result.packageConfig).toBeDefined();
       warnSpy.mockRestore();
     });
 
@@ -234,7 +257,7 @@ describe('unit/utils/bucketConfig', () => {
       );
     });
 
-    it('assigns packageConfig, oracleConfig from sub-objects', async () => {
+    it('assigns packageConfig, oracleConfig, objectConfig from sub-objects', async () => {
       const client = asSuiClient({
         getObjects: vi
           .fn()
@@ -243,7 +266,7 @@ describe('unit/utils/bucketConfig', () => {
               {
                 type: '0x1::config::Config',
                 objectId: '0xc',
-                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle'] },
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj'] },
               },
             ],
           })
@@ -252,12 +275,17 @@ describe('unit/utils/bucketConfig', () => {
               {
                 type: `0x1${TYPE_PACKAGE_CONFIG}`,
                 objectId: '0xpkg',
-                json: { id: '0xpkg', usdb_package_id: '0xusdb' },
+                json: { id: '0xpkg', framework_package_id: '0xfw', usdb_package_id: '0xusdb' },
               },
               {
                 type: `0x1${TYPE_ORACLE_CONFIG}`,
                 objectId: '0xoracle',
                 json: { id: '0xoracle', pyth_state_id: '0xpyth' },
+              },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { id: '0xobj', treasury_obj: { objectId: '0xtreasury', initial_shared_version: 1 } },
               },
             ],
           }),
@@ -265,6 +293,75 @@ describe('unit/utils/bucketConfig', () => {
       const result = await queryAllConfig(client, 'mainnet');
       expect(result.packageConfig?.usdb_package_id).toBe('0xusdb');
       expect(result.oracleConfig?.pyth_state_id).toBe('0xpyth');
+      expect(result.objectConfig?.treasury_obj).toBeDefined();
+    });
+
+    it('throws when required section is missing (e.g. unknown types only)', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::config::Config',
+                objectId: '0xc',
+                json: { id: '0xc', id_vector: ['0xunknown'] },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::unknown::UnknownType',
+                objectId: '0xunknown',
+                json: { id: '0xunknown' },
+              },
+            ],
+          }),
+      });
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        'Config incomplete: required section "PackageConfig" (packageConfig) is missing',
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('throws when required key field is empty', async () => {
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::config::Config',
+                objectId: '0xc',
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj'] },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: `0x1${TYPE_PACKAGE_CONFIG}`,
+                objectId: '0xpkg',
+                json: { id: '0xpkg', framework_package_id: '', usdb_package_id: '0xusdb' },
+              },
+              {
+                type: `0x1${TYPE_ORACLE_CONFIG}`,
+                objectId: '0xoracle',
+                json: { id: '0xoracle', pyth_state_id: '0xpyth' },
+              },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { id: '0xobj', treasury_obj: { objectId: '0xtreasury', initial_shared_version: 1 } },
+              },
+            ],
+          }),
+      });
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        'required field "framework_package_id" in PackageConfig is missing or empty',
+      );
     });
   });
 
