@@ -61,8 +61,31 @@ describe('unit/utils/bucketConfig', () => {
       expect(getObjects).toHaveBeenCalledTimes(1);
     });
 
-    it('skips objects that are Error and continues', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('throws when sub-object has no JSON content (fail-fast)', async () => {
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              { type: '0x1::config::Config', objectId: '0xc', json: { id: '0xc', id_vector: ['0xo1'] } },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: `0x1${TYPE_PACKAGE_CONFIG}`,
+                objectId: '0xo1',
+                json: null,
+              },
+            ],
+          }),
+      });
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        'Config sub-object 0xo1 (type: 0x1::package_config::PackageConfig) has no JSON content',
+      );
+    });
+
+    it('throws when sub-object fetch returns Error (fail-fast)', async () => {
       const client = asSuiClient({
         getObjects: vi
           .fn()
@@ -82,11 +105,9 @@ describe('unit/utils/bucketConfig', () => {
             ],
           }),
       });
-      const result = await queryAllConfig(client, 'mainnet');
-      expect(result.packageConfig).toBeDefined();
-      expect(result.packageConfig?.framework_package_id).toBe('0xpkg');
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch object:', 'Object not found');
-      consoleSpy.mockRestore();
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        'Failed to fetch config sub-object: Object not found',
+      );
     });
 
     it('parses VecMap from array format', async () => {
@@ -180,8 +201,7 @@ describe('unit/utils/bucketConfig', () => {
       warnSpy.mockRestore();
     });
 
-    it('catches and logs processing errors, continues with other objects', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('throws when processing fails (fail-fast)', async () => {
       const client = asSuiClient({
         getObjects: vi
           .fn()
@@ -209,10 +229,9 @@ describe('unit/utils/bucketConfig', () => {
             ],
           }),
       });
-      const result = await queryAllConfig(client, 'mainnet');
-      expect(result.packageConfig?.framework_package_id).toBe('0xpkg');
-      expect(errorSpy).toHaveBeenCalled();
-      errorSpy.mockRestore();
+      await expect(queryAllConfig(client, 'mainnet')).rejects.toThrow(
+        /Failed to process config sub-object 0xbad/,
+      );
     });
 
     it('assigns packageConfig, oracleConfig from sub-objects', async () => {

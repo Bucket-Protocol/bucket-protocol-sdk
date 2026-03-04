@@ -131,16 +131,17 @@ export async function queryAllConfig(
     include: { json: true },
   });
 
-  // 3. Read each object's JSON based on its on-chain type
+  // 3. Read each object's JSON based on its on-chain type (fail-fast on required config)
   for (const obj of objects) {
     if (obj instanceof Error) {
-      console.error('Failed to fetch object:', obj.message);
-      continue;
+      throw new Error(`Failed to fetch config sub-object: ${obj.message}`);
     }
 
     const type = obj.type;
     const json = obj.json as Record<string, unknown> | null;
-    if (!json) continue;
+    if (!json) {
+      throw new Error(`Config sub-object ${obj.objectId} (type: ${type}) has no JSON content`);
+    }
 
     try {
       if (type.endsWith(TYPE_PACKAGE_CONFIG)) {
@@ -169,7 +170,8 @@ export async function queryAllConfig(
         console.warn(`Unknown object type: ${type} (objectId: ${obj.objectId})`);
       }
     } catch (e) {
-      console.error(`Failed to process object ${obj.objectId} (type: ${type}):`, e);
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`Failed to process config sub-object ${obj.objectId} (type: ${type}): ${msg}`);
     }
   }
 
