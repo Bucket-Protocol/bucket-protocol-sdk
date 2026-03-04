@@ -163,12 +163,8 @@ export class BucketClient {
    * Uses the same config source (configObjectId) as initialize() when one was provided.
    */
   async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
-    const onchainConfig = await queryAllConfig(
-      this.suiClient,
-      this.network,
-      this.configObjectId,
-    );
-    let config = convertOnchainConfig(onchainConfig, overrides ?? this.configOverrides);
+    const onchainConfig = await queryAllConfig(this.suiClient, this.network, this.configObjectId);
+    const config = convertOnchainConfig(onchainConfig, overrides ?? this.configOverrides);
     this._config = await enrichSharedObjectRefs(config, this.suiClient);
   }
 
