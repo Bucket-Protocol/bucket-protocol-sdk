@@ -4,6 +4,26 @@ export type Network = 'mainnet' | 'testnet';
 
 export type DerivativeKind = 'sCoin' | 'gCoin' | 'TLP' | 'BFBTC';
 
+export type PriceConfigInfo =
+  | {
+      variant: 'SCOIN';
+      package: string;
+      scoinRuleConfig: SharedObjectRef;
+      scallopVersion: SharedObjectRef;
+      scallopMarket: SharedObjectRef;
+    }
+  | {
+      variant: 'GCOIN';
+      package: string;
+      gcoinRuleConfig: SharedObjectRef;
+      unihouseObject: SharedObjectRef;
+    }
+  | {
+      variant: 'BFBTC';
+      package: string;
+      bfbtcRuleConfig: SharedObjectRef;
+    };
+
 export type AggregatorObjectInfo = {
   priceAggregator: SharedObjectRef;
 } & (
@@ -79,5 +99,5 @@ export type ConfigType = {
   VAULT_OBJS: Record<string, VaultObjectInfo>;
   SAVING_POOL_OBJS: Record<string, SavingPoolObjectInfo>;
   PSM_POOL_OBJS: Record<string, PsmPoolObjectInfo>;
-  PRICE_OBJS: Record<string, SharedObjectRef>;
+  PRICE_OBJS: Record<string, PriceConfigInfo>;
 };

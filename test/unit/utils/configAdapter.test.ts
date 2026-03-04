@@ -313,27 +313,63 @@ describe('unit/utils/configAdapter', () => {
       });
     });
 
-    it('parses price config entries', () => {
+    it('parses price config entries with enum variants', () => {
       const onchain: BucketOnchainConfig = {
         ...minimalOnchain,
         priceConfig: {
           id: '0xprice',
           entries: {
-            SCOIN_RULE: '0xprice1',
-            GCOIN_RULE: { objectId: '0xprice2', initialSharedVersion: 1 },
+            sCoin: {
+              '@variant': 'SCOIN',
+              package: '0xscoin_pkg',
+              scoin_rule_config: '0xscoin_rule',
+              scallop_version: '0xscallop_ver',
+              scallop_market: '0xscallop_mkt',
+            },
+            gCoin: {
+              '@variant': 'GCOIN',
+              package: '0xgcoin_pkg',
+              gcoin_rule_config: '0xgcoin_rule',
+              unihouse_object: '0xunihouse',
+            },
           },
         },
       };
       const config = convertOnchainConfig(onchain);
-      expect(config.PRICE_OBJS.SCOIN_RULE).toEqual({
-        objectId: '0xprice1',
-        initialSharedVersion: 0,
-        mutable: false,
+      expect(config.PRICE_OBJS.sCoin).toEqual({
+        variant: 'SCOIN',
+        package: '0xscoin_pkg',
+        scoinRuleConfig: { objectId: '0xscoin_rule', initialSharedVersion: 0, mutable: false },
+        scallopVersion: { objectId: '0xscallop_ver', initialSharedVersion: 0, mutable: false },
+        scallopMarket: { objectId: '0xscallop_mkt', initialSharedVersion: 0, mutable: false },
       });
-      expect(config.PRICE_OBJS.GCOIN_RULE).toEqual({
-        objectId: '0xprice2',
-        initialSharedVersion: 1,
-        mutable: false,
+      expect(config.PRICE_OBJS.gCoin).toEqual({
+        variant: 'GCOIN',
+        package: '0xgcoin_pkg',
+        gcoinRuleConfig: { objectId: '0xgcoin_rule', initialSharedVersion: 0, mutable: false },
+        unihouseObject: { objectId: '0xunihouse', initialSharedVersion: 0, mutable: false },
+      });
+    });
+
+    it('parses BFBTC price config entry', () => {
+      const onchain: BucketOnchainConfig = {
+        ...minimalOnchain,
+        priceConfig: {
+          id: '0xprice',
+          entries: {
+            BFBTC: {
+              '@variant': 'BFBTC',
+              package: '0xbfbtc_pkg',
+              bfbtc_rule_config: '0xbfbtc_rule',
+            },
+          },
+        },
+      };
+      const config = convertOnchainConfig(onchain);
+      expect(config.PRICE_OBJS.BFBTC).toEqual({
+        variant: 'BFBTC',
+        package: '0xbfbtc_pkg',
+        bfbtcRuleConfig: { objectId: '0xbfbtc_rule', initialSharedVersion: 0, mutable: false },
       });
     });
 
