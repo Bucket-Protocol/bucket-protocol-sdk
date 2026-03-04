@@ -22,7 +22,7 @@ describe('E2E Oracle', () => {
     'getAllOraclePrices returns positive numbers for all oracle coin types',
     async () => {
       const prices = await bucketClient.getAllOraclePrices();
-      const coinTypes = bucketClient.getAllOracleCoinTypes();
+      const coinTypes = await bucketClient.getAllOracleCoinTypes();
       expect(Object.keys(prices).length).toBeGreaterThan(0);
       for (const coinType of coinTypes) {
         const price = prices[coinType];
@@ -37,7 +37,7 @@ describe('E2E Oracle', () => {
   it(
     'getOraclePrices with subset (simple alternative) returns prices',
     async () => {
-      const allCoinTypes = bucketClient.getAllOracleCoinTypes();
+      const allCoinTypes = await bucketClient.getAllOracleCoinTypes();
       const coinTypes = allCoinTypes.slice(0, 2);
       expect(coinTypes.length).toBeGreaterThan(0);
       const prices = await bucketClient.getOraclePrices({ coinTypes });
@@ -55,7 +55,7 @@ describe('E2E Oracle', () => {
   it(
     'getOraclePrices twice with same coins exercises PythCache (second call hits cache)',
     async () => {
-      const coinTypes = bucketClient.getAllOracleCoinTypes().slice(0, 1);
+      const coinTypes = (await bucketClient.getAllOracleCoinTypes()).slice(0, 1);
       expect(coinTypes.length).toBeGreaterThan(0);
 
       const getObjectSpy = vi.spyOn(suiClient, 'getObject');

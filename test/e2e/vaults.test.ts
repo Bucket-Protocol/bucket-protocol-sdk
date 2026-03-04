@@ -1,13 +1,7 @@
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import {
-  afterFileEnd,
-  afterTestDelay,
-  bucketClient,
-  MAINNET_TIMEOUT_MS,
-  setupE2E,
-} from './helpers/setup.js';
+import { afterFileEnd, afterTestDelay, bucketClient, MAINNET_TIMEOUT_MS, setupE2E } from './helpers/setup.js';
 
 describe('E2E Vaults', () => {
   beforeAll(setupE2E);
@@ -18,7 +12,7 @@ describe('E2E Vaults', () => {
     'getAllVaultObjects: one entry per collateral type, all with required VaultInfo fields',
     async () => {
       const allVaults = await bucketClient.getAllVaultObjects();
-      const collateralTypes = bucketClient.getAllCollateralTypes();
+      const collateralTypes = await bucketClient.getAllCollateralTypes();
       expect(Object.keys(allVaults).length).toBe(collateralTypes.length);
       for (const [coinType, vault] of Object.entries(allVaults)) {
         expect(collateralTypes).toContain(coinType);
@@ -58,8 +52,8 @@ describe('E2E Vaults', () => {
 
   it(
     'getVaultObjectInfo returns config for known collateral (SUI)',
-    () => {
-      const info = bucketClient.getVaultObjectInfo({ coinType: SUI_TYPE_ARG });
+    async () => {
+      const info = await bucketClient.getVaultObjectInfo({ coinType: SUI_TYPE_ARG });
       expect(info).toHaveProperty('vault');
       expect(info.vault).toHaveProperty('objectId');
       expect(typeof info.vault.objectId).toBe('string');
