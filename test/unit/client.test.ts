@@ -139,6 +139,30 @@ describe('unit/client', () => {
       const config = client.getConfig();
       expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://explicit.override.test');
     });
+
+    it('refreshConfig() uses configObjectId from initialize', async () => {
+      const querySpy = vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
+        config: { id: '0x1', id_vector: [] },
+      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation((c) => minimalConfig());
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+
+      const customConfigId = '0xcustom-config-for-testing';
+      const client = await BucketClient.initialize({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+        configObjectId: customConfigId,
+      });
+
+      querySpy.mockClear();
+      await client.refreshConfig();
+
+      expect(querySpy).toHaveBeenCalledWith(
+        expect.anything(),
+        'mainnet',
+        customConfigId,
+      );
+    });
   });
 
   describe('constructor requires config', () => {

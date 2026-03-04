@@ -71,6 +71,7 @@ export class BucketClient {
    */
   private _config: ConfigType;
   private configOverrides?: Partial<ConfigType>;
+  private configObjectId?: string;
   private suiClient: SuiGrpcClient;
   private network: Network;
   private pythCache = new PythCache();
@@ -98,8 +99,12 @@ export class BucketClient {
    * This is the only way to create a client when not passing a pre-built config.
    *
    * @param configObjectId - Optional. Override the default entry config object ID (e.g. for testing).
+   *   When provided, refreshConfig() will use the same source.
    * @param config - Optional. Pre-built config for testing; skips chain fetch when provided.
-   * @param configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT).
+   *   When config is provided, configOverrides are not applied to the initial config; they are
+   *   stored for use on refreshConfig() only.
+   * @param configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT). Applied when
+   *   fetching from chain; when config is provided, used only after refreshConfig().
    */
   static async initialize({
     suiClient,
@@ -128,6 +133,7 @@ export class BucketClient {
 
     const bc = new BucketClient({ suiClient: client, network, config });
     bc.configOverrides = configOverrides;
+    bc.configObjectId = configObjectId;
     return bc;
   }
 
@@ -154,9 +160,14 @@ export class BucketClient {
   /**
    * @description Re-fetch config from on-chain and update this client's config.
    * When overrides is omitted, preserves configOverrides from initialize().
+   * Uses the same config source (configObjectId) as initialize() when one was provided.
    */
   async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
-    const onchainConfig = await queryAllConfig(this.suiClient, this.network);
+    const onchainConfig = await queryAllConfig(
+      this.suiClient,
+      this.network,
+      this.configObjectId,
+    );
     let config = convertOnchainConfig(onchainConfig, overrides ?? this.configOverrides);
     this._config = await enrichSharedObjectRefs(config, this.suiClient);
   }
