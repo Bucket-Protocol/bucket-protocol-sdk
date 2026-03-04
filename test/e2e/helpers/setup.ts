@@ -1,7 +1,9 @@
 import { SuiGrpcClient } from '@mysten/sui/grpc';
+import { Transaction } from '@mysten/sui/transactions';
+import { expect } from 'vitest';
 
 import { BucketClient } from '../../../src/client.js';
-import { afterFileEnd, afterTestDelay, beforeFileStart, runWithRpcRetry } from './rateLimit.js';
+import { afterFileEnd, afterTestDelay, beforeFileStart, isRateLimitError, runWithRpcRetry } from './rateLimit.js';
 
 export const MAINNET_TIMEOUT_MS = 20_000;
 export const network = 'mainnet';
@@ -33,10 +35,7 @@ export async function ensureBucketClient(): Promise<BucketClient> {
         await new Promise((r) => setTimeout(r, COOLDOWN_AFTER_CREATE_MS));
         return bucketClient;
       } catch (e) {
-        const isRateLimit =
-          (e as { code?: string })?.code === 'RESOURCE_EXHAUSTED' ||
-          (e as Error)?.message?.includes('Too Many Requests');
-        if (isRateLimit && i < MAX_RETRIES - 1) {
+        if (isRateLimitError(e) && i < MAX_RETRIES - 1) {
           await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
           continue;
         }
@@ -52,5 +51,33 @@ export async function getUsdbCoinType(): Promise<string> {
 }
 
 export { suiClient };
+
+/** Creates a Transaction with sender set to testAccount. */
+export function txWithSender(): Transaction {
+  const tx = new Transaction();
+  tx.setSender(testAccount);
+  return tx;
+}
+
+/** Dry-runs tx, asserts success, returns result for further assertions. */
+export async function assertDryRunSucceeds(
+  tx: Transaction,
+  options?: { include?: { events?: boolean; balanceChanges?: boolean } },
+) {
+  const res = await suiClient.simulateTransaction({ transaction: tx, ...options });
+  expect(res.$kind).toBe('Transaction');
+  return res;
+}
+
+/** Deposit amount (SUI 9 decimals) for borrowAmount USDB at ~115% CR using live SUI price. */
+export async function depositAmountForBorrowUsd(borrowAmountUsd: number): Promise<number> {
+  const { SUI_TYPE_ARG } = await import('@mysten/sui/utils');
+  const prices = await bucketClient.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
+  const suiPrice = prices[SUI_TYPE_ARG];
+  expect(suiPrice).toBeDefined();
+  expect(suiPrice).toBeGreaterThan(0);
+  return Math.ceil((1.15 / suiPrice) * borrowAmountUsd * 10 ** 9);
+}
+
 export const usdcCoinType = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
 export const susdbLpType = '0x38f61c75fa8407140294c84167dd57684580b55c3066883b48dedc344b1cde1e::susdb::SUSDB';

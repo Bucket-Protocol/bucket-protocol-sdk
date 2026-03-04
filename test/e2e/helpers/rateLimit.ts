@@ -3,8 +3,8 @@
  * Use when running against public RPC (fullnode.mainnet.sui.io) without SUI_GRPC_URL.
  */
 
-const INTER_FILE_DELAY_MS = 2000;
-const AFTER_EACH_DELAY_MS = 2000;
+const INTER_FILE_DELAY_MS = 1000;
+const AFTER_EACH_DELAY_MS = 1000;
 
 let lastFileFinishedAt = 0;
 
@@ -23,10 +23,6 @@ export function afterFileEnd(): void {
   lastFileFinishedAt = Date.now();
 }
 
-export function getAfterEachDelayMs(): number {
-  return AFTER_EACH_DELAY_MS;
-}
-
 /** Delay to use in afterEach between tests. */
 export async function afterTestDelay(): Promise<void> {
   await sleep(AFTER_EACH_DELAY_MS);
@@ -36,7 +32,7 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function isRateLimitError(e: unknown): boolean {
+export function isRateLimitError(e: unknown): boolean {
   const err = e as { code?: string; message?: string };
   return err?.code === 'RESOURCE_EXHAUSTED' || String(err?.message ?? '').includes('Too Many Requests');
 }

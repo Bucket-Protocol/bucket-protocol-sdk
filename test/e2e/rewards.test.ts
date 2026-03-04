@@ -1,15 +1,16 @@
-import { Transaction, TransactionResult } from '@mysten/sui/transactions';
+import type { TransactionResult } from '@mysten/sui/transactions';
 import { normalizeStructTag } from '@mysten/sui/utils';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   afterFileEnd,
   afterTestDelay,
+  assertDryRunSucceeds,
   bucketClient,
   MAINNET_TIMEOUT_MS,
   setupE2E,
-  suiClient,
   testAccount,
+  txWithSender,
 } from './helpers/setup.js';
 
 describe('E2E Rewards', () => {
@@ -20,8 +21,7 @@ describe('E2E Rewards', () => {
   it(
     'buildClaimBorrowRewardsTransaction dry run succeeds and has reward balance changes',
     async () => {
-      const tx = new Transaction();
-      tx.setSender(testAccount);
+      const tx = txWithSender();
       const collateralTypes = await bucketClient.getAllCollateralTypes();
       const result: Record<string, TransactionResult> = {};
       for (const coinType of collateralTypes) {
@@ -32,12 +32,10 @@ describe('E2E Rewards', () => {
         }
       }
       tx.transferObjects(Object.values(result), testAccount);
-      const dryrunRes = await suiClient.simulateTransaction({
-        transaction: tx,
-        include: { balanceChanges: true },
-      });
-      expect(dryrunRes.$kind).toBe('Transaction');
-      const balanceChanges = (dryrunRes.Transaction ?? dryrunRes.FailedTransaction)!.balanceChanges!;
+      const dryrunRes = await assertDryRunSucceeds(tx, { include: { balanceChanges: true } });
+      const balanceChanges = (
+        dryrunRes as { Transaction?: { balanceChanges?: { coinType: string; amount: string }[] } }
+      ).Transaction!.balanceChanges!;
       expect(balanceChanges.length).toBeGreaterThanOrEqual(1);
       for (const bc of balanceChanges) {
         if (normalizeStructTag(bc.coinType) !== normalizeStructTag('0x2::sui::SUI')) {

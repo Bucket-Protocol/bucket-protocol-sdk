@@ -1,4 +1,3 @@
-import { Transaction } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -7,12 +6,16 @@ import { coinWithBalance } from '../../src/utils/transaction.js';
 import {
   afterFileEnd,
   afterTestDelay,
+  assertDryRunSucceeds,
   bucketClient,
+  depositAmountForBorrowUsd,
   MAINNET_TIMEOUT_MS,
   setupE2E,
-  suiClient,
   testAccount,
+  txWithSender,
 } from './helpers/setup.js';
+
+type SuiEvent = { eventType: string; bcs: Uint8Array };
 
 describe('E2E CDP', () => {
   beforeAll(setupE2E);
@@ -24,20 +27,15 @@ describe('E2E CDP', () => {
     async () => {
       const depositAmount = 1 * 10 ** 9; // 1 SUI
       const borrowAmount = 0.8 * 10 ** 6; // 0.8 USDB
-      const tx = new Transaction();
-      tx.setSender(testAccount);
+      const tx = txWithSender();
       const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
         coinType: SUI_TYPE_ARG,
         depositCoinOrAmount: depositAmount,
         borrowAmount,
       });
       tx.transferObjects([usdbCoin], testAccount);
-      const dryrunRes = await suiClient.simulateTransaction({
-        transaction: tx,
-        include: { events: true },
-      });
-      expect(dryrunRes.$kind).toBe('Transaction');
-      const events = (dryrunRes.Transaction ?? dryrunRes.FailedTransaction)!.events!;
+      const dryrunRes = await assertDryRunSucceeds(tx, { include: { events: true } });
+      const events = (dryrunRes as { Transaction?: { events?: SuiEvent[] } }).Transaction!.events!;
       const positionUpdatedEvent = events.find((e) => e.eventType.includes('PositionUpdated'));
       expect(positionUpdatedEvent).toBeDefined();
       if (!positionUpdatedEvent) return;
@@ -55,32 +53,19 @@ describe('E2E CDP', () => {
   it(
     'buildManagePositionTransaction: borrow 1 USDB at CR 110% using live SUI price',
     async () => {
-      // CR = collateral_value / debt_value; min CR = 110%. USDB = 1 USD.
-      // So: deposit_sui * sui_price_usd >= 1.1 * 1 => deposit_sui >= 1.1 / sui_price_usd.
-      // Use 1.15x buffer to stay safely above 110%. SUI has 9 decimals.
-      const prices = await bucketClient.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
-      const suiPrice = prices[SUI_TYPE_ARG];
-      expect(suiPrice).toBeDefined();
-      expect(suiPrice).toBeGreaterThan(0);
       const borrowAmount = 1 * 10 ** 6; // 1 USDB
-      const minCollateralValueUsd = 1.15; // 115% of 1 USDB
-      const depositAmount = Math.ceil((minCollateralValueUsd / suiPrice) * 10 ** 9); // SUI 9 decimals
+      const depositAmount = await depositAmountForBorrowUsd(1);
       expect(depositAmount).toBeGreaterThan(0);
 
-      const tx = new Transaction();
-      tx.setSender(testAccount);
+      const tx = txWithSender();
       const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
         coinType: SUI_TYPE_ARG,
         depositCoinOrAmount: depositAmount,
         borrowAmount,
       });
       tx.transferObjects([usdbCoin], testAccount);
-      const dryrunRes = await suiClient.simulateTransaction({
-        transaction: tx,
-        include: { events: true },
-      });
-      expect(dryrunRes.$kind).toBe('Transaction');
-      const events = (dryrunRes.Transaction ?? dryrunRes.FailedTransaction)!.events!;
+      const dryrunRes = await assertDryRunSucceeds(tx, { include: { events: true } });
+      const events = (dryrunRes as { Transaction?: { events?: SuiEvent[] } }).Transaction!.events!;
       const positionUpdatedEvent = events.find((e) => e.eventType.includes('PositionUpdated'));
       expect(positionUpdatedEvent).toBeDefined();
       if (!positionUpdatedEvent) return;
@@ -97,13 +82,9 @@ describe('E2E CDP', () => {
   it(
     'buildManagePositionTransaction with type:gas uses gas coin as collateral',
     async () => {
-      const prices = await bucketClient.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
-      const suiPrice = prices[SUI_TYPE_ARG];
-      expect(suiPrice).toBeDefined();
-      const depositAmount = Math.ceil((1.15 / suiPrice) * 10 ** 9);
+      const depositAmount = await depositAmountForBorrowUsd(1);
       const borrowAmount = 1 * 10 ** 6;
-      const tx = new Transaction();
-      tx.setSender(testAccount);
+      const tx = txWithSender();
       const depositCoin = coinWithBalance({ type: 'gas', balance: depositAmount });
       const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
         coinType: SUI_TYPE_ARG,
@@ -111,8 +92,7 @@ describe('E2E CDP', () => {
         borrowAmount,
       });
       tx.transferObjects([usdbCoin], testAccount);
-      const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
-      expect(dryrunRes.$kind).toBe('Transaction');
+      await assertDryRunSucceeds(tx);
     },
     MAINNET_TIMEOUT_MS,
   );
@@ -120,13 +100,9 @@ describe('E2E CDP', () => {
   it(
     'buildManagePositionTransaction with useGasCoin:false uses SUI coins instead of gas',
     async () => {
-      const prices = await bucketClient.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
-      const suiPrice = prices[SUI_TYPE_ARG];
-      expect(suiPrice).toBeDefined();
-      const depositAmount = Math.ceil((1.15 / suiPrice) * 10 ** 9);
+      const depositAmount = await depositAmountForBorrowUsd(1);
       const borrowAmount = 1 * 10 ** 6;
-      const tx = new Transaction();
-      tx.setSender(testAccount);
+      const tx = txWithSender();
       const depositCoin = coinWithBalance({
         type: SUI_TYPE_ARG,
         balance: depositAmount,
@@ -138,8 +114,7 @@ describe('E2E CDP', () => {
         borrowAmount,
       });
       tx.transferObjects([usdbCoin], testAccount);
-      const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
-      expect(dryrunRes.$kind).toBe('Transaction');
+      await assertDryRunSucceeds(tx);
     },
     MAINNET_TIMEOUT_MS,
   );
@@ -152,20 +127,16 @@ describe('E2E CDP', () => {
         (p) => normalizeStructTag(p.collateralType) === normalizeStructTag(SUI_TYPE_ARG) && p.debtAmount > 0n,
       );
       if (!hasSuiPosition) {
-        // Conditionally skipped: test account has no SUI position. Test passes without exercising
-        // buildClosePositionTransaction. Run with an account that has a position to verify close logic.
         return;
       }
-      const tx = new Transaction();
-      tx.setSender(testAccount);
+      const tx = txWithSender();
       const [collateralCoin, repayCoin] = await bucketClient.buildClosePositionTransaction(tx, {
         address: testAccount,
         coinType: SUI_TYPE_ARG,
       });
       if (repayCoin) tx.transferObjects([repayCoin], testAccount);
       tx.transferObjects([collateralCoin], testAccount);
-      const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
-      expect(dryrunRes.$kind).toBe('Transaction');
+      await assertDryRunSucceeds(tx);
     },
     MAINNET_TIMEOUT_MS,
   );

@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     tags:
-      - "v*.*.*"
+      - 'v*.*.*'
 
 permissions:
   contents: read
@@ -21,8 +21,8 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 23
-          registry-url: "https://registry.npmjs.org"
-          cache: "pnpm"
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
       - name: Compile

@@ -9,7 +9,7 @@ export default defineConfig({
   },
   test: {
     include: ['./test/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
-    testTimeout: 10000,
+    testTimeout: 10_000,
     hookTimeout: 30_000,
     retry: 1,
     coverage: {
