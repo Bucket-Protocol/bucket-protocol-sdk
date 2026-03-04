@@ -26,7 +26,7 @@ describe('E2E Savings & rewards', () => {
         expect(s).toHaveProperty('address', testAccount);
         expect(typeof s.usdbBalance).toBe('bigint');
         expect(typeof s.lpBalance).toBe('bigint');
-        expect(s.rewards == null || typeof s.rewards === 'object').toBe(true);
+        expect(s.rewards === null || s.rewards === undefined || typeof s.rewards === 'object').toBe(true);
       }
     },
     MAINNET_TIMEOUT_MS,
@@ -53,7 +53,7 @@ describe('E2E Savings & rewards', () => {
       const suiKey = Object.keys(rewards).find((k) => normalizeStructTag(k) === normalizeStructTag(SUI_TYPE_ARG));
       const suiRewards = suiKey ? rewards[suiKey] : undefined;
       if (suiRewards) {
-        for (const [rewardType, amount] of Object.entries(suiRewards)) {
+        for (const [, amount] of Object.entries(suiRewards)) {
           expect(typeof amount).toBe('bigint');
           expect(amount).toBeGreaterThanOrEqual(0n);
         }
@@ -89,7 +89,7 @@ describe('E2E Savings & rewards', () => {
     async () => {
       const flowRates = await bucketClient.getSavingPoolRewardFlowRate({ lpType: susdbLpType });
       expect(typeof flowRates).toBe('object');
-      for (const [rewardType, rate] of Object.entries(flowRates)) {
+      for (const [, rate] of Object.entries(flowRates)) {
         expect(typeof rate).toBe('bigint');
         expect(rate).toBeGreaterThanOrEqual(0n);
       }
@@ -107,7 +107,7 @@ describe('E2E Savings & rewards', () => {
       expect(typeof rewards).toBe('object');
       const susdbRewards = rewards[susdbLpType];
       if (susdbRewards) {
-        for (const [rewardType, amount] of Object.entries(susdbRewards)) {
+        for (const [, amount] of Object.entries(susdbRewards)) {
           expect(typeof amount).toBe('bigint');
           expect(amount).toBeGreaterThanOrEqual(0n);
         }
