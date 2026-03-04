@@ -142,7 +142,7 @@ describe('unit/client', () => {
   });
 
   describe('constructor requires config', () => {
-    it('throws when config is not passed', () => {
+    it('throws when config is undefined', () => {
       expect(
         () =>
           new BucketClient({
@@ -153,15 +153,111 @@ describe('unit/client', () => {
       ).toThrow('BucketClient requires config');
     });
 
-    it('accepts config for testing', () => {
+    it('throws when config is null', () => {
+      expect(
+        () =>
+          new BucketClient({
+            suiClient: asSuiClient({}),
+            network: 'mainnet',
+            config: null as unknown as ConfigType,
+          }),
+      ).toThrow('BucketClient requires config');
+    });
+
+    it('accepts custom config for testing', () => {
+      const custom = minimalConfig({ PRICE_SERVICE_ENDPOINT: 'https://custom.test' });
       const client = new BucketClient({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
-        config: minimalConfig(),
+        config: custom,
       });
       const config = client.getConfig();
       expect(config).toBeDefined();
-      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://hermes.pyth.network');
+      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://custom.test');
+    });
+  });
+
+  describe('initialize with custom config', () => {
+    it('skips chain fetch when config is provided', async () => {
+      const querySpy = vi.spyOn(bucketConfig, 'queryAllConfig');
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+
+      const custom = minimalConfig({ PRICE_SERVICE_ENDPOINT: 'https://prebuilt.test' });
+      const client = await BucketClient.initialize({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+        config: custom,
+      });
+
+      expect(querySpy).not.toHaveBeenCalled();
+      expect(client.getConfig().PRICE_SERVICE_ENDPOINT).toBe('https://prebuilt.test');
+    });
+
+    it('uses provided config as-is (configOverrides ignored when config is passed)', async () => {
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+
+      const custom = minimalConfig({ PRICE_SERVICE_ENDPOINT: 'https://base.test' });
+      const client = await BucketClient.initialize({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+        config: custom,
+        configOverrides: { PRICE_SERVICE_ENDPOINT: 'https://override.test' },
+      });
+
+      // When config is passed, configOverrides is not applied (only used with chain fetch)
+      expect(client.getConfig().PRICE_SERVICE_ENDPOINT).toBe('https://base.test');
+    });
+  });
+
+  describe('initialize failure cases', () => {
+    it('propagates error when queryAllConfig fails', async () => {
+      vi.spyOn(bucketConfig, 'queryAllConfig').mockRejectedValue(new Error('RPC failed'));
+
+      await expect(
+        BucketClient.initialize({
+          suiClient: asSuiClient({ getObjects: vi.fn() }),
+          network: 'mainnet',
+        }),
+      ).rejects.toThrow('RPC failed');
+    });
+
+    it('propagates error when enrichSharedObjectRefs fails', async () => {
+      vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
+        config: { id: '0x1', id_vector: [] },
+      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation((c) => minimalConfig());
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockRejectedValue(new Error('Enrich failed'));
+
+      await expect(
+        BucketClient.initialize({
+          suiClient: asSuiClient({ getObjects: vi.fn() }),
+          network: 'mainnet',
+        }),
+      ).rejects.toThrow('Enrich failed');
+    });
+
+    it('propagates error when passing custom config and enrichSharedObjectRefs fails', async () => {
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockRejectedValue(new Error('Enrich custom failed'));
+
+      await expect(
+        BucketClient.initialize({
+          suiClient: asSuiClient({ getObjects: vi.fn() }),
+          network: 'mainnet',
+          config: minimalConfig(),
+        }),
+      ).rejects.toThrow('Enrich custom failed');
+    });
+
+    it('propagates error when configObjectId is invalid and chain fetch fails', async () => {
+      vi.spyOn(bucketConfig, 'queryAllConfig').mockRejectedValue(new Error('Object not found'));
+
+      await expect(
+        BucketClient.initialize({
+          suiClient: asSuiClient({ getObjects: vi.fn() }),
+          network: 'mainnet',
+          configObjectId: '0xinvalid',
+        }),
+      ).rejects.toThrow('Object not found');
     });
   });
 });
