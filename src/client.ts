@@ -24,10 +24,11 @@ import {
   VaultInfo,
   VaultObjectInfo,
 } from '@/types/index.js';
+import type { SharedObjectRef } from '@/types/index.js';
 import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
-import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
 import { queryAllConfig } from '@/utils/bucketConfig.js';
 import { convertOnchainConfig } from '@/utils/configAdapter.js';
+import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
 import { buildPythPriceUpdateCalls, fetchPriceFeedsUpdateDataFromHermes, PythCache } from '@/utils/pyth.js';
 
 import { VaultRewarder } from '@/_generated/bucket_v2_borrow_incentive/borrow_incentive.js';
@@ -39,13 +40,6 @@ import { Rewarder, RewarderKey } from '@/_generated/bucket_v2_saving_incentive/s
 import { SavingPool } from '@/_generated/bucket_v2_saving/saving.js';
 
 import { GlobalConfig } from './_generated/bucket_v2_flash/config.js';
-import {
-  GCOIN_RULE_CONFIG,
-  SCALLOP_MARKET,
-  SCALLOP_VERSION,
-  SCOIN_RULE_CONFIG,
-  UNIHOUSE_OBJECT,
-} from './consts/price.js';
 
 // Full BCS schema for aggregator::PriceAggregated<T> (phantom T has no effect on layout)
 const PriceAggregatedBcs = bcs.struct('PriceAggregated', {
@@ -73,9 +67,11 @@ function isValidPythPriceId(id: string): boolean {
 export class BucketClient {
   /**
    * @description a TypeScript wrapper over Bucket V2 client.
-   * You must pass a `config` object. For on-chain config use the async factory `BucketClient.create()` instead.
+   * Use `BucketClient.initialize()` to create with on-chain config,
+   * or pass a `config` to the constructor for custom/override usage.
    */
-  private config: ConfigType;
+  private _config: ConfigType | null;
+  private configOverrides?: Partial<ConfigType>;
   private suiClient: SuiGrpcClient;
   private network: Network;
   private pythCache = new PythCache();
@@ -87,9 +83,9 @@ export class BucketClient {
   }: {
     suiClient?: SuiGrpcClient;
     network?: Network;
-    config: ConfigType;
-  }) {
-    this.config = config;
+    config?: ConfigType;
+  } = {}) {
+    this._config = config ?? null;
     this.network = network;
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
@@ -101,7 +97,7 @@ export class BucketClient {
    *
    * @param options.configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT).
    */
-  static async create({
+  static async initialize({
     suiClient,
     network = 'mainnet',
     configOverrides,
@@ -114,7 +110,32 @@ export class BucketClient {
     const client = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
     const onchainConfig = await queryAllConfig(client, network);
     const config = convertOnchainConfig(onchainConfig, configOverrides);
-    return new BucketClient({ suiClient: client, network, config });
+    const bc = new BucketClient({ suiClient: client, network, config });
+    bc.configOverrides = configOverrides;
+    return bc;
+  }
+
+  /**
+   * @description Ensures config is loaded. If not yet fetched, fetches from on-chain.
+   */
+  private async ensureConfig(): Promise<void> {
+    if (!this._config) {
+      await this.refreshConfig(this.configOverrides);
+    }
+  }
+
+  /**
+   * @description Returns the current config, throwing if not yet initialized.
+   * For sync methods that cannot await ensureConfig().
+   */
+  private get config(): ConfigType {
+    if (!this._config) {
+      throw new Error(
+        'BucketClient config not initialized. ' +
+          'Call an async method first, use BucketClient.initialize(), or pass config to the constructor.',
+      );
+    }
+    return this._config;
   }
 
   /* ----- Getter ----- */
@@ -130,6 +151,7 @@ export class BucketClient {
    * @description
    */
   async getConfig(): Promise<ConfigType | undefined> {
+    await this.ensureConfig();
     return this.config;
   }
 
@@ -138,20 +160,36 @@ export class BucketClient {
    */
   async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
     const onchainConfig = await queryAllConfig(this.suiClient, this.network);
-    this.config = convertOnchainConfig(onchainConfig, overrides);
+    this._config = convertOnchainConfig(onchainConfig, overrides);
+  }
+
+  /**
+   * @description Get a price-related shared object ref from on-chain config.
+   */
+  private getPriceObj(key: string): SharedObjectRef {
+    const ref = this.config.PRICE_OBJS[key];
+    if (!ref) {
+      throw new Error(`Price object "${key}" not found in on-chain config PRICE_OBJS.`);
+    }
+    return ref;
   }
 
   /**
    * @description
    */
-  getUsdbCoinType(): string {
+  private _getUsdbCoinType(): string {
     return `${this.config.ORIGINAL_USDB_PACKAGE_ID}::usdb::USDB`;
+  }
+
+  async getUsdbCoinType(): Promise<string> {
+    await this.ensureConfig();
+    return this._getUsdbCoinType();
   }
 
   /**
    * @description Get all Oracle coin types that have a valid Pyth price (basic or derivative with priceable underlying).
    */
-  getAllOracleCoinTypes(): string[] {
+  private _getAllOracleCoinTypes(): string[] {
     const isPriceable = (coinType: string, visiting: Set<string>): boolean => {
       const normalized = normalizeStructTag(coinType);
       if (visiting.has(normalized)) return false;
@@ -166,17 +204,27 @@ export class BucketClient {
     return Object.keys(this.config.AGGREGATOR_OBJS).filter((coinType) => isPriceable(coinType, new Set()));
   }
 
+  async getAllOracleCoinTypes(): Promise<string[]> {
+    await this.ensureConfig();
+    return this._getAllOracleCoinTypes();
+  }
+
   /**
    * @description Get all CDP collateral types
    */
-  getAllCollateralTypes(): string[] {
+  private _getAllCollateralTypes(): string[] {
     return Object.keys(this.config.VAULT_OBJS);
+  }
+
+  async getAllCollateralTypes(): Promise<string[]> {
+    await this.ensureConfig();
+    return this._getAllCollateralTypes();
   }
 
   /**
    * @description
    */
-  getAggregatorObjectInfo({ coinType }: { coinType: string }): AggregatorObjectInfo {
+  private _getAggregatorObjectInfo({ coinType }: { coinType: string }): AggregatorObjectInfo {
     const aggregatorInfo = this.config.AGGREGATOR_OBJS[normalizeStructTag(coinType)];
 
     if (!aggregatorInfo) {
@@ -185,10 +233,15 @@ export class BucketClient {
     return aggregatorInfo;
   }
 
+  async getAggregatorObjectInfo({ coinType }: { coinType: string }): Promise<AggregatorObjectInfo> {
+    await this.ensureConfig();
+    return this._getAggregatorObjectInfo({ coinType });
+  }
+
   /**
    * @description
    */
-  getVaultObjectInfo({ coinType }: { coinType: string }): VaultObjectInfo {
+  private _getVaultObjectInfo({ coinType }: { coinType: string }): VaultObjectInfo {
     const vaultInfo = this.config.VAULT_OBJS[normalizeStructTag(coinType)];
 
     if (!vaultInfo) {
@@ -197,10 +250,15 @@ export class BucketClient {
     return vaultInfo;
   }
 
+  async getVaultObjectInfo({ coinType }: { coinType: string }): Promise<VaultObjectInfo> {
+    await this.ensureConfig();
+    return this._getVaultObjectInfo({ coinType });
+  }
+
   /**
    * @description
    */
-  getSavingPoolObjectInfo({ lpType }: { lpType: string }): SavingPoolObjectInfo {
+  private _getSavingPoolObjectInfo({ lpType }: { lpType: string }): SavingPoolObjectInfo {
     const savingPoolInfo = this.config.SAVING_POOL_OBJS[normalizeStructTag(lpType)];
 
     if (!savingPoolInfo) {
@@ -209,10 +267,15 @@ export class BucketClient {
     return savingPoolInfo;
   }
 
+  async getSavingPoolObjectInfo({ lpType }: { lpType: string }): Promise<SavingPoolObjectInfo> {
+    await this.ensureConfig();
+    return this._getSavingPoolObjectInfo({ lpType });
+  }
+
   /**
    * @description
    */
-  getPsmPoolObjectInfo({ coinType }: { coinType: string }): PsmPoolObjectInfo {
+  private _getPsmPoolObjectInfo({ coinType }: { coinType: string }): PsmPoolObjectInfo {
     const psmPoolInfo = this.config.PSM_POOL_OBJS[normalizeStructTag(coinType)];
 
     if (!psmPoolInfo) {
@@ -221,21 +284,27 @@ export class BucketClient {
     return psmPoolInfo;
   }
 
+  async getPsmPoolObjectInfo({ coinType }: { coinType: string }): Promise<PsmPoolObjectInfo> {
+    await this.ensureConfig();
+    return this._getPsmPoolObjectInfo({ coinType });
+  }
+
   /* ----- Queries ----- */
 
   /**
    * @description
    */
   async getUsdbSupply(): Promise<bigint> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     const treasury = tx.moveCall({
       target: `${this.config.USDB_PACKAGE_ID}::usdb::borrow_cap_mut`,
-      arguments: [this.treasury(tx)],
+      arguments: [this._treasury(tx)],
     });
     tx.moveCall({
       target: `0x2::coin::total_supply`,
-      typeArguments: [this.getUsdbCoinType()],
+      typeArguments: [this._getUsdbCoinType()],
       arguments: [treasury],
     });
     tx.setSender(DUMMY_ADDRESS);
@@ -250,6 +319,7 @@ export class BucketClient {
    * @description
    */
   async getOraclePrices({ coinTypes }: { coinTypes: string[] }): Promise<Record<string, number>> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     await this.aggregatePrices(tx, { coinTypes });
@@ -276,7 +346,8 @@ export class BucketClient {
    * @description
    */
   async getAllOraclePrices(): Promise<Record<string, number>> {
-    const coinTypes = this.getAllOracleCoinTypes();
+    await this.ensureConfig();
+    const coinTypes = this._getAllOracleCoinTypes();
 
     return this.getOraclePrices({ coinTypes });
   }
@@ -285,7 +356,8 @@ export class BucketClient {
    * @description
    */
   async getBorrowRewardFlowRate({ coinType }: { coinType: string }): Promise<Record<string, bigint>> {
-    const vault = this.getVaultObjectInfo({ coinType });
+    await this.ensureConfig();
+    const vault = this._getVaultObjectInfo({ coinType });
 
     if (!vault.rewarders) {
       return {};
@@ -317,8 +389,9 @@ export class BucketClient {
    * @description Get all vault objects
    */
   async getAllVaultObjects(): Promise<Record<string, VaultInfo>> {
+    await this.ensureConfig();
     const vaultObjectIds = Object.values(this.config.VAULT_OBJS).map((v) => v.vault.objectId);
-    const allCollateralTypes = this.getAllCollateralTypes();
+    const allCollateralTypes = this._getAllCollateralTypes();
 
     const res = await this.suiClient.getObjects({
       objectIds: vaultObjectIds,
@@ -369,7 +442,8 @@ export class BucketClient {
    * @description
    */
   async getSavingPoolRewardFlowRate({ lpType }: { lpType: string }): Promise<Record<string, bigint>> {
-    const pool = this.getSavingPoolObjectInfo({ lpType });
+    await this.ensureConfig();
+    const pool = this._getSavingPoolObjectInfo({ lpType });
 
     if (!pool.reward) {
       return {};
@@ -403,6 +477,7 @@ export class BucketClient {
    * @description Get all Saving pool objects
    */
   async getAllSavingPoolObjects(): Promise<Record<string, SavingPoolInfo>> {
+    await this.ensureConfig();
     const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
     const poolObjectIds = Object.values(this.config.SAVING_POOL_OBJS).map((v) => v.pool.objectId);
 
@@ -451,6 +526,7 @@ export class BucketClient {
    * @description Get all PSM pool objects
    */
   async getAllPsmPoolObjects(): Promise<Record<string, PsmPoolInfo>> {
+    await this.ensureConfig();
     const poolObjectIds = Object.values(this.config.PSM_POOL_OBJS).map((v) => v.pool.objectId);
 
     const res = await this.suiClient.getObjects({
@@ -498,6 +574,7 @@ export class BucketClient {
    * @description
    */
   async getFlashMintInfo(): Promise<FlashMintInfo> {
+    await this.ensureConfig();
     const data = await this.suiClient.getObject({
       objectId: this.config.FLASH_GLOBAL_CONFIG_OBJ.objectId,
       include: {
@@ -533,13 +610,14 @@ export class BucketClient {
     pageSize?: number;
     cursor?: string | null;
   }): Promise<PaginatedPositionsResult> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::get_positions`,
       typeArguments: [coinType],
       arguments: [
-        this.vault(tx, { coinType }),
+        this._vault(tx, { coinType }),
         tx.object.clock(),
         tx.pure.option('address', cursor),
         tx.pure.u64(pageSize),
@@ -573,6 +651,7 @@ export class BucketClient {
    * @description
    */
   async getUserAccounts({ address }: { address: string }) {
+    await this.ensureConfig();
     const accountRes = await this.suiClient.listOwnedObjects({
       owner: address,
       type: `${this.config.ORIGINAL_FRAMEWORK_PACKAGE_ID}::account::Account`,
@@ -600,10 +679,11 @@ export class BucketClient {
     accountId?: string;
     coinTypes: string[];
   }): Promise<Record<string, Record<string, bigint>>> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     coinTypes.forEach((coinType) => {
-      const vaultInfo = this.getVaultObjectInfo({ coinType });
+      const vaultInfo = this._getVaultObjectInfo({ coinType });
 
       if (!vaultInfo.rewarders) {
         return;
@@ -627,7 +707,7 @@ export class BucketClient {
       return {};
     }
     return coinTypes.reduce((result, coinType) => {
-      const vaultInfo = this.getVaultObjectInfo({ coinType });
+      const vaultInfo = this._getVaultObjectInfo({ coinType });
 
       if (!vaultInfo.rewarders?.length) {
         return result;
@@ -652,11 +732,12 @@ export class BucketClient {
    * @description Get position data given account (can be wallet address or Account object ID)
    */
   async getAccountPositions({ address, accountId }: { address: string; accountId?: string }): Promise<PositionInfo[]> {
+    await this.ensureConfig();
     const tx = new Transaction();
-    const allCollateralTypes = this.getAllCollateralTypes();
+    const allCollateralTypes = this._getAllCollateralTypes();
 
     allCollateralTypes.forEach((coinType) => {
-      const vaultInfo = this.getVaultObjectInfo({ coinType });
+      const vaultInfo = this._getVaultObjectInfo({ coinType });
 
       tx.moveCall({
         target: `${this.config.CDP_PACKAGE_ID}::vault::try_get_position_data`,
@@ -697,6 +778,7 @@ export class BucketClient {
    * @description Get position data given wallet address
    */
   async getUserPositions({ address }: { address: string }): Promise<PositionInfo[]> {
+    await this.ensureConfig();
     const accounts = await this.getUserAccounts({ address });
     const accountObjectIds = accounts.map((account) => account.id.id);
 
@@ -719,10 +801,11 @@ export class BucketClient {
     accountId?: string;
     lpTypes: string[];
   }): Promise<Record<string, Record<string, bigint>>> {
+    await this.ensureConfig();
     const tx = new Transaction();
 
     lpTypes.forEach((lpType) => {
-      const poolInfo = this.getSavingPoolObjectInfo({ lpType });
+      const poolInfo = this._getSavingPoolObjectInfo({ lpType });
 
       if (!poolInfo.reward) {
         return;
@@ -751,7 +834,7 @@ export class BucketClient {
       return {};
     }
     return lpTypes.reduce((result, lpType) => {
-      const poolInfo = this.getSavingPoolObjectInfo({ lpType });
+      const poolInfo = this._getSavingPoolObjectInfo({ lpType });
 
       if (!poolInfo.reward?.rewardTypes?.length) {
         return result;
@@ -776,6 +859,7 @@ export class BucketClient {
    * @description
    */
   async getAccountSavings({ address, accountId }: { address: string; accountId?: string }): Promise<SavingInfo[]> {
+    await this.ensureConfig();
     const lpTypes = Object.keys(this.config.SAVING_POOL_OBJS);
 
     const tx = new Transaction();
@@ -784,12 +868,12 @@ export class BucketClient {
       tx.moveCall({
         target: `${this.config.SAVING_PACKAGE_ID}::saving::lp_token_value_of`,
         typeArguments: [lpType],
-        arguments: [this.savingPoolObj(tx, { lpType }), tx.pure.address(accountId ?? address), tx.object.clock()],
+        arguments: [this._savingPoolObj(tx, { lpType }), tx.pure.address(accountId ?? address), tx.object.clock()],
       });
       tx.moveCall({
         target: `${this.config.SAVING_PACKAGE_ID}::saving::lp_balance_of`,
         typeArguments: [lpType],
-        arguments: [this.savingPoolObj(tx, { lpType }), tx.pure.address(accountId ?? address)],
+        arguments: [this._savingPoolObj(tx, { lpType }), tx.pure.address(accountId ?? address)],
       });
     });
     tx.setSender(DUMMY_ADDRESS);
@@ -822,6 +906,7 @@ export class BucketClient {
    * @description Get position data given wallet address
    */
   async getUserSavings({ address }: { address: string }): Promise<SavingInfo[]> {
+    await this.ensureConfig();
     const accounts = await this.getUserAccounts({ address });
     const accountObjectIds = accounts.map((account) => account.id.id);
 
@@ -837,68 +922,108 @@ export class BucketClient {
   /**
    * @description
    */
-  treasury(tx: Transaction) {
+  private _treasury(tx: Transaction) {
     return tx.sharedObjectRef(this.config.TREASURY_OBJ);
   }
 
+  async treasury(tx: Transaction) {
+    await this.ensureConfig();
+    return this._treasury(tx);
+  }
+
   /**
    * @description
    */
-  vaultRewarderRegistry(tx: Transaction) {
+  private _vaultRewarderRegistry(tx: Transaction) {
     return tx.sharedObjectRef(this.config.VAULT_REWARDER_REGISTRY);
   }
 
+  async vaultRewarderRegistry(tx: Transaction) {
+    await this.ensureConfig();
+    return this._vaultRewarderRegistry(tx);
+  }
+
   /**
    * @description
    */
-  savingPoolGlobalConfig(tx: Transaction) {
+  private _savingPoolGlobalConfig(tx: Transaction) {
     return tx.sharedObjectRef(this.config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ);
   }
 
-  /**
-   * @description
-   */
-  flashGlobalConfig(tx: Transaction) {
-    return tx.sharedObjectRef(this.config.FLASH_GLOBAL_CONFIG_OBJ);
+  async savingPoolGlobalConfig(tx: Transaction) {
+    await this.ensureConfig();
+    return this._savingPoolGlobalConfig(tx);
   }
 
   /**
    * @description
    */
-  aggregator(tx: Transaction, { coinType }: { coinType: string }) {
-    const vaultInfo = this.getAggregatorObjectInfo({ coinType });
+  private _flashGlobalConfig(tx: Transaction) {
+    return tx.sharedObjectRef(this.config.FLASH_GLOBAL_CONFIG_OBJ);
+  }
+
+  async flashGlobalConfig(tx: Transaction) {
+    await this.ensureConfig();
+    return this._flashGlobalConfig(tx);
+  }
+
+  /**
+   * @description
+   */
+  private _aggregator(tx: Transaction, { coinType }: { coinType: string }) {
+    const vaultInfo = this._getAggregatorObjectInfo({ coinType });
 
     return tx.sharedObjectRef(vaultInfo.priceAggregator);
   }
 
+  async aggregator(tx: Transaction, { coinType }: { coinType: string }) {
+    await this.ensureConfig();
+    return this._aggregator(tx, { coinType });
+  }
+
   /**
    * @description
    */
-  vault(tx: Transaction, { coinType }: { coinType: string }) {
-    const vaultInfo = this.getVaultObjectInfo({ coinType });
+  private _vault(tx: Transaction, { coinType }: { coinType: string }) {
+    const vaultInfo = this._getVaultObjectInfo({ coinType });
 
     return tx.sharedObjectRef(vaultInfo.vault);
   }
 
+  async vault(tx: Transaction, { coinType }: { coinType: string }) {
+    await this.ensureConfig();
+    return this._vault(tx, { coinType });
+  }
+
   /**
    * @description
    */
-  savingPoolObj(tx: Transaction, { lpType }: { lpType: string }) {
-    const savingPoolInfo = this.getSavingPoolObjectInfo({ lpType });
+  private _savingPoolObj(tx: Transaction, { lpType }: { lpType: string }) {
+    const savingPoolInfo = this._getSavingPoolObjectInfo({ lpType });
 
     return tx.sharedObjectRef(savingPoolInfo.pool);
   }
 
+  async savingPoolObj(tx: Transaction, { lpType }: { lpType: string }) {
+    await this.ensureConfig();
+    return this._savingPoolObj(tx, { lpType });
+  }
+
   /**
    * @description
    */
-  psmPoolObj(tx: Transaction, { coinType }: { coinType: string }) {
-    const psmPoolInfo = this.getPsmPoolObjectInfo({ coinType });
+  private _psmPoolObj(tx: Transaction, { coinType }: { coinType: string }) {
+    const psmPoolInfo = this._getPsmPoolObjectInfo({ coinType });
 
     return tx.sharedObjectRef(psmPoolInfo.pool);
   }
 
-  accountAddress(
+  async psmPoolObj(tx: Transaction, { coinType }: { coinType: string }) {
+    await this.ensureConfig();
+    return this._psmPoolObj(tx, { coinType });
+  }
+
+  private _accountAddress(
     tx: Transaction,
     {
       address,
@@ -919,12 +1044,26 @@ export class BucketClient {
     return tx.pure.address(address);
   }
 
+  async accountAddress(
+    tx: Transaction,
+    {
+      address,
+      accountObjectOrId,
+    }: {
+      address: string;
+      accountObjectOrId?: string | TransactionArgument;
+    },
+  ): Promise<TransactionArgument> {
+    await this.ensureConfig();
+    return this._accountAddress(tx, { address, accountObjectOrId });
+  }
+
   /**
    * @description Create a AccountRequest
    * @param accountObjectOrId (optional): Account object or EOA if undefined
    * @return AccountRequest
    */
-  newAccountRequest(
+  private _newAccountRequest(
     tx: Transaction,
     { accountObjectOrId }: { accountObjectOrId?: string | TransactionArgument },
   ): TransactionResult {
@@ -938,16 +1077,29 @@ export class BucketClient {
         });
   }
 
+  async newAccountRequest(
+    tx: Transaction,
+    { accountObjectOrId }: { accountObjectOrId?: string | TransactionArgument },
+  ): Promise<TransactionResult> {
+    await this.ensureConfig();
+    return this._newAccountRequest(tx, { accountObjectOrId });
+  }
+
   /**
    * @description Create a price collector
    * @param collateral coin type, e.g "0x2::sui::SUI"
    * @return PriceCollector
    */
-  newPriceCollector(tx: Transaction, { coinType }: { coinType: string }): TransactionResult {
+  private _newPriceCollector(tx: Transaction, { coinType }: { coinType: string }): TransactionResult {
     return tx.moveCall({
       target: `${this.config.ORACLE_PACKAGE_ID}::collector::new`,
       typeArguments: [coinType],
     });
+  }
+
+  async newPriceCollector(tx: Transaction, { coinType }: { coinType: string }): Promise<TransactionResult> {
+    await this.ensureConfig();
+    return this._newPriceCollector(tx, { coinType });
   }
 
   /**
@@ -956,11 +1108,12 @@ export class BucketClient {
    * @return [PriceResult]
    */
   async aggregateBasicPrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
+    await this.ensureConfig();
     if (!coinTypes.length) {
       return [];
     }
     const pythPriceIds = coinTypes.map((coinType) => {
-      const aggregator = this.getAggregatorObjectInfo({ coinType });
+      const aggregator = this._getAggregatorObjectInfo({ coinType });
 
       if (!('pythPriceId' in aggregator)) {
         throw new Error(`${coinType} has no basic price`);
@@ -981,7 +1134,7 @@ export class BucketClient {
     );
 
     return coinTypes.map((coinType, index) => {
-      const collector = this.newPriceCollector(tx, { coinType });
+      const collector = this._newPriceCollector(tx, { coinType });
 
       tx.moveCall({
         target: `${this.config.PYTH_RULE_PACKAGE_ID}::pyth_rule::feed`,
@@ -997,7 +1150,7 @@ export class BucketClient {
       const priceResult = tx.moveCall({
         target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
         typeArguments: [coinType],
-        arguments: [tx.sharedObjectRef(this.getAggregatorObjectInfo({ coinType }).priceAggregator), collector],
+        arguments: [tx.sharedObjectRef(this._getAggregatorObjectInfo({ coinType }).priceAggregator), collector],
       });
       return priceResult;
     });
@@ -1016,13 +1169,13 @@ export class BucketClient {
       underlyingPriceResult: TransactionArgument;
     },
   ): TransactionResult {
-    const aggregator = this.getAggregatorObjectInfo({ coinType });
+    const aggregator = this._getAggregatorObjectInfo({ coinType });
 
     if (!('derivativeInfo' in aggregator)) {
       throw new Error(`${coinType} has no derivative info`);
     }
     const { priceAggregator, derivativeInfo } = aggregator;
-    const collector = this.newPriceCollector(tx, { coinType });
+    const collector = this._newPriceCollector(tx, { coinType });
 
     switch (derivativeInfo.derivativeKind) {
       case 'sCoin':
@@ -1031,10 +1184,10 @@ export class BucketClient {
           typeArguments: [coinType, derivativeInfo.underlyingCoinType],
           arguments: [
             collector,
-            tx.sharedObjectRef(SCOIN_RULE_CONFIG),
+            tx.sharedObjectRef(this.getPriceObj('SCOIN_RULE_CONFIG')),
             underlyingPriceResult,
-            tx.sharedObjectRef(SCALLOP_VERSION),
-            tx.sharedObjectRef(SCALLOP_MARKET),
+            tx.sharedObjectRef(this.getPriceObj('SCALLOP_VERSION')),
+            tx.sharedObjectRef(this.getPriceObj('SCALLOP_MARKET')),
             tx.object.clock(),
           ],
         });
@@ -1046,8 +1199,8 @@ export class BucketClient {
           arguments: [
             collector,
             underlyingPriceResult,
-            tx.sharedObjectRef(GCOIN_RULE_CONFIG),
-            tx.sharedObjectRef(UNIHOUSE_OBJECT),
+            tx.sharedObjectRef(this.getPriceObj('GCOIN_RULE_CONFIG')),
+            tx.sharedObjectRef(this.getPriceObj('UNIHOUSE_OBJECT')),
           ],
         });
         break;
@@ -1073,10 +1226,11 @@ export class BucketClient {
    * @description
    */
   async aggregatePrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
+    await this.ensureConfig();
     const allBasicCoinTypes = Array.from(
       new Set(
         coinTypes.map((coinType) => {
-          const aggregator = this.getAggregatorObjectInfo({ coinType });
+          const aggregator = this._getAggregatorObjectInfo({ coinType });
 
           return 'pythPriceId' in aggregator ? coinType : aggregator.derivativeInfo.underlyingCoinType;
         }),
@@ -1089,7 +1243,7 @@ export class BucketClient {
     );
     // deal with exchange rate
     coinTypes.forEach((coinType) => {
-      const aggregator = this.getAggregatorObjectInfo({ coinType });
+      const aggregator = this._getAggregatorObjectInfo({ coinType });
 
       if (!('derivativeInfo' in aggregator)) {
         return;
@@ -1114,14 +1268,14 @@ export class BucketClient {
    * @param accountObjectOrId (optional): account object id or transaction argument
    * @returns UpdateRequest
    */
-  debtorRequest(
+  private _debtorRequest(
     tx: Transaction,
     {
       accountObjectOrId,
       coinType,
       depositCoin = getZeroCoin(tx, { coinType: coinType }),
       borrowAmount = 0,
-      repayCoin = getZeroCoin(tx, { coinType: this.getUsdbCoinType() }),
+      repayCoin = getZeroCoin(tx, { coinType: this._getUsdbCoinType() }),
       withdrawAmount = 0,
     }: {
       accountObjectOrId?: string | TransactionArgument;
@@ -1132,15 +1286,15 @@ export class BucketClient {
       withdrawAmount?: number | TransactionArgument;
     },
   ): TransactionResult {
-    const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
+    const accountReq = this._newAccountRequest(tx, { accountObjectOrId });
 
     return tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::debtor_request`,
       typeArguments: [coinType],
       arguments: [
-        this.vault(tx, { coinType }),
+        this._vault(tx, { coinType }),
         accountReq,
-        this.treasury(tx),
+        this._treasury(tx),
         depositCoin,
         typeof borrowAmount === 'number' ? tx.pure.u64(borrowAmount) : borrowAmount,
         repayCoin,
@@ -1149,17 +1303,32 @@ export class BucketClient {
     });
   }
 
+  async debtorRequest(
+    tx: Transaction,
+    params: {
+      accountObjectOrId?: string | TransactionArgument;
+      coinType: string;
+      depositCoin?: TransactionArgument;
+      borrowAmount?: number | TransactionArgument;
+      repayCoin?: TransactionArgument;
+      withdrawAmount?: number | TransactionArgument;
+    },
+  ): Promise<TransactionResult> {
+    await this.ensureConfig();
+    return this._debtorRequest(tx, params);
+  }
+
   /**
    * @description check and destroy UpdateResponse
    * @param coinType: collateral coin type , e.g "0x2::sui::SUI"
    * @param response: UpdateResponse generated by update_position
    */
-  checkUpdatePositionRequest(
+  private _checkUpdatePositionRequest(
     tx: Transaction,
     { coinType, request }: { coinType: string; request: TransactionArgument },
   ): TransactionResult {
-    const vaultObj = this.vault(tx, { coinType });
-    const rewarders = this.getVaultObjectInfo({ coinType }).rewarders;
+    const vaultObj = this._vault(tx, { coinType });
+    const rewarders = this._getVaultObjectInfo({ coinType }).rewarders;
     const registryObj = tx.sharedObjectRef(this.config.VAULT_REWARDER_REGISTRY);
     const checker = tx.moveCall({
       target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::new_checker`,
@@ -1186,6 +1355,14 @@ export class BucketClient {
     return updateRequest;
   }
 
+  async checkUpdatePositionRequest(
+    tx: Transaction,
+    { coinType, request }: { coinType: string; request: TransactionArgument },
+  ): Promise<TransactionResult> {
+    await this.ensureConfig();
+    return this._checkUpdatePositionRequest(tx, { coinType, request });
+  }
+
   /**
    * @description Manage Position
    * @param coinType: collateral coin type , e.g "0x2::sui::SUI"
@@ -1193,7 +1370,7 @@ export class BucketClient {
    * @param priceResult: price result, see this.aggregatePrice
    * @returns [Coin<T>, COIN<USDB>, UpdateResponse]
    */
-  updatePosition(
+  private _updatePosition(
     tx: Transaction,
     {
       coinType,
@@ -1219,9 +1396,21 @@ export class BucketClient {
     const [inputCoin, usdbCoin, response] = tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::update_position`,
       typeArguments: [coinType],
-      arguments: [this.vault(tx, { coinType }), this.treasury(tx), tx.object.clock(), priceResultOpt, updateRequest],
+      arguments: [this._vault(tx, { coinType }), this._treasury(tx), tx.object.clock(), priceResultOpt, updateRequest],
     });
     return [inputCoin, usdbCoin, response];
+  }
+
+  async updatePosition(
+    tx: Transaction,
+    params: {
+      coinType: string;
+      updateRequest: TransactionArgument;
+      priceResult?: TransactionArgument;
+    },
+  ): Promise<TransactionNestedResult[]> {
+    await this.ensureConfig();
+    return this._updatePosition(tx, params);
   }
 
   /**
@@ -1229,21 +1418,29 @@ export class BucketClient {
    * @param coinType: collateral coin type , e.g "0x2::sui::SUI"
    * @param response: UpdateResponse generated by update_position
    */
-  checkUpdatePositionResponse(
+  private _checkUpdatePositionResponse(
     tx: Transaction,
     { coinType, response }: { coinType: string; response: TransactionArgument },
   ): void {
     tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::destroy_response`,
       typeArguments: [coinType],
-      arguments: [this.vault(tx, { coinType }), this.treasury(tx), response],
+      arguments: [this._vault(tx, { coinType }), this._treasury(tx), response],
     });
+  }
+
+  async checkUpdatePositionResponse(
+    tx: Transaction,
+    { coinType, response }: { coinType: string; response: TransactionArgument },
+  ): Promise<void> {
+    await this.ensureConfig();
+    this._checkUpdatePositionResponse(tx, { coinType, response });
   }
 
   /**
    * @description
    */
-  savingPoolDeposit(
+  private _savingPoolDeposit(
     tx: Transaction,
     {
       address,
@@ -1261,14 +1458,27 @@ export class BucketClient {
       target: `${this.config.SAVING_PACKAGE_ID}::saving::deposit`,
       typeArguments: [lpType],
       arguments: [
-        this.savingPoolObj(tx, { lpType }),
-        this.treasury(tx),
-        this.accountAddress(tx, { address, accountObjectOrId }),
+        this._savingPoolObj(tx, { lpType }),
+        this._treasury(tx),
+        this._accountAddress(tx, { address, accountObjectOrId }),
         usdbCoin,
         tx.object.clock(),
       ],
     });
     return depositResponse;
+  }
+
+  async savingPoolDeposit(
+    tx: Transaction,
+    params: {
+      address: string;
+      accountObjectOrId?: string | TransactionArgument;
+      lpType: string;
+      usdbCoin: TransactionArgument;
+    },
+  ): Promise<TransactionResult> {
+    await this.ensureConfig();
+    return this._savingPoolDeposit(tx, params);
   }
 
   /**
@@ -1284,7 +1494,7 @@ export class BucketClient {
       depositResponse: TransactionArgument;
     },
   ): TransactionResult {
-    const savingPool = this.getSavingPoolObjectInfo({ lpType });
+    const savingPool = this._getSavingPoolObjectInfo({ lpType });
 
     if (!savingPool.reward) {
       throw new Error(`No rewards for ${lpType}`);
@@ -1294,7 +1504,7 @@ export class BucketClient {
       typeArguments: [lpType],
       arguments: [
         tx.sharedObjectRef(savingPool.reward.rewardManager),
-        this.savingPoolGlobalConfig(tx),
+        this._savingPoolGlobalConfig(tx),
         depositResponse,
       ],
     });
@@ -1304,7 +1514,7 @@ export class BucketClient {
         typeArguments: [lpType, rewardType],
         arguments: [
           depositChecker,
-          this.savingPoolGlobalConfig(tx),
+          this._savingPoolGlobalConfig(tx),
           tx.sharedObjectRef(savingPool.reward!.rewardManager),
           tx.sharedObjectRef(savingPool.pool),
           tx.object.clock(),
@@ -1314,7 +1524,7 @@ export class BucketClient {
     const finalResponse = tx.moveCall({
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::destroy_deposit_checker`,
       typeArguments: [lpType],
-      arguments: [depositChecker, this.savingPoolGlobalConfig(tx)],
+      arguments: [depositChecker, this._savingPoolGlobalConfig(tx)],
     });
     return finalResponse;
   }
@@ -1322,7 +1532,7 @@ export class BucketClient {
   /**
    * @description
    */
-  checkDepositResponse(
+  private _checkDepositResponse(
     tx: Transaction,
     {
       lpType,
@@ -1337,16 +1547,27 @@ export class BucketClient {
       typeArguments: [lpType],
       arguments: [
         this.updateSavingPoolIncentiveDepositAction(tx, { lpType, depositResponse }),
-        this.savingPoolObj(tx, { lpType }),
-        this.treasury(tx),
+        this._savingPoolObj(tx, { lpType }),
+        this._treasury(tx),
       ],
     });
+  }
+
+  async checkDepositResponse(
+    tx: Transaction,
+    params: {
+      lpType: string;
+      depositResponse: TransactionArgument;
+    },
+  ): Promise<void> {
+    await this.ensureConfig();
+    this._checkDepositResponse(tx, params);
   }
 
   /**
    * @description
    */
-  savingPoolWithdraw(
+  private _savingPoolWithdraw(
     tx: Transaction,
     {
       accountObjectOrId,
@@ -1358,20 +1579,32 @@ export class BucketClient {
       amount: number;
     },
   ): [TransactionNestedResult, TransactionNestedResult] {
-    const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
+    const accountReq = this._newAccountRequest(tx, { accountObjectOrId });
 
     const [usdbCoin, withdrawResponse] = tx.moveCall({
       target: `${this.config.SAVING_PACKAGE_ID}::saving::withdraw`,
       typeArguments: [lpType],
       arguments: [
-        this.savingPoolObj(tx, { lpType }),
-        this.treasury(tx),
+        this._savingPoolObj(tx, { lpType }),
+        this._treasury(tx),
         accountReq,
         tx.pure.u64(amount),
         tx.object.clock(),
       ],
     });
     return [usdbCoin, withdrawResponse];
+  }
+
+  async savingPoolWithdraw(
+    tx: Transaction,
+    params: {
+      accountObjectOrId?: string | TransactionArgument;
+      lpType: string;
+      amount: number;
+    },
+  ): Promise<[TransactionNestedResult, TransactionNestedResult]> {
+    await this.ensureConfig();
+    return this._savingPoolWithdraw(tx, params);
   }
 
   /**
@@ -1387,7 +1620,7 @@ export class BucketClient {
       withdrawResponse: TransactionArgument;
     },
   ): TransactionResult {
-    const savingPool = this.getSavingPoolObjectInfo({ lpType });
+    const savingPool = this._getSavingPoolObjectInfo({ lpType });
 
     if (!savingPool.reward) {
       throw new Error(`No rewards for ${lpType}`);
@@ -1397,7 +1630,7 @@ export class BucketClient {
       typeArguments: [lpType],
       arguments: [
         tx.sharedObjectRef(savingPool.reward.rewardManager),
-        this.savingPoolGlobalConfig(tx),
+        this._savingPoolGlobalConfig(tx),
         withdrawResponse,
       ],
     });
@@ -1407,7 +1640,7 @@ export class BucketClient {
         typeArguments: [lpType, rewardType],
         arguments: [
           withdrawChecker,
-          this.savingPoolGlobalConfig(tx),
+          this._savingPoolGlobalConfig(tx),
           tx.sharedObjectRef(savingPool.reward!.rewardManager),
           tx.sharedObjectRef(savingPool.pool),
           tx.object.clock(),
@@ -1417,7 +1650,7 @@ export class BucketClient {
     const finalResponse = tx.moveCall({
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::destroy_withdraw_checker`,
       typeArguments: [lpType],
-      arguments: [withdrawChecker, this.savingPoolGlobalConfig(tx)],
+      arguments: [withdrawChecker, this._savingPoolGlobalConfig(tx)],
     });
     return finalResponse;
   }
@@ -1425,7 +1658,7 @@ export class BucketClient {
   /**
    * @description
    */
-  checkWithdrawResponse(
+  private _checkWithdrawResponse(
     tx: Transaction,
     {
       lpType,
@@ -1440,16 +1673,27 @@ export class BucketClient {
       typeArguments: [lpType],
       arguments: [
         this.updateSavingPoolIncentiveWithdrawAction(tx, { lpType, withdrawResponse }),
-        this.savingPoolObj(tx, { lpType }),
-        this.treasury(tx),
+        this._savingPoolObj(tx, { lpType }),
+        this._treasury(tx),
       ],
     });
+  }
+
+  async checkWithdrawResponse(
+    tx: Transaction,
+    params: {
+      lpType: string;
+      withdrawResponse: TransactionArgument;
+    },
+  ): Promise<void> {
+    await this.ensureConfig();
+    this._checkWithdrawResponse(tx, params);
   }
 
   /**
    * @description
    */
-  claimPoolIncentive(
+  private _claimPoolIncentive(
     tx: Transaction,
     {
       accountObjectOrId,
@@ -1461,19 +1705,19 @@ export class BucketClient {
       rewardType: string;
     },
   ): TransactionResult {
-    const savingPool = this.getSavingPoolObjectInfo({ lpType });
+    const savingPool = this._getSavingPoolObjectInfo({ lpType });
 
     if (!savingPool.reward) {
       return getZeroCoin(tx, { coinType: rewardType });
     }
-    const accountReq = this.newAccountRequest(tx, { accountObjectOrId });
+    const accountReq = this._newAccountRequest(tx, { accountObjectOrId });
 
     const rewardCoin = tx.moveCall({
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::claim`,
       typeArguments: [lpType, rewardType],
       arguments: [
         tx.sharedObjectRef(savingPool.reward.rewardManager),
-        this.savingPoolGlobalConfig(tx),
+        this._savingPoolGlobalConfig(tx),
         tx.sharedObjectRef(savingPool.pool),
         accountReq,
         tx.object.clock(),
@@ -1482,10 +1726,22 @@ export class BucketClient {
     return rewardCoin;
   }
 
+  async claimPoolIncentive(
+    tx: Transaction,
+    params: {
+      accountObjectOrId?: string | TransactionArgument;
+      lpType: string;
+      rewardType: string;
+    },
+  ): Promise<TransactionResult> {
+    await this.ensureConfig();
+    return this._claimPoolIncentive(tx, params);
+  }
+
   /**
    * @description
    */
-  psmSwapIn(
+  private _psmSwapIn(
     tx: Transaction,
     {
       accountObjectOrId,
@@ -1501,20 +1757,33 @@ export class BucketClient {
   ): TransactionResult {
     const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(tx, { accountObjectOrId }),
+      value: this._newAccountRequest(tx, { accountObjectOrId }),
     });
     const usdbCoin = tx.moveCall({
       target: `${this.config.PSM_PACKAGE_ID}::pool::swap_in`,
       typeArguments: [coinType],
-      arguments: [this.psmPoolObj(tx, { coinType }), this.treasury(tx), priceResult, inputCoin, partner],
+      arguments: [this._psmPoolObj(tx, { coinType }), this._treasury(tx), priceResult, inputCoin, partner],
     });
     return usdbCoin;
+  }
+
+  async psmSwapIn(
+    tx: Transaction,
+    params: {
+      accountObjectOrId?: string | TransactionArgument;
+      coinType: string;
+      priceResult: TransactionArgument;
+      inputCoin: TransactionArgument;
+    },
+  ): Promise<TransactionResult> {
+    await this.ensureConfig();
+    return this._psmSwapIn(tx, params);
   }
 
   /**
    * @description
    */
-  psmSwapOut(
+  private _psmSwapOut(
     tx: Transaction,
     {
       accountObjectOrId,
@@ -1530,20 +1799,33 @@ export class BucketClient {
   ): TransactionResult {
     const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(tx, { accountObjectOrId }),
+      value: this._newAccountRequest(tx, { accountObjectOrId }),
     });
     const inputCoin = tx.moveCall({
       target: `${this.config.PSM_PACKAGE_ID}::pool::swap_out`,
       typeArguments: [coinType],
-      arguments: [this.psmPoolObj(tx, { coinType }), this.treasury(tx), priceResult, usdbCoin, partner],
+      arguments: [this._psmPoolObj(tx, { coinType }), this._treasury(tx), priceResult, usdbCoin, partner],
     });
     return inputCoin;
+  }
+
+  async psmSwapOut(
+    tx: Transaction,
+    params: {
+      accountObjectOrId?: string | TransactionArgument;
+      coinType: string;
+      priceResult: TransactionArgument;
+      usdbCoin: TransactionArgument;
+    },
+  ): Promise<TransactionResult> {
+    await this.ensureConfig();
+    return this._psmSwapOut(tx, params);
   }
 
   /**
    * @description
    */
-  flashMint(
+  private _flashMint(
     tx: Transaction,
     {
       accountObjectOrId,
@@ -1555,13 +1837,13 @@ export class BucketClient {
   ): [TransactionNestedResult, TransactionNestedResult] {
     const partner = tx.object.option({
       type: `${this.config.FRAMEWORK_PACKAGE_ID}::account::AccountRequest`,
-      value: this.newAccountRequest(tx, { accountObjectOrId }),
+      value: this._newAccountRequest(tx, { accountObjectOrId }),
     });
     const [usdbCoin, flashMintReceipt] = tx.moveCall({
       target: `${this.config.FLASH_PACKAGE_ID}::config::flash_mint`,
       arguments: [
-        this.flashGlobalConfig(tx),
-        this.treasury(tx),
+        this._flashGlobalConfig(tx),
+        this._treasury(tx),
         partner,
         typeof amount === 'number' ? tx.pure.u64(amount) : amount,
       ],
@@ -1569,10 +1851,21 @@ export class BucketClient {
     return [usdbCoin, flashMintReceipt];
   }
 
+  async flashMint(
+    tx: Transaction,
+    params: {
+      accountObjectOrId?: string | TransactionArgument;
+      amount: number | TransactionArgument;
+    },
+  ): Promise<[TransactionNestedResult, TransactionNestedResult]> {
+    await this.ensureConfig();
+    return this._flashMint(tx, params);
+  }
+
   /**
    * @description
    */
-  flashBurn(
+  private _flashBurn(
     tx: Transaction,
     {
       usdbCoin,
@@ -1584,8 +1877,19 @@ export class BucketClient {
   ): void {
     tx.moveCall({
       target: `${this.config.FLASH_PACKAGE_ID}::config::flash_burn`,
-      arguments: [this.flashGlobalConfig(tx), this.treasury(tx), usdbCoin, flashMintReceipt],
+      arguments: [this._flashGlobalConfig(tx), this._treasury(tx), usdbCoin, flashMintReceipt],
     });
+  }
+
+  async flashBurn(
+    tx: Transaction,
+    params: {
+      usdbCoin: TransactionArgument;
+      flashMintReceipt: TransactionArgument;
+    },
+  ): Promise<void> {
+    await this.ensureConfig();
+    this._flashBurn(tx, params);
   }
 
   /* ----- Transaction Builders ----- */
@@ -1619,16 +1923,17 @@ export class BucketClient {
       withdrawAmount?: number | TransactionArgument;
     },
   ): Promise<TransactionNestedResult[]> {
+    await this.ensureConfig();
     const depositCoin =
       typeof depositCoinOrAmount === 'number'
         ? coinWithBalance({ balance: depositCoinOrAmount, type: coinType })
         : depositCoinOrAmount;
     const repayCoin =
       typeof repayCoinOrAmount === 'number'
-        ? coinWithBalance({ balance: repayCoinOrAmount, type: this.getUsdbCoinType() })
+        ? coinWithBalance({ balance: repayCoinOrAmount, type: this._getUsdbCoinType() })
         : repayCoinOrAmount;
 
-    const debtorRequest = this.debtorRequest(tx, {
+    const debtorRequest = this._debtorRequest(tx, {
       accountObjectOrId,
       coinType,
       depositCoin,
@@ -1636,22 +1941,22 @@ export class BucketClient {
       repayCoin,
       withdrawAmount,
     });
-    const updateRequest = this.checkUpdatePositionRequest(tx, { coinType, request: debtorRequest });
+    const updateRequest = this._checkUpdatePositionRequest(tx, { coinType, request: debtorRequest });
     const [priceResult] =
       borrowAmount || withdrawAmount ? await this.aggregatePrices(tx, { coinTypes: [coinType] }) : [];
 
-    const [collateralCoin, usdbCoin, response] = this.updatePosition(tx, {
+    const [collateralCoin, usdbCoin, response] = this._updatePosition(tx, {
       coinType,
       updateRequest,
       priceResult,
     });
-    this.checkUpdatePositionResponse(tx, { coinType, response });
+    this._checkUpdatePositionResponse(tx, { coinType, response });
 
     if (withdrawAmount === 0) {
       destroyZeroCoin(tx, { coinType: coinType, coin: collateralCoin });
     }
     if (borrowAmount === 0) {
-      destroyZeroCoin(tx, { coinType: this.getUsdbCoinType(), coin: usdbCoin });
+      destroyZeroCoin(tx, { coinType: this._getUsdbCoinType(), coin: usdbCoin });
     }
     return [collateralCoin, usdbCoin];
   }
@@ -1663,7 +1968,7 @@ export class BucketClient {
    * @param recipient (optional): the recipient of the output coins
    * @returns Transaction
    */
-  buildClosePositionTransaction(
+  async buildClosePositionTransaction(
     tx: Transaction,
     {
       address,
@@ -1676,34 +1981,35 @@ export class BucketClient {
       coinType: string;
       repayCoin?: TransactionObjectArgument;
     },
-  ): [TransactionNestedResult, TransactionObjectArgument | undefined] {
+  ): Promise<[TransactionNestedResult, TransactionObjectArgument | undefined]> {
+    await this.ensureConfig();
     const [collateralAmount, debtAmount] = tx.moveCall({
       target: `${this.config.CDP_PACKAGE_ID}::vault::get_position_data`,
       typeArguments: [coinType],
       arguments: [
-        this.vault(tx, { coinType }),
-        this.accountAddress(tx, { address, accountObjectOrId }),
+        this._vault(tx, { coinType }),
+        this._accountAddress(tx, { address, accountObjectOrId }),
         tx.object.clock(),
       ],
     });
     const splittedRepayCoin = repayCoin
       ? tx.splitCoins(repayCoin, [debtAmount])[0]
-      : coinWithBalance({ balance: debtAmount, type: this.getUsdbCoinType() });
+      : coinWithBalance({ balance: debtAmount, type: this._getUsdbCoinType() });
 
-    const debtorRequest = this.debtorRequest(tx, {
+    const debtorRequest = this._debtorRequest(tx, {
       accountObjectOrId,
       coinType,
       repayCoin: splittedRepayCoin,
       withdrawAmount: collateralAmount,
     });
-    const updateRequest = this.checkUpdatePositionRequest(tx, { coinType, request: debtorRequest });
-    const [collateralCoin, usdbCoin, response] = this.updatePosition(tx, {
+    const updateRequest = this._checkUpdatePositionRequest(tx, { coinType, request: debtorRequest });
+    const [collateralCoin, usdbCoin, response] = this._updatePosition(tx, {
       coinType,
       updateRequest,
     });
-    this.checkUpdatePositionResponse(tx, { coinType, response });
+    this._checkUpdatePositionResponse(tx, { coinType, response });
 
-    destroyZeroCoin(tx, { coinType: this.getUsdbCoinType(), coin: usdbCoin });
+    destroyZeroCoin(tx, { coinType: this._getUsdbCoinType(), coin: usdbCoin });
 
     return [collateralCoin, repayCoin];
   }
@@ -1714,7 +2020,7 @@ export class BucketClient {
    * @param coinType: collateral coin type , e.g "0x2::sui::SUI"
    * @returns Transaction[] if has rewards else undefined
    */
-  buildClaimBorrowRewardsTransaction(
+  async buildClaimBorrowRewardsTransaction(
     tx: Transaction,
     {
       accountObjectOrId,
@@ -1723,9 +2029,10 @@ export class BucketClient {
       accountObjectOrId?: string | TransactionArgument;
       coinType: string;
     },
-  ): Record<string, TransactionResult> {
-    const vaultObj = this.vault(tx, { coinType });
-    const rewarders = this.getVaultObjectInfo({ coinType }).rewarders;
+  ): Promise<Record<string, TransactionResult>> {
+    await this.ensureConfig();
+    const vaultObj = this._vault(tx, { coinType });
+    const rewarders = this._getVaultObjectInfo({ coinType }).rewarders;
     const registryObj = tx.sharedObjectRef(this.config.VAULT_REWARDER_REGISTRY);
 
     if (!rewarders) {
@@ -1741,7 +2048,7 @@ export class BucketClient {
             registryObj,
             tx.object(rewarderId),
             vaultObj,
-            this.newAccountRequest(tx, { accountObjectOrId }),
+            this._newAccountRequest(tx, { accountObjectOrId }),
             tx.object.clock(),
           ],
         }),
@@ -1753,7 +2060,7 @@ export class BucketClient {
   /**
    * @description
    */
-  buildDepositToSavingPoolTransaction(
+  async buildDepositToSavingPoolTransaction(
     tx: Transaction,
     {
       address,
@@ -1766,26 +2073,27 @@ export class BucketClient {
       lpType: string;
       depositCoinOrAmount: number | TransactionArgument;
     },
-  ): void {
+  ): Promise<void> {
+    await this.ensureConfig();
     const depositCoin =
       typeof depositCoinOrAmount === 'number'
-        ? coinWithBalance({ balance: depositCoinOrAmount, type: this.getUsdbCoinType() })
+        ? coinWithBalance({ balance: depositCoinOrAmount, type: this._getUsdbCoinType() })
         : depositCoinOrAmount;
 
-    const depositResponse = this.savingPoolDeposit(tx, {
+    const depositResponse = this._savingPoolDeposit(tx, {
       address,
       accountObjectOrId,
       lpType,
       usdbCoin: depositCoin,
     });
 
-    this.checkDepositResponse(tx, { lpType, depositResponse });
+    this._checkDepositResponse(tx, { lpType, depositResponse });
   }
 
   /**
    * @description
    */
-  buildWithdrawFromSavingPoolTransaction(
+  async buildWithdrawFromSavingPoolTransaction(
     tx: Transaction,
     {
       accountObjectOrId,
@@ -1796,14 +2104,15 @@ export class BucketClient {
       lpType: string;
       amount: number;
     },
-  ): TransactionNestedResult {
-    const [usdbCoin, withdrawResponse] = this.savingPoolWithdraw(tx, {
+  ): Promise<TransactionNestedResult> {
+    await this.ensureConfig();
+    const [usdbCoin, withdrawResponse] = this._savingPoolWithdraw(tx, {
       accountObjectOrId,
       lpType,
       amount,
     });
 
-    this.checkWithdrawResponse(tx, { lpType, withdrawResponse });
+    this._checkWithdrawResponse(tx, { lpType, withdrawResponse });
 
     return usdbCoin;
   }
@@ -1811,7 +2120,7 @@ export class BucketClient {
   /**
    * @description
    */
-  buildClaimSavingRewardsTransaction(
+  async buildClaimSavingRewardsTransaction(
     tx: Transaction,
     {
       accountObjectOrId,
@@ -1820,8 +2129,9 @@ export class BucketClient {
       accountObjectOrId?: string | TransactionArgument;
       lpType: string;
     },
-  ): Record<string, TransactionResult> {
-    const savingPool = this.getSavingPoolObjectInfo({ lpType });
+  ): Promise<Record<string, TransactionResult>> {
+    await this.ensureConfig();
+    const savingPool = this._getSavingPoolObjectInfo({ lpType });
 
     if (!savingPool.reward) {
       return {};
@@ -1829,7 +2139,7 @@ export class BucketClient {
     return savingPool.reward.rewardTypes.reduce(
       (result, rewardType) => ({
         ...result,
-        [rewardType]: this.claimPoolIncentive(tx, {
+        [rewardType]: this._claimPoolIncentive(tx, {
           accountObjectOrId,
           lpType,
           rewardType,
@@ -1854,6 +2164,7 @@ export class BucketClient {
       inputCoinOrAmount: number | TransactionArgument;
     },
   ): Promise<TransactionResult> {
+    await this.ensureConfig();
     const inputCoin =
       typeof inputCoinOrAmount === 'number'
         ? coinWithBalance({ balance: inputCoinOrAmount, type: coinType })
@@ -1861,7 +2172,7 @@ export class BucketClient {
 
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
-    return this.psmSwapIn(tx, { accountObjectOrId, coinType, priceResult, inputCoin });
+    return this._psmSwapIn(tx, { accountObjectOrId, coinType, priceResult, inputCoin });
   }
 
   /**
@@ -1879,13 +2190,14 @@ export class BucketClient {
       usdbCoinOrAmount: number | TransactionArgument;
     },
   ): Promise<TransactionResult> {
+    await this.ensureConfig();
     const usdbCoin =
       typeof usdbCoinOrAmount === 'number'
-        ? coinWithBalance({ balance: usdbCoinOrAmount, type: this.getUsdbCoinType() })
+        ? coinWithBalance({ balance: usdbCoinOrAmount, type: this._getUsdbCoinType() })
         : usdbCoinOrAmount;
 
     const [priceResult] = await this.aggregatePrices(tx, { coinTypes: [coinType] });
 
-    return this.psmSwapOut(tx, { accountObjectOrId, coinType, priceResult, usdbCoin });
+    return this._psmSwapOut(tx, { accountObjectOrId, coinType, priceResult, usdbCoin });
   }
 }

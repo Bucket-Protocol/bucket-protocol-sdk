@@ -45,7 +45,7 @@ This is a TypeScript SDK for [Bucket Protocol](https://bucketprotocol.io), a CDP
 
 ### Source Layout
 
-- **`src/client.ts`** — `BucketClient` class; all public SDK methods live here (queries + PTB builders). Use `BucketClient.create()` to fetch config from chain; or pass `config` to the constructor for custom/config-override usage.
+- **`src/client.ts`** — `BucketClient` class; all public SDK methods live here (queries + PTB builders). Use `BucketClient.initialize()` to fetch config from chain; or pass `config` to the constructor for custom/config-override usage.
 - **`src/consts/`** — static constants:
   - `entry.ts` — `ENTRY_CONFIG_ID` per network (mainnet/testnet); entry point to fetch on-chain config
   - `price.ts` — auxiliary shared object refs for derivative price feeds (Scallop, gCoin, Unihouse)
@@ -66,7 +66,7 @@ This is a TypeScript SDK for [Bucket Protocol](https://bucketprotocol.io), a CDP
 
 **Price aggregation via Pyth:** `aggregatePrices(tx, { coinTypes })` fetches Pyth VAAs and adds price update calls to the PTB. Derivative assets (sCoin, gCoin, BFBTC) have their price derived from an underlying asset rather than a direct Pyth feed.
 
-**On-chain config:** Config (package IDs, vault/aggregator/PSM refs) is fetched from chain via `queryAllConfig()` and converted to `ConfigType` by `convertOnchainConfig()`. Use `BucketClient.create({ network })` for the default flow.
+**On-chain config:** Config (package IDs, vault/aggregator/PSM refs) is fetched from chain via `queryAllConfig()` and converted to `ConfigType` by `convertOnchainConfig()`. Use `BucketClient.initialize({ network })` for the default flow.
 
 **Dual package IDs:** `ORIGINAL_*_PACKAGE_ID` is the initial deployment ID (used for type-checking); `*_PACKAGE_ID` is the latest upgrade ID (used for Move calls). Both are required because Sui upgradeable packages change the call target but not the type origin.
 

@@ -14,6 +14,7 @@ const TYPE_AGGREGATOR = '::aggregator::Aggregator';
 const TYPE_VAULT = '::vault::Vault';
 const TYPE_SAVING_POOL = '::saving_pool::SavingPool';
 const TYPE_PSM_POOL = '::psm_pool::PsmPool';
+const TYPE_PRICE_CONFIG = '::price::PriceConfig';
 
 // ============================================================
 // Query Helpers
@@ -104,6 +105,10 @@ export interface BucketOnchainConfig {
     id: string;
     entries: Record<string, unknown>;
   };
+  priceConfig?: {
+    id: string;
+    entries: Record<string, unknown>;
+  };
 }
 
 // ============================================================
@@ -188,6 +193,10 @@ export async function queryAllConfig(
         const table = json.table as Record<string, unknown>;
         const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
         result.psmPool = { id: json.id as string, entries };
+      } else if (type.endsWith(TYPE_PRICE_CONFIG)) {
+        const table = json.table as Record<string, unknown>;
+        const entries = await queryTableEntries(client, (table as Record<string, unknown>).id as string);
+        result.priceConfig = { id: json.id as string, entries };
       } else {
         // eslint-disable-next-line no-console
         console.warn(`Unknown object type: ${type} (objectId: ${obj.objectId})`);

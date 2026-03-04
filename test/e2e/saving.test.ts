@@ -33,7 +33,7 @@ describe('E2E Saving', () => {
         coinType: usdcCoinType,
         inputCoinOrAmount: usdcCoin,
       });
-      bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      await bucketClient.buildDepositToSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         address: testAccount,
         depositCoinOrAmount: usdbCoin,
@@ -50,8 +50,8 @@ describe('E2E Saving', () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
       const amount = TEST_AMOUNT_USDB;
-      const usdbCoin = coinWithBalance({ type: getUsdbCoinType(), balance: amount });
-      bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      const usdbCoin = coinWithBalance({ type: await getUsdbCoinType(), balance: amount });
+      await bucketClient.buildDepositToSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         address: testAccount,
         depositCoinOrAmount: usdbCoin,
@@ -68,7 +68,7 @@ describe('E2E Saving', () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
       const amount = TEST_AMOUNT_USDB;
-      const usdbCoin = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+      const usdbCoin = await bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         amount,
       });
@@ -84,7 +84,7 @@ describe('E2E Saving', () => {
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const rewardsRecord = bucketClient.buildClaimSavingRewardsTransaction(tx, {
+      const rewardsRecord = await bucketClient.buildClaimSavingRewardsTransaction(tx, {
         lpType: susdbLpType,
       });
       tx.transferObjects(Object.values(rewardsRecord), testAccount);
@@ -99,17 +99,17 @@ describe('E2E Saving', () => {
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const zeroUsdbCoin = getZeroCoin(tx, { coinType: getUsdbCoinType() });
-      bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      const zeroUsdbCoin = getZeroCoin(tx, { coinType: await getUsdbCoinType() });
+      await bucketClient.buildDepositToSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         address: testAccount,
         depositCoinOrAmount: zeroUsdbCoin,
       });
-      const usdbOut = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+      const usdbOut = await bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         amount: 0,
       });
-      destroyZeroCoin(tx, { coinType: getUsdbCoinType(), coin: usdbOut });
+      destroyZeroCoin(tx, { coinType: await getUsdbCoinType(), coin: usdbOut });
       const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
       expect(dryrunRes.$kind).toBe('Transaction');
     },
@@ -121,17 +121,17 @@ describe('E2E Saving', () => {
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const zeroUsdbCoin = coinWithBalance({ type: getUsdbCoinType(), balance: 0 });
-      bucketClient.buildDepositToSavingPoolTransaction(tx, {
+      const zeroUsdbCoin = coinWithBalance({ type: await getUsdbCoinType(), balance: 0 });
+      await bucketClient.buildDepositToSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         address: testAccount,
         depositCoinOrAmount: zeroUsdbCoin,
       });
-      const usdbOut = bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
+      const usdbOut = await bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
         lpType: susdbLpType,
         amount: 0,
       });
-      destroyZeroCoin(tx, { coinType: getUsdbCoinType(), coin: usdbOut });
+      destroyZeroCoin(tx, { coinType: await getUsdbCoinType(), coin: usdbOut });
       const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
       expect(dryrunRes.$kind).toBe('Transaction');
     },

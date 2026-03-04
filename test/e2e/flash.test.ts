@@ -25,14 +25,14 @@ describe('E2E Flash', () => {
       tx.setSender(testAccount);
       const amount = 1_000 * 10 ** 6;
       const feeAmount = amount * 0.0005;
-      const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
+      const [usdbCoin, flashMintReceipt] = await bucketClient.flashMint(tx, { amount });
       const feeCollateralCoin = coinWithBalance({ type: usdcCoinType, balance: feeAmount });
       const feeUsdbCoin = await bucketClient.buildPSMSwapInTransaction(tx, {
         coinType: usdcCoinType,
         inputCoinOrAmount: feeCollateralCoin,
       });
       tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
-      bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
+      await bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
       const dryrunRes = await suiClient.simulateTransaction({ transaction: tx });
       expect(dryrunRes.$kind).toBe('Transaction');
     },

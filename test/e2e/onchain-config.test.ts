@@ -1,5 +1,5 @@
 /**
- * E2E: BucketClient.create() fetches config from on-chain Config and creates a usable BucketClient.
+ * E2E: BucketClient.initialize() fetches config from on-chain Config and creates a usable BucketClient.
  * The entry Config is currently deployed on testnet.
  */
 import { SuiGrpcClient } from '@mysten/sui/grpc';
@@ -42,11 +42,11 @@ describe('On-chain config (testnet)', () => {
     );
   });
 
-  describe('BucketClient.create()', () => {
+  describe('BucketClient.initialize()', () => {
     let bucketClient: BucketClient;
 
     beforeAll(async () => {
-      bucketClient = await BucketClient.create({ suiClient, network });
+      bucketClient = await BucketClient.initialize({ suiClient, network });
     }, TIMEOUT_MS);
 
     it('returns a BucketClient instance', () => {
@@ -69,8 +69,8 @@ describe('On-chain config (testnet)', () => {
       TIMEOUT_MS,
     );
 
-    it('getUsdbCoinType returns a valid coin type string', () => {
-      const usdbType = bucketClient.getUsdbCoinType();
+    it('getUsdbCoinType returns a valid coin type string', async () => {
+      const usdbType = await bucketClient.getUsdbCoinType();
       expect(usdbType).toContain('::usdb::USDB');
       expect(usdbType.startsWith('0x')).toBe(true);
     });
@@ -79,4 +79,69 @@ describe('On-chain config (testnet)', () => {
       expect(bucketClient.getSuiClient()).toBe(suiClient);
     });
   });
+});
+
+const mainnetSuiClient = new SuiGrpcClient({ network: 'mainnet', baseUrl: 'https://fullnode.mainnet.sui.io:443' });
+
+describe('On-chain price config (mainnet)', () => {
+  beforeAll(beforeFileStart);
+  afterAll(afterFileEnd);
+  afterEach(afterTestDelay);
+
+  it(
+    'queryAllConfig includes priceConfig with table entries',
+    async () => {
+      const raw = await queryAllConfig(mainnetSuiClient, 'mainnet');
+      expect(raw.priceConfig).toBeDefined();
+      expect(raw.priceConfig!.id).toBeTruthy();
+      expect(typeof raw.priceConfig!.entries).toBe('object');
+      expect(Object.keys(raw.priceConfig!.entries).length).toBeGreaterThan(0);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    'PRICE_OBJS contains required derivative price keys',
+    async () => {
+      const client = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
+      const config = await client.getConfig();
+      expect(config).toBeDefined();
+
+      const priceObjs = config!.PRICE_OBJS;
+      expect(priceObjs).toBeDefined();
+      expect(typeof priceObjs).toBe('object');
+
+      // These keys are used by getDerivativePrice for sCoin and gCoin feeds
+      const requiredKeys = [
+        'SCOIN_RULE_CONFIG',
+        'SCALLOP_VERSION',
+        'SCALLOP_MARKET',
+        'GCOIN_RULE_CONFIG',
+        'UNIHOUSE_OBJECT',
+      ];
+      for (const key of requiredKeys) {
+        expect(priceObjs).toHaveProperty(key);
+        expect(priceObjs[key].objectId).toBeTruthy();
+        expect(priceObjs[key].objectId.startsWith('0x')).toBe(true);
+      }
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    'PRICE_OBJS entries have valid SharedObjectRef shape',
+    async () => {
+      const client = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
+      const config = await client.getConfig();
+      const priceObjs = config!.PRICE_OBJS;
+
+      for (const [key, ref] of Object.entries(priceObjs)) {
+        expect(ref, `${key} should have objectId`).toHaveProperty('objectId');
+        expect(ref, `${key} should have initialSharedVersion`).toHaveProperty('initialSharedVersion');
+        expect(ref, `${key} should have mutable`).toHaveProperty('mutable');
+        expect(typeof ref.objectId).toBe('string');
+      }
+    },
+    TIMEOUT_MS,
+  );
 });
