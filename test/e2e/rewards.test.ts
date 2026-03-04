@@ -22,17 +22,15 @@ describe('E2E Rewards', () => {
     async () => {
       const tx = new Transaction();
       tx.setSender(testAccount);
-      const result = bucketClient.getAllCollateralTypes().reduce(
-        (acc, coinType) => {
-          const rewardsRecord = bucketClient.buildClaimBorrowRewardsTransaction(tx, { coinType });
-          for (const [ct, rewardCoin] of Object.entries(rewardsRecord)) {
-            if (acc[ct]) tx.mergeCoins(acc[ct], [rewardCoin]);
-            else acc[ct] = rewardCoin;
-          }
-          return acc;
-        },
-        {} as Record<string, TransactionResult>,
-      );
+      const collateralTypes = await bucketClient.getAllCollateralTypes();
+      const result: Record<string, TransactionResult> = {};
+      for (const coinType of collateralTypes) {
+        const rewardsRecord = await bucketClient.buildClaimBorrowRewardsTransaction(tx, { coinType });
+        for (const [ct, rewardCoin] of Object.entries(rewardsRecord)) {
+          if (result[ct]) tx.mergeCoins(result[ct], [rewardCoin]);
+          else result[ct] = rewardCoin;
+        }
+      }
       tx.transferObjects(Object.values(result), testAccount);
       const dryrunRes = await suiClient.simulateTransaction({
         transaction: tx,

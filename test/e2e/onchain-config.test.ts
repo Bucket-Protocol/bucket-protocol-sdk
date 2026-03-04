@@ -69,8 +69,8 @@ describe('On-chain config (testnet)', () => {
       TIMEOUT_MS,
     );
 
-    it('getUsdbCoinType returns a valid coin type string', () => {
-      const usdbType = bucketClient.getUsdbCoinType();
+    it('getUsdbCoinType returns a valid coin type string', async () => {
+      const usdbType = await bucketClient.getUsdbCoinType();
       expect(usdbType).toContain('::usdb::USDB');
       expect(usdbType.startsWith('0x')).toBe(true);
     });

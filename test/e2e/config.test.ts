@@ -32,7 +32,7 @@ describe('E2E Config & metadata', () => {
     'usdbCoinType returns USDB metadata (6 decimals)',
     async () => {
       const { coinMetadata: usdbMetadata } = await suiClient.getCoinMetadata({
-        coinType: getUsdbCoinType(),
+        coinType: await getUsdbCoinType(),
       });
       expect(usdbMetadata?.decimals).toBe(6);
       expect(usdbMetadata?.symbol).toBe('USDB');
