@@ -85,9 +85,7 @@ export class BucketClient {
     config: ConfigType;
   }) {
     if (!config) {
-      throw new Error(
-        'BucketClient requires config. Use BucketClient.initialize() or pass config to the constructor.',
-      );
+      throw new Error('BucketClient requires config. Use BucketClient.initialize() or pass config to the constructor.');
     }
     this._config = config;
     this.network = network;
