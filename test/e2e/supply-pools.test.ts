@@ -15,11 +15,11 @@ describe('E2E Supply & pools', () => {
   afterEach(afterTestDelay);
 
   it(
-    'getUsdbSupply returns non-negative bigint',
+    'getUsdbSupply returns positive bigint (mainnet has circulating USDB)',
     async () => {
       const supply = await bucketClient.getUsdbSupply();
       expect(typeof supply).toBe('bigint');
-      expect(supply).toBeGreaterThanOrEqual(0n);
+      expect(supply).toBeGreaterThan(0n);
     },
     MAINNET_TIMEOUT_MS,
   );

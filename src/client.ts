@@ -260,10 +260,10 @@ export class BucketClient {
    * &mut which cannot be passed between commands; SDK v2 validates this and rejects).
    */
   async getUsdbSupply(): Promise<bigint> {
-    const coinType = this.getUsdbCoinType();
+    const coinType = (await this.suiClient.core.mvr.resolveType({ type: this.getUsdbCoinType() })).type;
     const { response } = await this.suiClient.stateService.getCoinInfo({ coinType });
     const supply = response.treasury?.totalSupply;
-    return supply !== undefined && supply !== null ? BigInt(supply) : 0n;
+    return supply != null ? BigInt(supply) : 0n;
   }
 
   /**
