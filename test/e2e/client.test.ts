@@ -50,6 +50,16 @@ describe('Interacting with Bucket Client on mainnet', () => {
     );
 
     it(
+      'getUsdbSupply returns positive bigint (mainnet has circulating USDB)',
+      async () => {
+        const supply = await bucketClient.getUsdbSupply();
+        expect(typeof supply).toBe('bigint');
+        expect(supply).toBeGreaterThan(0n);
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
       'getFlashMintInfo returns feeRate and partner config',
       async () => {
         const info = await bucketClient.getFlashMintInfo();
