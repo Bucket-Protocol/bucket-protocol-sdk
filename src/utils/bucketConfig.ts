@@ -17,47 +17,33 @@ const TYPE_PSM_POOL = '::psm_pool::PsmPool';
 const TYPE_PRICE_CONFIG = '::price::PriceConfig';
 
 // ============================================================
-// Query Helpers
+// VecMap JSON parser (RPC returns { contents: [{ key, value }, ...] })
 // ============================================================
 
-/**
- * Parse a VecMap JSON representation into a Record<string, unknown>.
- *
- * VecMap<K,V> on-chain serializes to JSON as an array of { key, value } entries.
- * This replaces the old Table-based dynamic field queries — VecMap data is
- * embedded directly in the parent object's JSON, eliminating extra RPC calls.
- */
-function parseVecMap(vecMap: unknown): Record<string, unknown> {
-  const entries: Record<string, unknown> = {};
+function parseVecMap<T = unknown>(vecMap: unknown): Record<string, T> {
+  const entries: Record<string, T> = {};
   if (!vecMap) return entries;
-
-  // VecMap serializes as { contents: [{ key, value }, ...] }
   let items: unknown[];
   if (Array.isArray(vecMap)) {
     items = vecMap;
   } else if (typeof vecMap === 'object' && vecMap !== null && 'contents' in vecMap) {
-    items = (vecMap as Record<string, unknown>).contents as unknown[];
+    items = (vecMap as { contents: unknown[] }).contents;
   } else {
     return entries;
   }
-
   for (const item of items) {
-    const entry = item as Record<string, unknown>;
-    entries[entry.key as string] = entry.value;
+    const entry = item as { key: string; value: T };
+    entries[entry.key] = entry.value;
   }
-
   return entries;
 }
 
 // ============================================================
-// Output Types
+// Output Types (raw on-chain JSON shape from RPC)
 // ============================================================
 
 export interface BucketOnchainConfig {
-  config: {
-    id: string;
-    id_vector: string[];
-  };
+  config: { id: string; id_vector: string[] };
   packageConfig?: Record<string, unknown>;
   oracleConfig?: Record<string, unknown>;
   objectConfig?: Record<string, unknown>;
@@ -118,19 +104,19 @@ export async function queryAllConfig(
     throw new Error('Config object has no JSON content');
   }
 
-  const configJson = configObj.json as Record<string, unknown>;
+  const configJson = configObj.json as { id: string; id_vector: string[] };
   const result: BucketOnchainConfig = {
     config: {
-      id: configJson.id as string,
-      id_vector: configJson.id_vector as string[],
+      id: configJson.id,
+      id_vector: configJson.id_vector,
     },
   };
 
-  if ((configJson.id_vector as string[]).length === 0) return result;
+  if (configJson.id_vector.length === 0) return result;
 
   // 2. Batch fetch all sub-objects referenced by id_vector
   const { objects } = await client.getObjects({
-    objectIds: configJson.id_vector as string[],
+    objectIds: configJson.id_vector,
     include: { json: true },
   });
 
@@ -148,26 +134,36 @@ export async function queryAllConfig(
 
     try {
       if (type.endsWith(TYPE_PACKAGE_CONFIG)) {
-        result.packageConfig = json;
+        result.packageConfig = json as Record<string, unknown>;
       } else if (type.endsWith(TYPE_ORACLE_CONFIG)) {
-        result.oracleConfig = json;
+        result.oracleConfig = json as Record<string, unknown>;
       } else if (type.endsWith(TYPE_OBJECT_CONFIG)) {
-        result.objectConfig = json;
+        result.objectConfig = json as Record<string, unknown>;
       } else if (type.endsWith(TYPE_AGGREGATOR)) {
-        const entries = parseVecMap(json.table);
-        result.aggregator = { id: json.id as string, entries };
+        result.aggregator = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
       } else if (type.endsWith(TYPE_VAULT)) {
-        const entries = parseVecMap(json.table);
-        result.vault = { id: json.id as string, entries };
+        result.vault = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
       } else if (type.endsWith(TYPE_SAVING_POOL)) {
-        const entries = parseVecMap(json.table);
-        result.savingPool = { id: json.id as string, entries };
+        result.savingPool = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
       } else if (type.endsWith(TYPE_PSM_POOL)) {
-        const entries = parseVecMap(json.table);
-        result.psmPool = { id: json.id as string, entries };
+        result.psmPool = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
       } else if (type.endsWith(TYPE_PRICE_CONFIG)) {
-        const entries = parseVecMap(json.table);
-        result.priceConfig = { id: json.id as string, entries };
+        result.priceConfig = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
       } else {
         // eslint-disable-next-line no-console
         console.warn(`Unknown object type: ${type} (objectId: ${obj.objectId})`);
