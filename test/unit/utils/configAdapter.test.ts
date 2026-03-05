@@ -16,7 +16,7 @@ describe('unit/utils/configAdapter', () => {
       expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://hermes.pyth.network');
       expect(config.PYTH_STATE_ID).toBe('');
       expect(config.ORIGINAL_USDB_PACKAGE_ID).toBe('');
-      expect(config.TREASURY_OBJ).toEqual({ objectId: '', initialSharedVersion: 0, mutable: true });
+      expect(config.TREASURY_OBJ).toEqual({ objectId: '', initialSharedVersion: '0', mutable: true });
       expect(config.AGGREGATOR_OBJS).toEqual({});
       expect(config.VAULT_OBJS).toEqual({});
     });
@@ -40,7 +40,7 @@ describe('unit/utils/configAdapter', () => {
       const config = convertOnchainConfig(onchain);
       expect(config.PYTH_RULE_CONFIG_OBJ).toEqual({
         objectId: '0xabc123',
-        initialSharedVersion: 0,
+        initialSharedVersion: '0',
         mutable: false,
       });
     });
@@ -59,7 +59,7 @@ describe('unit/utils/configAdapter', () => {
       const config = convertOnchainConfig(onchain);
       expect(config.TREASURY_OBJ).toEqual({
         objectId: '0xtreasury',
-        initialSharedVersion: 5,
+        initialSharedVersion: '5',
         mutable: true,
       });
     });
@@ -78,7 +78,7 @@ describe('unit/utils/configAdapter', () => {
       const config = convertOnchainConfig(onchain);
       expect(config.VAULT_REWARDER_REGISTRY).toEqual({
         objectId: '0xregistry',
-        initialSharedVersion: 1,
+        initialSharedVersion: '1',
         mutable: false,
       });
     });
@@ -99,8 +99,10 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.AGGREGATOR_OBJS['0x2::sui::SUI']).toEqual({
-        priceAggregator: { objectId: '0xagg1', initialSharedVersion: 0, mutable: false },
-        pythPriceId: '0xprice123',
+        Pyth: {
+          priceAggregator: { objectId: '0xagg1', initialSharedVersion: '0', mutable: false },
+          pythPriceId: '0xprice123',
+        },
       });
     });
 
@@ -121,10 +123,10 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.AGGREGATOR_OBJS['0x::scoin::SCOIN']).toEqual({
-        priceAggregator: { objectId: '0xagg2', initialSharedVersion: 0, mutable: false },
-        derivativeInfo: {
-          underlyingCoinType: '0x2::sui::SUI',
-          derivativeKind: 'Scallop',
+        DerivativeInfo: {
+          priceAggregator: { objectId: '0xagg2', initialSharedVersion: '0', mutable: false },
+          underlying_coin_type: '0x2::sui::SUI',
+          derivative_kind: 'Scallop',
         },
       });
     });
@@ -145,9 +147,11 @@ describe('unit/utils/configAdapter', () => {
         },
       };
       const config = convertOnchainConfig(onchain);
-      expect(config.AGGREGATOR_OBJS.coin.derivativeInfo).toEqual({
-        underlyingCoinType: '0x2::sui::SUI',
-        derivativeKind: 'GCoin',
+      expect(config.AGGREGATOR_OBJS.coin).toMatchObject({
+        DerivativeInfo: {
+          underlying_coin_type: '0x2::sui::SUI',
+          derivative_kind: 'GCoin',
+        },
       });
     });
 
@@ -166,8 +170,10 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.AGGREGATOR_OBJS.coin).toEqual({
-        priceAggregator: { objectId: '0xagg4', initialSharedVersion: 0, mutable: false },
-        pythPriceId: '0xlegacy',
+        Pyth: {
+          priceAggregator: { objectId: '0xagg4', initialSharedVersion: '0', mutable: false },
+          pythPriceId: '0xlegacy',
+        },
       });
     });
 
@@ -189,10 +195,10 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.AGGREGATOR_OBJS.coin).toEqual({
-        priceAggregator: { objectId: '0xagg5', initialSharedVersion: 0, mutable: false },
-        derivativeInfo: {
-          underlyingCoinType: '0x2::sui::SUI',
-          derivativeKind: 'Unihouse',
+        DerivativeInfo: {
+          priceAggregator: { objectId: '0xagg5', initialSharedVersion: '0', mutable: false },
+          underlying_coin_type: '0x2::sui::SUI',
+          derivative_kind: 'Unihouse',
         },
       });
     });
@@ -212,8 +218,8 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.VAULT_OBJS['0x2::sui::SUI']).toEqual({
-        vault: { objectId: '0xv1', initialSharedVersion: 0, mutable: true },
-        rewarders: [{ rewardType: 'BUCK', rewarderId: '0xr1' }],
+        vault: { objectId: '0xv1', initialSharedVersion: '0', mutable: true },
+        rewarders: [{ rewarder_id: '0xr1', reward_type: 'BUCK' }],
       });
     });
 
@@ -231,7 +237,7 @@ describe('unit/utils/configAdapter', () => {
         },
       };
       const config = convertOnchainConfig(onchain);
-      expect(config.VAULT_OBJS.coin.rewarders).toEqual([{ rewardType: 'BUCK', rewarderId: '0xr2' }]);
+      expect(config.VAULT_OBJS.coin.rewarders).toEqual([{ rewarder_id: '0xr2', reward_type: 'BUCK' }]);
     });
 
     it('parses vault entry without rewarders', () => {
@@ -246,7 +252,7 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.VAULT_OBJS.coin).toEqual({
-        vault: { objectId: '0xv3', initialSharedVersion: 0, mutable: true },
+        vault: { objectId: '0xv3', initialSharedVersion: '0', mutable: true },
       });
       expect(config.VAULT_OBJS.coin).not.toHaveProperty('rewarders');
     });
@@ -269,10 +275,10 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.SAVING_POOL_OBJS.lp).toEqual({
-        pool: { objectId: '0xp1', initialSharedVersion: 0, mutable: true },
+        pool: { objectId: '0xp1', initialSharedVersion: '0', mutable: true },
         reward: {
-          rewardManager: { objectId: '0xrm', initialSharedVersion: 0, mutable: true },
-          rewardTypes: ['BUCK', 'SUI'],
+          reward_manager: { objectId: '0xrm', initialSharedVersion: '0', mutable: true },
+          reward_types: ['BUCK', 'SUI'],
         },
       });
     });
@@ -294,7 +300,7 @@ describe('unit/utils/configAdapter', () => {
         },
       };
       const config = convertOnchainConfig(onchain);
-      expect(config.SAVING_POOL_OBJS.lp.reward?.rewardTypes).toEqual(['BUCK']);
+      expect(config.SAVING_POOL_OBJS.lp.reward?.reward_types).toEqual(['BUCK']);
     });
 
     it('parses PSM pool entry', () => {
@@ -309,7 +315,7 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.PSM_POOL_OBJS['0x::usdc::USDC']).toEqual({
-        pool: { objectId: '0xpsm1', initialSharedVersion: 0, mutable: true },
+        pool: { objectId: '0xpsm1', initialSharedVersion: '0', mutable: true },
       });
     });
 
@@ -337,17 +343,19 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.PRICE_OBJS.sCoin).toEqual({
-        variant: 'SCOIN',
-        package: '0xscoin_pkg',
-        scoinRuleConfig: { objectId: '0xscoin_rule', initialSharedVersion: 0, mutable: false },
-        scallopVersion: { objectId: '0xscallop_ver', initialSharedVersion: 0, mutable: false },
-        scallopMarket: { objectId: '0xscallop_mkt', initialSharedVersion: 0, mutable: false },
+        SCOIN: {
+          package: '0xscoin_pkg',
+          scoin_rule_config: { objectId: '0xscoin_rule', initialSharedVersion: '0', mutable: false },
+          scallop_version: { objectId: '0xscallop_ver', initialSharedVersion: '0', mutable: false },
+          scallop_market: { objectId: '0xscallop_mkt', initialSharedVersion: '0', mutable: false },
+        },
       });
       expect(config.PRICE_OBJS.gCoin).toEqual({
-        variant: 'GCOIN',
-        package: '0xgcoin_pkg',
-        gcoinRuleConfig: { objectId: '0xgcoin_rule', initialSharedVersion: 0, mutable: false },
-        unihouseObject: { objectId: '0xunihouse', initialSharedVersion: 0, mutable: false },
+        GCOIN: {
+          package: '0xgcoin_pkg',
+          gcoin_rule_config: { objectId: '0xgcoin_rule', initialSharedVersion: '0', mutable: false },
+          unihouse_object: { objectId: '0xunihouse', initialSharedVersion: '0', mutable: false },
+        },
       });
     });
 
@@ -367,9 +375,10 @@ describe('unit/utils/configAdapter', () => {
       };
       const config = convertOnchainConfig(onchain);
       expect(config.PRICE_OBJS.BFBTC).toEqual({
-        variant: 'BFBTC',
-        package: '0xbfbtc_pkg',
-        bfbtcRuleConfig: { objectId: '0xbfbtc_rule', initialSharedVersion: 0, mutable: false },
+        BFBTC: {
+          package: '0xbfbtc_pkg',
+          bfbtc_rule_config: { objectId: '0xbfbtc_rule', initialSharedVersion: '0', mutable: false },
+        },
       });
     });
 
@@ -388,17 +397,17 @@ describe('unit/utils/configAdapter', () => {
       const config = convertOnchainConfig(minimalOnchain);
       expect(config.SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ).toEqual({
         objectId: '',
-        initialSharedVersion: 0,
+        initialSharedVersion: '0',
         mutable: false,
       });
       expect(config.FLASH_GLOBAL_CONFIG_OBJ).toEqual({
         objectId: '',
-        initialSharedVersion: 0,
+        initialSharedVersion: '0',
         mutable: true,
       });
       expect(config.BLACKLIST_OBJ).toEqual({
         objectId: '',
-        initialSharedVersion: 0,
+        initialSharedVersion: '0',
         mutable: false,
       });
     });
@@ -457,7 +466,7 @@ describe('unit/utils/configAdapter', () => {
       const enriched = await enrichSharedObjectRefs(config, client);
 
       expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('42');
-      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].Pyth!.priceAggregator.initialSharedVersion).toBe('100');
       expect(getObjects).toHaveBeenCalledWith({
         objectIds: expect.arrayContaining(['0xrule', '0xpa']),
         include: { json: false },
@@ -466,15 +475,15 @@ describe('unit/utils/configAdapter', () => {
 
     it('returns config unchanged when no refs need enrichment', async () => {
       const config = minimalConfigWithRefsNeedingEnrichment();
-      config.PYTH_RULE_CONFIG_OBJ.initialSharedVersion = 5;
-      config.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion = 10;
+      config.PYTH_RULE_CONFIG_OBJ.initialSharedVersion = '5';
+      config.AGGREGATOR_OBJS['0x2::sui::SUI'].Pyth!.priceAggregator.initialSharedVersion = '10';
       const getObjects = vi.fn();
       const client = asSuiClient({ getObjects });
 
       const enriched = await enrichSharedObjectRefs(config, client);
 
-      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(5);
-      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe(10);
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('5');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].Pyth!.priceAggregator.initialSharedVersion).toBe('10');
       expect(getObjects).not.toHaveBeenCalled();
     });
 
@@ -490,8 +499,8 @@ describe('unit/utils/configAdapter', () => {
 
       const enriched = await enrichSharedObjectRefs(config, client);
 
-      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(0);
-      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('0');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].Pyth!.priceAggregator.initialSharedVersion).toBe('100');
     });
 
     it('does not fetch refs with empty objectId', async () => {
@@ -509,12 +518,12 @@ describe('unit/utils/configAdapter', () => {
         include: { json: false },
       });
       expect(enriched.PYTH_RULE_CONFIG_OBJ.objectId).toBe('');
-      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].Pyth!.priceAggregator.initialSharedVersion).toBe('100');
     });
 
     it('deduplicates objectIds when multiple refs point to same object', async () => {
       const config = minimalConfigWithRefsNeedingEnrichment();
-      config.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.objectId = '0xrule';
+      config.AGGREGATOR_OBJS['0x2::sui::SUI'].Pyth!.priceAggregator.objectId = '0xrule';
       const getObjects = vi.fn().mockResolvedValue({
         objects: [{ objectId: '0xrule', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '99' } } }],
       });
@@ -527,7 +536,7 @@ describe('unit/utils/configAdapter', () => {
         include: { json: false },
       });
       expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('99');
-      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('99');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].Pyth!.priceAggregator.initialSharedVersion).toBe('99');
     });
 
     it('skips objects with non-Shared owner', async () => {
@@ -542,8 +551,8 @@ describe('unit/utils/configAdapter', () => {
 
       const enriched = await enrichSharedObjectRefs(config, client);
 
-      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(0);
-      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].priceAggregator.initialSharedVersion).toBe('100');
+      expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('0');
+      expect(enriched.AGGREGATOR_OBJS['0x2::sui::SUI'].Pyth!.priceAggregator.initialSharedVersion).toBe('100');
     });
 
     it('returns config unchanged when config has no refs needing enrichment', async () => {

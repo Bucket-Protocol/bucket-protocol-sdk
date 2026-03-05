@@ -20,8 +20,9 @@ describe('E2E Object info helpers', () => {
     'getAggregatorObjectInfo returns aggregator for SUI',
     () => {
       const info = bucketClient.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
-      expect(info).toHaveProperty('priceAggregator');
-      expect(info.priceAggregator).toHaveProperty('objectId');
+      const agg = 'Pyth' in info ? info.Pyth : info.DerivativeInfo;
+      expect(agg).toBeDefined();
+      expect(agg!.priceAggregator).toHaveProperty('objectId');
     },
     MAINNET_TIMEOUT_MS,
   );

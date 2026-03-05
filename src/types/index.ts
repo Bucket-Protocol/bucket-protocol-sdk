@@ -2,12 +2,6 @@ import type { Argument } from '@mysten/sui/transactions';
 
 export * from './config.js';
 
-export type SharedObjectRef = {
-  objectId: string;
-  initialSharedVersion: number | string;
-  mutable: boolean;
-};
-
 export type TransactionNestedResult = Extract<
   Argument,
   {
