@@ -1088,7 +1088,8 @@ export class BucketClient {
         break;
       }
       case 'gCoin':
-      case 'GCoin': {
+      case 'GCoin':
+      case 'Unihouse': {
         if (!('GCOIN' in priceConfig) || !priceConfig.GCOIN)
           throw new Error('Unexpected price config variant for gCoin');
         const pc = priceConfig.GCOIN;
