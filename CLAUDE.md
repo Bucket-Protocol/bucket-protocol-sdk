@@ -56,7 +56,7 @@ This is a TypeScript SDK for [Bucket Protocol](https://bucketprotocol.io), a CDP
   - `transaction.ts` — helpers: `coinWithBalance` (lazy coin resolver intent), `getZeroCoin`, `destroyZeroCoin`, `getCoinsOfType`
   - `resolvers.ts` — `resolveCoinBalance` intent resolver; handles merging/splitting user coins when a transaction is built
   - `pyth.ts` — Pyth price feed helpers; `buildPythPriceUpdateCalls`, `fetchPriceFeedsUpdateDataFromHermes`
-- **`src/_generated/`** — auto-generated Move struct deserializers (via `@mysten/sui` codegen) for: `bucket_v2_borrow_incentive`, `bucket_v2_cdp`, `bucket_v2_flash`, `bucket_v2_framework`, `bucket_v2_psm`, `bucket_v2_saving`, `bucket_v2_saving_incentive`
+- **`src/_generated/`** — Move struct deserializers for: `bucket_v2_borrow_incentive`, `bucket_v2_cdp`, `bucket_v2_flash`, `bucket_v2_framework`, `bucket_v2_psm`, `bucket_v2_saving`, `bucket_v2_saving_incentive`, `bucket_onchain_config`. Generated elsewhere and copied in; do not edit.
 
 ### Key Design Patterns
 

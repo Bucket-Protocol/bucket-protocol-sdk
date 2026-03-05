@@ -52,9 +52,9 @@ function needsVersionEnrichment(ref: SharedObjectRef): boolean {
  *   is off-chain and must always be provided externally)
  */
 export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Partial<ConfigType> = {}): ConfigType {
-  const pkg: Record<string, unknown> = onchain.packageConfig ?? {};
-  const oracle: Record<string, unknown> = onchain.oracleConfig ?? {};
-  const obj: Record<string, unknown> = onchain.objectConfig ?? {};
+  const pkg = (onchain.packageConfig ?? {}) as Record<string, unknown>;
+  const oracle = (onchain.oracleConfig ?? {}) as Record<string, unknown>;
+  const obj = (onchain.objectConfig ?? {}) as Record<string, unknown>;
 
   // --- Package IDs ---
   const config: ConfigType = {
