@@ -172,7 +172,7 @@ export class BucketClient {
     const coinType = (await this.suiClient.core.mvr.resolveType({ type: this.getUsdbCoinType() })).type;
     const { response } = await this.suiClient.stateService.getCoinInfo({ coinType });
     const supply = response.treasury?.totalSupply;
-    return supply != null ? BigInt(supply) : 0n;
+    return supply !== undefined && supply !== null ? BigInt(supply) : 0n;
   }
 
   /**
