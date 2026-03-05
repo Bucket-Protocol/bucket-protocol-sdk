@@ -340,8 +340,17 @@ export async function enrichSharedObjectRefs(config: ConfigType, client: SuiGrpc
   const { objects } = await client.getObjects({ objectIds, include: { json: false } });
   const versionMap = new Map<string, string>();
 
-  for (const obj of objects) {
-    if (obj instanceof Error) continue;
+  for (let i = 0; i < objects.length; i++) {
+    const obj = objects[i];
+    if (obj instanceof Error) {
+      const objectId = objectIds[i] ?? '(unknown)';
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[enrichSharedObjectRefs] getObjects returned Error for objectId ${objectId}; initialSharedVersion will remain 0 and PTB may fail at execution:`,
+        obj.message ?? obj,
+      );
+      continue;
+    }
     const owner = (obj as { owner?: { $kind?: string; Shared?: { initialSharedVersion?: string } } }).owner;
     if (owner?.$kind === 'Shared' && owner.Shared?.initialSharedVersion) {
       versionMap.set(obj.objectId, owner.Shared.initialSharedVersion);
