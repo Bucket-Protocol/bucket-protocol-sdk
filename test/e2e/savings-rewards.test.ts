@@ -58,7 +58,6 @@ describe('E2E Savings & rewards', () => {
           expect(amount).toBeGreaterThanOrEqual(0n);
         }
       }
-      // May be empty if vault has no rewarders
     },
     MAINNET_TIMEOUT_MS,
   );
@@ -72,9 +71,10 @@ describe('E2E Savings & rewards', () => {
         coinTypes,
       });
       expect(typeof rewards).toBe('object');
-      for (const [, vaultRewards] of Object.entries(rewards)) {
-        if (vaultRewards) {
-          for (const amount of Object.values(vaultRewards)) {
+      expect(Object.keys(rewards).length).toBeGreaterThanOrEqual(1);
+      for (const coinType of coinTypes) {
+        if (rewards[coinType]) {
+          for (const amount of Object.values(rewards[coinType]!)) {
             expect(typeof amount).toBe('bigint');
             expect(amount).toBeGreaterThanOrEqual(0n);
           }
@@ -89,6 +89,7 @@ describe('E2E Savings & rewards', () => {
     async () => {
       const flowRates = await bucketClient.getSavingPoolRewardFlowRate({ lpType: susdbLpType });
       expect(typeof flowRates).toBe('object');
+      expect(Object.keys(flowRates).length).toBeGreaterThan(0);
       for (const [, rate] of Object.entries(flowRates)) {
         expect(typeof rate).toBe('bigint');
         expect(rate).toBeGreaterThanOrEqual(0n);
@@ -105,14 +106,12 @@ describe('E2E Savings & rewards', () => {
         lpTypes: [susdbLpType],
       });
       expect(typeof rewards).toBe('object');
-      const susdbRewards = rewards[susdbLpType];
-      if (susdbRewards) {
-        for (const [, amount] of Object.entries(susdbRewards)) {
-          expect(typeof amount).toBe('bigint');
-          expect(amount).toBeGreaterThanOrEqual(0n);
-        }
+      expect(rewards).toHaveProperty(susdbLpType);
+      const susdbRewards = rewards[susdbLpType]!;
+      for (const [, amount] of Object.entries(susdbRewards)) {
+        expect(typeof amount).toBe('bigint');
+        expect(amount).toBeGreaterThanOrEqual(0n);
       }
-      // May be empty if pool has no reward types
     },
     MAINNET_TIMEOUT_MS,
   );
