@@ -13,7 +13,7 @@ import * as configAdapter from '../../src/utils/configAdapter.js';
 const asSuiClient = (m: unknown) => m as unknown as SuiGrpcClient;
 
 function minimalConfig(overrides: Partial<ConfigType> = {}): ConfigType {
-  const emptyRef = { objectId: '', initialSharedVersion: 0, mutable: false };
+  const emptyRef = { objectId: '', initialSharedVersion: '0', mutable: false };
   return {
     PRICE_SERVICE_ENDPOINT: 'https://hermes.pyth.network',
     PYTH_STATE_ID: '',

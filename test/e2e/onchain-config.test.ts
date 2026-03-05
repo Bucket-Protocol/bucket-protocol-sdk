@@ -6,6 +6,7 @@ import { SuiGrpcClient } from '@mysten/sui/grpc';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { BucketClient } from '../../src/client.js';
+import type { PriceConfigInfo } from '../../src/types/index.js';
 import { queryAllConfig, toJson } from '../../src/utils/bucketConfig.js';
 import { afterFileEnd, afterTestDelay, beforeFileStart } from './helpers/rateLimit.js';
 
@@ -111,8 +112,10 @@ describe('On-chain price config (mainnet)', () => {
       expect(priceObjs).toBeDefined();
       expect(typeof priceObjs).toBe('object');
 
-      // Collect all variants present
-      const variants = Object.values(priceObjs).map((info) => info.variant);
+      // Collect all variants present (enum shape: { SCOIN: {...} } | { GCOIN: {...} } | { BFBTC: {...} })
+      const variants = (Object.values(priceObjs) as PriceConfigInfo[]).map((info) =>
+        'SCOIN' in info ? 'SCOIN' : 'GCOIN' in info ? 'GCOIN' : 'BFBTC',
+      );
 
       // sCoin and gCoin feeds should be present
       expect(variants).toContain('SCOIN');
@@ -128,25 +131,24 @@ describe('On-chain price config (mainnet)', () => {
       const config = client.getConfig();
       const priceObjs = config.PRICE_OBJS;
 
-      for (const [key, info] of Object.entries(priceObjs)) {
-        expect(info, `${key} should have variant`).toHaveProperty('variant');
-        expect(info, `${key} should have package`).toHaveProperty('package');
-        expect(typeof info.package).toBe('string');
-        expect(info.package).toBeTruthy();
-
-        switch (info.variant) {
-          case 'SCOIN':
-            expect(info.scoinRuleConfig.objectId).toBeTruthy();
-            expect(info.scallopVersion.objectId).toBeTruthy();
-            expect(info.scallopMarket.objectId).toBeTruthy();
-            break;
-          case 'GCOIN':
-            expect(info.gcoinRuleConfig.objectId).toBeTruthy();
-            expect(info.unihouseObject.objectId).toBeTruthy();
-            break;
-          case 'BFBTC':
-            expect(info.bfbtcRuleConfig.objectId).toBeTruthy();
-            break;
+      for (const [key, info] of Object.entries(priceObjs) as [string, PriceConfigInfo][]) {
+        if ('SCOIN' in info && info.SCOIN) {
+          const s = info.SCOIN;
+          expect(s.package, `${key} should have package`).toBeTruthy();
+          expect(s.scoin_rule_config.objectId).toBeTruthy();
+          expect(s.scallop_version.objectId).toBeTruthy();
+          expect(s.scallop_market.objectId).toBeTruthy();
+        } else if ('GCOIN' in info && info.GCOIN) {
+          const g = info.GCOIN;
+          expect(g.package, `${key} should have package`).toBeTruthy();
+          expect(g.gcoin_rule_config.objectId).toBeTruthy();
+          expect(g.unihouse_object.objectId).toBeTruthy();
+        } else if ('BFBTC' in info && info.BFBTC) {
+          const b = info.BFBTC;
+          expect(b.package, `${key} should have package`).toBeTruthy();
+          expect(b.bfbtc_rule_config.objectId).toBeTruthy();
+        } else {
+          throw new Error(`${key} has invalid PriceConfigInfo shape`);
         }
       }
     },

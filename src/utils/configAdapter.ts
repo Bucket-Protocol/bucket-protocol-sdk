@@ -3,7 +3,6 @@ import type { SuiGrpcClient } from '@mysten/sui/grpc';
 import type {
   AggregatorObjectInfo,
   ConfigType,
-  DerivativeKind,
   PriceConfigInfo,
   PsmPoolObjectInfo,
   SavingPoolObjectInfo,
@@ -18,13 +17,14 @@ import type { BucketOnchainConfig } from './bucketConfig.js';
 // ============================================================
 
 function toSharedObjectRef(json: unknown, mutable = false): SharedObjectRef {
+  const toStr = (v: unknown) => (v === undefined || v === null ? '0' : String(v));
   if (typeof json === 'string') {
-    return { objectId: json, initialSharedVersion: 0, mutable };
+    return { objectId: json, initialSharedVersion: '0', mutable };
   }
   const obj = json as Record<string, unknown>;
   return {
     objectId: (obj.id ?? obj.objectId ?? '') as string,
-    initialSharedVersion: (obj.initial_shared_version ?? obj.initialSharedVersion ?? 0) as number | string,
+    initialSharedVersion: toStr(obj.initial_shared_version ?? obj.initialSharedVersion ?? '0'),
     mutable: (obj.mutable as boolean | undefined) ?? mutable,
   };
 }
@@ -32,7 +32,7 @@ function toSharedObjectRef(json: unknown, mutable = false): SharedObjectRef {
 function needsVersionEnrichment(ref: SharedObjectRef): boolean {
   if (!ref.objectId || ref.objectId === '') return false;
   const v = ref.initialSharedVersion;
-  return v === 0 || v === '0';
+  return String(v) === '0';
 }
 
 // ============================================================
@@ -68,7 +68,7 @@ export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Pa
     PYTH_RULE_PACKAGE_ID: (oracle.pyth_rule_package_id as string | undefined) ?? '',
     PYTH_RULE_CONFIG_OBJ: oracle.pyth_rule_config_obj
       ? toSharedObjectRef(oracle.pyth_rule_config_obj, false)
-      : { objectId: '', initialSharedVersion: 0, mutable: false },
+      : { objectId: '', initialSharedVersion: '0', mutable: false },
 
     // Original (type-origin) package IDs
     ORIGINAL_FRAMEWORK_PACKAGE_ID: (pkg.original_framework_package_id as string | undefined) ?? '',
@@ -97,19 +97,19 @@ export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Pa
     // Shared object references
     TREASURY_OBJ: obj.treasury_obj
       ? toSharedObjectRef(obj.treasury_obj, true)
-      : { objectId: '', initialSharedVersion: 0, mutable: true },
+      : { objectId: '', initialSharedVersion: '0', mutable: true },
     VAULT_REWARDER_REGISTRY: obj.vault_rewarder_registry
       ? toSharedObjectRef(obj.vault_rewarder_registry, false)
-      : { objectId: '', initialSharedVersion: 0, mutable: false },
+      : { objectId: '', initialSharedVersion: '0', mutable: false },
     SAVING_POOL_INCENTIVE_GLOBAL_CONFIG_OBJ: obj.saving_pool_incentive_global_config_obj
       ? toSharedObjectRef(obj.saving_pool_incentive_global_config_obj, false)
-      : { objectId: '', initialSharedVersion: 0, mutable: false },
+      : { objectId: '', initialSharedVersion: '0', mutable: false },
     FLASH_GLOBAL_CONFIG_OBJ: obj.flash_global_config_obj
       ? toSharedObjectRef(obj.flash_global_config_obj, true)
-      : { objectId: '', initialSharedVersion: 0, mutable: true },
+      : { objectId: '', initialSharedVersion: '0', mutable: true },
     BLACKLIST_OBJ: obj.blacklist_obj
       ? toSharedObjectRef(obj.blacklist_obj, false)
-      : { objectId: '', initialSharedVersion: 0, mutable: false },
+      : { objectId: '', initialSharedVersion: '0', mutable: false },
 
     // Per-coin records (populated below)
     AGGREGATOR_OBJS: {},
@@ -164,48 +164,55 @@ export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Pa
 
 function parseAggregatorEntry(entry: unknown): AggregatorObjectInfo {
   const e = entry as Record<string, unknown>;
-
-  // Move enum variants serialize in JSON with "@variant" field:
-  // { "@variant": "Pyth", "priceAggregator": {...}, "pythPriceId": "..." }
   const variant = e['@variant'] as string | undefined;
+  const priceAgg = toSharedObjectRef(e.price_aggregator ?? e.priceAggregator, false);
 
   if (variant === 'Pyth') {
     return {
-      priceAggregator: toSharedObjectRef(e.priceAggregator, false),
-      pythPriceId: (e.pythPriceId ?? '') as string,
-    };
-  }
-
-  if (variant === 'DerivativeInfo') {
-    return {
-      priceAggregator: toSharedObjectRef(e.priceAggregator, false),
-      derivativeInfo: {
-        underlyingCoinType: (e.underlying_coin_type ?? e.underlyingCoinType) as string,
-        derivativeKind: (e.derivative_kind ?? e.derivativeKind) as DerivativeKind,
+      Pyth: {
+        priceAggregator: priceAgg,
+        pythPriceId: (e.pyth_price_id ?? e.pythPriceId ?? '') as string,
       },
     };
   }
 
-  // Fallback: flat struct format (legacy / non-enum)
-  const base = {
-    priceAggregator: toSharedObjectRef(e.price_aggregator ?? e.priceAggregator, false),
-  };
+  if (variant === 'DerivativeInfo') {
+    const di = (e.derivative_info ?? e.derivativeInfo) as Record<string, unknown> | undefined;
+    return {
+      DerivativeInfo: {
+        priceAggregator: priceAgg,
+        underlying_coin_type: (di?.underlying_coin_type ??
+          di?.underlyingCoinType ??
+          e.underlying_coin_type ??
+          e.underlyingCoinType ??
+          '') as string,
+        derivative_kind: (di?.derivative_kind ??
+          di?.derivativeKind ??
+          e.derivative_kind ??
+          e.derivativeKind ??
+          '') as string,
+      },
+    };
+  }
 
+  // Fallback: flat struct format (legacy)
   const derivativeRaw = e.derivative_info ?? e.derivativeInfo;
   if (derivativeRaw) {
     const di = derivativeRaw as Record<string, unknown>;
     return {
-      ...base,
-      derivativeInfo: {
-        underlyingCoinType: (di.underlying_coin_type ?? di.underlyingCoinType) as string,
-        derivativeKind: (di.derivative_kind ?? di.derivativeKind) as DerivativeKind,
+      DerivativeInfo: {
+        priceAggregator: priceAgg,
+        underlying_coin_type: (di.underlying_coin_type ?? di.underlyingCoinType ?? '') as string,
+        derivative_kind: (di.derivative_kind ?? di.derivativeKind ?? '') as string,
       },
     };
   }
 
   return {
-    ...base,
-    pythPriceId: (e.pyth_price_id ?? e.pythPriceId ?? '') as string,
+    Pyth: {
+      priceAggregator: priceAgg,
+      pythPriceId: (e.pyth_price_id ?? e.pythPriceId ?? '') as string,
+    },
   };
 }
 
@@ -220,8 +227,8 @@ function parseVaultEntry(entry: unknown): VaultObjectInfo {
     result.rewarders = rewarders.map((r: unknown) => {
       const rr = r as Record<string, unknown>;
       return {
-        rewardType: (rr.reward_type ?? rr.rewardType) as string,
-        rewarderId: (rr.rewarder_id ?? rr.rewarderId) as string,
+        rewarder_id: (rr.rewarder_id ?? rr.rewarderId ?? '') as string,
+        reward_type: (rr.reward_type ?? rr.rewardType ?? '') as string,
       };
     });
   }
@@ -237,8 +244,8 @@ function parseSavingPoolEntry(entry: unknown): SavingPoolObjectInfo {
   const reward = e.reward as Record<string, unknown> | undefined;
   if (reward) {
     result.reward = {
-      rewardManager: toSharedObjectRef(reward.reward_manager ?? reward.rewardManager, true),
-      rewardTypes: (reward.reward_types ?? reward.rewardTypes ?? []) as string[],
+      reward_manager: toSharedObjectRef(reward.reward_manager ?? reward.rewardManager, true),
+      reward_types: (reward.reward_types ?? reward.rewardTypes ?? []) as string[],
     };
   }
   return result;
@@ -258,24 +265,27 @@ function parsePriceEntry(entry: unknown): PriceConfigInfo {
   switch (variant) {
     case 'SCOIN':
       return {
-        variant: 'SCOIN',
-        package: (e.package ?? '') as string,
-        scoinRuleConfig: toSharedObjectRef(e.scoin_rule_config ?? e.scoinRuleConfig, false),
-        scallopVersion: toSharedObjectRef(e.scallop_version ?? e.scallopVersion, false),
-        scallopMarket: toSharedObjectRef(e.scallop_market ?? e.scallopMarket, false),
+        SCOIN: {
+          package: (e.package ?? '') as string,
+          scoin_rule_config: toSharedObjectRef(e.scoin_rule_config ?? e.scoinRuleConfig, false),
+          scallop_version: toSharedObjectRef(e.scallop_version ?? e.scallopVersion, false),
+          scallop_market: toSharedObjectRef(e.scallop_market ?? e.scallopMarket, false),
+        },
       };
     case 'GCOIN':
       return {
-        variant: 'GCOIN',
-        package: (e.package ?? '') as string,
-        gcoinRuleConfig: toSharedObjectRef(e.gcoin_rule_config ?? e.gcoinRuleConfig, false),
-        unihouseObject: toSharedObjectRef(e.unihouse_object ?? e.unihouseObject, false),
+        GCOIN: {
+          package: (e.package ?? '') as string,
+          gcoin_rule_config: toSharedObjectRef(e.gcoin_rule_config ?? e.gcoinRuleConfig, false),
+          unihouse_object: toSharedObjectRef(e.unihouse_object ?? e.unihouseObject, false),
+        },
       };
     case 'BFBTC':
       return {
-        variant: 'BFBTC',
-        package: (e.package ?? '') as string,
-        bfbtcRuleConfig: toSharedObjectRef(e.bfbtc_rule_config ?? e.bfbtcRuleConfig, false),
+        BFBTC: {
+          package: (e.package ?? '') as string,
+          bfbtc_rule_config: toSharedObjectRef(e.bfbtc_rule_config ?? e.bfbtcRuleConfig, false),
+        },
       };
     default:
       throw new Error(`Unknown PriceConfigInfo variant: ${variant}`);
@@ -305,30 +315,27 @@ export async function enrichSharedObjectRefs(config: ConfigType, client: SuiGrpc
   collect(config.FLASH_GLOBAL_CONFIG_OBJ);
   collect(config.BLACKLIST_OBJ);
   for (const priceInfo of Object.values(config.PRICE_OBJS)) {
-    switch (priceInfo.variant) {
-      case 'SCOIN':
-        collect(priceInfo.scoinRuleConfig);
-        collect(priceInfo.scallopVersion);
-        collect(priceInfo.scallopMarket);
-        break;
-      case 'GCOIN':
-        collect(priceInfo.gcoinRuleConfig);
-        collect(priceInfo.unihouseObject);
-        break;
-      case 'BFBTC':
-        collect(priceInfo.bfbtcRuleConfig);
-        break;
+    if ('SCOIN' in priceInfo && priceInfo.SCOIN) {
+      collect(priceInfo.SCOIN.scoin_rule_config);
+      collect(priceInfo.SCOIN.scallop_version);
+      collect(priceInfo.SCOIN.scallop_market);
+    } else if ('GCOIN' in priceInfo && priceInfo.GCOIN) {
+      collect(priceInfo.GCOIN.gcoin_rule_config);
+      collect(priceInfo.GCOIN.unihouse_object);
+    } else if ('BFBTC' in priceInfo && priceInfo.BFBTC) {
+      collect(priceInfo.BFBTC.bfbtc_rule_config);
     }
   }
   for (const info of Object.values(config.AGGREGATOR_OBJS)) {
-    collect(info.priceAggregator);
+    const agg = 'Pyth' in info ? info.Pyth : info.DerivativeInfo;
+    if (agg) collect(agg.priceAggregator);
   }
   for (const info of Object.values(config.VAULT_OBJS)) {
     collect(info.vault);
   }
   for (const info of Object.values(config.SAVING_POOL_OBJS)) {
     collect(info.pool);
-    if (info.reward) collect(info.reward.rewardManager);
+    if (info.reward) collect(info.reward.reward_manager);
   }
   for (const info of Object.values(config.PSM_POOL_OBJS)) {
     collect(info.pool);
@@ -371,26 +378,25 @@ export async function enrichSharedObjectRefs(config: ConfigType, client: SuiGrpc
   apply(enriched.FLASH_GLOBAL_CONFIG_OBJ);
   apply(enriched.BLACKLIST_OBJ);
   for (const priceInfo of Object.values(enriched.PRICE_OBJS)) {
-    switch (priceInfo.variant) {
-      case 'SCOIN':
-        apply(priceInfo.scoinRuleConfig);
-        apply(priceInfo.scallopVersion);
-        apply(priceInfo.scallopMarket);
-        break;
-      case 'GCOIN':
-        apply(priceInfo.gcoinRuleConfig);
-        apply(priceInfo.unihouseObject);
-        break;
-      case 'BFBTC':
-        apply(priceInfo.bfbtcRuleConfig);
-        break;
+    if ('SCOIN' in priceInfo && priceInfo.SCOIN) {
+      apply(priceInfo.SCOIN.scoin_rule_config);
+      apply(priceInfo.SCOIN.scallop_version);
+      apply(priceInfo.SCOIN.scallop_market);
+    } else if ('GCOIN' in priceInfo && priceInfo.GCOIN) {
+      apply(priceInfo.GCOIN.gcoin_rule_config);
+      apply(priceInfo.GCOIN.unihouse_object);
+    } else if ('BFBTC' in priceInfo && priceInfo.BFBTC) {
+      apply(priceInfo.BFBTC.bfbtc_rule_config);
     }
   }
-  for (const info of Object.values(enriched.AGGREGATOR_OBJS)) apply(info.priceAggregator);
+  for (const info of Object.values(enriched.AGGREGATOR_OBJS)) {
+    const agg = 'Pyth' in info ? info.Pyth : info.DerivativeInfo;
+    if (agg) apply(agg.priceAggregator);
+  }
   for (const info of Object.values(enriched.VAULT_OBJS)) apply(info.vault);
   for (const info of Object.values(enriched.SAVING_POOL_OBJS)) {
     apply(info.pool);
-    if (info.reward) apply(info.reward.rewardManager);
+    if (info.reward) apply(info.reward.reward_manager);
   }
   for (const info of Object.values(enriched.PSM_POOL_OBJS)) apply(info.pool);
 
