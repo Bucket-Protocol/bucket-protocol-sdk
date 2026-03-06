@@ -146,6 +146,74 @@ describe('unit/utils/bucketConfig', () => {
       expect(result.aggregator?.entries['0x2::sui::SUI']).toEqual({ priceAggregator: '0xpa' });
     });
 
+    it('parses VecMap when table is null (returns empty entries)', async () => {
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::config::Config',
+                objectId: '0xc',
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj', '0xagg'] },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              { type: `0x1${TYPE_ORACLE_CONFIG}`, objectId: '0xoracle', json: { pyth_state_id: '0xpyth' } },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { treasury_obj: { objectId: '0xt' } },
+              },
+              {
+                type: `0x1${TYPE_AGGREGATOR}`,
+                objectId: '0xagg',
+                json: { id: '0xagg', table: null },
+              },
+            ],
+          }),
+      });
+      const result = await queryAllConfig(client, 'mainnet');
+      expect(result.aggregator?.entries).toEqual({});
+    });
+
+    it('parses VecMap when table is neither array nor contents (returns empty entries)', async () => {
+      const client = asSuiClient({
+        getObjects: vi
+          .fn()
+          .mockResolvedValueOnce({
+            objects: [
+              {
+                type: '0x1::config::Config',
+                objectId: '0xc',
+                json: { id: '0xc', id_vector: ['0xpkg', '0xoracle', '0xobj', '0xagg'] },
+              },
+            ],
+          })
+          .mockResolvedValueOnce({
+            objects: [
+              { type: `0x1${TYPE_PACKAGE_CONFIG}`, objectId: '0xpkg', json: { framework_package_id: '0xfw' } },
+              { type: `0x1${TYPE_ORACLE_CONFIG}`, objectId: '0xoracle', json: { pyth_state_id: '0xpyth' } },
+              {
+                type: `0x1${TYPE_OBJECT_CONFIG}`,
+                objectId: '0xobj',
+                json: { treasury_obj: { objectId: '0xt' } },
+              },
+              {
+                type: `0x1${TYPE_AGGREGATOR}`,
+                objectId: '0xagg',
+                json: { id: '0xagg', table: 123 },
+              },
+            ],
+          }),
+      });
+      const result = await queryAllConfig(client, 'mainnet');
+      expect(result.aggregator?.entries).toEqual({});
+    });
+
     it('parses VecMap from contents object format', async () => {
       const client = asSuiClient({
         getObjects: vi

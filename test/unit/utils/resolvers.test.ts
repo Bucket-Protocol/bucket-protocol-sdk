@@ -119,4 +119,40 @@ describe('unit/utils/resolvers', () => {
     const usedIds = (transactionUtils.getCoinsOfType as ReturnType<typeof vi.fn>).mock.calls[0]![0].usedIds;
     expect(usedIds.has('0xused')).toBe(true);
   });
+
+  it('collects Object.ImmOrOwnedObject from inputs into usedIds', async () => {
+    const txData = createMockTransactionData({
+      inputs: [
+        {
+          Object: {
+            ImmOrOwnedObject: {
+              objectId: '0ximmowned',
+              digest: 'digest1',
+              version: '1',
+            },
+          },
+        },
+      ],
+    });
+    const mockNext = vi.fn().mockResolvedValue(undefined);
+    await resolveCoinBalance(txData as never, { client: {} }, mockNext);
+
+    const usedIds = (transactionUtils.getCoinsOfType as ReturnType<typeof vi.fn>).mock.calls[0]![0].usedIds;
+    expect(usedIds.has('0ximmowned')).toBe(true);
+  });
+
+  it('collects both ImmOrOwnedObject and UnresolvedObject into usedIds', async () => {
+    const txData = createMockTransactionData({
+      inputs: [
+        { Object: { ImmOrOwnedObject: { objectId: '0xobj1', digest: 'd1', version: '1' } } },
+        { UnresolvedObject: { objectId: '0xunresolved', initialSharedVersion: 1 } },
+      ],
+    });
+    const mockNext = vi.fn().mockResolvedValue(undefined);
+    await resolveCoinBalance(txData as never, { client: {} }, mockNext);
+
+    const usedIds = (transactionUtils.getCoinsOfType as ReturnType<typeof vi.fn>).mock.calls[0]![0].usedIds;
+    expect(usedIds.has('0xobj1')).toBe(true);
+    expect(usedIds.has('0xunresolved')).toBe(true);
+  });
 });

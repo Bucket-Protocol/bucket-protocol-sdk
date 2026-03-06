@@ -140,4 +140,74 @@ describe('E2E CDP', () => {
     },
     MAINNET_TIMEOUT_MS,
   );
+
+  it(
+    'newAccountRequest creates account request for EOA',
+    async () => {
+      const tx = txWithSender();
+      const accountReq = bucketClient.newAccountRequest(tx, {});
+      expect(accountReq).toBeDefined();
+      await assertDryRunSucceeds(tx);
+    },
+    MAINNET_TIMEOUT_MS,
+  );
+
+  it(
+    'debtorRequest creates CDP request (return value used in custom CDP flow)',
+    async () => {
+      const depositAmount = await depositAmountForBorrowUsd(1);
+      const borrowAmount = 1 * 10 ** 6;
+      const tx = txWithSender();
+      const depositCoin = coinWithBalance({
+        type: SUI_TYPE_ARG,
+        balance: depositAmount,
+      });
+      const request = bucketClient.debtorRequest(tx, {
+        coinType: SUI_TYPE_ARG,
+        depositCoin,
+        borrowAmount,
+      });
+      expect(request).toBeDefined();
+      // debtorRequest alone leaves orphan UpdateRequest; full flow tested below
+    },
+    MAINNET_TIMEOUT_MS,
+  );
+
+  it(
+    'custom CDP flow: debtorRequest → checkUpdatePositionRequest → updatePosition → checkUpdatePositionResponse dry run succeeds',
+    async () => {
+      const depositAmount = await depositAmountForBorrowUsd(1);
+      const borrowAmount = 1 * 10 ** 6;
+      const tx = txWithSender();
+      const [priceResult] = await bucketClient.aggregatePrices(tx, {
+        coinTypes: [SUI_TYPE_ARG],
+      });
+      const depositCoin = coinWithBalance({
+        type: SUI_TYPE_ARG,
+        balance: depositAmount,
+      });
+      const debtorReq = bucketClient.debtorRequest(tx, {
+        coinType: SUI_TYPE_ARG,
+        depositCoin,
+        borrowAmount,
+      });
+      const updateRequest = bucketClient.checkUpdatePositionRequest(tx, {
+        coinType: SUI_TYPE_ARG,
+        request: debtorReq,
+      });
+      const [collateralCoin, usdbCoin, response] = bucketClient.updatePosition(tx, {
+        coinType: SUI_TYPE_ARG,
+        updateRequest,
+        priceResult,
+      });
+      bucketClient.checkUpdatePositionResponse(tx, {
+        coinType: SUI_TYPE_ARG,
+        response,
+      });
+      tx.transferObjects([usdbCoin], testAccount);
+      tx.transferObjects([collateralCoin], testAccount);
+      await assertDryRunSucceeds(tx);
+    },
+    MAINNET_TIMEOUT_MS,
+  );
 });

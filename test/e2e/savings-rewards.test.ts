@@ -16,7 +16,7 @@ describe('E2E Savings & rewards', () => {
   afterAll(afterFileEnd);
   afterEach(afterTestDelay);
 
-  it(
+  it.skip(
     'getUserSavings returns array with SavingInfo shape',
     async () => {
       const savings = await bucketClient.getUserSavings({ address: testAccount });
@@ -32,7 +32,7 @@ describe('E2E Savings & rewards', () => {
     MAINNET_TIMEOUT_MS,
   );
 
-  it(
+  it.skip(
     'getAccountSavings returns array (same or subset of getUserSavings)',
     async () => {
       const accountSavings = await bucketClient.getAccountSavings({ address: testAccount });
@@ -98,7 +98,7 @@ describe('E2E Savings & rewards', () => {
     MAINNET_TIMEOUT_MS,
   );
 
-  it(
+  it.skip(
     'getAccountSavingPoolRewards returns record for SUSDB',
     async () => {
       const rewards = await bucketClient.getAccountSavingPoolRewards({

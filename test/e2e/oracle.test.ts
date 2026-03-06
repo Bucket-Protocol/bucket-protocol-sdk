@@ -1,12 +1,15 @@
+import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import {
   afterFileEnd,
   afterTestDelay,
+  assertDryRunSucceeds,
   bucketClient,
   MAINNET_TIMEOUT_MS,
   setupE2E,
   suiClient,
+  txWithSender,
 } from './helpers/setup.js';
 
 describe('E2E Oracle', () => {
@@ -69,6 +72,31 @@ describe('E2E Oracle', () => {
       expect(getObjectSpy).toHaveBeenCalledTimes(0);
       expect(prices2[coinTypes[0]!]).toBeDefined();
       expect(prices2[coinTypes[0]!]).toBeGreaterThan(0);
+    },
+    MAINNET_TIMEOUT_MS,
+  );
+
+  it(
+    'aggregatePrices returns price results and dry run succeeds',
+    async () => {
+      const tx = txWithSender();
+      const priceResults = await bucketClient.aggregatePrices(tx, {
+        coinTypes: [SUI_TYPE_ARG],
+      });
+      expect(Array.isArray(priceResults)).toBe(true);
+      expect(priceResults.length).toBe(1);
+      await assertDryRunSucceeds(tx);
+    },
+    MAINNET_TIMEOUT_MS,
+  );
+
+  it(
+    'newPriceCollector creates collector for coin type',
+    async () => {
+      const tx = txWithSender();
+      const collector = bucketClient.newPriceCollector(tx, { coinType: SUI_TYPE_ARG });
+      expect(collector).toBeDefined();
+      await assertDryRunSucceeds(tx);
     },
     MAINNET_TIMEOUT_MS,
   );
