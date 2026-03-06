@@ -1,44 +1,44 @@
-import { SharedObjectRef } from './index.js';
+import type * as psm_pool from '@/_generated/bucket_onchain_config/psm_pool.js';
+import type * as share from '@/_generated/bucket_onchain_config/share.js';
+import type * as vault from '@/_generated/bucket_onchain_config/vault.js';
+
+// SharedObjectRef from generated (BCS-decoded shape)
+export type SharedObjectRef = (typeof share.SharedObjectRef)['$inferType'];
+
+// RewarderInfo, PsmPoolObjectInfo: exact match with generated (MoveStruct)
+export type RewarderInfo = (typeof vault.RewarderInfo)['$inferType'];
+export type PsmPoolObjectInfo = (typeof psm_pool.PsmPoolObjectInfo)['$inferType'];
+
+// AggregatorObjectInfo, PriceConfigInfo: manual — generated MoveEnum requires $kind,
+// but we parse from JSON which uses { Pyth: {...} } | { DerivativeInfo: {...} } shape.
+export type AggregatorObjectInfo =
+  | { Pyth: { priceAggregator: SharedObjectRef; pythPriceId: string } }
+  | { DerivativeInfo: { priceAggregator: SharedObjectRef; underlying_coin_type: string; derivative_kind: string } };
+
+export type PriceConfigInfo =
+  | {
+      SCOIN: {
+        package: string;
+        scoin_rule_config: SharedObjectRef;
+        scallop_version: SharedObjectRef;
+        scallop_market: SharedObjectRef;
+      };
+    }
+  | { GCOIN: { package: string; gcoin_rule_config: SharedObjectRef; unihouse_object: SharedObjectRef } }
+  | { BFBTC: { package: string; bfbtc_rule_config: SharedObjectRef } };
+
+// VaultObjectInfo, SavingPoolObjectInfo: manual — generated requires rewarders/reward
+// (option types become T | null), but we omit when empty for JSON parsing.
+export type VaultObjectInfo = { vault: SharedObjectRef; rewarders?: RewarderInfo[] };
+
+export type SavingPoolObjectInfo = {
+  pool: SharedObjectRef;
+  reward?: { reward_manager: SharedObjectRef; reward_types: string[] };
+};
 
 export type Network = 'mainnet' | 'testnet';
 
 export type DerivativeKind = 'sCoin' | 'gCoin' | 'TLP' | 'BFBTC';
-
-export type AggregatorObjectInfo = {
-  priceAggregator: SharedObjectRef;
-} & (
-  | {
-      pythPriceId: string;
-    }
-  | {
-      derivativeInfo: {
-        underlyingCoinType: string;
-        derivativeKind: DerivativeKind;
-      };
-    }
-);
-
-export type RewarderInfo = {
-  rewarderId: string;
-  rewardType: string;
-};
-
-export type VaultObjectInfo = {
-  vault: SharedObjectRef;
-  rewarders?: RewarderInfo[];
-};
-
-export type PsmPoolObjectInfo = {
-  pool: SharedObjectRef;
-};
-
-export type SavingPoolObjectInfo = {
-  pool: SharedObjectRef;
-  reward?: {
-    rewardManager: SharedObjectRef;
-    rewardTypes: string[];
-  };
-};
 
 export type ConfigType = {
   PRICE_SERVICE_ENDPOINT: string;
@@ -79,4 +79,5 @@ export type ConfigType = {
   VAULT_OBJS: Record<string, VaultObjectInfo>;
   SAVING_POOL_OBJS: Record<string, SavingPoolObjectInfo>;
   PSM_POOL_OBJS: Record<string, PsmPoolObjectInfo>;
+  PRICE_OBJS: Record<string, PriceConfigInfo>;
 };

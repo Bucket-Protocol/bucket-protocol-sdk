@@ -2,9 +2,11 @@
 /node_modules
 /.pnp
 .pnp.js
+.pnpm-store
 
 # testing
 /coverage
+/test-results
 dummy.test.ts
 
 # build
@@ -13,6 +15,7 @@ dist
 
 # misc
 .DS_Store
+sui-codegen.config.ts
 
 # docs
 /docs

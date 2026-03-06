@@ -1,0 +1,221 @@
+import type { SuiGrpcClient } from '@mysten/sui/grpc';
+
+import type { Network } from '@/types/index.js';
+import { ENTRY_CONFIG_ID } from '@/consts/entry.js';
+
+// ============================================================
+// Type identifiers (suffix matching on object type string)
+// ============================================================
+
+const TYPE_PACKAGE_CONFIG = '::package_config::PackageConfig';
+const TYPE_ORACLE_CONFIG = '::oracle_config::OracleConfig';
+const TYPE_OBJECT_CONFIG = '::object_config::ObjectConfig';
+const TYPE_AGGREGATOR = '::aggregator::Aggregator';
+const TYPE_VAULT = '::vault::Vault';
+const TYPE_SAVING_POOL = '::saving_pool::SavingPool';
+const TYPE_PSM_POOL = '::psm_pool::PsmPool';
+const TYPE_PRICE_CONFIG = '::price::PriceConfig';
+
+// ============================================================
+// VecMap JSON parser (RPC returns { contents: [{ key, value }, ...] })
+// ============================================================
+
+function parseVecMap<T = unknown>(vecMap: unknown): Record<string, T> {
+  const entries: Record<string, T> = {};
+  if (!vecMap) return entries;
+  let items: unknown[];
+  if (Array.isArray(vecMap)) {
+    items = vecMap;
+  } else if (typeof vecMap === 'object' && vecMap !== null && 'contents' in vecMap) {
+    items = (vecMap as { contents: unknown[] }).contents;
+  } else {
+    return entries;
+  }
+  for (const item of items) {
+    const entry = item as { key: string; value: T };
+    entries[entry.key] = entry.value;
+  }
+  return entries;
+}
+
+// ============================================================
+// Output Types (raw on-chain JSON shape from RPC)
+// ============================================================
+
+export interface BucketOnchainConfig {
+  config: { id: string; id_vector: string[] };
+  packageConfig?: Record<string, unknown>;
+  oracleConfig?: Record<string, unknown>;
+  objectConfig?: Record<string, unknown>;
+  aggregator?: {
+    id: string;
+    entries: Record<string, unknown>;
+  };
+  vault?: {
+    id: string;
+    entries: Record<string, unknown>;
+  };
+  savingPool?: {
+    id: string;
+    entries: Record<string, unknown>;
+  };
+  psmPool?: {
+    id: string;
+    entries: Record<string, unknown>;
+  };
+  priceConfig?: {
+    id: string;
+    entries: Record<string, unknown>;
+  };
+}
+
+// ============================================================
+// Main Queryer
+// ============================================================
+
+/**
+ * Query the entry Config object, resolve all referenced sub-objects by type,
+ * and return the complete onchain config as a structured JSON-serializable object.
+ *
+ * @param configObjectId - Optional. Override the default entry config object ID (e.g. for testing).
+ */
+export async function queryAllConfig(
+  client: SuiGrpcClient,
+  network: Network = 'mainnet',
+  configObjectId?: string,
+): Promise<BucketOnchainConfig> {
+  const entryId = configObjectId ?? ENTRY_CONFIG_ID[network];
+  if (!entryId) {
+    throw new Error(`No ENTRY_CONFIG_ID configured for network "${network}".`);
+  }
+
+  // 1. Fetch entry Config object
+  const {
+    objects: [configObj],
+  } = await client.getObjects({
+    objectIds: [entryId],
+    include: { json: true },
+  });
+
+  if (configObj instanceof Error) {
+    throw new Error(`Failed to fetch Config object: ${configObj.message}`);
+  }
+  if (!configObj.json) {
+    throw new Error('Config object has no JSON content');
+  }
+
+  const configJson = configObj.json as { id: string; id_vector: string[] };
+  const result: BucketOnchainConfig = {
+    config: {
+      id: configJson.id,
+      id_vector: configJson.id_vector,
+    },
+  };
+
+  if (configJson.id_vector.length === 0) return result;
+
+  // 2. Batch fetch all sub-objects referenced by id_vector
+  const { objects } = await client.getObjects({
+    objectIds: configJson.id_vector,
+    include: { json: true },
+  });
+
+  // 3. Read each object's JSON based on its on-chain type (fail-fast on required config)
+  for (const obj of objects) {
+    if (obj instanceof Error) {
+      throw new Error(`Failed to fetch config sub-object: ${obj.message}`);
+    }
+
+    const type = obj.type;
+    const json = obj.json as Record<string, unknown> | null;
+    if (!json) {
+      throw new Error(`Config sub-object ${obj.objectId} (type: ${type}) has no JSON content`);
+    }
+
+    try {
+      if (type.endsWith(TYPE_PACKAGE_CONFIG)) {
+        result.packageConfig = json as Record<string, unknown>;
+      } else if (type.endsWith(TYPE_ORACLE_CONFIG)) {
+        result.oracleConfig = json as Record<string, unknown>;
+      } else if (type.endsWith(TYPE_OBJECT_CONFIG)) {
+        result.objectConfig = json as Record<string, unknown>;
+      } else if (type.endsWith(TYPE_AGGREGATOR)) {
+        result.aggregator = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
+      } else if (type.endsWith(TYPE_VAULT)) {
+        result.vault = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
+      } else if (type.endsWith(TYPE_SAVING_POOL)) {
+        result.savingPool = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
+      } else if (type.endsWith(TYPE_PSM_POOL)) {
+        result.psmPool = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
+      } else if (type.endsWith(TYPE_PRICE_CONFIG)) {
+        result.priceConfig = {
+          id: json.id as string,
+          entries: parseVecMap(json.table),
+        };
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(`Unknown object type: ${type} (objectId: ${obj.objectId})`);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`Failed to process config sub-object ${obj.objectId} (type: ${type}): ${msg}`);
+    }
+  }
+
+  // 4. Validate required sections (fail-fast; avoid delayed failure in convertOnchainConfig)
+  const required: Array<{ section: keyof BucketOnchainConfig; label: string; keyField?: string }> = [
+    { section: 'packageConfig', label: 'PackageConfig', keyField: 'framework_package_id' },
+    { section: 'oracleConfig', label: 'OracleConfig', keyField: 'pyth_state_id' },
+    { section: 'objectConfig', label: 'ObjectConfig', keyField: 'treasury_obj' },
+  ];
+  for (const { section, label, keyField } of required) {
+    const val = result[section];
+    if (!val || typeof val !== 'object') {
+      throw new Error(
+        `Config incomplete: required section "${label}" (${section}) is missing. ` +
+          'RPC may have returned incomplete data or unknown object types were skipped.',
+      );
+    }
+    if (keyField) {
+      const fieldVal = (val as Record<string, unknown>)[keyField];
+      let isEmpty = fieldVal === undefined || fieldVal === null;
+      if (!isEmpty && typeof fieldVal === 'string') {
+        isEmpty = fieldVal.trim() === '';
+      } else if (!isEmpty && typeof fieldVal === 'object' && fieldVal !== null) {
+        const obj = fieldVal as Record<string, unknown>;
+        const id = String(obj.objectId ?? obj.id ?? '').trim();
+        isEmpty = id === '';
+      }
+      if (isEmpty) {
+        throw new Error(`Config incomplete: required field "${keyField}" in ${label} is missing or empty.`);
+      }
+    }
+  }
+
+  return result;
+}
+
+// ============================================================
+// JSON serialization (handles BigInt from bcs.u64)
+// ============================================================
+
+function jsonReplacer(_key: string, value: unknown): unknown {
+  if (typeof value === 'bigint') return value.toString();
+  return value;
+}
+
+export function toJson(config: BucketOnchainConfig): string {
+  return JSON.stringify(config, jsonReplacer, 2);
+}

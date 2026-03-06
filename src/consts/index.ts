@@ -1,6 +1,6 @@
 import { normalizeSuiAddress } from '@mysten/sui/utils';
 
-export * from './config.js';
+export * from './entry.js';
 
 export const DUMMY_ADDRESS = normalizeSuiAddress('0x0');
 

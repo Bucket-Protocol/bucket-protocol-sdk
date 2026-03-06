@@ -18,15 +18,15 @@ npm install @bucket-protocol/sdk
 import { BucketClient } from '@bucket-protocol/sdk';
 import { SuiGrpcClient } from '@mysten/sui/grpc';
 
-// Use default mainnet configuration
-const client = new BucketClient({ network: 'mainnet' });
+// Create client with config fetched from chain (recommended)
+const client = await BucketClient.initialize({ network: 'mainnet' });
 
-// Or with custom SuiGrpcClient configuration
+// With custom SuiGrpcClient
 const customSuiClient = new SuiGrpcClient({
   network: 'mainnet',
   baseUrl: 'https://your-custom-rpc-url',
 });
-const client = new BucketClient({
+const client = await BucketClient.initialize({
   suiClient: customSuiClient,
   network: 'mainnet',
 });
@@ -412,7 +412,7 @@ const feeUsdbCoin = await client.buildPSMSwapInTransaction(tx, {
 
 // Step 4: Repay flash loan
 tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
-client.flashBurn(tx, { usdbCoin, flashReceipt });
+client.flashBurn(tx, { usdbCoin, flashMintReceipt: flashReceipt });
 
 tx.setSender(userAddress);
 const result = await client.getSuiClient().signAndExecuteTransaction({
@@ -809,17 +809,34 @@ The SDK integrates with Pyth Network for price feeds without requiring the Pyth 
 
 ## Example Project
 
-For complete usage examples, refer to [test/e2e/client.test.ts](./test/e2e/client.test.ts).
+For complete usage examples, refer to the [test/e2e/](./test/e2e/) directory (e.g. [cdp.test.ts](./test/e2e/cdp.test.ts), [psm.test.ts](./test/e2e/psm.test.ts), [saving.test.ts](./test/e2e/saving.test.ts), [flash.test.ts](./test/e2e/flash.test.ts)).
 
 ## API Reference
 
-### Constructor Options
+### Client Initialization
+
+**Recommended: `BucketClient.initialize()` (async factory)**
+
+Fetches config from chain and returns a ready-to-use client:
 
 ```typescript
-interface BucketClientOptions {
-  suiClient?: SuiGrpcClient; // Custom SuiGrpcClient instance
-  network?: Network; // Network selection: 'mainnet' | 'testnet'
-}
+const client = await BucketClient.initialize({
+  suiClient,       // Optional: custom SuiGrpcClient
+  network,         // Optional: 'mainnet' | 'testnet' (default: 'mainnet')
+  configOverrides, // Optional: e.g. { PRICE_SERVICE_ENDPOINT: 'https://...' }
+});
+```
+
+**Advanced: Constructor (requires `config`)**
+
+For custom config (e.g. caching, testing, or pre-built config):
+
+```typescript
+const client = new BucketClient({
+  suiClient?: SuiGrpcClient;
+  network?: Network;
+  config: ConfigType; // Required — use convertOnchainConfig() if building from chain data
+});
 ```
 
 ### Transaction Options
@@ -978,7 +995,7 @@ if (saving) {
 
 ## Version Information
 
-**Current Version**: 1.2.8
+**Current Version**: 2.0.1
 **Node.js Requirement**: >= 20
 **Dependencies**:
 
