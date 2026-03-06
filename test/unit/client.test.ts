@@ -280,4 +280,148 @@ describe('unit/client', () => {
       ).rejects.toThrow('Object not found');
     });
   });
+
+  describe('getAggregatorObjectInfo / getVaultObjectInfo / getSavingPoolObjectInfo / getPsmPoolObjectInfo', () => {
+    it('throws for unsupported coin type in getAggregatorObjectInfo', async () => {
+      vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
+        config: { id: '0x1', id_vector: [] },
+      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation(() => minimalConfig());
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+
+      const client = await BucketClient.initialize({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+      });
+      expect(() => client.getAggregatorObjectInfo({ coinType: '0xunknown::coin::UNKNOWN' })).toThrow(
+        'Unsupported coin type',
+      );
+    });
+
+    it('throws for unsupported collateral type in getVaultObjectInfo', async () => {
+      vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
+        config: { id: '0x1', id_vector: [] },
+      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation(() => minimalConfig());
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+
+      const client = await BucketClient.initialize({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+      });
+      expect(() => client.getVaultObjectInfo({ coinType: '0xunknown::coin::UNKNOWN' })).toThrow(
+        'Unsupported collateral type',
+      );
+    });
+
+    it('throws for unsupported lp type in getSavingPoolObjectInfo', async () => {
+      vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
+        config: { id: '0x1', id_vector: [] },
+      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation(() => minimalConfig());
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+
+      const client = await BucketClient.initialize({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+      });
+      expect(() => client.getSavingPoolObjectInfo({ lpType: '0xunknown::lp::UNKNOWN' })).toThrow(
+        'Unsupported coin type',
+      );
+    });
+
+    it('throws for unsupported coin type in getPsmPoolObjectInfo', async () => {
+      vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue({
+        config: { id: '0x1', id_vector: [] },
+      } as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>);
+      vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation(() => minimalConfig());
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+
+      const client = await BucketClient.initialize({
+        suiClient: asSuiClient({ getObjects: vi.fn() }),
+        network: 'mainnet',
+      });
+      expect(() => client.getPsmPoolObjectInfo({ coinType: '0xunknown::usdc::USDC' })).toThrow(
+        'Unsupported coin type',
+      );
+    });
+  });
+
+  describe('accountAddress and newAccountRequest branches', () => {
+    const validAddress = '0x0000000000000000000000000000000000000000000000000000000000000001';
+
+    it('accountAddress returns pure address when accountObjectOrId is string', async () => {
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+      const client = new BucketClient({
+        suiClient: asSuiClient({}),
+        network: 'mainnet',
+        config: minimalConfig(),
+      });
+      const { Transaction } = await import('@mysten/sui/transactions');
+      const tx = new Transaction();
+      const result = client.accountAddress(tx, {
+        address: '0xdead',
+        accountObjectOrId: validAddress,
+      });
+      expect(result).toBeDefined();
+      const data = tx.getData() as { inputs: unknown[] };
+      expect(data.inputs.some((i: unknown) => (i as { Pure?: unknown }).Pure !== undefined)).toBe(true);
+    });
+
+    it('accountAddress returns moveCall when accountObjectOrId is TransactionArgument', async () => {
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+      const client = new BucketClient({
+        suiClient: asSuiClient({}),
+        network: 'mainnet',
+        config: minimalConfig(),
+      });
+      const { Transaction } = await import('@mysten/sui/transactions');
+      const tx = new Transaction();
+      const objRef = tx.pure.address(validAddress);
+      const result = client.accountAddress(tx, {
+        address: '0xdead',
+        accountObjectOrId: objRef,
+      });
+      expect(result).toBeDefined();
+      const data = tx.getData() as { commands: unknown[] };
+      expect(data.commands.some((c: unknown) => (c as { MoveCall?: unknown }).MoveCall !== undefined)).toBe(true);
+    });
+
+    it('newAccountRequest with accountObjectOrId as string', async () => {
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+      const client = new BucketClient({
+        suiClient: asSuiClient({}),
+        network: 'mainnet',
+        config: minimalConfig(),
+      });
+      const { Transaction } = await import('@mysten/sui/transactions');
+      const tx = new Transaction();
+      const result = client.newAccountRequest(tx, { accountObjectOrId: validAddress });
+      expect(result).toBeDefined();
+      const data = tx.getData() as { commands: unknown[] };
+      const moveCall = data.commands.find((c: unknown) => (c as { MoveCall?: unknown }).MoveCall) as {
+        MoveCall?: { function?: string };
+      };
+      expect(moveCall?.MoveCall?.function).toBe('request_with_account');
+    });
+
+    it('newAccountRequest with accountObjectOrId as TransactionArgument', async () => {
+      vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
+      const client = new BucketClient({
+        suiClient: asSuiClient({}),
+        network: 'mainnet',
+        config: minimalConfig(),
+      });
+      const { Transaction } = await import('@mysten/sui/transactions');
+      const tx = new Transaction();
+      const objRef = tx.pure.address(validAddress);
+      const result = client.newAccountRequest(tx, { accountObjectOrId: objRef });
+      expect(result).toBeDefined();
+      const data = tx.getData() as { commands: unknown[] };
+      const moveCall = data.commands.find((c: unknown) => (c as { MoveCall?: unknown }).MoveCall) as {
+        MoveCall?: { function?: string };
+      };
+      expect(moveCall?.MoveCall?.function).toBe('request_with_account');
+    });
+  });
 });

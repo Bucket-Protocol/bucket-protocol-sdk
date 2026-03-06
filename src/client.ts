@@ -266,7 +266,10 @@ export class BucketClient {
     const coinType = (await this.suiClient.core.mvr.resolveType({ type: this.getUsdbCoinType() })).type;
     const { response } = await this.suiClient.stateService.getCoinInfo({ coinType });
     const supply = response.treasury?.totalSupply;
-    return supply != null ? BigInt(supply) : 0n;
+    if (supply == null) {
+      throw new Error('Failed to fetch USDB supply: treasury totalSupply is missing');
+    }
+    return BigInt(supply);
   }
 
   /**
@@ -280,7 +283,12 @@ export class BucketClient {
     tx.setSender(DUMMY_ADDRESS);
 
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { events: true } });
-    return ((res.Transaction ?? res.FailedTransaction)?.events ?? []).reduce((result, e) => {
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch oracle prices'), { cause: err ?? res });
+    }
+    const events = res.Transaction?.events ?? [];
+    return events.reduce((result, e) => {
       const typeStruct = parseStructTag(e.eventType);
 
       if (typeStruct.module !== 'aggregator' || typeStruct.name !== 'PriceAggregated') {
@@ -570,11 +578,12 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction' || !res.commandResults?.[0]?.returnValues) {
-      return {
-        positions: [],
-        nextCursor: null,
-      };
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch positions'), { cause: err ?? res });
+    }
+    if (!res.commandResults?.[0]?.returnValues) {
+      throw new Error('Failed to fetch positions');
     }
     const [positionBytes, nextCursorBytes] = res.commandResults![0].returnValues;
 
@@ -646,8 +655,12 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
-      return {};
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch account borrow rewards'), { cause: err ?? res });
+    }
+    if (!res.commandResults) {
+      throw new Error('Failed to fetch account borrow rewards');
     }
     return coinTypes.reduce((result, coinType) => {
       const vaultInfo = this.getVaultObjectInfo({ coinType });
@@ -660,10 +673,11 @@ export class BucketClient {
       return {
         ...result,
         [coinType]: vaultInfo.rewarders.reduce((result, rewarder, index) => {
-          if (!responses[index]?.returnValues) {
-            return result;
+          const resItem = responses[index]?.returnValues;
+          if (!resItem) {
+            throw new Error(`Failed to fetch account borrow rewards: missing result for ${coinType} reward ${rewarder.reward_type}`);
           }
-          const realtimeReward = bcs.u64().parse(responses[index].returnValues[0].bcs);
+          const realtimeReward = bcs.u64().parse(resItem[0].bcs);
 
           return { ...result, [rewarder.reward_type]: BigInt(realtimeReward) };
         }, {}),
@@ -689,17 +703,22 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
-      return [];
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch account positions'), { cause: err ?? res });
+    }
+    if (!res.commandResults) {
+      throw new Error('Failed to fetch account positions');
     }
     const borrowRewards = await this.getAccountBorrowRewards({ address, accountId, coinTypes: allCollateralTypes });
 
     return allCollateralTypes.reduce((result, coinType, index) => {
-      if (!res.commandResults?.[index]?.returnValues) {
-        return result;
+      const cmdRes = res.commandResults?.[index]?.returnValues;
+      if (!cmdRes) {
+        throw new Error(`Failed to fetch account positions: missing result for ${coinType}`);
       }
-      const collateralAmount = BigInt(bcs.u64().parse(res.commandResults[index].returnValues[0].bcs));
-      const debtAmount = BigInt(bcs.u64().parse(res.commandResults[index].returnValues[1].bcs));
+      const collateralAmount = BigInt(bcs.u64().parse(cmdRes[0].bcs));
+      const debtAmount = BigInt(bcs.u64().parse(cmdRes[1].bcs));
       const hasReward = borrowRewards[coinType] && Object.values(borrowRewards[coinType]).some((reward) => reward);
 
       if (collateralAmount || debtAmount || hasReward) {
@@ -770,8 +789,12 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
-      return {};
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch account saving pool rewards'), { cause: err ?? res });
+    }
+    if (!res.commandResults) {
+      throw new Error('Failed to fetch account saving pool rewards');
     }
     return lpTypes.reduce((result, lpType) => {
       const poolInfo = this.getSavingPoolObjectInfo({ lpType });
@@ -784,10 +807,12 @@ export class BucketClient {
       return {
         ...result,
         [lpType]: poolInfo.reward.reward_types.reduce((result, rewardType, index) => {
-          if (!responses[index]?.returnValues) {
-            return result;
+          const getRewarderRes = responses[index]?.returnValues;
+          const amountRes = responses[index + 1]?.returnValues;
+          if (!getRewarderRes || !amountRes) {
+            throw new Error(`Failed to fetch account saving pool rewards: missing result for ${lpType} reward ${rewardType}`);
           }
-          const realtimeReward = bcs.u64().parse(responses[index + 1].returnValues[0].bcs);
+          const realtimeReward = bcs.u64().parse(amountRes[0].bcs);
 
           return { ...result, [rewardType]: BigInt(realtimeReward) };
         }, {}),
@@ -820,11 +845,13 @@ export class BucketClient {
     const savingRewards = await this.getAccountSavingPoolRewards({ lpTypes, address, accountId });
 
     return lpTypes.reduce((result, lpType, index) => {
-      if (!res.commandResults?.[2 * index]?.returnValues || !res.commandResults?.[2 * index + 1]?.returnValues) {
-        return result;
+      const valRes = res.commandResults?.[2 * index]?.returnValues;
+      const balRes = res.commandResults?.[2 * index + 1]?.returnValues;
+      if (!valRes || !balRes) {
+        throw new Error(`Failed to fetch account savings: missing result for ${lpType}`);
       }
-      const usdbBalance = BigInt(bcs.u64().parse(res.commandResults![2 * index].returnValues[0].bcs));
-      const lpBalance = BigInt(bcs.u64().parse(res.commandResults![2 * index + 1].returnValues[0].bcs));
+      const usdbBalance = BigInt(bcs.u64().parse(valRes[0].bcs));
+      const lpBalance = BigInt(bcs.u64().parse(balRes[0].bcs));
       const hasReward = savingRewards[lpType] && Object.values(savingRewards[lpType]).every((reward) => reward);
 
       if (usdbBalance || lpBalance || hasReward) {

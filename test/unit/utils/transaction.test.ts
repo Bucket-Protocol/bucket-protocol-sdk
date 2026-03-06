@@ -1,9 +1,10 @@
+import type { ClientWithCoreApi } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { COIN_WITH_BALANCE_RESOLVER } from '@/utils/resolvers.js';
-import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/transaction.js';
+import { coinWithBalance, destroyZeroCoin, getCoinsOfType, getZeroCoin } from '@/utils/transaction.js';
 
 function getIntentCommand(tx: Transaction) {
   const data = tx.getData() as { commands: Array<{ $kind?: string; $Intent?: { name: string; data: unknown } }> };
@@ -92,6 +93,77 @@ describe('unit/utils/transaction', () => {
       coinWithBalance({ balance: 1n })(tx);
       const cmd = getIntentCommand(tx);
       expect((cmd?.$Intent?.data as { type: string }).type).toBe('gas');
+    });
+  });
+
+  describe('getCoinsOfType', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('returns all coins when pagination has multiple pages', async () => {
+      const page1 = {
+        objects: [
+          { objectId: '0xcoin1', digest: 'd1', version: '1', balance: 100n },
+        ],
+        hasNextPage: true,
+        cursor: 'cursor1',
+      };
+      const page2 = {
+        objects: [
+          { objectId: '0xcoin2', digest: 'd2', version: '2', balance: 200n },
+        ],
+        hasNextPage: false,
+        cursor: null,
+      };
+      const listCoins = vi
+        .fn()
+        .mockResolvedValueOnce(page1)
+        .mockResolvedValueOnce(page2);
+      const client = {
+        core: { listCoins },
+      } as unknown as ClientWithCoreApi;
+
+      const coins = await getCoinsOfType({
+        coinType: '0x2::sui::SUI',
+        client,
+        owner: '0xowner',
+        usedIds: new Set(),
+      });
+
+      expect(listCoins).toHaveBeenCalledTimes(2);
+      expect(listCoins).toHaveBeenNthCalledWith(1, { owner: '0xowner', coinType: '0x2::sui::SUI', cursor: null });
+      expect(listCoins).toHaveBeenNthCalledWith(2, {
+        owner: '0xowner',
+        coinType: '0x2::sui::SUI',
+        cursor: 'cursor1',
+      });
+      expect(coins).toHaveLength(2);
+      expect(coins[0]!.objectId).toBe('0xcoin1');
+      expect(coins[1]!.objectId).toBe('0xcoin2');
+    });
+
+    it('skips coins that are in usedIds', async () => {
+      const listCoins = vi.fn().mockResolvedValue({
+        objects: [
+          { objectId: '0xused', digest: 'd1', version: '1', balance: 100n },
+          { objectId: '0xfree', digest: 'd2', version: '2', balance: 200n },
+        ],
+        hasNextPage: false,
+        cursor: null,
+      });
+      const client = { core: { listCoins } } as unknown as ClientWithCoreApi;
+      const usedIds = new Set(['0xused']);
+
+      const coins = await getCoinsOfType({
+        coinType: '0x2::sui::SUI',
+        client,
+        owner: '0xowner',
+        usedIds,
+      });
+
+      expect(coins).toHaveLength(1);
+      expect(coins[0]!.objectId).toBe('0xfree');
     });
   });
 });

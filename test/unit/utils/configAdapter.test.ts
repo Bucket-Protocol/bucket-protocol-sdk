@@ -203,6 +203,32 @@ describe('unit/utils/configAdapter', () => {
       });
     });
 
+    it('parses aggregator legacy format with derivativeInfo camelCase (fallback path)', () => {
+      const onchain: BucketOnchainConfig = {
+        ...minimalOnchain,
+        aggregator: {
+          id: '0xagg',
+          entries: {
+            coin: {
+              priceAggregator: '0xagg6',
+              derivativeInfo: {
+                underlyingCoinType: '0x2::sui::SUI',
+                derivativeKind: 'Scallop',
+              },
+            },
+          },
+        },
+      };
+      const config = convertOnchainConfig(onchain);
+      expect(config.AGGREGATOR_OBJS.coin).toEqual({
+        DerivativeInfo: {
+          priceAggregator: { objectId: '0xagg6', initialSharedVersion: '0', mutable: false },
+          underlying_coin_type: '0x2::sui::SUI',
+          derivative_kind: 'Scallop',
+        },
+      });
+    });
+
     it('parses vault entry with rewarders (snake_case)', () => {
       const onchain: BucketOnchainConfig = {
         ...minimalOnchain,
@@ -579,6 +605,116 @@ describe('unit/utils/configAdapter', () => {
       expect(config.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe(originalVersion);
       expect(enriched).not.toBe(config);
       expect(enriched.PYTH_RULE_CONFIG_OBJ.initialSharedVersion).toBe('99');
+    });
+
+    it('enriches SCOIN, GCOIN, BFBTC price config refs when present', async () => {
+      const config = convertOnchainConfig({
+        ...minimalOnchain,
+        packageConfig: { framework_package_id: '0xfw' },
+        oracleConfig: { pyth_state_id: '0xp' },
+        objectConfig: { treasury_obj: '0xt' },
+        priceConfig: {
+          id: '0xprice',
+          entries: {
+            scoin: {
+              '@variant': 'SCOIN',
+              package: '0xpkg',
+              scoin_rule_config: '0xscoin_rule',
+              scallop_version: '0xscallop_v',
+              scallop_market: '0xscallop_m',
+            },
+            gcoin: {
+              '@variant': 'GCOIN',
+              package: '0xpkg',
+              gcoin_rule_config: '0xgcoin_rule',
+              unihouse_object: '0xunihouse',
+            },
+            bfbtc: {
+              '@variant': 'BFBTC',
+              package: '0xpkg',
+              bfbtc_rule_config: '0xbfbtc_rule',
+            },
+          },
+        },
+      } as BucketOnchainConfig);
+      config.PRICE_OBJS = {
+        scoin: {
+          SCOIN: {
+            package: '0xpkg',
+            scoin_rule_config: { objectId: '0xscoin_rule', initialSharedVersion: '0', mutable: false },
+            scallop_version: { objectId: '0xscallop_v', initialSharedVersion: '0', mutable: false },
+            scallop_market: { objectId: '0xscallop_m', initialSharedVersion: '0', mutable: false },
+          },
+        },
+        gcoin: {
+          GCOIN: {
+            package: '0xpkg',
+            gcoin_rule_config: { objectId: '0xgcoin_rule', initialSharedVersion: '0', mutable: false },
+            unihouse_object: { objectId: '0xunihouse', initialSharedVersion: '0', mutable: false },
+          },
+        },
+        bfbtc: {
+          BFBTC: {
+            package: '0xpkg',
+            bfbtc_rule_config: { objectId: '0xbfbtc_rule', initialSharedVersion: '0', mutable: false },
+          },
+        },
+      };
+      const getObjects = vi.fn().mockResolvedValue({
+        objects: [
+          { objectId: '0xscoin_rule', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '1' } } },
+          { objectId: '0xscallop_v', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '2' } } },
+          { objectId: '0xscallop_m', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '3' } } },
+          { objectId: '0xgcoin_rule', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '4' } } },
+          { objectId: '0xunihouse', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '5' } } },
+          { objectId: '0xbfbtc_rule', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '6' } } },
+        ],
+      });
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(enriched.PRICE_OBJS.scoin.SCOIN.scoin_rule_config.initialSharedVersion).toBe('1');
+      expect(enriched.PRICE_OBJS.scoin.SCOIN.scallop_version.initialSharedVersion).toBe('2');
+      expect(enriched.PRICE_OBJS.scoin.SCOIN.scallop_market.initialSharedVersion).toBe('3');
+      expect(enriched.PRICE_OBJS.gcoin.GCOIN.gcoin_rule_config.initialSharedVersion).toBe('4');
+      expect(enriched.PRICE_OBJS.gcoin.GCOIN.unihouse_object.initialSharedVersion).toBe('5');
+      expect(enriched.PRICE_OBJS.bfbtc.BFBTC.bfbtc_rule_config.initialSharedVersion).toBe('6');
+    });
+
+    it('enriches SAVING_POOL reward_manager when reward exists', async () => {
+      const config = convertOnchainConfig({
+        ...minimalOnchain,
+        packageConfig: { framework_package_id: '0xfw' },
+        oracleConfig: { pyth_state_id: '0xp' },
+        objectConfig: { treasury_obj: '0xt' },
+        savingPool: {
+          id: '0xsp',
+          entries: {
+            lp: {
+              pool: '0xpool',
+              reward: { reward_manager: '0xrm', reward_types: ['BUCK'] },
+            },
+          },
+        },
+      } as BucketOnchainConfig);
+      config.SAVING_POOL_OBJS = {
+        lp: {
+          pool: { objectId: '0xpool', initialSharedVersion: '0', mutable: true },
+          reward: {
+            reward_manager: { objectId: '0xrm', initialSharedVersion: '0', mutable: false },
+            reward_types: ['BUCK'],
+          },
+        },
+      };
+      const getObjects = vi.fn().mockResolvedValue({
+        objects: [{ objectId: '0xrm', owner: { $kind: 'Shared', Shared: { initialSharedVersion: '7' } } }],
+      });
+      const client = asSuiClient({ getObjects });
+
+      const enriched = await enrichSharedObjectRefs(config, client);
+
+      expect(enriched.SAVING_POOL_OBJS.lp.reward!.reward_manager.initialSharedVersion).toBe('7');
     });
   });
 });
