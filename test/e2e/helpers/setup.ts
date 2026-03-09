@@ -8,7 +8,6 @@ import { afterFileEnd, afterTestDelay, beforeFileStart, isRateLimitError, runWit
 export const MAINNET_TIMEOUT_MS = 20_000;
 export const network = 'mainnet';
 export const testAccount = '0x7a718956581fbe4a568d135fef5161024e74af87a073a1489e57ebef53744652';
-// export const testAccount = '0x26266b1381bcf03ab3acc37c1e87beffb52d49f345248bc3efb9114176990ae4';
 
 // Use SUI_GRPC_URL env var for a custom RPC (avoids public mainnet rate limits)
 const rpcUrl = process.env.SUI_GRPC_URL ?? 'https://fullnode.mainnet.sui.io:443';
