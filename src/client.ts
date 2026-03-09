@@ -770,11 +770,6 @@ export class BucketClient {
       }
       poolInfo.reward.reward_types.forEach((rewardType) => {
         tx.moveCall({
-          target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::get_rewarder`,
-          typeArguments: [lpType, rewardType],
-          arguments: [tx.sharedObjectRef(poolInfo.reward!.reward_manager)],
-        });
-        tx.moveCall({
           target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::get_realtime_reward_amount`,
           typeArguments: [lpType, rewardType],
           arguments: [
@@ -801,14 +796,13 @@ export class BucketClient {
       if (!poolInfo.reward?.reward_types?.length) {
         return result;
       }
-      const responses = res.commandResults!.splice(0, 2 * poolInfo.reward.reward_types.length);
+      const responses = res.commandResults!.splice(0, poolInfo.reward.reward_types.length);
 
       return {
         ...result,
         [lpType]: poolInfo.reward.reward_types.reduce((result, rewardType, index) => {
-          const getRewarderRes = responses[2 * index]?.returnValues;
-          const amountRes = responses[2 * index + 1]?.returnValues;
-          if (!getRewarderRes || !amountRes) {
+          const amountRes = responses[index]?.returnValues;
+          if (!amountRes) {
             throw new Error(
               `Failed to fetch account saving pool rewards: missing result for ${lpType} reward ${rewardType}`,
             );
