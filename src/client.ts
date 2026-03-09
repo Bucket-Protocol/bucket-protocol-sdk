@@ -164,26 +164,15 @@ export class BucketClient {
   /* ----- Queries ----- */
 
   /**
-   * @description
+   * @description Get total USDB supply via RPC.
+   * Uses stateService.getCoinInfo (avoids PTB reference limitation: borrow_cap_mut returns
+   * &mut which cannot be passed between commands; SDK v2 validates this and rejects).
    */
   async getUsdbSupply(): Promise<bigint> {
-    const tx = new Transaction();
-
-    const treasury = tx.moveCall({
-      target: `${this.config.USDB_PACKAGE_ID}::usdb::borrow_cap_mut`,
-      arguments: [this.treasury(tx)],
-    });
-    tx.moveCall({
-      target: `0x2::coin::total_supply`,
-      typeArguments: [this.getUsdbCoinType()],
-      arguments: [treasury],
-    });
-    tx.setSender(DUMMY_ADDRESS);
-    const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction' || !res.commandResults?.[1]?.returnValues) {
-      return 0n;
-    }
-    return BigInt(bcs.u64().parse(res.commandResults![1].returnValues[0].bcs));
+    const coinType = this.getUsdbCoinType();
+    const { response } = await this.suiClient.stateService.getCoinInfo({ coinType });
+    const supply = response.treasury?.totalSupply;
+    return supply !== undefined && supply !== null ? BigInt(supply) : 0n;
   }
 
   /**
@@ -668,16 +657,11 @@ export class BucketClient {
         return;
       }
       poolInfo.reward.rewardTypes.forEach((rewardType) => {
-        const rewarder = tx.moveCall({
-          target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::get_rewarder`,
-          typeArguments: [lpType, rewardType],
-          arguments: [tx.sharedObjectRef(poolInfo.reward!.rewardManager)],
-        });
         tx.moveCall({
-          target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::realtime_reward_amount`,
+          target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::get_realtime_reward_amount`,
           typeArguments: [lpType, rewardType],
           arguments: [
-            rewarder,
+            tx.sharedObjectRef(poolInfo.reward!.rewardManager),
             tx.sharedObjectRef(poolInfo.pool),
             tx.pure.address(accountId ?? address),
             tx.object.clock(),
@@ -687,8 +671,12 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
-      return {};
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch account saving pool rewards'), { cause: err ?? res });
+    }
+    if (!res.commandResults) {
+      throw new Error('Failed to fetch account saving pool rewards');
     }
     return lpTypes.reduce((result, lpType) => {
       const poolInfo = this.getSavingPoolObjectInfo({ lpType });
@@ -696,15 +684,18 @@ export class BucketClient {
       if (!poolInfo.reward?.rewardTypes?.length) {
         return result;
       }
-      const responses = res.commandResults!.splice(0, 2 * poolInfo.reward.rewardTypes.length);
+      const responses = res.commandResults!.splice(0, poolInfo.reward.rewardTypes.length);
 
       return {
         ...result,
         [lpType]: poolInfo.reward.rewardTypes.reduce((result, rewardType, index) => {
-          if (!responses[index]?.returnValues) {
-            return result;
+          const amountRes = responses[index]?.returnValues;
+          if (!amountRes) {
+            throw new Error(
+              `Failed to fetch account saving pool rewards: missing result for ${lpType} reward ${rewardType}`,
+            );
           }
-          const realtimeReward = bcs.u64().parse(responses[index + 1].returnValues[0].bcs);
+          const realtimeReward = bcs.u64().parse(amountRes[0].bcs);
 
           return { ...result, [rewardType]: BigInt(realtimeReward) };
         }, {}),
