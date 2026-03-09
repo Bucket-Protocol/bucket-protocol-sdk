@@ -23,13 +23,27 @@ describe('Interacting with Bucket Client on mainnet', () => {
     it(
       'getOraclePrices returns positive numbers for SUI (validates oracle flow)',
       async () => {
-        // Test SUI only: getAllOraclePrices (all coin types) flakes on main's static config;
-        // single-coin getOraclePrices is stable and sufficient to validate the oracle flow.
         const prices = await bucketClient.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
         expect(Object.keys(prices).length).toBeGreaterThan(0);
         expect(prices[SUI_TYPE_ARG]).toBeDefined();
         expect(typeof prices[SUI_TYPE_ARG]).toBe('number');
         expect(prices[SUI_TYPE_ARG]).toBeGreaterThan(0);
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
+    it(
+      'getAllOraclePrices returns positive numbers for all oracle coin types',
+      async () => {
+        const prices = await bucketClient.getAllOraclePrices();
+        const coinTypes = bucketClient.getAllOracleCoinTypes();
+        expect(coinTypes.length).toBeGreaterThan(0);
+        expect(Object.keys(prices).length).toBe(coinTypes.length);
+        for (const coinType of coinTypes) {
+          expect(prices[coinType]).toBeDefined();
+          expect(typeof prices[coinType]).toBe('number');
+          expect(prices[coinType]).toBeGreaterThan(0);
+        }
       },
       MAINNET_TIMEOUT_MS,
     );
@@ -86,6 +100,24 @@ describe('Interacting with Bucket Client on mainnet', () => {
   });
 
   describe('Rewards', () => {
+    it(
+      'getAccountSavingPoolRewards returns record for SUSDB (validates SAVING_INCENTIVE_PACKAGE_ID)',
+      async () => {
+        const rewards = await bucketClient.getAccountSavingPoolRewards({
+          address: testAccount,
+          lpTypes: [susdbLpType],
+        });
+        expect(typeof rewards).toBe('object');
+        expect(rewards).toHaveProperty(susdbLpType);
+        const susdbRewards = rewards[susdbLpType]!;
+        for (const [, amount] of Object.entries(susdbRewards)) {
+          expect(typeof amount).toBe('bigint');
+          expect(amount).toBeGreaterThanOrEqual(0n);
+        }
+      },
+      MAINNET_TIMEOUT_MS,
+    );
+
     it(
       'buildClaimBorrowRewardsTransaction dry run succeeds and has reward balance changes',
       async () => {

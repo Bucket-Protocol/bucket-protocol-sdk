@@ -657,16 +657,11 @@ export class BucketClient {
         return;
       }
       poolInfo.reward.rewardTypes.forEach((rewardType) => {
-        const rewarder = tx.moveCall({
-          target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::get_rewarder`,
-          typeArguments: [lpType, rewardType],
-          arguments: [tx.sharedObjectRef(poolInfo.reward!.rewardManager)],
-        });
         tx.moveCall({
-          target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::realtime_reward_amount`,
+          target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::get_realtime_reward_amount`,
           typeArguments: [lpType, rewardType],
           arguments: [
-            rewarder,
+            tx.sharedObjectRef(poolInfo.reward!.rewardManager),
             tx.sharedObjectRef(poolInfo.pool),
             tx.pure.address(accountId ?? address),
             tx.object.clock(),
@@ -676,8 +671,12 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
-      return {};
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch account saving pool rewards'), { cause: err ?? res });
+    }
+    if (!res.commandResults) {
+      throw new Error('Failed to fetch account saving pool rewards');
     }
     return lpTypes.reduce((result, lpType) => {
       const poolInfo = this.getSavingPoolObjectInfo({ lpType });
@@ -685,15 +684,18 @@ export class BucketClient {
       if (!poolInfo.reward?.rewardTypes?.length) {
         return result;
       }
-      const responses = res.commandResults!.splice(0, 2 * poolInfo.reward.rewardTypes.length);
+      const responses = res.commandResults!.splice(0, poolInfo.reward.rewardTypes.length);
 
       return {
         ...result,
         [lpType]: poolInfo.reward.rewardTypes.reduce((result, rewardType, index) => {
-          if (!responses[index]?.returnValues) {
-            return result;
+          const amountRes = responses[index]?.returnValues;
+          if (!amountRes) {
+            throw new Error(
+              `Failed to fetch account saving pool rewards: missing result for ${lpType} reward ${rewardType}`,
+            );
           }
-          const realtimeReward = bcs.u64().parse(responses[index + 1].returnValues[0].bcs);
+          const realtimeReward = bcs.u64().parse(amountRes[0].bcs);
 
           return { ...result, [rewardType]: BigInt(realtimeReward) };
         }, {}),
@@ -956,7 +958,7 @@ export class BucketClient {
     switch (derivativeInfo.derivativeKind) {
       case 'sCoin':
         tx.moveCall({
-          target: '0x2252a1cc5a16a0c9f4530005908cced53783d96b4932ca3fa15b1fe9d5935972::scoin_rule::feed',
+          target: '0xb7c0792630fe4b028437a5554e5c0bef16edaf793210ef32a88fcea443e4d76b::scoin_rule::feed',
           typeArguments: [coinType, derivativeInfo.underlyingCoinType],
           arguments: [
             collector,
