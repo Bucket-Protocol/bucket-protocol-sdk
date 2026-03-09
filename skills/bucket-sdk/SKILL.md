@@ -392,7 +392,7 @@ type FlashMintInfo = {
 
 ## Common Gotchas
 
-1. **async vs sync builders**: `buildManagePositionTransaction` and `buildPSMSwap*Transaction` are `async` (they fetch Pyth prices). `buildDepositToSavingPoolTransaction`, `buildWithdrawFromSavingPoolTransaction`, `buildClosePositionTransaction`, and `buildClaimBorrowRewardsTransaction` are synchronous.
+1. **async vs sync builders**: `buildManagePositionTransaction` and `buildPSMSwap*Transaction` are `async` (they fetch Pyth prices). `buildDepositToSavingPoolTransaction`, `buildWithdrawFromSavingPoolTransaction`, `buildClaimSavingRewardsTransaction`, `buildClosePositionTransaction`, and `buildClaimBorrowRewardsTransaction` are synchronous.
 
 2. **Zero coin auto-cleanup**: When `borrowAmount` is 0, the returned USDB coin is a zero coin that gets auto-destroyed. Same for collateral when `withdrawAmount` is 0. You don't need to handle this.
 
