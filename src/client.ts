@@ -266,7 +266,7 @@ export class BucketClient {
     const coinType = (await this.suiClient.core.mvr.resolveType({ type: this.getUsdbCoinType() })).type;
     const { response } = await this.suiClient.stateService.getCoinInfo({ coinType });
     const supply = response.treasury?.totalSupply;
-    if (supply == null) {
+    if (supply === null || supply === undefined) {
       throw new Error('Failed to fetch USDB supply: treasury totalSupply is missing');
     }
     return BigInt(supply);
@@ -675,7 +675,9 @@ export class BucketClient {
         [coinType]: vaultInfo.rewarders.reduce((result, rewarder, index) => {
           const resItem = responses[index]?.returnValues;
           if (!resItem) {
-            throw new Error(`Failed to fetch account borrow rewards: missing result for ${coinType} reward ${rewarder.reward_type}`);
+            throw new Error(
+              `Failed to fetch account borrow rewards: missing result for ${coinType} reward ${rewarder.reward_type}`,
+            );
           }
           const realtimeReward = bcs.u64().parse(resItem[0].bcs);
 
@@ -810,7 +812,9 @@ export class BucketClient {
           const getRewarderRes = responses[index]?.returnValues;
           const amountRes = responses[index + 1]?.returnValues;
           if (!getRewarderRes || !amountRes) {
-            throw new Error(`Failed to fetch account saving pool rewards: missing result for ${lpType} reward ${rewardType}`);
+            throw new Error(
+              `Failed to fetch account saving pool rewards: missing result for ${lpType} reward ${rewardType}`,
+            );
           }
           const realtimeReward = bcs.u64().parse(amountRes[0].bcs);
 

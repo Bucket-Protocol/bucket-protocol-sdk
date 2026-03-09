@@ -103,23 +103,16 @@ describe('unit/utils/transaction', () => {
 
     it('returns all coins when pagination has multiple pages', async () => {
       const page1 = {
-        objects: [
-          { objectId: '0xcoin1', digest: 'd1', version: '1', balance: 100n },
-        ],
+        objects: [{ objectId: '0xcoin1', digest: 'd1', version: '1', balance: 100n }],
         hasNextPage: true,
         cursor: 'cursor1',
       };
       const page2 = {
-        objects: [
-          { objectId: '0xcoin2', digest: 'd2', version: '2', balance: 200n },
-        ],
+        objects: [{ objectId: '0xcoin2', digest: 'd2', version: '2', balance: 200n }],
         hasNextPage: false,
         cursor: null,
       };
-      const listCoins = vi
-        .fn()
-        .mockResolvedValueOnce(page1)
-        .mockResolvedValueOnce(page2);
+      const listCoins = vi.fn().mockResolvedValueOnce(page1).mockResolvedValueOnce(page2);
       const client = {
         core: { listCoins },
       } as unknown as ClientWithCoreApi;

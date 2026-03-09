@@ -341,9 +341,7 @@ describe('unit/client', () => {
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
       });
-      expect(() => client.getPsmPoolObjectInfo({ coinType: '0xunknown::usdc::USDC' })).toThrow(
-        'Unsupported coin type',
-      );
+      expect(() => client.getPsmPoolObjectInfo({ coinType: '0xunknown::usdc::USDC' })).toThrow('Unsupported coin type');
     });
   });
 
