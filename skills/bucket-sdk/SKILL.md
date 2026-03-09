@@ -320,10 +320,12 @@ client.flashBurn(tx, { usdbCoin: borrowedUsdb, flashMintReceipt: receipt });
 
 For advanced use cases, the building blocks behind `build*` methods are also public:
 
-- **Price**: `aggregatePrices(tx, { coinTypes })` → `TransactionResult[]` (fetches Pyth VAAs + builds update calls)
+- **Price**: `aggregateBasicPrices(tx, { coinTypes })` (Pyth-only feeds), `aggregatePrices(tx, { coinTypes })` (all feeds incl. derivatives) → `TransactionResult[]`
 - **CDP internals**: `debtorRequest()` → `checkUpdatePositionRequest()` → `updatePosition()` → `checkUpdatePositionResponse()`
-- **Pool calls**: `savingPoolDeposit()`, `savingPoolWithdraw()`, `psmSwapIn()`, `psmSwapOut()`
-- **Object refs**: `treasury(tx)`, `vault(tx, { coinType })`, `aggregator(tx, { coinType })`, `savingPoolObj(tx, { lpType })`, `psmPoolObj(tx, { coinType })`
+- **Saving pool calls**: `savingPoolDeposit()`, `savingPoolWithdraw()`, `checkDepositResponse()`, `checkWithdrawResponse()`, `claimPoolIncentive()`
+- **PSM calls**: `psmSwapIn()`, `psmSwapOut()`
+- **Object refs**: `treasury(tx)`, `vault(tx, { coinType })`, `aggregator(tx, { coinType })`, `savingPoolObj(tx, { lpType })`, `psmPoolObj(tx, { coinType })`, `vaultRewarderRegistry(tx)`, `savingPoolGlobalConfig(tx)`, `flashGlobalConfig(tx)`
+- **Account helpers**: `accountAddress(tx, { address, accountObjectOrId })`, `newAccountRequest(tx, { address, accountObjectOrId })`, `newPriceCollector(tx, { coinType })`
 
 ## Key Types
 

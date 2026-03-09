@@ -48,8 +48,8 @@ async function main() {
       `    Max USDB:      ${vault.maxUsdbSupply != null ? (Number(vault.maxUsdbSupply) / 1e6).toLocaleString() : 'unlimited'}`,
     );
     console.log(`    USDB Minted:   ${(Number(vault.usdbSupply) / 1e6).toLocaleString()}`);
-    console.log(`    Collateral:    ${vault.totalCollateral}`);
-    console.log(`    Positions:     ${vault.positionCount}`);
+    console.log(`    Collateral:    ${vault.collateralBalance}`);
+    console.log(`    Positions:     ${vault.positionTableSize}`);
   }
   console.log();
 
