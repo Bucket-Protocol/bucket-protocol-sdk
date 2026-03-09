@@ -21,7 +21,6 @@ import {
   network,
   setupE2E,
   suiClient,
-  susdbLpType,
   testAccount,
   txWithSender,
   usdcCoinType,
@@ -33,7 +32,38 @@ type QueryResult = {
   durationMs?: number;
   output?: unknown;
   error?: string;
+  skipped?: boolean;
 };
+
+/** Run API and record result. Use when config is guaranteed to exist. */
+async function run(api: string, fn: () => Promise<unknown>): Promise<void> {
+  const start = Date.now();
+  try {
+    const output = await fn();
+    results.push({
+      api,
+      success: true,
+      durationMs: Date.now() - start,
+      output: serializeForJson(output),
+    });
+  } catch (e) {
+    results.push({
+      api,
+      success: false,
+      durationMs: Date.now() - start,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
+
+/** Skip API with explicit reason when required config is missing. No silent fallback. */
+function runOrSkip(api: string, fn: () => Promise<unknown>, skipCondition: boolean, skipReason: string): Promise<void> {
+  if (skipCondition) {
+    results.push({ api, success: false, skipped: true, error: `Skipped: ${skipReason}` });
+    return Promise.resolve();
+  }
+  return run(api, fn);
+}
 
 function serializeForJson(value: unknown): unknown {
   if (value === undefined) return undefined;
@@ -72,12 +102,15 @@ describe('E2E All query outputs (report)', () => {
       '|-----|---------|---------------|-------|',
     ];
     for (const r of results) {
-      const notes = r.success
-        ? typeof r.output === 'object' && r.output !== null
-          ? `${Object.keys(r.output as object).length} keys/items`
-          : String(r.output)
-        : (r.error ?? 'unknown');
-      mdLines.push(`| ${r.api} | ${r.success ? '✓' : '✗'} | ${r.durationMs ?? '-'} | ${notes} |`);
+      const notes = r.skipped
+        ? (r.error ?? 'skipped')
+        : r.success
+          ? typeof r.output === 'object' && r.output !== null
+            ? `${Object.keys(r.output as object).length} keys/items`
+            : String(r.output)
+          : (r.error ?? 'unknown');
+      const status = r.skipped ? '⊘' : r.success ? '✓' : '✗';
+      mdLines.push(`| ${r.api} | ${status} | ${r.durationMs ?? '-'} | ${notes} |`);
     }
     mdLines.push('');
     mdLines.push('## Full output (JSON)');
@@ -93,38 +126,28 @@ describe('E2E All query outputs (report)', () => {
   it(
     'collects all query API outputs',
     async () => {
-      const run = async (api: string, fn: () => Promise<unknown>): Promise<void> => {
-        const start = Date.now();
-        try {
-          const output = await fn();
-          results.push({
-            api,
-            success: true,
-            durationMs: Date.now() - start,
-            output: serializeForJson(output),
-          });
-        } catch (e) {
-          results.push({
-            api,
-            success: false,
-            durationMs: Date.now() - start,
-            error: e instanceof Error ? e.message : String(e),
-          });
-        }
-      };
+      const config = bucketClient.getConfig();
+
+      // Assert required config — fail fast, no silent fallback
+      const psmPoolKeys = Object.keys(config.PSM_POOL_OBJS ?? {});
+      const savingPoolKeys = Object.keys(config.SAVING_POOL_OBJS ?? {});
+      const collateralTypes = bucketClient.getAllCollateralTypes();
+      expect(psmPoolKeys.length, 'PSM_POOL_OBJS must have at least one pool').toBeGreaterThan(0);
+      expect(savingPoolKeys.length, 'SAVING_POOL_OBJS must have at least one pool').toBeGreaterThan(0);
+      expect(collateralTypes.length, 'Config must have at least one collateral type').toBeGreaterThan(0);
+
+      const firstPsmCoinType = psmPoolKeys[0]!;
+      const firstLpType = savingPoolKeys[0]!;
+      const firstCoinType = collateralTypes[0]!;
+
+      const vaultEntries = (Object.entries(config.VAULT_OBJS ?? {}) as [string, VaultObjectInfo][]);
+      const coinTypeWithRewarders = vaultEntries
+        .filter(([, v]) => v.rewarders && v.rewarders.length > 0)
+        .map(([k]) => k)
+        .slice(0, 3);
+      const hasVaultWithRewarders = coinTypeWithRewarders.length > 0;
 
       const coinTypes = bucketClient.getAllOracleCoinTypes().slice(0, 2);
-      const collateralTypes = bucketClient.getAllCollateralTypes().slice(0, 2);
-      const lpTypes = Object.keys(bucketClient.getConfig().SAVING_POOL_OBJS ?? {}).slice(0, 2);
-      const firstCoinType = collateralTypes[0] ?? SUI_TYPE_ARG;
-      // getBorrowRewardFlowRate 需要 vault 有 rewarders，否則回傳 {}；選第一個有 rewarders 的 vault
-      const coinTypeWithRewarders =
-        (Object.entries(bucketClient.getConfig().VAULT_OBJS ?? {}) as [string, VaultObjectInfo][]).find(
-          ([, v]) => v.rewarders && v.rewarders.length > 0,
-        )?.[0] ?? firstCoinType;
-      const firstLpType = lpTypes[0] ?? susdbLpType;
-      const config = bucketClient.getConfig();
-      const firstPsmCoinType = Object.keys(config.PSM_OBJS ?? {})[0] ?? usdcCoinType;
 
       // Sync config-derived
       await run('getUsdbCoinType', () => Promise.resolve(getUsdbCoinType()));
@@ -175,11 +198,16 @@ describe('E2E All query outputs (report)', () => {
       await run('getUsdbSupply', () => bucketClient.getUsdbSupply());
       await run('getOraclePrices', () => bucketClient.getOraclePrices({ coinTypes }));
       await run('getAllOraclePrices', () => bucketClient.getAllOraclePrices());
-      await run('getBorrowRewardFlowRate', () =>
-        bucketClient.getBorrowRewardFlowRate({ coinType: coinTypeWithRewarders }),
+      await runOrSkip(
+        'getBorrowRewardFlowRate',
+        () => bucketClient.getBorrowRewardFlowRate({ coinType: coinTypeWithRewarders[0]! }),
+        !hasVaultWithRewarders,
+        'No vault with rewarders in config',
       );
       await run('getAllVaultObjects', () => bucketClient.getAllVaultObjects());
-      await run('getSavingPoolRewardFlowRate', () => bucketClient.getSavingPoolRewardFlowRate({ lpType: susdbLpType }));
+      await run('getSavingPoolRewardFlowRate', () =>
+        bucketClient.getSavingPoolRewardFlowRate({ lpType: firstLpType }),
+      );
       await run('getAllSavingPoolObjects', () => bucketClient.getAllSavingPoolObjects());
       await run('getAllPsmPoolObjects', () => bucketClient.getAllPsmPoolObjects());
       await run('getFlashMintInfo', () => bucketClient.getFlashMintInfo());
@@ -207,24 +235,40 @@ describe('E2E All query outputs (report)', () => {
         .filter(([, v]) => v.rewarders && v.rewarders.length > 0)
         .map(([k]) => k)
         .slice(0, 3);
-      await run('getAccountBorrowRewards', () =>
-        bucketClient.getAccountBorrowRewards({
-          address: testAccount,
-          coinTypes: coinTypesWithRewarders.length > 0 ? coinTypesWithRewarders : collateralTypes,
-        }),
+      await runOrSkip(
+        'getAccountBorrowRewards',
+        () =>
+          bucketClient.getAccountBorrowRewards({
+            address: testAccount,
+            coinTypes: coinTypesWithRewarders,
+          }),
+        !hasVaultWithRewarders,
+        'No vault with rewarders in config',
       );
       await run('getAccountPositions', () => bucketClient.getAccountPositions({ address: testAccount }));
       await run('getUserPositions', () => bucketClient.getUserPositions({ address: testAccount }));
       await run('getAccountSavingPoolRewards', () =>
         bucketClient.getAccountSavingPoolRewards({
           address: testAccount,
-          lpTypes: [susdbLpType],
+          lpTypes: [firstLpType],
         }),
       );
       await run('getAccountSavings', () => bucketClient.getAccountSavings({ address: testAccount }));
       await run('getUserSavings', () => bucketClient.getUserSavings({ address: testAccount }));
 
       // build* APIs (PTB builders) — capture summary since TransactionResult doesn't serialize well
+      const captureBuildOrSkip = async <T>(
+        api: string,
+        fn: () => Promise<T>,
+        skipCondition: boolean,
+        skipReason: string,
+      ): Promise<void> => {
+        if (skipCondition) {
+          results.push({ api, success: false, skipped: true, error: `Skipped: ${skipReason}` });
+          return;
+        }
+        return captureBuild(api, fn);
+      };
       const captureBuild = async <T>(api: string, fn: () => Promise<T>): Promise<void> => {
         const start = Date.now();
         try {
@@ -281,19 +325,24 @@ describe('E2E All query outputs (report)', () => {
           coinType: SUI_TYPE_ARG,
         });
       });
-      await captureBuild('buildClaimBorrowRewardsTransaction', async () => {
-        const tx = txWithSender();
-        return bucketClient.buildClaimBorrowRewardsTransaction(tx, {
-          accountObjectOrId: testAccount,
-          coinType: coinTypeWithRewarders,
-        });
-      });
+      await captureBuildOrSkip(
+        'buildClaimBorrowRewardsTransaction',
+        async () => {
+          const tx = txWithSender();
+          return bucketClient.buildClaimBorrowRewardsTransaction(tx, {
+            accountObjectOrId: testAccount,
+            coinType: coinTypeWithRewarders[0]!,
+          });
+        },
+        !hasVaultWithRewarders,
+        'No vault with rewarders in config',
+      );
       await captureBuild('buildDepositToSavingPoolTransaction', async () => {
         const tx = txWithSender();
         const amt = 1n * 10n ** 6n;
         const coin = coinWithBalance({ type: usdbType, balance: amt });
         bucketClient.buildDepositToSavingPoolTransaction(tx, {
-          lpType: susdbLpType,
+          lpType: firstLpType,
           address: testAccount,
           depositCoinOrAmount: coin,
         });
@@ -302,7 +351,7 @@ describe('E2E All query outputs (report)', () => {
       await captureBuild('buildWithdrawFromSavingPoolTransaction', async () => {
         const tx = txWithSender();
         return bucketClient.buildWithdrawFromSavingPoolTransaction(tx, {
-          lpType: susdbLpType,
+          lpType: firstLpType,
           accountObjectOrId: testAccount,
           amount: 1 * 10 ** 6,
         });
@@ -311,7 +360,7 @@ describe('E2E All query outputs (report)', () => {
         const tx = txWithSender();
         return bucketClient.buildClaimSavingRewardsTransaction(tx, {
           accountObjectOrId: testAccount,
-          lpType: susdbLpType,
+          lpType: firstLpType,
         });
       });
       await captureBuild('buildPSMSwapInTransaction', async () => {
