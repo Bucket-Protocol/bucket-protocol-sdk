@@ -140,7 +140,7 @@ describe('E2E All query outputs (report)', () => {
       const firstLpType = savingPoolKeys[0]!;
       const firstCoinType = collateralTypes[0]!;
 
-      const vaultEntries = (Object.entries(config.VAULT_OBJS ?? {}) as [string, VaultObjectInfo][]);
+      const vaultEntries = Object.entries(config.VAULT_OBJS ?? {}) as [string, VaultObjectInfo][];
       const coinTypeWithRewarders = vaultEntries
         .filter(([, v]) => v.rewarders && v.rewarders.length > 0)
         .map(([k]) => k)
@@ -205,9 +205,7 @@ describe('E2E All query outputs (report)', () => {
         'No vault with rewarders in config',
       );
       await run('getAllVaultObjects', () => bucketClient.getAllVaultObjects());
-      await run('getSavingPoolRewardFlowRate', () =>
-        bucketClient.getSavingPoolRewardFlowRate({ lpType: firstLpType }),
-      );
+      await run('getSavingPoolRewardFlowRate', () => bucketClient.getSavingPoolRewardFlowRate({ lpType: firstLpType }));
       await run('getAllSavingPoolObjects', () => bucketClient.getAllSavingPoolObjects());
       await run('getAllPsmPoolObjects', () => bucketClient.getAllPsmPoolObjects());
       await run('getFlashMintInfo', () => bucketClient.getFlashMintInfo());
