@@ -3,10 +3,10 @@
  * Run: pnpm vitest run test/e2e/all-query-outputs.test.ts --testTimeout=60000
  * Output: test-results/query-outputs.json + query-outputs.md
  */
+import { mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
 
 import type { VaultObjectInfo } from '../../src/types/config.js';
 import { queryAllConfig, toJson } from '../../src/utils/bucketConfig.js';
@@ -73,9 +73,9 @@ describe('E2E All query outputs (report)', () => {
     ];
     for (const r of results) {
       const notes = r.success
-        ? (typeof r.output === 'object' && r.output !== null
-            ? `${Object.keys(r.output as object).length} keys/items`
-            : String(r.output))
+        ? typeof r.output === 'object' && r.output !== null
+          ? `${Object.keys(r.output as object).length} keys/items`
+          : String(r.output)
         : (r.error ?? 'unknown');
       mdLines.push(`| ${r.api} | ${r.success ? '✓' : '✗'} | ${r.durationMs ?? '-'} | ${notes} |`);
     }
@@ -119,21 +119,17 @@ describe('E2E All query outputs (report)', () => {
       const firstCoinType = collateralTypes[0] ?? SUI_TYPE_ARG;
       // getBorrowRewardFlowRate 需要 vault 有 rewarders，否則回傳 {}；選第一個有 rewarders 的 vault
       const coinTypeWithRewarders =
-        (
-          Object.entries(bucketClient.getConfig().VAULT_OBJS ?? {}) as [string, VaultObjectInfo][]
-        ).find(([, v]) => v.rewarders && v.rewarders.length > 0)?.[0] ?? firstCoinType;
+        (Object.entries(bucketClient.getConfig().VAULT_OBJS ?? {}) as [string, VaultObjectInfo][]).find(
+          ([, v]) => v.rewarders && v.rewarders.length > 0,
+        )?.[0] ?? firstCoinType;
       const firstLpType = lpTypes[0] ?? susdbLpType;
       const config = bucketClient.getConfig();
       const firstPsmCoinType = Object.keys(config.PSM_OBJS ?? {})[0] ?? usdcCoinType;
 
       // Sync config-derived
       await run('getUsdbCoinType', () => Promise.resolve(getUsdbCoinType()));
-      await run('getAllOracleCoinTypes', () =>
-        Promise.resolve(bucketClient.getAllOracleCoinTypes()),
-      );
-      await run('getAllCollateralTypes', () =>
-        Promise.resolve(bucketClient.getAllCollateralTypes()),
-      );
+      await run('getAllOracleCoinTypes', () => Promise.resolve(bucketClient.getAllOracleCoinTypes()));
+      await run('getAllCollateralTypes', () => Promise.resolve(bucketClient.getAllCollateralTypes()));
       await run('getAggregatorObjectInfo', () =>
         Promise.resolve(bucketClient.getAggregatorObjectInfo({ coinType: firstCoinType })),
       );
@@ -173,7 +169,7 @@ describe('E2E All query outputs (report)', () => {
       await run('coinWithBalance', async () => {
         const tx = txWithSender();
         const fn = coinWithBalance({ type: getUsdbCoinType(), balance: 1n * 10n ** 6n });
-        const result = fn(tx);
+        fn(tx);
         return { type: 'TransactionResult', built: true };
       });
       await run('getUsdbSupply', () => bucketClient.getUsdbSupply());
@@ -183,15 +179,11 @@ describe('E2E All query outputs (report)', () => {
         bucketClient.getBorrowRewardFlowRate({ coinType: coinTypeWithRewarders }),
       );
       await run('getAllVaultObjects', () => bucketClient.getAllVaultObjects());
-      await run('getSavingPoolRewardFlowRate', () =>
-        bucketClient.getSavingPoolRewardFlowRate({ lpType: susdbLpType }),
-      );
+      await run('getSavingPoolRewardFlowRate', () => bucketClient.getSavingPoolRewardFlowRate({ lpType: susdbLpType }));
       await run('getAllSavingPoolObjects', () => bucketClient.getAllSavingPoolObjects());
       await run('getAllPsmPoolObjects', () => bucketClient.getAllPsmPoolObjects());
       await run('getFlashMintInfo', () => bucketClient.getFlashMintInfo());
-      await run('getAllPositions', () =>
-        bucketClient.getAllPositions({ coinType: firstCoinType, pageSize: 5 }),
-      );
+      await run('getAllPositions', () => bucketClient.getAllPositions({ coinType: firstCoinType, pageSize: 5 }));
       // getAllPositions with cursor (pagination)
       const firstPage = await bucketClient.getAllPositions({
         coinType: firstCoinType,
@@ -221,9 +213,7 @@ describe('E2E All query outputs (report)', () => {
           coinTypes: coinTypesWithRewarders.length > 0 ? coinTypesWithRewarders : collateralTypes,
         }),
       );
-      await run('getAccountPositions', () =>
-        bucketClient.getAccountPositions({ address: testAccount }),
-      );
+      await run('getAccountPositions', () => bucketClient.getAccountPositions({ address: testAccount }));
       await run('getUserPositions', () => bucketClient.getUserPositions({ address: testAccount }));
       await run('getAccountSavingPoolRewards', () =>
         bucketClient.getAccountSavingPoolRewards({
@@ -231,16 +221,11 @@ describe('E2E All query outputs (report)', () => {
           lpTypes: [susdbLpType],
         }),
       );
-      await run('getAccountSavings', () =>
-        bucketClient.getAccountSavings({ address: testAccount }),
-      );
+      await run('getAccountSavings', () => bucketClient.getAccountSavings({ address: testAccount }));
       await run('getUserSavings', () => bucketClient.getUserSavings({ address: testAccount }));
 
       // build* APIs (PTB builders) — capture summary since TransactionResult doesn't serialize well
-      const captureBuild = async <T>(
-        api: string,
-        fn: () => Promise<T>,
-      ): Promise<void> => {
+      const captureBuild = async <T>(api: string, fn: () => Promise<T>): Promise<void> => {
         const start = Date.now();
         try {
           const output = await fn();
