@@ -2,7 +2,7 @@
  * Diagnostic script: query Bucket Protocol on-chain state.
  *
  * Usage (from project root, or any project that has @bucket-protocol/sdk installed):
- *   npx tsx .github/skills/bucket-sdk/scripts/query-state.ts
+ *   npx tsx skills/bucket-sdk/scripts/query-state.ts
  *
  * Requires: @bucket-protocol/sdk, @mysten/sui
  *

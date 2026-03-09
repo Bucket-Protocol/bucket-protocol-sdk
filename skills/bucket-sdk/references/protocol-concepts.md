@@ -2,9 +2,24 @@
 
 This document explains the core protocol concepts an agent needs to understand to make correct integration decisions.
 
+**Official docs**: <https://docs.bucketprotocol.io/>
+
 ## What is Bucket Protocol?
 
-Bucket Protocol is a **CDP (Collateralized Debt Position) lending protocol** on Sui. Users deposit crypto collateral and borrow **USDB**, a stablecoin pegged to 1 USD. The protocol also includes a PSM (Peg Stability Module) for stablecoin swaps and saving pools for USDB yield.
+Bucket Protocol is a **CDP-based stablecoin protocol on Sui, purpose-built for capital efficiency**. Users deposit supported on-chain assets as collateral to borrow **USDB**, a decentralized, over-collateralized stablecoin pegged to $1 USD.
+
+USDB serves two user needs:
+
+- **Volatile-asset holders** borrow USDB against collateral for long-term leverage or liquidity without selling core positions.
+- **Stablecoin allocators** hold USDB and deposit into the sUSDB Savings Pool for competitive, flexible yield.
+
+### Key Advantages
+
+- **Fixed per-asset interest rates** — funding costs known upfront, no variable rate anxiety
+- **High LTV** — per-asset CDP isolation enables more usable capital
+- **Explicit risk boundaries** — simple CR/MCR rule with live liquidation price; no Recovery Mode
+- **No one-time borrow fee** — only fixed interest rates apply
+- **Derivative collateral support** — LSTs, sCoins, gCoins can be used as collateral
 
 ## CDP (Collateralized Debt Positions)
 
@@ -16,15 +31,24 @@ Bucket Protocol is a **CDP (Collateralized Debt Position) lending protocol** on 
 4. Interest accrues on the debt over time
 5. User can repay debt and/or withdraw collateral at any time (within CR constraints)
 
-### Collateral Ratio
+### Collateral Ratio (CR) & Liquidation Price
 
 ```
-Collateral Ratio = (Collateral Value in USD) / (USDB Debt)
+CR = (Collateral Price × Collateral Amount) / (initial Borrow Amount + Accrued Interest)
 ```
 
-- If CR drops below MCR, the position becomes eligible for liquidation
-- The SDK does **not** perform liquidations — it only builds the transaction
-- When borrowing or withdrawing, the SDK automatically fetches Pyth oracle prices to validate the CR on-chain
+Each collateral has a fixed **Minimum Collateral Ratio (MCR)** (e.g. 110%). If CR < MCR, the position is liquidatable.
+
+```
+Liquidation Price = (MCR × Debt) / Collateral Amount
+```
+
+**Example**: 1,000 SUI at $5/SUI ($5,000 collateral), borrow 4,000 USDB, MCR = 110%
+
+- Entry CR = 5,000 / 4,000 = 125%
+- Liquidation Price = (1.10 × 4,000) / 1,000 = $4.40/SUI
+
+> After every action, the position must satisfy CR ≥ MCR.
 
 ### When to Use Which CDP Method
 
@@ -40,18 +64,60 @@ Collateral Ratio = (Collateral Value in USD) / (USDB Debt)
 
 `buildManagePositionTransaction` is the all-in-one method. You can combine any of deposit/borrow/repay/withdraw in a single call. It handles zero-coin cleanup automatically.
 
-### Interest Rate
+### Fees & Interest
 
-Each vault has a fixed interest rate (visible in `VaultInfo.interestRate`). Interest accrues on the USDB debt continuously. The rate is protocol-set and not user-adjustable.
+- **No one-time borrow fee** (removed in the v2 upgrade)
+- **Fixed borrow interest rate** per collateral type (visible in `VaultInfo.interestRate`)
+- Interest accrues in real time and is added to debt continuously
+- Rates are protocol-set and not user-adjustable
 
-## PSM (Peg Stability Module)
+### Mint Caps
 
-### How It Works
+Each vault has a maximum USDB supply (`VaultInfo.maxUsdbSupply`). Borrowing beyond this cap will fail on-chain. Mint caps help manage market depth during liquidations and reduce slippage risk in extreme conditions.
 
-The PSM allows 1:1 swaps between USDB and supported stablecoins (USDC, USDT, BUCK) with a small fee.
+### Liquidation
+
+- **Trigger**: CR < MCR → position becomes liquidatable
+- **Scope**: **Full seizure** — ALL collateral in that CDP is taken
+- **Executor**: Liquidations are protocol-run (not by users)
+
+**How liquidation is executed on-chain:**
+
+1. Flash-mint USDB to immediately repay the CDP's outstanding debt
+2. Seize all collateral from the liquidated CDP
+3. Sell the seized collateral for USDB using on-chain venues
+4. Repay the flash-minted USDB from step 1
+
+**User loss**: At liquidation threshold, `User loss ≈ (MCR - 1) × Debt`. The user keeps the USDB previously borrowed.
+
+**Bad-debt backstop**: If collateral proceeds < debt, the protocol's Insurance Fund (funded from protocol revenue) covers the gap.
+
+**Avoiding liquidation**: Deposit more collateral or repay part of the debt to raise CR.
+
+> The SDK does **not** execute liquidations — it only builds position management transactions.
+
+## USDB Peg Mechanism
+
+USDB targets $1 USD via two mechanisms:
+
+### Peg Stability Module (PSM)
+
+The PSM enables trustless 1:1 conversions between USDB and supported stablecoins (USDC, USDT, BUCK), subject to a PSM fee.
 
 - **Swap In**: Stablecoin → USDB (e.g. deposit 1 USDC, receive ~1 USDB minus fee)
 - **Swap Out**: USDB → Stablecoin (e.g. deposit 1 USDB, receive ~1 USDC minus fee)
+
+Each PSM pool has `swapIn` and `swapOut` fee rates (visible in `PsmPoolInfo.feeRate`). Partner accounts may get lower fees via `partnerFeeRate`.
+
+### Price Stability & Arbitrage
+
+Let `price_usdb` = USDB market price on DEX, `fee_in` = PSM IN fee, `fee_out` = PSM OUT fee.
+
+**Upward depeg (USDB > $1)**: Acquire USDB via PSM IN at ~$1, sell on market at `price_usdb > 1`. Profitable when `price_usdb > 1 + fee_in + gas`.
+
+**Downward depeg (USDB < $1)**: Buy USDB on market at `price_usdb < 1`, exit via PSM OUT at ~$1. Profitable when `price_usdb < 1 - fee_out - gas`.
+
+**Flash-mint assisted arbitrage**: For capital efficiency, use flash mint to source/retire USDB within one transaction, pairing the opposite leg through PSM or market liquidity.
 
 ### When to Use PSM vs CDP
 
@@ -62,35 +128,47 @@ The PSM allows 1:1 swaps between USDB and supported stablecoins (USDC, USDT, BUC
 | Leverage crypto exposure        |         |    ✓    |
 | Earn borrow incentive rewards   |         |    ✓    |
 | Long-term USDB generation       |         |    ✓    |
+| Arbitrage USDB peg on DEX       |    ✓    |         |
 
-### Fee Rates
+## Saving System — Two Layers of USDB Yield
 
-Each PSM pool has `swapIn` and `swapOut` fee rates (visible in `PsmPoolInfo.feeRate`). Partner accounts may get lower fees via `partnerFeeRate`.
+Bucket provides two layers of yield for USDB holders. Total APR = BSR + SUI rewards APR.
 
-## Saving Pools
+### Layer 1: sUSDB and BSR (Base Savings Rate)
 
-### How It Works
+- **BSR** is Bucket’s fixed savings rate for USDB. It accrues in real time by increasing the exchange rate between sUSDB and USDB.
+- **sUSDB** is the yield-bearing stablecoin you receive when you stake USDB. Yield does not change your sUSDB balance; instead, each unit of sUSDB represents more USDB over time.
 
-1. User deposits USDB into a saving pool
-2. Receives LP tokens (e.g. sUSDB) representing their share
-3. USDB accrues yield via the `savingRate`
-4. Additional reward tokens (e.g. SUI) may be distributed to depositors
-5. User can withdraw at any time, receiving USDB proportional to their LP share
+**Formulas**:
+
+```
+minted_sUSDB  = staked_USDB / exchange_rate
+unstaked_USDB = sUSDB_balance × exchange_rate
+```
+
+- No stake or unstake fee. No lockup.
+- Balances and the exchange rate update in real time.
+
+### Layer 2: sUSDB Savings Pool
+
+- Deposit sUSDB into the sUSDB Savings Pool to earn **additional SUI rewards** on top of BSR.
+- Savings rewards accrue continuously and are claimable at any time.
+- Withdraw whenever — no fees, no lockup.
 
 ### Key Parameters
 
-- `savingRate`: Base USDB yield rate
-- `rewardRate`: Additional token incentive rates (per reward type)
+- `savingRate`: BSR yield rate (exchange rate growth)
+- `rewardRate`: Additional token incentive rates (per reward type, e.g. SUI)
 - `usdbDepositCap`: Maximum total USDB the pool accepts (null = no cap)
-- `lpSupply`: Total LP tokens outstanding
+- `lpSupply`: Total sUSDB LP tokens outstanding
 
-### When to Use
+### SDK Methods
 
-| Goal                           | Method                                     |
-| ------------------------------ | ------------------------------------------ |
-| Deposit USDB to earn yield     | `buildDepositToSavingPoolTransaction()`    |
-| Withdraw USDB from pool        | `buildWithdrawFromSavingPoolTransaction()` |
-| Claim reward tokens (e.g. SUI) | `buildClaimSavingRewardsTransaction()`     |
+| Goal                                          | Method                                     |
+| --------------------------------------------- | ------------------------------------------ |
+| Deposit USDB → get sUSDB → earn BSR + rewards | `buildDepositToSavingPoolTransaction()`    |
+| Withdraw sUSDB → receive USDB                 | `buildWithdrawFromSavingPoolTransaction()` |
+| Claim SUI rewards from savings pool           | `buildClaimSavingRewardsTransaction()`     |
 
 ## Flash Mint
 
@@ -114,6 +192,39 @@ const [usdbCoin, receipt] = client.flashMint(tx, { amount: 10_000_000 });
 // Must return principal + fee:
 client.flashBurn(tx, { usdbCoin, flashMintReceipt: receipt });
 ```
+
+## Leverage
+
+Bucket supports two ways to build a leveraged long on supported assets:
+
+### One-Click Leverage (SUI/LST, Wrapped BTC)
+
+Uses flash minting to automatically create a leveraged position in one transaction:
+
+1. User deposits initial capital (e.g. 100 USDC)
+2. Flash-mints USDB worth the leverage amount
+3. Swaps initial capital + flash-minted USDB for target collateral (via Cetus aggregator)
+4. Deposits all as collateral → borrows USDB
+5. Repays the flash-mint with borrowed USDB
+
+**Result**: Leveraged position established atomically. Costs shown: flash-loan fee + price impact.
+
+### Manual Looping (All Collaterals)
+
+For assets without one-click support:
+
+1. Deposit collateral → Borrow USDB
+2. Swap USDB → more collateral (via DEX)
+3. Deposit the new collateral
+4. Repeat until desired leverage
+
+### De-Leveraging
+
+To reduce leverage or raise CR:
+
+- **Repay with collateral**: sell portion of collateral into USDB to repay debt (atomically via DEX routing)
+- **Repay with USDB**: repay from USDB in wallet
+- After repayment, CR rises and liquidation price moves lower (safer)
 
 ## Account System
 
@@ -210,4 +321,22 @@ const tx = new Transaction();
 const [usdb, receipt] = client.flashMint(tx, { amount: 10_000_000 });
 // ... use usdb for arbitrage on a DEX ...
 client.flashBurn(tx, { usdbCoin: usdbAfterArb, flashMintReceipt: receipt });
+```
+
+### Pattern 4: One-Click Leverage (Flash Mint → Swap → Deposit → Borrow → Repay)
+
+```typescript
+const tx = new Transaction();
+// 1. Flash mint USDB for leverage
+const [flashUsdb, receipt] = client.flashMint(tx, { amount: leverageAmount });
+// 2. Swap USDB → target collateral via DEX (not part of Bucket SDK)
+// ... DEX swap calls ...
+// 3. Deposit all collateral, borrow USDB to cover flash mint
+const [, borrowedUsdb] = await client.buildManagePositionTransaction(tx, {
+  coinType: '0x2::sui::SUI',
+  depositCoinOrAmount: totalCollateralCoin,
+  borrowAmount: leverageAmount + flashFee,
+});
+// 4. Repay flash mint
+client.flashBurn(tx, { usdbCoin: borrowedUsdb, flashMintReceipt: receipt });
 ```

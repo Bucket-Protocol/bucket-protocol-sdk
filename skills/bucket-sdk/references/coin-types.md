@@ -92,3 +92,9 @@ These appear as keys in borrow/saving reward records:
 | SCA   | `0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA`   |
 | DEEP  | `0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP` |
 | XAUM  | `0x9d297676e7a4b771ab023291377b2adfaa4938fb9080b8d12430e4b108b836a9::xaum::XAUM` |
+
+## Protocol Token
+
+| Token | Coin Type                                                                      | Decimals | Notes                                      |
+| ----- | ------------------------------------------------------------------------------ | -------- | ------------------------------------------ |
+| BUT   | `0xbc858cb910b9914bee64fff0f9b38855355a040c49155a17b265d9086d256545::but::BUT` | 9        | Native protocol token; stakeable for deBUT |

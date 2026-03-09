@@ -5,7 +5,9 @@ description: Use when integrating with Bucket Protocol on Sui blockchain — bui
 
 # Bucket Protocol SDK — Integration Guide
 
-`@bucket-protocol/sdk` is a TypeScript SDK for [Bucket Protocol](https://bucketprotocol.io), a CDP (Collateralized Debt Position) lending protocol on Sui. It lets you query on-chain state and build Programmable Transaction Blocks (PTBs) for vaults, saving pools, PSM swaps, flash mints, and oracle price feeds.
+`@bucket-protocol/sdk` is a TypeScript SDK for [Bucket Protocol](https://bucketprotocol.io), a CDP-based stablecoin protocol on Sui purpose-built for capital efficiency. Users deposit supported on-chain assets as collateral to borrow **USDB** (a decentralized, over-collateralized stablecoin pegged to $1 USD). The SDK lets you query on-chain state and build Programmable Transaction Blocks (PTBs) for CDPs, saving pools (sUSDB + BSR yield), PSM stablecoin swaps, flash mints, oracle price feeds, and one-click leverage.
+
+**Official docs**: <https://docs.bucketprotocol.io/>
 
 ## Installation
 
@@ -92,6 +94,7 @@ await client.buildPSMSwapInTransaction(tx, {
 | SUI   | 9        | `1_000_000_000` |
 | USDB  | 6        | `1_000_000`     |
 | USDC  | 6        | `1_000_000`     |
+| BTC   | 8        | `100_000_000`   |
 
 Always pass amounts in raw (smallest unit). The SDK does not auto-scale.
 
@@ -196,7 +199,14 @@ Object.values(rewards).forEach((coin) => tx.transferObjects([coin], myAddress));
 
 **Price is auto-fetched**: `buildManagePositionTransaction` calls `aggregatePrices` internally when `borrowAmount > 0` or `withdrawAmount > 0`. Deposit-only or repay-only operations skip the oracle call.
 
-#### Saving Pools — Earn Yield on USDB
+#### Saving Pools — Two Layers of USDB Yield
+
+Bucket's saving system has **two layers**:
+
+- **Layer 1 — sUSDB (BSR)**: Stake USDB → receive sUSDB. Value appreciates via the Base Savings Rate (BSR) through an increasing exchange rate. `minted_sUSDB = staked_USDB / exchange_rate`.
+- **Layer 2 — sUSDB Savings Pool**: Deposit sUSDB → earn additional SUI rewards on top of BSR. Total APR = BSR + SUI rewards APR.
+
+No stake/unstake fee. No lockup.
 
 ```typescript
 const tx = new Transaction();
@@ -275,6 +285,35 @@ client.buildDepositToSavingPoolTransaction(tx, {
   lpType: susdbLpType,
   depositCoinOrAmount: usdbCoin, // pass TransactionResult directly
 });
+```
+
+#### Leverage via Flash Mint (One-Click Leverage Pattern)
+
+Bucket supports leveraged positions using flash mints. The one-click flow:
+
+1. Flash-mint USDB
+2. Swap flash-minted USDB → target collateral (via DEX)
+3. Deposit all collateral → borrow USDB
+4. Repay flash mint with borrowed USDB
+
+```typescript
+const tx = new Transaction();
+
+// 1. Flash mint USDB for the leverage amount
+const [flashUsdb, receipt] = client.flashMint(tx, { amount: leverageUsdbAmount });
+
+// 2. Swap USDB → SUI via external DEX aggregator (e.g. Cetus)
+// ... (DEX swap calls — not part of Bucket SDK) ...
+
+// 3. Deposit all SUI as collateral, borrow USDB to repay flash
+const [, borrowedUsdb] = await client.buildManagePositionTransaction(tx, {
+  coinType: '0x2::sui::SUI',
+  depositCoinOrAmount: totalSuiCoin,
+  borrowAmount: leverageUsdbAmount + flashFee,
+});
+
+// 4. Repay flash mint
+client.flashBurn(tx, { usdbCoin: borrowedUsdb, flashMintReceipt: receipt });
 ```
 
 ### Low-Level PTB Helpers
@@ -359,12 +398,22 @@ type FlashMintInfo = {
 
 4. **Config refresh**: If the protocol upgrades, call `client.refreshConfig()` to re-fetch on-chain config. Overrides from `initialize()` are preserved automatically.
 
+5. **No borrow fee**: The protocol has **no** one-time borrow fee (removed in the v2 upgrade). Only fixed per-asset interest rates apply. Interest accrues in real time and is added to debt continuously.
+
+6. **Mint caps**: Each vault has a max USDB supply (`VaultInfo.maxUsdbSupply`). Borrowing beyond this cap will fail on-chain.
+
+7. **Full liquidation**: When a position's CR drops below MCR, **all collateral is seized** (not partial). Liquidations are protocol-run. User loss ≈ `(MCR - 1) × Debt`. The SDK does not execute liquidations.
+
+8. **Repay with collateral**: The "repay with collateral" feature (selling collateral to repay debt) is a UI-level feature that routes through on-chain DEXes. The base SDK provides `buildManagePositionTransaction` with `repayCoinOrAmount` for repaying with USDB you already hold.
+
+9. **sUSDB exchange rate**: sUSDB appreciates vs USDB over time via BSR. When withdrawing, users receive more USDB per sUSDB than they deposited. The exchange rate only increases.
+
 ## Bundled Resources
 
 This skill includes additional reference files. Consult them when you need detailed data:
 
-| Resource               | Path                              | When to use                                                                                                                                   |
-| ---------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Coin Types**         | `references/coin-types.md`        | Need the full `0x...` type string for a specific token (collateral, PSM, LP, reward)                                                          |
-| **Protocol Concepts**  | `references/protocol-concepts.md` | Need to understand CDP mechanics, PSM vs CDP decision, saving pool yield, flash mints, Account vs EOA, or oracle pricing                      |
-| **Query State Script** | `scripts/query-state.ts`          | Need to inspect live on-chain state (vault stats, prices, pool balances). Run with `npx tsx .github/skills/bucket-sdk/scripts/query-state.ts` |
+| Resource               | Path                              | When to use                                                                                                                           |
+| ---------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Coin Types**         | `references/coin-types.md`        | Need the full `0x...` type string for a specific token (collateral, PSM, LP, reward)                                                  |
+| **Protocol Concepts**  | `references/protocol-concepts.md` | Need to understand CDP mechanics, PSM vs CDP decision, saving pool yield, flash mints, Account vs EOA, or oracle pricing              |
+| **Query State Script** | `scripts/query-state.ts`          | Need to inspect live on-chain state (vault stats, prices, pool balances). Run with `npx tsx skills/bucket-sdk/scripts/query-state.ts` |
