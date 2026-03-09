@@ -65,12 +65,21 @@ describe('E2E Vaults', () => {
   it(
     'getBorrowRewardFlowRate returns record for SUI vault',
     async () => {
+      const allVaults = await bucketClient.getAllVaultObjects();
+      const suiVault = Object.entries(allVaults).find(
+        ([ct]) => normalizeStructTag(ct) === normalizeStructTag(SUI_TYPE_ARG),
+      )?.[1];
+      expect(suiVault).toBeDefined();
       const flowRates = await bucketClient.getBorrowRewardFlowRate({ coinType: SUI_TYPE_ARG });
       expect(typeof flowRates).toBe('object');
       for (const [rewardType, rate] of Object.entries(flowRates)) {
         expect(typeof rewardType).toBe('string');
         expect(typeof rate).toBe('bigint');
         expect(rate).toBeGreaterThanOrEqual(0n);
+      }
+      // When SUI vault has rewarders, flowRates must be non-empty
+      if (suiVault && Object.keys(suiVault.rewardRate).length > 0) {
+        expect(Object.keys(flowRates).length).toBeGreaterThan(0);
       }
     },
     MAINNET_TIMEOUT_MS,

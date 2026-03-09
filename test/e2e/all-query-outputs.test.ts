@@ -386,6 +386,18 @@ describe('E2E All query outputs (report)', () => {
         return bucketClient.aggregatePrices(tx, { coinTypes: [firstCoinType] });
       });
 
+      // aggregateBasicPrices — lower-level Hermes price aggregation (Pyth only, no derivatives)
+      const basicCoinTypes = bucketClient.getAllOracleCoinTypes().filter((ct) => {
+        const agg = bucketClient.getAggregatorObjectInfo({ coinType: ct });
+        return 'Pyth' in agg && agg.Pyth;
+      });
+      await captureBuild('aggregateBasicPrices', async () => {
+        const tx = txWithSender();
+        return bucketClient.aggregateBasicPrices(tx, {
+          coinTypes: basicCoinTypes.slice(0, 4),
+        });
+      });
+
       // flashMint — returns [usdbCoin, flashMintReceipt]
       await captureBuild('flashMint', async () => {
         const tx = txWithSender();
