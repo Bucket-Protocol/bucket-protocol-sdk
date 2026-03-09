@@ -3,12 +3,17 @@ name: Publish package
 on:
   workflow_dispatch:
     inputs:
-      versionBumpType:
-        description: Version bump type
+      releaseType:
+        description: Release type
         required: true
         default: patch
         type: choice
-        options: [major, minor, patch]
+        options: [major, minor, patch, prerelease]
+      pre-release-tag:
+        description: 'Pre-release tag (only for prerelease)'
+        required: false
+        default: 'dev'
+        type: string
 
 permissions:
   contents: write
@@ -38,15 +43,21 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Bump & publish package
-        run: npm version ${{ inputs.versionBumpType }} --no-git-tag-version && npm publish --provenance --access public
+      - name: Bump & publish (prerelease)
+        if: ${{ inputs.releaseType == 'prerelease' }}
+        run: npm version prerelease --preid ${{ inputs.pre-release-tag }} --no-git-tag-version && npm publish --provenance --access public --tag ${{ inputs.pre-release-tag }} --no-git-checks
+      - name: Bump & publish (release)
+        if: ${{ inputs.releaseType != 'prerelease' }}
+        run: npm version ${{ inputs.releaseType }} --no-git-tag-version && npm publish --provenance --access public
       - name: Commit change
+        if: ${{ inputs.releaseType != 'prerelease' }}
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: 'chore: bump sdk version'
   create-pr:
     runs-on: ubuntu-latest
     needs: publish
+    if: ${{ inputs.releaseType != 'prerelease' }}
     strategy:
       matrix:
         repo:
