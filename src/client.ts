@@ -11,10 +11,12 @@ import { normalizeStructTag, parseStructTag } from '@mysten/sui/utils';
 import {
   AggregatorObjectInfo,
   ConfigType,
+  DerivativeKind,
   FlashMintInfo,
   Network,
   PaginatedPositionsResult,
   PositionInfo,
+  PriceConfigInfo,
   PsmPoolInfo,
   PsmPoolObjectInfo,
   SavingInfo,
@@ -24,7 +26,9 @@ import {
   VaultInfo,
   VaultObjectInfo,
 } from '@/types/index.js';
-import { CONFIG, DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
+import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
+import { queryAllConfig } from '@/utils/bucketConfig.js';
+import { convertOnchainConfig, enrichSharedObjectRefs } from '@/utils/configAdapter.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
 import { buildPythPriceUpdateCalls, fetchPriceFeedsUpdateDataFromHermes, PythCache } from '@/utils/pyth.js';
 
@@ -37,13 +41,6 @@ import { Rewarder, RewarderKey } from '@/_generated/bucket_v2_saving_incentive/s
 import { SavingPool } from '@/_generated/bucket_v2_saving/saving.js';
 
 import { GlobalConfig } from './_generated/bucket_v2_flash/config.js';
-import {
-  GCOIN_RULE_CONFIG,
-  SCALLOP_MARKET,
-  SCALLOP_VERSION,
-  SCOIN_RULE_CONFIG,
-  UNIHOUSE_OBJECT,
-} from './consts/price.js';
 
 // Full BCS schema for aggregator::PriceAggregated<T> (phantom T has no effect on layout)
 const PriceAggregatedBcs = bcs.struct('PriceAggregated', {
@@ -60,20 +57,85 @@ const NETWORK_RPC_URLS: Record<string, string> = {
   testnet: 'https://fullnode.testnet.sui.io:443',
 };
 
+function isValidPythPriceId(id: string): boolean {
+  if (typeof id !== 'string') return false;
+  const trimmed = id.trim();
+  if (trimmed.length === 0) return false;
+  const noPrefix = trimmed.startsWith('0x') || trimmed.startsWith('0X') ? trimmed.slice(2) : trimmed;
+  return /^[0-9a-fA-F]{64}$/.test(noPrefix);
+}
+
 export class BucketClient {
   /**
    * @description a TypeScript wrapper over Bucket V2 client.
-   * @param suiClient
-   * @param network
+   * Use `BucketClient.initialize()` to create a client. Config is required.
    */
   private config: ConfigType;
+  private configOverrides?: Partial<ConfigType>;
+  private configObjectId?: string;
   private suiClient: SuiGrpcClient;
+  private network: Network;
   private pythCache = new PythCache();
 
-  constructor({ suiClient, network = 'mainnet' }: { suiClient?: SuiGrpcClient; network?: Network }) {
-    this.config = CONFIG[network];
+  constructor({
+    suiClient,
+    network = 'mainnet',
+    config,
+  }: {
+    suiClient?: SuiGrpcClient;
+    network?: Network;
+    config: ConfigType;
+  }) {
+    if (!config) {
+      throw new Error('BucketClient requires config. Use BucketClient.initialize() or pass config to the constructor.');
+    }
+    this.config = config;
+    this.network = network;
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
     this.suiClient = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
+  }
+
+  /**
+   * @description Creates a BucketClient with config fetched from on-chain.
+   * This is the only way to create a client when not passing a pre-built config.
+   *
+   * @param configObjectId - Optional. Override the default entry config object ID (e.g. for testing).
+   *   When provided, refreshConfig() will use the same source.
+   * @param config - Optional. Pre-built config for testing; skips chain fetch when provided.
+   *   When config is provided, configOverrides are not applied to the initial config; they are
+   *   stored for use on refreshConfig() only.
+   * @param configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT). Applied when
+   *   fetching from chain; when config is provided, used only after refreshConfig().
+   */
+  static async initialize({
+    suiClient,
+    network = 'mainnet',
+    configObjectId,
+    config: configParam,
+    configOverrides,
+  }: {
+    suiClient?: SuiGrpcClient;
+    network?: Network;
+    configObjectId?: string;
+    config?: ConfigType;
+    configOverrides?: Partial<ConfigType>;
+  } = {}): Promise<BucketClient> {
+    const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
+    const client = suiClient ?? new SuiGrpcClient({ network, baseUrl: rpcUrl });
+
+    let config: ConfigType;
+    if (configParam) {
+      config = await enrichSharedObjectRefs(configParam, client);
+    } else {
+      const onchainConfig = await queryAllConfig(client, network, configObjectId);
+      config = convertOnchainConfig(onchainConfig, configOverrides);
+      config = await enrichSharedObjectRefs(config, client);
+    }
+
+    const bc = new BucketClient({ suiClient: client, network, config });
+    bc.configOverrides = configOverrides;
+    bc.configObjectId = configObjectId;
+    return bc;
   }
 
   /* ----- Getter ----- */
@@ -88,22 +150,63 @@ export class BucketClient {
   /**
    * @description
    */
-  async getConfig(): Promise<ConfigType | undefined> {
+  getConfig(): ConfigType {
     return this.config;
   }
 
   /**
-   * @description
+   * @description Re-fetch config from on-chain and update this client's config.
+   * When overrides is omitted, preserves configOverrides from initialize().
+   * Uses the same config source (configObjectId) as initialize() when one was provided.
    */
+  async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
+    const onchainConfig = await queryAllConfig(this.suiClient, this.network, this.configObjectId);
+    const config = convertOnchainConfig(onchainConfig, overrides ?? this.configOverrides);
+    this.config = await enrichSharedObjectRefs(config, this.suiClient);
+  }
+
+  /**
+   * @description Get a price config info entry matching the given derivative kind.
+   */
+  private getPriceConfigInfo(derivativeKind: DerivativeKind): PriceConfigInfo {
+    const variantMap: Partial<Record<DerivativeKind, 'SCOIN' | 'GCOIN' | 'BFBTC'>> = {
+      sCoin: 'SCOIN',
+      gCoin: 'GCOIN',
+      BFBTC: 'BFBTC',
+    };
+    const targetVariant = variantMap[derivativeKind];
+    if (!targetVariant) {
+      throw new Error(`No PriceConfigInfo mapping for derivativeKind "${derivativeKind}".`);
+    }
+    for (const info of Object.values(this.config.PRICE_OBJS)) {
+      if (targetVariant in info) return info;
+    }
+    throw new Error(`PriceConfigInfo for derivativeKind "${derivativeKind}" not found in PRICE_OBJS.`);
+  }
+
   getUsdbCoinType(): string {
     return `${this.config.ORIGINAL_USDB_PACKAGE_ID}::usdb::USDB`;
   }
 
   /**
-   * @description Get all Oracle coin types
+   * @description Get all Oracle coin types that have a valid Pyth price (basic or derivative with priceable underlying).
    */
   getAllOracleCoinTypes(): string[] {
-    return Object.keys(this.config.AGGREGATOR_OBJS);
+    const isPriceable = (coinType: string, visiting: Set<string>): boolean => {
+      const normalized = normalizeStructTag(coinType);
+      if (visiting.has(normalized)) return false;
+      visiting.add(normalized);
+      const aggregatorInfo = this.config.AGGREGATOR_OBJS[normalized];
+      if (!aggregatorInfo) return false;
+      if ('Pyth' in aggregatorInfo && aggregatorInfo.Pyth) {
+        return isValidPythPriceId(aggregatorInfo.Pyth.pythPriceId);
+      }
+      if ('DerivativeInfo' in aggregatorInfo && aggregatorInfo.DerivativeInfo) {
+        return isPriceable(aggregatorInfo.DerivativeInfo.underlying_coin_type, visiting);
+      }
+      return false;
+    };
+    return Object.keys(this.config.AGGREGATOR_OBJS).filter((coinType) => isPriceable(coinType, new Set()));
   }
 
   /**
@@ -113,9 +216,6 @@ export class BucketClient {
     return Object.keys(this.config.VAULT_OBJS);
   }
 
-  /**
-   * @description
-   */
   getAggregatorObjectInfo({ coinType }: { coinType: string }): AggregatorObjectInfo {
     const aggregatorInfo = this.config.AGGREGATOR_OBJS[normalizeStructTag(coinType)];
 
@@ -125,9 +225,6 @@ export class BucketClient {
     return aggregatorInfo;
   }
 
-  /**
-   * @description
-   */
   getVaultObjectInfo({ coinType }: { coinType: string }): VaultObjectInfo {
     const vaultInfo = this.config.VAULT_OBJS[normalizeStructTag(coinType)];
 
@@ -137,9 +234,6 @@ export class BucketClient {
     return vaultInfo;
   }
 
-  /**
-   * @description
-   */
   getSavingPoolObjectInfo({ lpType }: { lpType: string }): SavingPoolObjectInfo {
     const savingPoolInfo = this.config.SAVING_POOL_OBJS[normalizeStructTag(lpType)];
 
@@ -149,9 +243,6 @@ export class BucketClient {
     return savingPoolInfo;
   }
 
-  /**
-   * @description
-   */
   getPsmPoolObjectInfo({ coinType }: { coinType: string }): PsmPoolObjectInfo {
     const psmPoolInfo = this.config.PSM_POOL_OBJS[normalizeStructTag(coinType)];
 
@@ -172,7 +263,10 @@ export class BucketClient {
     const coinType = this.getUsdbCoinType();
     const { response } = await this.suiClient.stateService.getCoinInfo({ coinType });
     const supply = response.treasury?.totalSupply;
-    return supply !== undefined && supply !== null ? BigInt(supply) : 0n;
+    if (supply === null || supply === undefined) {
+      throw new Error('Failed to fetch USDB supply: treasury totalSupply is missing');
+    }
+    return BigInt(supply);
   }
 
   /**
@@ -186,7 +280,12 @@ export class BucketClient {
     tx.setSender(DUMMY_ADDRESS);
 
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { events: true } });
-    return ((res.Transaction ?? res.FailedTransaction)?.events ?? []).reduce((result, e) => {
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch oracle prices'), { cause: err ?? res });
+    }
+    const events = res.Transaction?.events ?? [];
+    return events.reduce((result, e) => {
       const typeStruct = parseStructTag(e.eventType);
 
       if (typeStruct.module !== 'aggregator' || typeStruct.name !== 'PriceAggregated') {
@@ -219,7 +318,7 @@ export class BucketClient {
     if (!vault.rewarders) {
       return {};
     }
-    const rewardObjectIds = vault.rewarders.map((rewarder) => rewarder.rewarderId);
+    const rewardObjectIds = vault.rewarders!.map((rewarder) => rewarder.rewarder_id);
 
     const vaultRewardersRes = await this.suiClient.getObjects({
       objectIds: rewardObjectIds,
@@ -233,10 +332,10 @@ export class BucketClient {
       }
       return VaultRewarder.parse(object.content);
     });
-    return vault.rewarders.reduce(
+    return vault.rewarders!.reduce(
       (result, rewarder, idx) => ({
         ...result,
-        [rewarder.rewardType]: BigInt(rewarders[idx].flow_rate.value),
+        [rewarder.reward_type]: BigInt(rewarders[idx].flow_rate.value),
       }),
       {} as Record<string, bigint>,
     );
@@ -304,7 +403,7 @@ export class BucketClient {
       return {};
     }
     const rewardObjectIds = await this.suiClient
-      .listDynamicFields({ parentId: pool.reward.rewardManager.objectId })
+      .listDynamicFields({ parentId: pool.reward.reward_manager.objectId })
       .then((res) => res.dynamicFields.map((df) => df.fieldId));
 
     const savingPoolRewards = await this.suiClient.getObjects({
@@ -319,7 +418,7 @@ export class BucketClient {
       }
       return Field(RewarderKey, Rewarder).parse(object.content);
     });
-    return pool.reward.rewardTypes.reduce(
+    return pool.reward.reward_types.reduce(
       (result, rewardType, index) => ({
         ...result,
         [rewardType]: BigInt(rewarders[index].value.flow_rate.value),
@@ -476,11 +575,12 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction' || !res.commandResults?.[0]?.returnValues) {
-      return {
-        positions: [],
-        nextCursor: null,
-      };
+    if (res.$kind === 'FailedTransaction') {
+      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
+      throw Object.assign(new Error('Failed to fetch positions'), { cause: err ?? res });
+    }
+    if (!res.commandResults?.[0]?.returnValues) {
+      throw new Error('Failed to fetch positions');
     }
     const [positionBytes, nextCursorBytes] = res.commandResults![0].returnValues;
 
@@ -540,9 +640,9 @@ export class BucketClient {
       vaultInfo.rewarders.forEach((rewarder) => {
         tx.moveCall({
           target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::realtime_reward_amount`,
-          typeArguments: [coinType, rewarder.rewardType],
+          typeArguments: [coinType, rewarder.reward_type],
           arguments: [
-            tx.object(rewarder.rewarderId),
+            tx.object(rewarder.rewarder_id),
             tx.sharedObjectRef(vaultInfo.vault),
             tx.pure.address(accountId ?? address),
             tx.object.clock(),
@@ -566,12 +666,13 @@ export class BucketClient {
       return {
         ...result,
         [coinType]: vaultInfo.rewarders.reduce((result, rewarder, index) => {
-          if (!responses[index]?.returnValues) {
+          const resItem = responses[index]?.returnValues;
+          if (!resItem) {
             return result;
           }
-          const realtimeReward = bcs.u64().parse(responses[index].returnValues[0].bcs);
+          const realtimeReward = bcs.u64().parse(resItem[0].bcs);
 
-          return { ...result, [rewarder.rewardType]: BigInt(realtimeReward) };
+          return { ...result, [rewarder.reward_type]: BigInt(realtimeReward) };
         }, {}),
       };
     }, {});
@@ -601,11 +702,12 @@ export class BucketClient {
     const borrowRewards = await this.getAccountBorrowRewards({ address, accountId, coinTypes: allCollateralTypes });
 
     return allCollateralTypes.reduce((result, coinType, index) => {
-      if (!res.commandResults?.[index]?.returnValues) {
+      const cmdRes = res.commandResults?.[index]?.returnValues;
+      if (!cmdRes) {
         return result;
       }
-      const collateralAmount = BigInt(bcs.u64().parse(res.commandResults[index].returnValues[0].bcs));
-      const debtAmount = BigInt(bcs.u64().parse(res.commandResults[index].returnValues[1].bcs));
+      const collateralAmount = BigInt(bcs.u64().parse(cmdRes[0].bcs));
+      const debtAmount = BigInt(bcs.u64().parse(cmdRes[1].bcs));
       const hasReward = borrowRewards[coinType] && Object.values(borrowRewards[coinType]).some((reward) => reward);
 
       if (collateralAmount || debtAmount || hasReward) {
@@ -656,12 +758,12 @@ export class BucketClient {
       if (!poolInfo.reward) {
         return;
       }
-      poolInfo.reward.rewardTypes.forEach((rewardType) => {
+      poolInfo.reward.reward_types.forEach((rewardType) => {
         tx.moveCall({
           target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::get_realtime_reward_amount`,
           typeArguments: [lpType, rewardType],
           arguments: [
-            tx.sharedObjectRef(poolInfo.reward!.rewardManager),
+            tx.sharedObjectRef(poolInfo.reward!.reward_manager),
             tx.sharedObjectRef(poolInfo.pool),
             tx.pure.address(accountId ?? address),
             tx.object.clock(),
@@ -671,29 +773,23 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction') {
-      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
-      throw Object.assign(new Error('Failed to fetch account saving pool rewards'), { cause: err ?? res });
-    }
-    if (!res.commandResults) {
-      throw new Error('Failed to fetch account saving pool rewards');
+    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
+      return {};
     }
     return lpTypes.reduce((result, lpType) => {
       const poolInfo = this.getSavingPoolObjectInfo({ lpType });
 
-      if (!poolInfo.reward?.rewardTypes?.length) {
+      if (!poolInfo.reward?.reward_types?.length) {
         return result;
       }
-      const responses = res.commandResults!.splice(0, poolInfo.reward.rewardTypes.length);
+      const responses = res.commandResults!.splice(0, poolInfo.reward.reward_types.length);
 
       return {
         ...result,
-        [lpType]: poolInfo.reward.rewardTypes.reduce((result, rewardType, index) => {
+        [lpType]: poolInfo.reward.reward_types.reduce((result, rewardType, index) => {
           const amountRes = responses[index]?.returnValues;
           if (!amountRes) {
-            throw new Error(
-              `Failed to fetch account saving pool rewards: missing result for ${lpType} reward ${rewardType}`,
-            );
+            return result;
           }
           const realtimeReward = bcs.u64().parse(amountRes[0].bcs);
 
@@ -728,11 +824,13 @@ export class BucketClient {
     const savingRewards = await this.getAccountSavingPoolRewards({ lpTypes, address, accountId });
 
     return lpTypes.reduce((result, lpType, index) => {
-      if (!res.commandResults?.[2 * index]?.returnValues || !res.commandResults?.[2 * index + 1]?.returnValues) {
+      const valRes = res.commandResults?.[2 * index]?.returnValues;
+      const balRes = res.commandResults?.[2 * index + 1]?.returnValues;
+      if (!valRes || !balRes) {
         return result;
       }
-      const usdbBalance = BigInt(bcs.u64().parse(res.commandResults![2 * index].returnValues[0].bcs));
-      const lpBalance = BigInt(bcs.u64().parse(res.commandResults![2 * index + 1].returnValues[0].bcs));
+      const usdbBalance = BigInt(bcs.u64().parse(valRes[0].bcs));
+      const lpBalance = BigInt(bcs.u64().parse(balRes[0].bcs));
       const hasReward = savingRewards[lpType] && Object.values(savingRewards[lpType]).every((reward) => reward);
 
       if (usdbBalance || lpBalance || hasReward) {
@@ -797,9 +895,10 @@ export class BucketClient {
    * @description
    */
   aggregator(tx: Transaction, { coinType }: { coinType: string }) {
-    const vaultInfo = this.getAggregatorObjectInfo({ coinType });
+    const aggregatorInfo = this.getAggregatorObjectInfo({ coinType });
 
-    return tx.sharedObjectRef(vaultInfo.priceAggregator);
+    const agg = 'Pyth' in aggregatorInfo ? aggregatorInfo.Pyth : aggregatorInfo.DerivativeInfo;
+    return tx.sharedObjectRef(agg!.priceAggregator);
   }
 
   /**
@@ -893,10 +992,10 @@ export class BucketClient {
     const pythPriceIds = coinTypes.map((coinType) => {
       const aggregator = this.getAggregatorObjectInfo({ coinType });
 
-      if (!('pythPriceId' in aggregator)) {
+      if (!('Pyth' in aggregator) || !aggregator.Pyth) {
         throw new Error(`${coinType} has no basic price`);
       }
-      return aggregator.pythPriceId;
+      return aggregator.Pyth.pythPriceId;
     });
     const updateData = await fetchPriceFeedsUpdateDataFromHermes(this.config.PRICE_SERVICE_ENDPOINT, pythPriceIds);
     const priceInfoObjIds = await buildPythPriceUpdateCalls(
@@ -913,6 +1012,9 @@ export class BucketClient {
 
     return coinTypes.map((coinType, index) => {
       const collector = this.newPriceCollector(tx, { coinType });
+      const aggInfo = this.getAggregatorObjectInfo({ coinType });
+      const agg = 'Pyth' in aggInfo ? aggInfo.Pyth : aggInfo.DerivativeInfo;
+      if (!agg) throw new Error(`${coinType} has no aggregator info`);
 
       tx.moveCall({
         target: `${this.config.PYTH_RULE_PACKAGE_ID}::pyth_rule::feed`,
@@ -928,7 +1030,7 @@ export class BucketClient {
       const priceResult = tx.moveCall({
         target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
         typeArguments: [coinType],
-        arguments: [tx.sharedObjectRef(this.getAggregatorObjectInfo({ coinType }).priceAggregator), collector],
+        arguments: [tx.sharedObjectRef(agg.priceAggregator), collector],
       });
       return priceResult;
     });
@@ -949,49 +1051,75 @@ export class BucketClient {
   ): TransactionResult {
     const aggregator = this.getAggregatorObjectInfo({ coinType });
 
-    if (!('derivativeInfo' in aggregator)) {
+    if (!('DerivativeInfo' in aggregator) || !aggregator.DerivativeInfo) {
       throw new Error(`${coinType} has no derivative info`);
     }
-    const { priceAggregator, derivativeInfo } = aggregator;
+    const { priceAggregator, underlying_coin_type, derivative_kind } = aggregator.DerivativeInfo;
     const collector = this.newPriceCollector(tx, { coinType });
+    // Map on-chain derivative_kind (Scallop, GCoin, Unihouse, BFBTC) to SDK DerivativeKind
+    const dk: DerivativeKind =
+      derivative_kind === 'Scallop' || derivative_kind === 'sCoin'
+        ? 'sCoin'
+        : derivative_kind === 'GCoin' || derivative_kind === 'gCoin' || derivative_kind === 'Unihouse'
+          ? 'gCoin'
+          : derivative_kind === 'BFBTC'
+            ? 'BFBTC'
+            : derivative_kind === 'TLP'
+              ? 'TLP'
+              : 'sCoin'; // fallback
+    const priceConfig = this.getPriceConfigInfo(dk);
 
-    switch (derivativeInfo.derivativeKind) {
+    switch (derivative_kind) {
       case 'sCoin':
+      case 'Scallop': {
+        if (!('SCOIN' in priceConfig) || !priceConfig.SCOIN)
+          throw new Error('Unexpected price config variant for sCoin');
+        const pc = priceConfig.SCOIN;
         tx.moveCall({
-          target: '0xb7c0792630fe4b028437a5554e5c0bef16edaf793210ef32a88fcea443e4d76b::scoin_rule::feed',
-          typeArguments: [coinType, derivativeInfo.underlyingCoinType],
+          target: `${pc.package}::scoin_rule::feed`,
+          typeArguments: [coinType, underlying_coin_type],
           arguments: [
             collector,
-            tx.sharedObjectRef(SCOIN_RULE_CONFIG),
+            tx.sharedObjectRef(pc.scoin_rule_config),
             underlyingPriceResult,
-            tx.sharedObjectRef(SCALLOP_VERSION),
-            tx.sharedObjectRef(SCALLOP_MARKET),
+            tx.sharedObjectRef(pc.scallop_version),
+            tx.sharedObjectRef(pc.scallop_market),
             tx.object.clock(),
           ],
         });
         break;
+      }
       case 'gCoin':
+      case 'GCoin':
+      case 'Unihouse': {
+        if (!('GCOIN' in priceConfig) || !priceConfig.GCOIN)
+          throw new Error('Unexpected price config variant for gCoin');
+        const pc = priceConfig.GCOIN;
         tx.moveCall({
-          target: '0xba3c970933047c6e235424d7040a9a4e89d8fc1200d780a69b2666434f3a7313::gcoin_rule::feed',
-          typeArguments: [coinType, derivativeInfo.underlyingCoinType],
+          target: `${pc.package}::gcoin_rule::feed`,
+          typeArguments: [coinType, underlying_coin_type],
           arguments: [
             collector,
             underlyingPriceResult,
-            tx.sharedObjectRef(GCOIN_RULE_CONFIG),
-            tx.sharedObjectRef(UNIHOUSE_OBJECT),
+            tx.sharedObjectRef(pc.gcoin_rule_config),
+            tx.sharedObjectRef(pc.unihouse_object),
           ],
         });
         break;
-      case 'BFBTC':
+      }
+      case 'BFBTC': {
+        if (!('BFBTC' in priceConfig) || !priceConfig.BFBTC)
+          throw new Error('Unexpected price config variant for BFBTC');
+        const pc = priceConfig.BFBTC;
         tx.moveCall({
-          target: '0x6043cfb7e941a06526ed11e396d305ea547f55c55ae0e140d78652e8637ff60e::bfbtc_rule::feed',
-          typeArguments: [derivativeInfo.underlyingCoinType],
-          arguments: [
-            collector,
-            underlyingPriceResult,
-            tx.object('0x05b526a3cb659b9074d3f3f84f10ee19971c4b7cf15e9079da084f9edcf835e6'),
-          ],
+          target: `${pc.package}::bfbtc_rule::feed`,
+          typeArguments: [underlying_coin_type],
+          arguments: [collector, underlyingPriceResult, tx.sharedObjectRef(pc.bfbtc_rule_config)],
         });
+        break;
+      }
+      default:
+        throw new Error(`Unsupported derivative kind: ${derivative_kind}`);
     }
     return tx.moveCall({
       target: `${this.config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
@@ -1009,7 +1137,7 @@ export class BucketClient {
         coinTypes.map((coinType) => {
           const aggregator = this.getAggregatorObjectInfo({ coinType });
 
-          return 'pythPriceId' in aggregator ? coinType : aggregator.derivativeInfo.underlyingCoinType;
+          return 'Pyth' in aggregator ? coinType : aggregator.DerivativeInfo.underlying_coin_type;
         }),
       ),
     );
@@ -1022,10 +1150,10 @@ export class BucketClient {
     coinTypes.forEach((coinType) => {
       const aggregator = this.getAggregatorObjectInfo({ coinType });
 
-      if (!('derivativeInfo' in aggregator)) {
+      if (!('DerivativeInfo' in aggregator)) {
         return;
       }
-      const { underlyingCoinType } = aggregator.derivativeInfo;
+      const { underlying_coin_type: underlyingCoinType } = aggregator.DerivativeInfo!;
 
       priceResults[coinType] = this.getDerivativePrice(tx, {
         coinType,
@@ -1100,8 +1228,8 @@ export class BucketClient {
     (rewarders ?? []).map((rewarder) => {
       tx.moveCall({
         target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::update`,
-        typeArguments: [coinType, rewarder.rewardType],
-        arguments: [registryObj, checker, vaultObj, tx.object(rewarder.rewarderId), tx.object.clock()],
+        typeArguments: [coinType, rewarder.reward_type],
+        arguments: [registryObj, checker, vaultObj, tx.object(rewarder.rewarder_id), tx.object.clock()],
       });
     });
     const updateRequest = tx.moveCall({
@@ -1224,19 +1352,19 @@ export class BucketClient {
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::new_checker_for_deposit_action`,
       typeArguments: [lpType],
       arguments: [
-        tx.sharedObjectRef(savingPool.reward.rewardManager),
+        tx.sharedObjectRef(savingPool.reward.reward_manager),
         this.savingPoolGlobalConfig(tx),
         depositResponse,
       ],
     });
-    savingPool.reward.rewardTypes.forEach((rewardType) => {
+    savingPool.reward.reward_types.forEach((rewardType) => {
       tx.moveCall({
         target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::update_deposit_action`,
         typeArguments: [lpType, rewardType],
         arguments: [
           depositChecker,
           this.savingPoolGlobalConfig(tx),
-          tx.sharedObjectRef(savingPool.reward!.rewardManager),
+          tx.sharedObjectRef(savingPool.reward!.reward_manager),
           tx.sharedObjectRef(savingPool.pool),
           tx.object.clock(),
         ],
@@ -1327,19 +1455,19 @@ export class BucketClient {
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::new_checker_for_withdraw_action`,
       typeArguments: [lpType],
       arguments: [
-        tx.sharedObjectRef(savingPool.reward.rewardManager),
+        tx.sharedObjectRef(savingPool.reward.reward_manager),
         this.savingPoolGlobalConfig(tx),
         withdrawResponse,
       ],
     });
-    savingPool.reward.rewardTypes.forEach((rewardType) => {
+    savingPool.reward.reward_types.forEach((rewardType) => {
       tx.moveCall({
         target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::update_withdraw_action`,
         typeArguments: [lpType, rewardType],
         arguments: [
           withdrawChecker,
           this.savingPoolGlobalConfig(tx),
-          tx.sharedObjectRef(savingPool.reward!.rewardManager),
+          tx.sharedObjectRef(savingPool.reward!.reward_manager),
           tx.sharedObjectRef(savingPool.pool),
           tx.object.clock(),
         ],
@@ -1403,7 +1531,7 @@ export class BucketClient {
       target: `${this.config.SAVING_INCENTIVE_PACKAGE_ID}::saving_incentive::claim`,
       typeArguments: [lpType, rewardType],
       arguments: [
-        tx.sharedObjectRef(savingPool.reward.rewardManager),
+        tx.sharedObjectRef(savingPool.reward.reward_manager),
         this.savingPoolGlobalConfig(tx),
         tx.sharedObjectRef(savingPool.pool),
         accountReq,
@@ -1663,14 +1791,14 @@ export class BucketClient {
       return {};
     }
     return rewarders.reduce(
-      (result, { rewardType, rewarderId }) => ({
+      (result, { reward_type, rewarder_id }) => ({
         ...result,
-        [rewardType]: tx.moveCall({
+        [reward_type]: tx.moveCall({
           target: `${this.config.BORROW_INCENTIVE_PACKAGE_ID}::borrow_incentive::claim`,
-          typeArguments: [coinType, rewardType],
+          typeArguments: [coinType, reward_type],
           arguments: [
             registryObj,
-            tx.object(rewarderId),
+            tx.object(rewarder_id),
             vaultObj,
             this.newAccountRequest(tx, { accountObjectOrId }),
             tx.object.clock(),
@@ -1757,7 +1885,7 @@ export class BucketClient {
     if (!savingPool.reward) {
       return {};
     }
-    return savingPool.reward.rewardTypes.reduce(
+    return savingPool.reward.reward_types.reduce(
       (result, rewardType) => ({
         ...result,
         [rewardType]: this.claimPoolIncentive(tx, {

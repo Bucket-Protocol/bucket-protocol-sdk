@@ -1,13 +1,33 @@
 
-import { bcs, BcsType, TypeTag, TypeTagSerializer, BcsStruct, BcsEnum, BcsTuple } from '@mysten/sui/bcs';
+import {
+	bcs,
+	BcsType,
+	TypeTag,
+	TypeTagSerializer,
+	BcsStruct,
+	BcsEnum,
+	BcsTuple,
+} from '@mysten/sui/bcs';
 import { normalizeSuiAddress } from '@mysten/sui/utils';
 import { TransactionArgument, isArgument } from '@mysten/sui/transactions';
+import { ClientWithCoreApi, SuiClientTypes } from '@mysten/sui/client';
 
 const MOVE_STDLIB_ADDRESS = normalizeSuiAddress('0x1');
 const SUI_FRAMEWORK_ADDRESS = normalizeSuiAddress('0x2');
-const SUI_SYSTEM_ADDRESS = normalizeSuiAddress('0x3');
 
 export type RawTransactionArgument<T> = T | TransactionArgument;
+
+export interface GetOptions<
+	Include extends Omit<SuiClientTypes.ObjectInclude, 'content'> = {},
+> extends SuiClientTypes.GetObjectOptions<Include> {
+	client: ClientWithCoreApi;
+}
+
+export interface GetManyOptions<
+	Include extends Omit<SuiClientTypes.ObjectInclude, 'content'> = {},
+> extends SuiClientTypes.GetObjectsOptions<Include> {
+	client: ClientWithCoreApi;
+}
 
 export function getPureBcsSchema(typeTag: string | TypeTag): BcsType<any> | null {
 	const parsedTag = typeof typeTag === 'string' ? TypeTagSerializer.parseFromStr(typeTag) : typeTag;
@@ -33,7 +53,7 @@ export function getPureBcsSchema(typeTag: string | TypeTag): BcsType<any> | null
 		return type ? bcs.vector(type) : null;
 	} else if ('struct' in parsedTag) {
 		const structTag = parsedTag.struct;
-		const pkg = normalizeSuiAddress(parsedTag.struct.address);
+		const pkg = normalizeSuiAddress(structTag.address);
 
 		if (pkg === MOVE_STDLIB_ADDRESS) {
 			if (
@@ -44,12 +64,16 @@ export function getPureBcsSchema(typeTag: string | TypeTag): BcsType<any> | null
 			}
 
 			if (structTag.module === 'option' && structTag.name === 'Option') {
-				const type = getPureBcsSchema(structTag.typeParams[0]!);
-				return type ? bcs.vector(type) : null;
+				const type = getPureBcsSchema(structTag.typeParams[0]);
+				return type ? bcs.option(type) : null;
 			}
 		}
 
-		if (pkg === SUI_FRAMEWORK_ADDRESS && structTag.module === 'Object' && structTag.name === 'ID') {
+		if (
+			pkg === SUI_FRAMEWORK_ADDRESS &&
+			structTag.module === 'object' &&
+			(structTag.name === 'ID' || structTag.name === 'UID')
+		) {
 			return bcs.Address;
 		}
 	}
@@ -57,40 +81,48 @@ export function getPureBcsSchema(typeTag: string | TypeTag): BcsType<any> | null
 	return null;
 }
 
-export function normalizeMoveArguments(args: unknown[] | object, argTypes: string[], parameterNames?: string[]) {
-
-	if (parameterNames && argTypes.length !== parameterNames.length) {
-		throw new Error(`Invalid number of parameterNames, expected ${argTypes.length}, got ${parameterNames.length}`);
+export function normalizeMoveArguments(
+	args: unknown[] | object,
+	argTypes: readonly (string | null)[],
+	parameterNames?: string[],
+) {
+	const argLen = Array.isArray(args) ? args.length : Object.keys(args).length;
+	if (parameterNames && argLen !== parameterNames.length) {
+		throw new Error(
+			`Invalid number of arguments, expected ${parameterNames.length}, got ${argLen}`,
+		);
 	}
 
 	const normalizedArgs: TransactionArgument[] = [];
 
 	let index = 0;
 	for (const [i, argType] of argTypes.entries()) {
-		if (argType === `${SUI_FRAMEWORK_ADDRESS}::deny_list::DenyList`) {
-			normalizedArgs.push((tx) => tx.object.denyList());
-			continue;
-		}
-
-		if (argType === `${SUI_FRAMEWORK_ADDRESS}::random::Random`) {
-			normalizedArgs.push((tx) => tx.object.random());
-			continue;
-		}
-
-		if (argType === `${SUI_FRAMEWORK_ADDRESS}::clock::Clock`) {
+		if (argType === '0x2::clock::Clock') {
 			normalizedArgs.push((tx) => tx.object.clock());
 			continue;
 		}
 
-		if (argType === `${SUI_SYSTEM_ADDRESS}::sui_system::SuiSystemState`) {
+		if (argType === '0x2::random::Random') {
+			normalizedArgs.push((tx) => tx.object.random());
+			continue;
+		}
+
+		if (argType === '0x2::deny_list::DenyList') {
+			normalizedArgs.push((tx) => tx.object.denyList());
+			continue;
+		}
+
+		if (argType === '0x3::sui_system::SuiSystemState') {
 			normalizedArgs.push((tx) => tx.object.system());
 			continue;
 		}
 
-		let arg
+		let arg;
 		if (Array.isArray(args)) {
 			if (index >= args.length) {
-				throw new Error(`Invalid number of arguments, expected at least ${index + 1}, got ${args.length}`);
+				throw new Error(
+					`Invalid number of arguments, expected at least ${index + 1}, got ${args.length}`,
+				);
 			}
 			arg = args[index];
 		} else {
@@ -100,7 +132,7 @@ export function normalizeMoveArguments(args: unknown[] | object, argTypes: strin
 			const name = parameterNames[index];
 			arg = args[name as keyof typeof args];
 
-			if (arg == null) {
+			if (arg === undefined) {
 				throw new Error(`Parameter ${name} is required`);
 			}
 		}
@@ -112,8 +144,8 @@ export function normalizeMoveArguments(args: unknown[] | object, argTypes: strin
 			continue;
 		}
 
-		const type = argTypes[i]!;
-		const bcsType = getPureBcsSchema(type);
+		const type = argTypes[i];
+		const bcsType = type === null ? null : getPureBcsSchema(type);
 
 		if (bcsType) {
 			const bytes = bcsType.serialize(arg as never);
@@ -133,7 +165,47 @@ export function normalizeMoveArguments(args: unknown[] | object, argTypes: strin
 export class MoveStruct<
 	T extends Record<string, BcsType<any>>,
 	const Name extends string = string,
-> extends BcsStruct<T, Name> {}
+> extends BcsStruct<T, Name> {
+	async get<Include extends Omit<SuiClientTypes.ObjectInclude, 'content' | 'json'> = {}>({
+		objectId,
+		...options
+	}: GetOptions<Include>): Promise<
+		SuiClientTypes.Object<Include & { content: true, json: true }> & { json: BcsStruct<T>['$inferType'] }
+	> {
+		const [res] = await this.getMany<Include>({
+			...options,
+			objectIds: [objectId],
+		});
+
+		return res;
+	}
+
+	async getMany<Include extends Omit<SuiClientTypes.ObjectInclude, 'content' | 'json'> = {}>({
+		client,
+		...options
+	}: GetManyOptions<Include>): Promise<
+		Array<SuiClientTypes.Object<Include & { content: true, json: true }> & { json: BcsStruct<T>['$inferType'] }>
+	> {
+		const response = (await client.core.getObjects({
+			...options,
+			include: {
+				...options.include,
+				content: true,
+			},
+		})) as SuiClientTypes.GetObjectsResponse<Include & { content: true }>;
+
+		return response.objects.map((obj) => {
+			if (obj instanceof Error) {
+				throw obj;
+			}
+
+			return {
+				...obj,
+				json: this.parse(obj.content),
+			};
+		});
+	}
+}
 
 export class MoveEnum<
 	T extends Record<string, BcsType<any> | null>,
@@ -141,7 +213,7 @@ export class MoveEnum<
 > extends BcsEnum<T, Name> {}
 
 export class MoveTuple<
-	T extends readonly BcsType<any>[],
+	const T extends readonly BcsType<any>[],
 	const Name extends string,
 > extends BcsTuple<T, Name> {}
 
