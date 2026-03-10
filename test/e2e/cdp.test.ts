@@ -17,8 +17,16 @@ import {
 
 type SuiEvent = { eventType: string; bcs: Uint8Array };
 
+let hasSuiPositionWithDebt = false;
+
 describe('E2E CDP', () => {
-  beforeAll(setupE2E);
+  beforeAll(async () => {
+    await setupE2E();
+    const positions = await bucketClient.getAccountPositions({ address: testAccount });
+    hasSuiPositionWithDebt = positions.some(
+      (p) => normalizeStructTag(p.collateralType) === normalizeStructTag(SUI_TYPE_ARG) && p.debtAmount > 0n,
+    );
+  });
   afterAll(afterFileEnd);
   afterEach(afterTestDelay);
 
@@ -119,16 +127,9 @@ describe('E2E CDP', () => {
     MAINNET_TIMEOUT_MS,
   );
 
-  it(
+  it.skipIf(() => !hasSuiPositionWithDebt)(
     'buildClosePositionTransaction dry run succeeds when account has SUI position',
     async () => {
-      const positions = await bucketClient.getAccountPositions({ address: testAccount });
-      const hasSuiPosition = positions.some(
-        (p) => normalizeStructTag(p.collateralType) === normalizeStructTag(SUI_TYPE_ARG) && p.debtAmount > 0n,
-      );
-      if (!hasSuiPosition) {
-        return;
-      }
       const tx = txWithSender();
       const [collateralCoin, repayCoin] = bucketClient.buildClosePositionTransaction(tx, {
         address: testAccount,

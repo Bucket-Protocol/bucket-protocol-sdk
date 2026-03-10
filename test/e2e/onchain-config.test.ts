@@ -76,6 +76,25 @@ describe('On-chain config (testnet)', () => {
       expect(usdbType.startsWith('0x')).toBe(true);
     });
 
+    it(
+      'getUsdbCoinType uses ORIGINAL_USDB_PACKAGE_ID; resolveType yields current type when upgraded',
+      async () => {
+        const config = bucketClient.getConfig();
+        const rawType = bucketClient.getUsdbCoinType();
+        const rawPkgId = rawType.split('::')[0];
+        expect(rawPkgId).toBe(config.ORIGINAL_USDB_PACKAGE_ID);
+
+        const resolved = await bucketClient.getSuiClient().core.mvr.resolveType({ type: rawType });
+        const resolvedPkgId = resolved.type.split('::')[0];
+        if (config.ORIGINAL_USDB_PACKAGE_ID !== config.USDB_PACKAGE_ID) {
+          expect(resolvedPkgId).toBe(config.USDB_PACKAGE_ID);
+        } else {
+          expect(resolvedPkgId).toBe(config.ORIGINAL_USDB_PACKAGE_ID);
+        }
+      },
+      TIMEOUT_MS,
+    );
+
     it('getSuiClient returns the same SuiGrpcClient', () => {
       expect(bucketClient.getSuiClient()).toBe(suiClient);
     });
@@ -88,6 +107,37 @@ describe('On-chain price config (mainnet)', () => {
   beforeAll(beforeFileStart);
   afterAll(afterFileEnd);
   afterEach(afterTestDelay);
+
+  it(
+    'getUsdbCoinType uses ORIGINAL_USDB_PACKAGE_ID; resolveType yields current type when upgraded (mainnet)',
+    async () => {
+      const bucketClient = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
+      const config = bucketClient.getConfig();
+      const rawType = bucketClient.getUsdbCoinType();
+      const rawPkgId = rawType.split('::')[0];
+      expect(rawPkgId).toBe(config.ORIGINAL_USDB_PACKAGE_ID);
+
+      const resolved = await bucketClient.getSuiClient().core.mvr.resolveType({ type: rawType });
+      const resolvedPkgId = resolved.type.split('::')[0];
+      const sameId = config.ORIGINAL_USDB_PACKAGE_ID === config.USDB_PACKAGE_ID;
+      // eslint-disable-next-line no-console
+      console.log(
+        '[mainnet USDB] ORIGINAL_USDB_PACKAGE_ID:',
+        config.ORIGINAL_USDB_PACKAGE_ID,
+        '| USDB_PACKAGE_ID:',
+        config.USDB_PACKAGE_ID,
+        '| same:',
+        sameId,
+        sameId ? '(no upgrade yet; getUsdbSupply without resolve would work)' : '(upgraded; resolve required)',
+      );
+      if (config.ORIGINAL_USDB_PACKAGE_ID !== config.USDB_PACKAGE_ID) {
+        expect(resolvedPkgId).toBe(config.USDB_PACKAGE_ID);
+      } else {
+        expect(resolvedPkgId).toBe(config.ORIGINAL_USDB_PACKAGE_ID);
+      }
+    },
+    TIMEOUT_MS,
+  );
 
   it(
     'queryAllConfig includes priceConfig with table entries',

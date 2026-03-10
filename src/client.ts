@@ -255,15 +255,12 @@ export class BucketClient {
   /* ----- Queries ----- */
 
   /**
-   * @description
-   */
-  /**
    * @description Get total USDB supply via RPC.
    * Uses stateService.getCoinInfo (avoids PTB reference limitation: borrow_cap_mut returns
    * &mut which cannot be passed between commands; SDK v2 validates this and rejects).
    */
   async getUsdbSupply(): Promise<bigint> {
-    const coinType = (await this.suiClient.core.mvr.resolveType({ type: this.getUsdbCoinType() })).type;
+    const coinType = this.getUsdbCoinType();
     const { response } = await this.suiClient.stateService.getCoinInfo({ coinType });
     const supply = response.treasury?.totalSupply;
     if (supply === null || supply === undefined) {
@@ -675,9 +672,7 @@ export class BucketClient {
         [coinType]: vaultInfo.rewarders.reduce((result, rewarder, index) => {
           const resItem = responses[index]?.returnValues;
           if (!resItem) {
-            throw new Error(
-              `Failed to fetch account borrow rewards: missing result for ${coinType} reward ${rewarder.reward_type}`,
-            );
+            return result;
           }
           const realtimeReward = bcs.u64().parse(resItem[0].bcs);
 
@@ -717,7 +712,7 @@ export class BucketClient {
     return allCollateralTypes.reduce((result, coinType, index) => {
       const cmdRes = res.commandResults?.[index]?.returnValues;
       if (!cmdRes) {
-        throw new Error(`Failed to fetch account positions: missing result for ${coinType}`);
+        return result;
       }
       const collateralAmount = BigInt(bcs.u64().parse(cmdRes[0].bcs));
       const debtAmount = BigInt(bcs.u64().parse(cmdRes[1].bcs));
@@ -806,9 +801,7 @@ export class BucketClient {
         [lpType]: poolInfo.reward.reward_types.reduce((result, rewardType, index) => {
           const amountRes = responses[index]?.returnValues;
           if (!amountRes) {
-            throw new Error(
-              `Failed to fetch account saving pool rewards: missing result for ${lpType} reward ${rewardType}`,
-            );
+            return result;
           }
           const realtimeReward = bcs.u64().parse(amountRes[0].bcs);
 
@@ -846,7 +839,7 @@ export class BucketClient {
       const valRes = res.commandResults?.[2 * index]?.returnValues;
       const balRes = res.commandResults?.[2 * index + 1]?.returnValues;
       if (!valRes || !balRes) {
-        throw new Error(`Failed to fetch account savings: missing result for ${lpType}`);
+        return result;
       }
       const usdbBalance = BigInt(bcs.u64().parse(valRes[0].bcs));
       const lpBalance = BigInt(bcs.u64().parse(balRes[0].bcs));

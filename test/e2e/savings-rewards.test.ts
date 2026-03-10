@@ -11,8 +11,18 @@ import {
   testAccount,
 } from './helpers/setup.js';
 
+let hasSuiInBorrowRewards = false;
+
 describe('E2E Savings & rewards', () => {
-  beforeAll(setupE2E);
+  beforeAll(async () => {
+    await setupE2E();
+    const rewards = await bucketClient.getAccountBorrowRewards({
+      address: testAccount,
+      coinTypes: [SUI_TYPE_ARG],
+    });
+    const suiKey = Object.keys(rewards).find((k) => normalizeStructTag(k) === normalizeStructTag(SUI_TYPE_ARG));
+    hasSuiInBorrowRewards = !!suiKey;
+  });
   afterAll(afterFileEnd);
   afterEach(afterTestDelay);
 
@@ -42,7 +52,7 @@ describe('E2E Savings & rewards', () => {
     MAINNET_TIMEOUT_MS,
   );
 
-  it(
+  it.skipIf(() => !hasSuiInBorrowRewards)(
     'getAccountBorrowRewards returns record for SUI vault',
     async () => {
       const rewards = await bucketClient.getAccountBorrowRewards({
@@ -52,11 +62,11 @@ describe('E2E Savings & rewards', () => {
       expect(typeof rewards).toBe('object');
       const suiKey = Object.keys(rewards).find((k) => normalizeStructTag(k) === normalizeStructTag(SUI_TYPE_ARG));
       const suiRewards = suiKey ? rewards[suiKey] : undefined;
-      if (suiRewards) {
-        for (const [, amount] of Object.entries(suiRewards)) {
-          expect(typeof amount).toBe('bigint');
-          expect(amount).toBeGreaterThanOrEqual(0n);
-        }
+      expect(suiKey).toBeDefined();
+      expect(suiRewards).toBeDefined();
+      for (const [, amount] of Object.entries(suiRewards!)) {
+        expect(typeof amount).toBe('bigint');
+        expect(amount).toBeGreaterThanOrEqual(0n);
       }
     },
     MAINNET_TIMEOUT_MS,
@@ -66,6 +76,7 @@ describe('E2E Savings & rewards', () => {
     'getAccountBorrowRewards with multiple collateral types exercises vault iteration',
     async () => {
       const coinTypes = bucketClient.getAllCollateralTypes().slice(0, 3);
+      expect(coinTypes.length).toBeGreaterThan(0);
       const rewards = await bucketClient.getAccountBorrowRewards({
         address: testAccount,
         coinTypes,

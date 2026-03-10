@@ -37,8 +37,12 @@ describe('E2E Rewards', () => {
         dryrunRes as { Transaction?: { balanceChanges?: { coinType: string; amount: string }[] } }
       ).Transaction!.balanceChanges!;
       expect(balanceChanges.length).toBeGreaterThanOrEqual(1);
-      for (const bc of balanceChanges) {
-        if (normalizeStructTag(bc.coinType) !== normalizeStructTag('0x2::sui::SUI')) {
+      const rewardChanges = balanceChanges.filter(
+        (bc) => normalizeStructTag(bc.coinType) !== normalizeStructTag('0x2::sui::SUI'),
+      );
+      if (Object.keys(result).length > 0) {
+        expect(rewardChanges.length).toBeGreaterThan(0);
+        for (const bc of rewardChanges) {
           expect(Number(bc.amount)).toBeGreaterThan(0);
         }
       }
