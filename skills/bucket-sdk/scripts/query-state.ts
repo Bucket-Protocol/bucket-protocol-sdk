@@ -17,84 +17,93 @@
 
 import { BucketClient } from '@bucket-protocol/sdk';
 
+function printLine(message = '') {
+  process.stdout.write(`${message}\n`);
+}
+
+function isDefined<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined;
+}
+
 async function main() {
-  console.log('Initializing BucketClient (mainnet)...\n');
+  printLine('Initializing BucketClient (mainnet)...');
+  printLine();
   const client = await BucketClient.initialize({ network: 'mainnet' });
 
   // --- USDB Supply ---
   const supply = await client.getUsdbSupply();
-  console.log(`USDB Total Supply: ${(Number(supply) / 1e6).toLocaleString()} USDB`);
-  console.log();
+  printLine(`USDB Total Supply: ${(Number(supply) / 1e6).toLocaleString()} USDB`);
+  printLine();
 
   // --- Oracle Prices ---
-  console.log('=== Oracle Prices ===');
+  printLine('=== Oracle Prices ===');
   const prices = await client.getAllOraclePrices();
   const sortedPrices = Object.entries(prices).sort(([, a], [, b]) => b - a);
   for (const [coinType, price] of sortedPrices) {
     const shortName = coinType.split('::').pop() ?? coinType;
-    console.log(`  ${shortName.padEnd(20)} $${price}`);
+    printLine(`  ${shortName.padEnd(20)} $${price}`);
   }
-  console.log();
+  printLine();
 
   // --- Vaults ---
-  console.log('=== Vaults ===');
+  printLine('=== Vaults ===');
   const vaults = await client.getAllVaultObjects();
   for (const [coinType, vault] of Object.entries(vaults)) {
     const shortName = coinType.split('::').pop() ?? coinType;
-    console.log(`  [${shortName}]`);
-    console.log(`    Min CR:        ${vault.minCollateralRatio}`);
-    console.log(`    Interest Rate: ${vault.interestRate}`);
-    console.log(
-      `    Max USDB:      ${vault.maxUsdbSupply != null ? (Number(vault.maxUsdbSupply) / 1e6).toLocaleString() : 'unlimited'}`,
+    printLine(`  [${shortName}]`);
+    printLine(`    Min CR:        ${vault.minCollateralRatio}`);
+    printLine(`    Interest Rate: ${vault.interestRate}`);
+    printLine(
+      `    Max USDB:      ${isDefined(vault.maxUsdbSupply) ? (Number(vault.maxUsdbSupply) / 1e6).toLocaleString() : 'unlimited'}`,
     );
-    console.log(`    USDB Minted:   ${(Number(vault.usdbSupply) / 1e6).toLocaleString()}`);
-    console.log(`    Collateral:    ${vault.collateralBalance}`);
-    console.log(`    Positions:     ${vault.positionTableSize}`);
+    printLine(`    USDB Minted:   ${(Number(vault.usdbSupply) / 1e6).toLocaleString()}`);
+    printLine(`    Collateral:    ${vault.collateralBalance}`);
+    printLine(`    Positions:     ${vault.positionTableSize}`);
   }
-  console.log();
+  printLine();
 
   // --- PSM Pools ---
-  console.log('=== PSM Pools ===');
+  printLine('=== PSM Pools ===');
   const psmPools = await client.getAllPsmPoolObjects();
   for (const [coinType, pool] of Object.entries(psmPools)) {
     const shortName = coinType.split('::').pop() ?? coinType;
-    console.log(`  [${shortName}]`);
-    console.log(`    Balance:     ${pool.balance}`);
-    console.log(`    Swap-In Fee: ${pool.feeRate.swapIn}`);
-    console.log(`    Swap-Out Fee:${pool.feeRate.swapOut}`);
+    printLine(`  [${shortName}]`);
+    printLine(`    Balance:     ${pool.balance}`);
+    printLine(`    Swap-In Fee: ${pool.feeRate.swapIn}`);
+    printLine(`    Swap-Out Fee:${pool.feeRate.swapOut}`);
   }
-  console.log();
+  printLine();
 
   // --- Saving Pools ---
-  console.log('=== Saving Pools ===');
+  printLine('=== Saving Pools ===');
   const savingPools = await client.getAllSavingPoolObjects();
   for (const [lpType, pool] of Object.entries(savingPools)) {
     const shortName = lpType.split('::').pop() ?? lpType;
-    console.log(`  [${shortName}]`);
-    console.log(`    Saving Rate:  ${pool.savingRate}`);
-    console.log(`    LP Supply:    ${pool.lpSupply}`);
-    console.log(
-      `    Deposit Cap:  ${pool.usdbDepositCap != null ? (Number(pool.usdbDepositCap) / 1e6).toLocaleString() : 'none'}`,
+    printLine(`  [${shortName}]`);
+    printLine(`    Saving Rate:  ${pool.savingRate}`);
+    printLine(`    LP Supply:    ${pool.lpSupply}`);
+    printLine(
+      `    Deposit Cap:  ${isDefined(pool.usdbDepositCap) ? (Number(pool.usdbDepositCap) / 1e6).toLocaleString() : 'none'}`,
     );
   }
-  console.log();
+  printLine();
 
   // --- Flash Mint ---
-  console.log('=== Flash Mint ===');
+  printLine('=== Flash Mint ===');
   const flashMint = await client.getFlashMintInfo();
-  console.log(`  Fee Rate: ${flashMint.feeRate}`);
-  console.log();
+  printLine(`  Fee Rate: ${flashMint.feeRate}`);
+  printLine();
 
   // --- Supported Coin Types ---
-  console.log('=== Supported Collateral Types ===');
+  printLine('=== Supported Collateral Types ===');
   const collTypes = client.getAllCollateralTypes();
   for (const ct of collTypes) {
     const shortName = ct.split('::').pop() ?? ct;
-    console.log(`  ${shortName}`);
+    printLine(`  ${shortName}`);
   }
-  console.log();
+  printLine();
 
-  console.log('Done.');
+  printLine('Done.');
 }
 
 main().catch((err) => {
