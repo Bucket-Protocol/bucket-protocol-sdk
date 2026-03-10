@@ -652,12 +652,8 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction') {
-      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
-      throw Object.assign(new Error('Failed to fetch account borrow rewards'), { cause: err ?? res });
-    }
-    if (!res.commandResults) {
-      throw new Error('Failed to fetch account borrow rewards');
+    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
+      return {};
     }
     return coinTypes.reduce((result, coinType) => {
       const vaultInfo = this.getVaultObjectInfo({ coinType });
@@ -700,12 +696,8 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction') {
-      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
-      throw Object.assign(new Error('Failed to fetch account positions'), { cause: err ?? res });
-    }
-    if (!res.commandResults) {
-      throw new Error('Failed to fetch account positions');
+    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
+      return [];
     }
     const borrowRewards = await this.getAccountBorrowRewards({ address, accountId, coinTypes: allCollateralTypes });
 
@@ -781,12 +773,8 @@ export class BucketClient {
     });
     tx.setSender(DUMMY_ADDRESS);
     const res = await this.suiClient.simulateTransaction({ transaction: tx, include: { commandResults: true } });
-    if (res.$kind === 'FailedTransaction') {
-      const err = (res as { FailedTransaction?: { status?: { error?: unknown } } }).FailedTransaction?.status?.error;
-      throw Object.assign(new Error('Failed to fetch account saving pool rewards'), { cause: err ?? res });
-    }
-    if (!res.commandResults) {
-      throw new Error('Failed to fetch account saving pool rewards');
+    if (res.$kind === 'FailedTransaction' || !res.commandResults) {
+      return {};
     }
     return lpTypes.reduce((result, lpType) => {
       const poolInfo = this.getSavingPoolObjectInfo({ lpType });
