@@ -83,7 +83,7 @@ describe('unit/client', () => {
         expect.anything(),
         expect.objectContaining({ PRICE_SERVICE_ENDPOINT: 'https://custom.hermes.test' }),
       );
-      const config = client.getConfig();
+      const config = await client.getConfig();
       expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://custom.hermes.test');
     });
 
@@ -136,7 +136,7 @@ describe('unit/client', () => {
         expect.anything(),
         expect.objectContaining({ PRICE_SERVICE_ENDPOINT: 'https://explicit.override.test' }),
       );
-      const config = client.getConfig();
+      const config = await client.getConfig();
       expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://explicit.override.test');
     });
 
@@ -162,36 +162,14 @@ describe('unit/client', () => {
   });
 
   describe('constructor requires config', () => {
-    it('throws when config is undefined', () => {
-      expect(
-        () =>
-          new BucketClient({
-            suiClient: asSuiClient({}),
-            network: 'mainnet',
-            config: undefined as unknown as ConfigType,
-          }),
-      ).toThrow('BucketClient requires config');
-    });
-
-    it('throws when config is null', () => {
-      expect(
-        () =>
-          new BucketClient({
-            suiClient: asSuiClient({}),
-            network: 'mainnet',
-            config: null as unknown as ConfigType,
-          }),
-      ).toThrow('BucketClient requires config');
-    });
-
-    it('accepts custom config for testing', () => {
+    it('accepts custom config for testing', async () => {
       const custom = minimalConfig({ PRICE_SERVICE_ENDPOINT: 'https://custom.test' });
       const client = new BucketClient({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
         config: custom,
       });
-      const config = client.getConfig();
+      const config = await client.getConfig();
       expect(config).toBeDefined();
       expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://custom.test');
     });
@@ -210,7 +188,7 @@ describe('unit/client', () => {
       });
 
       expect(querySpy).not.toHaveBeenCalled();
-      expect(client.getConfig().PRICE_SERVICE_ENDPOINT).toBe('https://prebuilt.test');
+      expect((await client.getConfig()).PRICE_SERVICE_ENDPOINT).toBe('https://prebuilt.test');
     });
 
     it('uses provided config as-is (configOverrides ignored when config is passed)', async () => {
@@ -225,7 +203,7 @@ describe('unit/client', () => {
       });
 
       // When config is passed, configOverrides is not applied (only used with chain fetch)
-      expect(client.getConfig().PRICE_SERVICE_ENDPOINT).toBe('https://base.test');
+      expect((await client.getConfig()).PRICE_SERVICE_ENDPOINT).toBe('https://base.test');
     });
   });
 
@@ -293,7 +271,7 @@ describe('unit/client', () => {
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
       });
-      expect(() => client.getAggregatorObjectInfo({ coinType: '0xunknown::coin::UNKNOWN' })).toThrow(
+      await expect(client.getAggregatorObjectInfo({ coinType: '0xunknown::coin::UNKNOWN' })).rejects.toThrow(
         'Unsupported coin type',
       );
     });
@@ -309,7 +287,7 @@ describe('unit/client', () => {
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
       });
-      expect(() => client.getVaultObjectInfo({ coinType: '0xunknown::coin::UNKNOWN' })).toThrow(
+      await expect(client.getVaultObjectInfo({ coinType: '0xunknown::coin::UNKNOWN' })).rejects.toThrow(
         'Unsupported collateral type',
       );
     });
@@ -325,7 +303,7 @@ describe('unit/client', () => {
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
       });
-      expect(() => client.getSavingPoolObjectInfo({ lpType: '0xunknown::lp::UNKNOWN' })).toThrow(
+      await expect(client.getSavingPoolObjectInfo({ lpType: '0xunknown::lp::UNKNOWN' })).rejects.toThrow(
         'Unsupported coin type',
       );
     });
@@ -341,7 +319,9 @@ describe('unit/client', () => {
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
       });
-      expect(() => client.getPsmPoolObjectInfo({ coinType: '0xunknown::usdc::USDC' })).toThrow('Unsupported coin type');
+      await expect(client.getPsmPoolObjectInfo({ coinType: '0xunknown::usdc::USDC' })).rejects.toThrow(
+        'Unsupported coin type',
+      );
     });
   });
 
@@ -357,7 +337,7 @@ describe('unit/client', () => {
       });
       const { Transaction } = await import('@mysten/sui/transactions');
       const tx = new Transaction();
-      const result = client.accountAddress(tx, {
+      const result = await client.accountAddress(tx, {
         address: '0xdead',
         accountObjectOrId: validAddress,
       });
@@ -376,7 +356,7 @@ describe('unit/client', () => {
       const { Transaction } = await import('@mysten/sui/transactions');
       const tx = new Transaction();
       const objRef = tx.pure.address(validAddress);
-      const result = client.accountAddress(tx, {
+      const result = await client.accountAddress(tx, {
         address: '0xdead',
         accountObjectOrId: objRef,
       });
@@ -394,7 +374,7 @@ describe('unit/client', () => {
       });
       const { Transaction } = await import('@mysten/sui/transactions');
       const tx = new Transaction();
-      const result = client.newAccountRequest(tx, { accountObjectOrId: validAddress });
+      const result = await client.newAccountRequest(tx, { accountObjectOrId: validAddress });
       expect(result).toBeDefined();
       const data = tx.getData() as { commands: unknown[] };
       const moveCall = data.commands.find((c: unknown) => (c as { MoveCall?: unknown }).MoveCall) as {
@@ -413,7 +393,7 @@ describe('unit/client', () => {
       const { Transaction } = await import('@mysten/sui/transactions');
       const tx = new Transaction();
       const objRef = tx.pure.address(validAddress);
-      const result = client.newAccountRequest(tx, { accountObjectOrId: objRef });
+      const result = await client.newAccountRequest(tx, { accountObjectOrId: objRef });
       expect(result).toBeDefined();
       const data = tx.getData() as { commands: unknown[] };
       const moveCall = data.commands.find((c: unknown) => (c as { MoveCall?: unknown }).MoveCall) as {

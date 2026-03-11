@@ -12,7 +12,7 @@ describe('E2E Vaults', () => {
     'getAllVaultObjects: one entry per collateral type, all with required VaultInfo fields',
     async () => {
       const allVaults = await bucketClient.getAllVaultObjects();
-      const collateralTypes = bucketClient.getAllCollateralTypes();
+      const collateralTypes = await bucketClient.getAllCollateralTypes();
       expect(Object.keys(allVaults).length).toBe(collateralTypes.length);
       for (const [coinType, vault] of Object.entries(allVaults)) {
         expect(collateralTypes).toContain(coinType);
@@ -53,7 +53,7 @@ describe('E2E Vaults', () => {
   it(
     'getVaultObjectInfo returns config for known collateral (SUI)',
     async () => {
-      const info = bucketClient.getVaultObjectInfo({ coinType: SUI_TYPE_ARG });
+      const info = await bucketClient.getVaultObjectInfo({ coinType: SUI_TYPE_ARG });
       expect(info).toHaveProperty('vault');
       expect(info.vault).toHaveProperty('objectId');
       expect(typeof info.vault.objectId).toBe('string');

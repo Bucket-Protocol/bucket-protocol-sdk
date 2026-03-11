@@ -18,7 +18,7 @@ describe('E2E Config & metadata', () => {
   it(
     'getConfig returns config with package IDs and object refs',
     async () => {
-      const config = bucketClient.getConfig();
+      const config = await bucketClient.getConfig();
       expect(config).toBeDefined();
       expect(config).toHaveProperty('ORIGINAL_USDB_PACKAGE_ID');
       expect(config).toHaveProperty('TREASURY_OBJ');
@@ -32,7 +32,7 @@ describe('E2E Config & metadata', () => {
     'usdbCoinType returns USDB metadata (6 decimals)',
     async () => {
       const { coinMetadata: usdbMetadata } = await suiClient.getCoinMetadata({
-        coinType: getUsdbCoinType(),
+        coinType: await getUsdbCoinType(),
       });
       expect(usdbMetadata?.decimals).toBe(6);
       expect(usdbMetadata?.symbol).toBe('USDB');

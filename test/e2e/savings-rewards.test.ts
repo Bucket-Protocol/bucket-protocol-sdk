@@ -75,7 +75,7 @@ describe('E2E Savings & rewards', () => {
   it(
     'getAccountBorrowRewards with multiple collateral types exercises vault iteration',
     async () => {
-      const coinTypes = bucketClient.getAllCollateralTypes().slice(0, 3);
+      const coinTypes = (await bucketClient.getAllCollateralTypes()).slice(0, 3);
       expect(coinTypes.length).toBeGreaterThan(0);
       const rewards = await bucketClient.getAccountBorrowRewards({
         address: testAccount,

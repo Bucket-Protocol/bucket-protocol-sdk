@@ -126,12 +126,12 @@ describe('E2E All query outputs (report)', () => {
   it(
     'collects all query API outputs',
     async () => {
-      const config = bucketClient.getConfig();
+      const config = await bucketClient.getConfig();
 
       // Assert required config — fail fast, no silent fallback
       const psmPoolKeys = Object.keys(config.PSM_POOL_OBJS ?? {});
       const savingPoolKeys = Object.keys(config.SAVING_POOL_OBJS ?? {});
-      const collateralTypes = bucketClient.getAllCollateralTypes();
+      const collateralTypes = await bucketClient.getAllCollateralTypes();
       expect(psmPoolKeys.length, 'PSM_POOL_OBJS must have at least one pool').toBeGreaterThan(0);
       expect(savingPoolKeys.length, 'SAVING_POOL_OBJS must have at least one pool').toBeGreaterThan(0);
       expect(collateralTypes.length, 'Config must have at least one collateral type').toBeGreaterThan(0);
@@ -147,24 +147,16 @@ describe('E2E All query outputs (report)', () => {
         .slice(0, 3);
       const hasVaultWithRewarders = coinTypeWithRewarders.length > 0;
 
-      const coinTypes = bucketClient.getAllOracleCoinTypes().slice(0, 2);
+      const coinTypes = (await bucketClient.getAllOracleCoinTypes()).slice(0, 2);
 
-      // Sync config-derived
-      await run('getUsdbCoinType', () => Promise.resolve(getUsdbCoinType()));
-      await run('getAllOracleCoinTypes', () => Promise.resolve(bucketClient.getAllOracleCoinTypes()));
-      await run('getAllCollateralTypes', () => Promise.resolve(bucketClient.getAllCollateralTypes()));
-      await run('getAggregatorObjectInfo', () =>
-        Promise.resolve(bucketClient.getAggregatorObjectInfo({ coinType: firstCoinType })),
-      );
-      await run('getVaultObjectInfo', () =>
-        Promise.resolve(bucketClient.getVaultObjectInfo({ coinType: firstCoinType })),
-      );
-      await run('getSavingPoolObjectInfo', () =>
-        Promise.resolve(bucketClient.getSavingPoolObjectInfo({ lpType: firstLpType })),
-      );
-      await run('getPsmPoolObjectInfo', () =>
-        Promise.resolve(bucketClient.getPsmPoolObjectInfo({ coinType: firstPsmCoinType })),
-      );
+      // Async config-derived
+      await run('getUsdbCoinType', () => bucketClient.getUsdbCoinType());
+      await run('getAllOracleCoinTypes', () => bucketClient.getAllOracleCoinTypes());
+      await run('getAllCollateralTypes', () => bucketClient.getAllCollateralTypes());
+      await run('getAggregatorObjectInfo', () => bucketClient.getAggregatorObjectInfo({ coinType: firstCoinType }));
+      await run('getVaultObjectInfo', () => bucketClient.getVaultObjectInfo({ coinType: firstCoinType }));
+      await run('getSavingPoolObjectInfo', () => bucketClient.getSavingPoolObjectInfo({ lpType: firstLpType }));
+      await run('getPsmPoolObjectInfo', () => bucketClient.getPsmPoolObjectInfo({ coinType: firstPsmCoinType }));
 
       // Client / config
       await run('getSuiClient', () =>
@@ -172,7 +164,7 @@ describe('E2E All query outputs (report)', () => {
       );
       await run('refreshConfig', () => bucketClient.refreshConfig());
 
-      await run('getConfig', () => Promise.resolve(bucketClient.getConfig()));
+      await run('getConfig', () => bucketClient.getConfig());
 
       // Utils (exported from @bucket-protocol/sdk)
       await run('queryAllConfig', () => queryAllConfig(suiClient, network));
@@ -191,7 +183,7 @@ describe('E2E All query outputs (report)', () => {
       });
       await run('coinWithBalance', async () => {
         const tx = txWithSender();
-        const fn = coinWithBalance({ type: getUsdbCoinType(), balance: 1n * 10n ** 6n });
+        const fn = coinWithBalance({ type: await getUsdbCoinType(), balance: 1n * 10n ** 6n });
         fn(tx);
         return { type: 'TransactionResult', built: true };
       });
@@ -228,7 +220,7 @@ describe('E2E All query outputs (report)', () => {
       await run('getUserAccounts', () => bucketClient.getUserAccounts({ address: testAccount }));
       // getAccountBorrowRewards returns {} when vaults have no rewarders; use coinTypes with rewarders
       const coinTypesWithRewarders = (
-        Object.entries(bucketClient.getConfig().VAULT_OBJS ?? {}) as [string, VaultObjectInfo][]
+        Object.entries((await bucketClient.getConfig()).VAULT_OBJS ?? {}) as [string, VaultObjectInfo][]
       )
         .filter(([, v]) => v.rewarders && v.rewarders.length > 0)
         .map(([k]) => k)
@@ -306,7 +298,7 @@ describe('E2E All query outputs (report)', () => {
       };
 
       const depositAmount = await depositAmountForBorrowUsd(1);
-      const usdbType = getUsdbCoinType();
+      const usdbType = await getUsdbCoinType();
 
       await captureBuild('buildManagePositionTransaction', async () => {
         const tx = txWithSender();
@@ -339,7 +331,7 @@ describe('E2E All query outputs (report)', () => {
         const tx = txWithSender();
         const amt = 1n * 10n ** 6n;
         const coin = coinWithBalance({ type: usdbType, balance: amt });
-        bucketClient.buildDepositToSavingPoolTransaction(tx, {
+        await bucketClient.buildDepositToSavingPoolTransaction(tx, {
           lpType: firstLpType,
           address: testAccount,
           depositCoinOrAmount: coin,
@@ -385,10 +377,13 @@ describe('E2E All query outputs (report)', () => {
       });
 
       // aggregateBasicPrices — lower-level Hermes price aggregation (Pyth only, no derivatives)
-      const basicCoinTypes = bucketClient.getAllOracleCoinTypes().filter((ct) => {
-        const agg = bucketClient.getAggregatorObjectInfo({ coinType: ct });
-        return 'Pyth' in agg && agg.Pyth;
-      });
+      const allOracleCoinTypes = await bucketClient.getAllOracleCoinTypes();
+      const aggregatorInfos = await Promise.all(
+        allOracleCoinTypes.map((ct) => bucketClient.getAggregatorObjectInfo({ coinType: ct })),
+      );
+      const basicCoinTypes = allOracleCoinTypes.filter(
+        (_, i) => 'Pyth' in aggregatorInfos[i]! && aggregatorInfos[i]!.Pyth,
+      );
       await captureBuild('aggregateBasicPrices', async () => {
         const tx = txWithSender();
         return bucketClient.aggregateBasicPrices(tx, {
@@ -407,7 +402,7 @@ describe('E2E All query outputs (report)', () => {
         const tx = txWithSender();
         const amount = 1_000 * 10 ** 6;
         const feeAmount = Math.ceil(amount * 0.0005);
-        const [usdbCoin, flashMintReceipt] = bucketClient.flashMint(tx, { amount });
+        const [usdbCoin, flashMintReceipt] = await bucketClient.flashMint(tx, { amount });
         const feeCollateralCoin = coinWithBalance({
           type: usdcCoinType,
           balance: feeAmount,
@@ -417,7 +412,7 @@ describe('E2E All query outputs (report)', () => {
           inputCoinOrAmount: feeCollateralCoin,
         });
         tx.mergeCoins(usdbCoin, [feeUsdbCoin]);
-        bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
+        await bucketClient.flashBurn(tx, { usdbCoin, flashMintReceipt });
         return undefined as void;
       });
 
@@ -448,20 +443,20 @@ describe('E2E All query outputs (report)', () => {
         const [priceResult] = await bucketClient.aggregatePrices(tx, {
           coinTypes: [firstCoinType],
         });
-        const debtorReq = bucketClient.debtorRequest(tx, {
+        const debtorReq = await bucketClient.debtorRequest(tx, {
           coinType: firstCoinType,
           borrowAmount: 1 * 10 ** 6,
         });
-        const updateRequest = bucketClient.checkUpdatePositionRequest(tx, {
+        const updateRequest = await bucketClient.checkUpdatePositionRequest(tx, {
           coinType: firstCoinType,
           request: debtorReq,
         });
-        const [, , response] = bucketClient.updatePosition(tx, {
+        const [, , response] = await bucketClient.updatePosition(tx, {
           coinType: firstCoinType,
           updateRequest,
           priceResult,
         });
-        bucketClient.checkUpdatePositionResponse(tx, {
+        await bucketClient.checkUpdatePositionResponse(tx, {
           coinType: firstCoinType,
           response,
         });

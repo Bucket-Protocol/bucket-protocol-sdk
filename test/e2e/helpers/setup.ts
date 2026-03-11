@@ -46,7 +46,7 @@ export async function ensureBucketClient(): Promise<BucketClient> {
   return bucketClient;
 }
 /** Use after ensureBucketClient() has run. */
-export function getUsdbCoinType(): string {
+export async function getUsdbCoinType(): Promise<string> {
   return bucketClient.getUsdbCoinType();
 }
 

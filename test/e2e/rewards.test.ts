@@ -22,7 +22,7 @@ describe('E2E Rewards', () => {
     'buildClaimBorrowRewardsTransaction dry run succeeds and has reward balance changes',
     async () => {
       const tx = txWithSender();
-      const collateralTypes = bucketClient.getAllCollateralTypes();
+      const collateralTypes = await bucketClient.getAllCollateralTypes();
       const result: Record<string, TransactionResult> = {};
       for (const coinType of collateralTypes) {
         const rewardsRecord = await bucketClient.buildClaimBorrowRewardsTransaction(tx, { coinType });

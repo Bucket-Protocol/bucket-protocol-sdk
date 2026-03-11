@@ -34,7 +34,7 @@ describe('E2E PSM', () => {
       const balanceChanges = (
         dryrunRes as { Transaction?: { balanceChanges?: { coinType: string; amount: string }[] } }
       ).Transaction!.balanceChanges!;
-      const usdbType = getUsdbCoinType();
+      const usdbType = await getUsdbCoinType();
       expect(balanceChanges.find((c) => c.coinType === usdcCoinType)?.amount).toBe('-1000000');
       expect(balanceChanges.find((c) => c.coinType === usdbType)?.amount).toBe('1000000');
     },
@@ -46,7 +46,8 @@ describe('E2E PSM', () => {
     async () => {
       const tx = txWithSender();
       const amount = 1 * 10 ** 6;
-      const usdbCoin = coinWithBalance({ type: getUsdbCoinType(), balance: amount });
+      const usdbType = await getUsdbCoinType();
+      const usdbCoin = coinWithBalance({ type: usdbType, balance: amount });
       const usdcCoin = await bucketClient.buildPSMSwapOutTransaction(tx, {
         coinType: usdcCoinType,
         usdbCoinOrAmount: usdbCoin,
@@ -62,7 +63,8 @@ describe('E2E PSM', () => {
     async () => {
       const tx = txWithSender();
       const amount = 1n * 10n ** 6n;
-      const usdbCoin = coinWithBalance({ type: getUsdbCoinType(), balance: amount });
+      const usdbType = await getUsdbCoinType();
+      const usdbCoin = coinWithBalance({ type: usdbType, balance: amount });
       const usdcCoin = await bucketClient.buildPSMSwapOutTransaction(tx, {
         coinType: usdcCoinType,
         usdbCoinOrAmount: usdbCoin,

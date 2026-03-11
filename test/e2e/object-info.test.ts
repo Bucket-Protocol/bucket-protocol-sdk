@@ -18,8 +18,8 @@ describe('E2E Object info helpers', () => {
 
   it(
     'getAggregatorObjectInfo returns aggregator for SUI',
-    () => {
-      const info = bucketClient.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
+    async () => {
+      const info = await bucketClient.getAggregatorObjectInfo({ coinType: SUI_TYPE_ARG });
       const agg = 'Pyth' in info ? info.Pyth : info.DerivativeInfo;
       expect(agg).toBeDefined();
       expect(agg!.priceAggregator).toHaveProperty('objectId');
@@ -29,8 +29,8 @@ describe('E2E Object info helpers', () => {
 
   it(
     'getAggregatorObjectInfo throws for unsupported coin type',
-    () => {
-      expect(() => bucketClient.getAggregatorObjectInfo({ coinType: '0x1::invalid::INVALID' })).toThrow(
+    async () => {
+      await expect(bucketClient.getAggregatorObjectInfo({ coinType: '0x1::invalid::INVALID' })).rejects.toThrow(
         'Unsupported coin type',
       );
     },
@@ -39,8 +39,8 @@ describe('E2E Object info helpers', () => {
 
   it(
     'getSavingPoolObjectInfo returns pool info for SUSDB',
-    () => {
-      const info = bucketClient.getSavingPoolObjectInfo({ lpType: susdbLpType });
+    async () => {
+      const info = await bucketClient.getSavingPoolObjectInfo({ lpType: susdbLpType });
       expect(info).toHaveProperty('pool');
       expect(info.pool).toHaveProperty('objectId');
     },
@@ -49,8 +49,8 @@ describe('E2E Object info helpers', () => {
 
   it(
     'getSavingPoolObjectInfo throws for unsupported lp type',
-    () => {
-      expect(() => bucketClient.getSavingPoolObjectInfo({ lpType: '0x1::invalid::INVALID' })).toThrow(
+    async () => {
+      await expect(bucketClient.getSavingPoolObjectInfo({ lpType: '0x1::invalid::INVALID' })).rejects.toThrow(
         'Unsupported coin type',
       );
     },
@@ -59,8 +59,8 @@ describe('E2E Object info helpers', () => {
 
   it(
     'getPsmPoolObjectInfo returns pool info for USDC',
-    () => {
-      const info = bucketClient.getPsmPoolObjectInfo({ coinType: usdcCoinType });
+    async () => {
+      const info = await bucketClient.getPsmPoolObjectInfo({ coinType: usdcCoinType });
       expect(info).toHaveProperty('pool');
       expect(info.pool).toHaveProperty('objectId');
     },
@@ -69,8 +69,8 @@ describe('E2E Object info helpers', () => {
 
   it(
     'getPsmPoolObjectInfo throws for unsupported coin type',
-    () => {
-      expect(() => bucketClient.getPsmPoolObjectInfo({ coinType: '0x1::invalid::INVALID' })).toThrow(
+    async () => {
+      await expect(bucketClient.getPsmPoolObjectInfo({ coinType: '0x1::invalid::INVALID' })).rejects.toThrow(
         'Unsupported coin type',
       );
     },
@@ -79,8 +79,8 @@ describe('E2E Object info helpers', () => {
 
   it(
     'getVaultObjectInfo throws for unsupported collateral type',
-    () => {
-      expect(() => bucketClient.getVaultObjectInfo({ coinType: '0x1::invalid::INVALID' })).toThrow(
+    async () => {
+      await expect(bucketClient.getVaultObjectInfo({ coinType: '0x1::invalid::INVALID' })).rejects.toThrow(
         'Unsupported collateral type',
       );
     },
