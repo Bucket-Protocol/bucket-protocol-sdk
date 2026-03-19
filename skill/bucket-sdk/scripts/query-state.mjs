@@ -2,7 +2,7 @@
  * Diagnostic script: query Bucket Protocol on-chain state.
  *
  * Usage (from a project that has @bucket-protocol/sdk installed):
- *   npx tsx <skill-root>/scripts/query-state.ts
+ *   node <skill-root>/scripts/query-state.mjs
  *
  * Examples of <skill-root>:
  *   .github/skills/bucket-sdk
@@ -30,7 +30,7 @@ function printLine(message = '') {
   process.stdout.write(`${message}\n`);
 }
 
-function isDefined<T>(value: T | null | undefined): value is T {
+function isDefined(value) {
   return value !== null && value !== undefined;
 }
 

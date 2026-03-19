@@ -113,7 +113,12 @@ Read only what you need:
 Use the bundled script when you need a quick live state snapshot:
 
 ```bash
-npx tsx skill/bucket-sdk/scripts/query-state.ts
+# Run in a project directory that has @bucket-protocol/sdk installed
+# <skill-root> is wherever you store this skill, for example:
+#   .github/skills/bucket-sdk
+#   .agents/skills/bucket-sdk
+#   .claude/skills/bucket-sdk
+node <skill-root>/scripts/query-state.mjs
 ```
 
 It prints supply, prices, vault stats, PSM pools, saving pools, and supported collateral types.
