@@ -131,7 +131,7 @@ describe('E2E CDP', () => {
     'buildClosePositionTransaction dry run succeeds when account has SUI position',
     async () => {
       const tx = txWithSender();
-      const [collateralCoin, repayCoin] = bucketClient.buildClosePositionTransaction(tx, {
+      const [collateralCoin, repayCoin] = await bucketClient.buildClosePositionTransaction(tx, {
         address: testAccount,
         coinType: SUI_TYPE_ARG,
       });
@@ -146,7 +146,7 @@ describe('E2E CDP', () => {
     'newAccountRequest creates account request for EOA',
     async () => {
       const tx = txWithSender();
-      const accountReq = bucketClient.newAccountRequest(tx, {});
+      const accountReq = await bucketClient.newAccountRequest(tx, {});
       expect(accountReq).toBeDefined();
       await assertDryRunSucceeds(tx);
     },
@@ -163,7 +163,7 @@ describe('E2E CDP', () => {
         type: SUI_TYPE_ARG,
         balance: depositAmount,
       });
-      const request = bucketClient.debtorRequest(tx, {
+      const request = await bucketClient.debtorRequest(tx, {
         coinType: SUI_TYPE_ARG,
         depositCoin,
         borrowAmount,
@@ -187,21 +187,21 @@ describe('E2E CDP', () => {
         type: SUI_TYPE_ARG,
         balance: depositAmount,
       });
-      const debtorReq = bucketClient.debtorRequest(tx, {
+      const debtorReq = await bucketClient.debtorRequest(tx, {
         coinType: SUI_TYPE_ARG,
         depositCoin,
         borrowAmount,
       });
-      const updateRequest = bucketClient.checkUpdatePositionRequest(tx, {
+      const updateRequest = await bucketClient.checkUpdatePositionRequest(tx, {
         coinType: SUI_TYPE_ARG,
         request: debtorReq,
       });
-      const [collateralCoin, usdbCoin, response] = bucketClient.updatePosition(tx, {
+      const [collateralCoin, usdbCoin, response] = await bucketClient.updatePosition(tx, {
         coinType: SUI_TYPE_ARG,
         updateRequest,
         priceResult,
       });
-      bucketClient.checkUpdatePositionResponse(tx, {
+      await bucketClient.checkUpdatePositionResponse(tx, {
         coinType: SUI_TYPE_ARG,
         response,
       });

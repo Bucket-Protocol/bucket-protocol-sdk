@@ -57,7 +57,7 @@ describe('On-chain config (testnet)', () => {
     it(
       'getConfig returns a populated ConfigType',
       async () => {
-        const config = bucketClient.getConfig();
+        const config = await bucketClient.getConfig();
         expect(config).toBeDefined();
         expect(config.ORIGINAL_FRAMEWORK_PACKAGE_ID).toBeTruthy();
         expect(config.ORIGINAL_USDB_PACKAGE_ID).toBeTruthy();
@@ -70,8 +70,8 @@ describe('On-chain config (testnet)', () => {
       TIMEOUT_MS,
     );
 
-    it('getUsdbCoinType returns a valid coin type string', () => {
-      const usdbType = bucketClient.getUsdbCoinType();
+    it('getUsdbCoinType returns a valid coin type string', async () => {
+      const usdbType = await bucketClient.getUsdbCoinType();
       expect(usdbType).toContain('::usdb::USDB');
       expect(usdbType.startsWith('0x')).toBe(true);
     });
@@ -79,8 +79,8 @@ describe('On-chain config (testnet)', () => {
     it(
       'getUsdbCoinType uses ORIGINAL_USDB_PACKAGE_ID; resolveType yields current type when upgraded',
       async () => {
-        const config = bucketClient.getConfig();
-        const rawType = bucketClient.getUsdbCoinType();
+        const config = await bucketClient.getConfig();
+        const rawType = await bucketClient.getUsdbCoinType();
         const rawPkgId = rawType.split('::')[0];
         expect(rawPkgId).toBe(config.ORIGINAL_USDB_PACKAGE_ID);
 
@@ -112,8 +112,8 @@ describe('On-chain price config (mainnet)', () => {
     'getUsdbCoinType uses ORIGINAL_USDB_PACKAGE_ID; resolveType yields current type when upgraded (mainnet)',
     async () => {
       const bucketClient = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
-      const config = bucketClient.getConfig();
-      const rawType = bucketClient.getUsdbCoinType();
+      const config = await bucketClient.getConfig();
+      const rawType = await bucketClient.getUsdbCoinType();
       const rawPkgId = rawType.split('::')[0];
       expect(rawPkgId).toBe(config.ORIGINAL_USDB_PACKAGE_ID);
 
@@ -155,7 +155,7 @@ describe('On-chain price config (mainnet)', () => {
     'PRICE_OBJS contains required derivative price variants',
     async () => {
       const client = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
-      const config = client.getConfig();
+      const config = await client.getConfig();
       expect(config).toBeDefined();
 
       const priceObjs = config.PRICE_OBJS;
@@ -178,7 +178,7 @@ describe('On-chain price config (mainnet)', () => {
     'PRICE_OBJS entries have valid PriceConfigInfo shape',
     async () => {
       const client = await BucketClient.initialize({ suiClient: mainnetSuiClient, network: 'mainnet' });
-      const config = client.getConfig();
+      const config = await client.getConfig();
       const priceObjs = config.PRICE_OBJS;
 
       for (const [key, info] of Object.entries(priceObjs) as [string, PriceConfigInfo][]) {
