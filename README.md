@@ -7,7 +7,7 @@ The Bucket Protocol TypeScript SDK is a comprehensive development toolkit for in
 ```bash
 npm install @mysten/sui  # >= 2.0.0
 npm install @mysten/bcs  # >= 2.0.0
-npm install @bucket-protocol/sdk
+npm install @bucket-protocol/sdk && npm install bucket-protocol-sdk-v2@latest
 ```
 
 ## Quick Start
