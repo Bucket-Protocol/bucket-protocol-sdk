@@ -1,11 +1,11 @@
 import type { ClientWithCoreApi, SuiClientTypes } from '@mysten/sui/client';
 import type { Argument } from '@mysten/sui/transactions';
 import {
-  coinWithBalance as upstreamCoinWithBalance,
   Transaction,
   TransactionArgument,
   TransactionCommands,
   TransactionResult,
+  coinWithBalance as upstreamCoinWithBalance,
 } from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 
@@ -113,8 +113,7 @@ export const coinWithBalance = ({
     tx.addIntentResolver(COIN_WITH_BALANCE_RESOLVER, resolveCoinBalance);
 
     const coinType = type === 'gas' ? type : normalizeStructTag(type);
-    const resolvedType =
-      coinType === normalizeStructTag(SUI_TYPE_ARG) && useGasCoin ? 'gas' : coinType;
+    const resolvedType = coinType === normalizeStructTag(SUI_TYPE_ARG) && useGasCoin ? 'gas' : coinType;
 
     const resolvedArg = (typeof balance === 'function' ? balance(tx) : balance) as Argument;
 

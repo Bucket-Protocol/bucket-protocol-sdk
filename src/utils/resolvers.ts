@@ -25,12 +25,7 @@ type IntentInputs = { balance?: Argument };
  * References at `replacedIndex` → `resultArg`; references > `replacedIndex`
  * are shifted by `sizeDiff`.
  */
-const adjustArgForReplace = (
-  arg: Argument,
-  replacedIndex: number,
-  sizeDiff: number,
-  resultArg: Argument,
-): Argument => {
+const adjustArgForReplace = (arg: Argument, replacedIndex: number, sizeDiff: number, resultArg: Argument): Argument => {
   if (arg.$kind === 'Result') {
     if (arg.Result === replacedIndex) return resultArg;
     if (arg.Result > replacedIndex) return { $kind: 'Result', Result: arg.Result + sizeDiff };
@@ -140,11 +135,7 @@ export const resolveCoinBalance = async (
     const existing = typeState.get(type);
     if (existing) {
       const resultArg = existing.results[existing.nextIntent++];
-      transactionData.replaceCommand(
-        index,
-        [],
-        resultArg as { NestedResult: [number, number] },
-      );
+      transactionData.replaceCommand(index, [], resultArg as { NestedResult: [number, number] });
       continue;
     }
 
@@ -238,10 +229,7 @@ export const resolveCoinBalance = async (
         TransactionCommands.MoveCall({
           target: '0x2::coin::send_funds',
           typeArguments: [type],
-          arguments: [
-            baseCoin,
-            transactionData.addInput('pure', Inputs.Pure(bcs.Address.serialize(sender))),
-          ],
+          arguments: [baseCoin, transactionData.addInput('pure', Inputs.Pure(bcs.Address.serialize(sender)))],
         }),
       );
     }
@@ -252,11 +240,7 @@ export const resolveCoinBalance = async (
     }));
     typeState.set(type, { results, nextIntent: 1 });
 
-    transactionData.replaceCommand(
-      index,
-      commands,
-      resultArg as { NestedResult: [number, number] },
-    );
+    transactionData.replaceCommand(index, commands, resultArg as { NestedResult: [number, number] });
     index += commands.length;
   }
 
