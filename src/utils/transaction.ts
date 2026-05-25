@@ -1,5 +1,12 @@
 import type { ClientWithCoreApi, SuiClientTypes } from '@mysten/sui/client';
-import { Transaction, TransactionArgument, TransactionCommands, TransactionResult } from '@mysten/sui/transactions';
+import type { Argument } from '@mysten/sui/transactions';
+import {
+  Transaction,
+  TransactionArgument,
+  TransactionCommands,
+  TransactionResult,
+  coinWithBalance as upstreamCoinWithBalance,
+} from '@mysten/sui/transactions';
 import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
 
 import { COIN_WITH_BALANCE_RESOLVER, resolveCoinBalance } from '@/utils/resolvers.js';
@@ -70,7 +77,19 @@ export const getCoinsOfType = async ({
 };
 
 /**
- * @description
+ * Augmented `coinWithBalance` — same surface as `@mysten/sui`'s
+ * `coinWithBalance`, but `balance` may also be a `TransactionArgument`
+ * (e.g. the dynamic result of a prior command).
+ *
+ * Bigint/number balances route to upstream's `coinWithBalance` so they pick
+ * up its smarter sourcing (selective AB sizing, balance-only Path 1, future
+ * improvements).
+ *
+ * `TransactionArgument` balances go through our augmented intent + resolver,
+ * which sources owned coins + the full starting AB, runs one combined
+ * `SplitCoins` whose amounts may be TxArgs, and pushes any remainder back
+ * into AB. The TxArg is stored in `intent.inputs.balance` so the SDK
+ * auto-remaps the reference as surrounding commands shift.
  */
 export const coinWithBalance = ({
   type = SUI_TYPE_ARG,
@@ -81,6 +100,10 @@ export const coinWithBalance = ({
   type?: string;
   useGasCoin?: boolean;
 }): ((tx: Transaction) => TransactionResult) => {
+  if (typeof balance === 'bigint' || typeof balance === 'number') {
+    return upstreamCoinWithBalance({ type, balance, useGasCoin });
+  }
+
   let coinResult: TransactionResult | null = null;
 
   return (tx: Transaction) => {
@@ -88,16 +111,17 @@ export const coinWithBalance = ({
       return coinResult;
     }
     tx.addIntentResolver(COIN_WITH_BALANCE_RESOLVER, resolveCoinBalance);
+
     const coinType = type === 'gas' ? type : normalizeStructTag(type);
+    const resolvedType = coinType === normalizeStructTag(SUI_TYPE_ARG) && useGasCoin ? 'gas' : coinType;
+
+    const resolvedArg = (typeof balance === 'function' ? balance(tx) : balance) as Argument;
 
     coinResult = tx.add(
       TransactionCommands.Intent({
         name: COIN_WITH_BALANCE_RESOLVER,
-        inputs: {},
-        data: {
-          type: coinType === normalizeStructTag(SUI_TYPE_ARG) && useGasCoin ? 'gas' : coinType,
-          balance: typeof balance === 'number' ? BigInt(balance) : balance,
-        },
+        inputs: { balance: resolvedArg },
+        data: { type: resolvedType },
       }),
     );
     return coinResult;
