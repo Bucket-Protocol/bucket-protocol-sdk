@@ -17,7 +17,7 @@ import {
 
 const TEST_AMOUNT_USDB = 0.1 * 10 ** 6;
 
-describe('E2E Saving', () => {
+describe('E2E Saving in & out', () => {
   beforeAll(setupE2E);
   afterAll(afterFileEnd);
   afterEach(afterTestDelay);

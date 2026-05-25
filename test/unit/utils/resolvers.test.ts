@@ -12,6 +12,21 @@ const mockCoin = {
 
 const validSender = '0x0000000000000000000000000000000000000000000000000000000000000001';
 
+function createMockClient(addressBalance = '0') {
+  return {
+    core: {
+      getBalance: vi.fn().mockResolvedValue({
+        balance: {
+          coinType: '0x2::sui::SUI',
+          balance: addressBalance,
+          coinBalance: '0',
+          addressBalance,
+        },
+      }),
+    },
+  };
+}
+
 function createMockTransactionData(
   overrides: {
     sender?: string;
@@ -108,7 +123,7 @@ describe('unit/utils/resolvers', () => {
       inputs: [{ UnresolvedObject: { objectId: '0xused', initialSharedVersion: 1 } }],
     });
     const mockNext = vi.fn().mockResolvedValue(undefined);
-    await resolveCoinBalance(txData as never, { client: {} }, mockNext);
+    await resolveCoinBalance(txData as never, { client: createMockClient() as never }, mockNext);
 
     expect(transactionUtils.getCoinsOfType).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -135,7 +150,7 @@ describe('unit/utils/resolvers', () => {
       ],
     });
     const mockNext = vi.fn().mockResolvedValue(undefined);
-    await resolveCoinBalance(txData as never, { client: {} }, mockNext);
+    await resolveCoinBalance(txData as never, { client: createMockClient() as never }, mockNext);
 
     const usedIds = (transactionUtils.getCoinsOfType as ReturnType<typeof vi.fn>).mock.calls[0]![0].usedIds;
     expect(usedIds.has('0ximmowned')).toBe(true);
@@ -149,7 +164,7 @@ describe('unit/utils/resolvers', () => {
       ],
     });
     const mockNext = vi.fn().mockResolvedValue(undefined);
-    await resolveCoinBalance(txData as never, { client: {} }, mockNext);
+    await resolveCoinBalance(txData as never, { client: createMockClient() as never }, mockNext);
 
     const usedIds = (transactionUtils.getCoinsOfType as ReturnType<typeof vi.fn>).mock.calls[0]![0].usedIds;
     expect(usedIds.has('0xobj1')).toBe(true);

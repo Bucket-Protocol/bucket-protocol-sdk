@@ -3,12 +3,11 @@ import { Transaction } from '@mysten/sui/transactions';
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { COIN_WITH_BALANCE_RESOLVER } from '@/utils/resolvers.js';
 import { coinWithBalance, destroyZeroCoin, getCoinsOfType, getZeroCoin } from '@/utils/transaction.js';
 
 function getIntentCommand(tx: Transaction) {
   const data = tx.getData() as { commands: Array<{ $kind?: string; $Intent?: { name: string; data: unknown } }> };
-  return data.commands.find((c) => c.$Intent?.name === COIN_WITH_BALANCE_RESOLVER);
+  return data.commands.find((c) => c.$kind === '$Intent');
 }
 
 function getMoveCallTarget(cmd: {
@@ -81,11 +80,8 @@ describe('unit/utils/transaction', () => {
       const r1 = fn(tx);
       const r2 = fn(tx);
       expect(r1).toBe(r2);
-      const data = tx.getData() as { commands: unknown[] };
-      expect(
-        data.commands.filter((c: { $Intent?: { name: string } }) => c.$Intent?.name === COIN_WITH_BALANCE_RESOLVER)
-          .length,
-      ).toBe(1);
+      const data = tx.getData() as { commands: Array<{ $kind?: string }> };
+      expect(data.commands.filter((c) => c.$kind === '$Intent').length).toBe(1);
     });
 
     it('adds Intent with "gas" when default SUI and useGasCoin true', () => {
