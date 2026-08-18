@@ -22,9 +22,10 @@ import type { Network, SharedObjectRef } from '@/types/index.js';
  * ## Ordering constraint
  *
  * `feed` takes the aggregated `PriceResult<SUI>`, so `aggregate<SUI>` must appear
- * *earlier in the same PTB*. Any request touching an LST therefore pulls SUI in
- * as a basic coin type even when the caller did not ask for it, and the LST
- * collectors are built after every non-LST one.
+ * *earlier in the same PTB*. `aggregateBasicPrices` therefore pulls SUI into any
+ * request touching an LST, even when the caller did not ask for it, and builds the
+ * LST collectors after every non-LST one. It owns that on behalf of every caller,
+ * including a direct `aggregateBasicPrices([haSUI])`, so no caller has to know.
  *
  * ## Safe to ship before weights
  *

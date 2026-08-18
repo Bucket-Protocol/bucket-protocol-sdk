@@ -1097,14 +1097,32 @@ export class BucketClient {
    * @description Get a basic (not derivative) price result
    * @param collateral coin type, e.g "0x2::sui::SUI"
    * @return [PriceResult]
+   *
+   * An LST coin type may be requested on its own: the SUI price its rule needs is
+   * pulled into the PTB here, not by the caller.
    */
   async aggregateBasicPrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
     const config = await this.getConfig();
     if (!coinTypes.length) {
       return [];
     }
-    const pythPriceIds: string[] = [];
+    // An LST rule multiplies the *aggregated* SUI price, so `aggregate<SUI>` has to
+    // be an earlier command in this PTB. Pull the underlying in when the caller did
+    // not ask for it, appended past their list so it is built and fed but never
+    // returned — `PriceResult` has `drop`, so the extra result costs one command.
+    const buildCoinTypes = [...coinTypes];
+    const included = new Set(coinTypes.map((coinType) => normalizeStructTag(coinType)));
     for (const coinType of coinTypes) {
+      const underlyingCoinType = getLstRule(this.network, coinType)?.underlyingCoinType;
+      if (!underlyingCoinType) continue;
+      const key = normalizeStructTag(underlyingCoinType);
+      if (included.has(key)) continue;
+      included.add(key);
+      buildCoinTypes.push(underlyingCoinType);
+    }
+
+    const pythPriceIds: string[] = [];
+    for (const coinType of buildCoinTypes) {
       const aggregator = await this.getAggregatorObjectInfo({ coinType });
 
       if (!('Pyth' in aggregator) || !aggregator.Pyth) {
@@ -1125,14 +1143,13 @@ export class BucketClient {
       this.pythCache,
     );
 
-    // An LST rule multiplies the *aggregated* SUI price, so `aggregate<SUI>` has
-    // to be an earlier command in this PTB. Build every non-LST collector first,
-    // then the LST ones, and return in the caller's original order.
-    const order = coinTypes
+    // Build every non-LST collector first, then the LST ones, and return in the
+    // caller's original order. The sort is stable, so both groups keep it.
+    const order = buildCoinTypes
       .map((coinType, index) => ({ coinType, index }))
       .sort((a, b) => Number(!!getLstRule(this.network, a.coinType)) - Number(!!getLstRule(this.network, b.coinType)));
 
-    const results: TransactionResult[] = new Array(coinTypes.length);
+    const results: TransactionResult[] = new Array(buildCoinTypes.length);
     const byCoinType = new Map<string, TransactionResult>();
     for (const { coinType, index } of order) {
       const collector = await this.newPriceCollector(tx, { coinType });
@@ -1161,7 +1178,8 @@ export class BucketClient {
       results[index] = priceResult;
       byCoinType.set(normalizeStructTag(coinType), priceResult);
     }
-    return results;
+    // Anything past the caller's list is a pulled-in LST underlying, not theirs.
+    return results.slice(0, coinTypes.length);
   }
 
   /**
@@ -1263,20 +1281,14 @@ export class BucketClient {
   async aggregatePrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
     const allBasicCoinTypes: string[] = [];
     const seen = new Set<string>();
-    const need = (coinType: string) => {
-      if (seen.has(coinType)) return;
-      seen.add(coinType);
-      allBasicCoinTypes.push(coinType);
-    };
     for (const coinType of coinTypes) {
       const aggregator = await this.getAggregatorObjectInfo({ coinType });
       const basicType = 'Pyth' in aggregator ? coinType : aggregator.DerivativeInfo.underlying_coin_type;
-      need(basicType);
-      // An LST is a basic (Pyth) coin type in its own right, but its rule also
-      // multiplies the aggregated SUI price — so SUI has to be aggregated in this
-      // PTB even when the caller never asked for it.
-      const lst = getLstRule(this.network, basicType);
-      if (lst) need(lst.underlyingCoinType);
+
+      if (!seen.has(basicType)) {
+        seen.add(basicType);
+        allBasicCoinTypes.push(basicType);
+      }
     }
     const basicPriceResults = await this.aggregateBasicPrices(tx, { coinTypes: allBasicCoinTypes });
 
