@@ -49,6 +49,12 @@ const MAINNET_SUPRA_COIN_TYPES = [
   '0x356a26eb9e012a68958082340d4c4116e7f55615cf27affcff209cf0ae544f59::wal::WAL',
   '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
   '0x0041f9f9344cac094454cd574e333c4fdb132d7bcc9379bcd4aab485b2a63942::wbtc::WBTC',
+  // Reviewed and accepted — each prices a proxy rather than the asset itself,
+  // mirroring a substitution `pyth_rule` already makes on-chain. See the notes in
+  // v2-move-contracts/scripts/supra_rule/config.ts.
+  '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC', // BTC_USD
+  '0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD', // USDC_USD
+  '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP', // DEEP_USDT, also carries sDEEP
 ];
 
 export const SUPRA_CONFIG: Record<Network, SupraConfig | undefined> = {
