@@ -90,6 +90,32 @@ describe('unit/utils/transaction', () => {
       const cmd = getIntentCommand(tx);
       expect((cmd?.$Intent?.data as { type: string }).type).toBe('gas');
     });
+
+    it('routes a SUI TransactionArgument balance to the gas branch by default (no AB)', () => {
+      const tx = new Transaction();
+      tx.setSender('0x1');
+      const amt = tx.moveCall({ target: '0x2::math::id', arguments: [tx.pure.u64(5n)] });
+      coinWithBalance({ balance: amt as never })(tx);
+      const cmd = getIntentCommand(tx);
+      const intent = cmd?.$Intent as { data: { type: string }; inputs: { balance?: unknown } };
+      // type "gas" => resolver uses tx.gas and does not redeem address balance
+      expect(intent.data.type).toBe('gas');
+      // the TxArg is carried as a resolved input, not data.balance
+      expect(intent.inputs.balance).toBeDefined();
+    });
+
+    it('routes a SUI TransactionArgument balance through the AB branch when useGasCoin is false', () => {
+      const tx = new Transaction();
+      tx.setSender('0x1');
+      const amt = tx.moveCall({ target: '0x2::math::id', arguments: [tx.pure.u64(5n)] });
+      coinWithBalance({ balance: amt as never, useGasCoin: false })(tx);
+      const cmd = getIntentCommand(tx);
+      const intent = cmd?.$Intent as { data: { type: string }; inputs: { balance?: unknown } };
+      // non-"gas" SUI type => resolver redeems address balance (redeem_funds)
+      expect(intent.data.type).not.toBe('gas');
+      expect(intent.data.type).toMatch(/::sui::SUI$/);
+      expect(intent.inputs.balance).toBeDefined();
+    });
   });
 
   describe('getCoinsOfType', () => {

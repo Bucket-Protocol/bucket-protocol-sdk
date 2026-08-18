@@ -170,4 +170,54 @@ describe('unit/utils/resolvers', () => {
     expect(usedIds.has('0xobj1')).toBe(true);
     expect(usedIds.has('0xunresolved')).toBe(true);
   });
+
+  it('redeems address balance for a non-SUI TransactionArgument balance', async () => {
+    const coinType = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC';
+    // A real TxArg balance references a prior command's result.
+    const balanceArg = { $kind: 'Result', Result: 0 };
+    const txData = createMockTransactionData({
+      commands: [
+        // index 0: stand-in for the command that produces `balanceArg`
+        { $kind: 'MoveCall', MoveCall: { target: '0xpkg::m::amount' } },
+        // index 1: our augmented intent, balance is the TxArg
+        {
+          $kind: '$Intent',
+          $Intent: {
+            name: COIN_WITH_BALANCE_RESOLVER,
+            inputs: { balance: balanceArg },
+            data: { type: coinType },
+          },
+        },
+      ],
+    });
+    const mockClient = createMockClient('500');
+    const mockNext = vi.fn().mockResolvedValue(undefined);
+
+    await resolveCoinBalance(txData as never, { client: mockClient as never }, mockNext);
+
+    // Address balance was queried for the non-SUI type.
+    expect(mockClient.core.getBalance).toHaveBeenCalledWith(expect.objectContaining({ owner: validSender, coinType }));
+
+    // A FundsWithdrawal input was added to redeem the starting AB.
+    const withdrawalCalls = (txData.addInput as ReturnType<typeof vi.fn>).mock.calls.filter(
+      ([kind]) => kind === 'withdrawal',
+    );
+    expect(withdrawalCalls.length).toBe(1);
+
+    // The resolved commands include redeem_funds, a SplitCoins, and a send_funds
+    // remainder; the split amount is the original TxArg (preserved unshifted).
+    const targets = txData.commands
+      .map((c) => (c as { MoveCall?: { package: string; module: string; function: string } }).MoveCall)
+      .filter(Boolean)
+      .map((m) => `${m!.package}::${m!.module}::${m!.function}`);
+    expect(targets).toContain('0x2::coin::redeem_funds');
+    expect(targets).toContain('0x2::coin::send_funds');
+
+    const split = txData.commands.find((c) => (c as { $kind?: string }).$kind === 'SplitCoins') as
+      | { SplitCoins?: { amounts: unknown[] } }
+      | undefined;
+    expect(split?.SplitCoins?.amounts).toEqual([balanceArg]);
+
+    expect(mockNext).toHaveBeenCalled();
+  });
 });
