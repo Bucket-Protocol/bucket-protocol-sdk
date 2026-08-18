@@ -92,7 +92,7 @@ export class BucketClient {
   private network: Network;
   private pythCache = new PythCache();
   private pythStaleReadFallback: boolean;
-  private onPythStaleRead: (event: PythStaleReadEvent) => void;
+  private onPythStaleRead: (event: PythStaleReadEvent) => void | Promise<void>;
 
   /**
    * @description Creates a BucketClient with config fetched from on-chain.
@@ -125,7 +125,7 @@ export class BucketClient {
     config?: ConfigType;
     configOverrides?: Partial<ConfigType>;
     pythStaleReadFallback?: boolean;
-    onPythStaleRead?: (event: PythStaleReadEvent) => void;
+    onPythStaleRead?: (event: PythStaleReadEvent) => void | Promise<void>;
   }) {
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
 
@@ -176,7 +176,7 @@ export class BucketClient {
     config?: ConfigType;
     configOverrides?: Partial<ConfigType>;
     pythStaleReadFallback?: boolean;
-    onPythStaleRead?: (event: PythStaleReadEvent) => void;
+    onPythStaleRead?: (event: PythStaleReadEvent) => void | Promise<void>;
   } = {}): Promise<BucketClient> {
     const bc = new BucketClient({
       suiClient,
@@ -1144,6 +1144,31 @@ export class BucketClient {
   }
 
   /**
+   * @description Announce a stale read without letting the announcement break the
+   * fallback it is announcing.
+   *
+   * The hook exists to make a degraded oracle read visible; it must never be able to
+   * fail the PTB it is reporting on. Both ways it could are contained here. A
+   * synchronous throw would otherwise propagate straight out of
+   * `aggregateBasicPrices` and take down the exact path this fallback exists to keep
+   * working — a broken metrics call turning a survivable Hermes outage into a hard
+   * failure. And an `async` handler, which TypeScript admits at a `void` return
+   * position, would drop its rejection into an unhandled promise.
+   *
+   * Deliberately not awaited: reporting is observational, and PTB construction should
+   * not wait on someone's telemetry endpoint.
+   */
+  private reportPythStaleRead(event: PythStaleReadEvent): void {
+    const failed = (err: unknown) =>
+      console.error('[BucketClient] onPythStaleRead failed; the stale-read fallback is unaffected:', err);
+    try {
+      void Promise.resolve(this.onPythStaleRead(event)).catch(failed);
+    } catch (err) {
+      failed(err);
+    }
+  }
+
+  /**
    * @description Resolve the `PriceInfoObject` backing each feed, refreshing them from
    * Hermes when it is reachable and reading them as they stand when it is not.
    *
@@ -1171,7 +1196,7 @@ export class BucketClient {
       updateData = await fetchPriceFeedsUpdateDataFromHermes(config.PRICE_SERVICE_ENDPOINT, pythPriceIds);
     } catch (cause) {
       if (!this.pythStaleReadFallback) throw cause;
-      this.onPythStaleRead({ feedIds: pythPriceIds, cause });
+      this.reportPythStaleRead({ feedIds: pythPriceIds, cause });
       return resolvePythPriceInfoObjectIds(this.suiClient, config.PYTH_STATE_ID, pythPriceIds, this.pythCache);
     }
 

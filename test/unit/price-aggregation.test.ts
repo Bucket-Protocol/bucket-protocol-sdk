@@ -332,6 +332,61 @@ describe('unit/aggregateBasicPrices Hermes fallback', () => {
     expect(String(event.cause)).toContain('503');
   });
 
+  /**
+   * The hook reports a degraded read; it must not be able to cause one. A throw
+   * escaping it would turn a survivable Hermes outage into a hard failure — the
+   * opposite of what the fallback is for.
+   */
+  it('survives a handler that throws synchronously', async () => {
+    hermesDown();
+    mockResolve();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const tx = new Transaction();
+
+    const results = await new BucketClient({
+      suiClient: asSuiClient({}),
+      network: 'mainnet',
+      config: priceConfig(),
+      onPythStaleRead: () => {
+        throw new Error('metrics endpoint exploded');
+      },
+    }).aggregateBasicPrices(tx, { coinTypes: [USDC] });
+
+    expect(results).toHaveLength(1);
+    expect(moveCalls(tx).filter((call) => call.target === 'pyth_rule::feed')).toHaveLength(1);
+    expect(consoleError).toHaveBeenCalled();
+  });
+
+  it('survives a handler that rejects, without an unhandled rejection', async () => {
+    hermesDown();
+    mockResolve();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    const tx = new Transaction();
+
+    try {
+      // TypeScript admits an async handler at a `void` return position, so the
+      // discarded promise is a live hazard rather than a hypothetical one.
+      const results = await new BucketClient({
+        suiClient: asSuiClient({}),
+        network: 'mainnet',
+        config: priceConfig(),
+        onPythStaleRead: async () => {
+          throw new Error('telemetry POST failed');
+        },
+      }).aggregateBasicPrices(tx, { coinTypes: [USDC] });
+
+      expect(results).toHaveLength(1);
+      // Let any stray rejection reach the process handler before asserting.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(unhandled).not.toHaveBeenCalled();
+      expect(consoleError).toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
+  });
+
   it('honours pythStaleReadFallback: false by rejecting instead', async () => {
     hermesDown();
     mockResolve();
