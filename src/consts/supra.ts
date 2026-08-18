@@ -20,11 +20,25 @@ import type { Network, SharedObjectRef } from '@/types/index.js';
  *
  * The reverse direction is safe: a coin type configured on-chain but absent here
  * is simply never fed, and a rule that is fed but carries no aggregator weight is
- * dropped by `remove_outliers` without affecting the result. That asymmetry is
- * what lets this ship between the pair-id transaction and the weight
- * transaction — see `v2-move-contracts/scripts/supra_rule/README.md`.
+ * dropped by `remove_outliers` without affecting the result.
  *
- * Ordering: land `pnpm supra:apply` (pair ids) → ship this → `pnpm supra:weights`.
+ * ## Ordering
+ *
+ * The two constraints form a cycle — this list may not run ahead of the pair
+ * ids, and the aggregator weights may not run ahead of this list (`aggregate`
+ * aborts `EMissingPriceSource`). One side has to give:
+ *
+ *   A. pair ids → this list → weights. No downtime, but two signing ceremonies,
+ *      because a release sits between two transactions.
+ *   B. this list → one transaction carrying pair ids *and* weights. One
+ *      ceremony, at the cost of a window between this going live and that
+ *      transaction landing, during which PTBs pricing the new coin type revert
+ *      `EUnsupportedCoinType`.
+ *
+ * **BUCK and USDSUI were added under B**, deliberately: both are PSM-only and
+ * thinly used, so the window is cheaper than a second multisig ceremony. Deploy
+ * this, then send `pnpm rollout:apply` from `v2-move-contracts/scripts/rollout`.
+ * Anything added under A instead should say so here.
  *
  * Testnet is empty on purpose. `supra_rule` is not deployed there: the
  * testnet-published `bucket_v2_oracle` predates the abstain mechanism, so nothing
@@ -55,6 +69,17 @@ const MAINNET_SUPRA_COIN_TYPES = [
   '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC', // BTC_USD
   '0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD', // USDC_USD
   '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP', // DEEP_USDT, also carries sDEEP
+  // Also peg proxies, but a *new* substitution rather than an inherited one. XBTC
+  // and UP_USD above stand in for a market `pyth_rule` already prices them off
+  // on-chain, so both sources track the same thing. BUCK and USDSUI have their
+  // own Pyth feeds (`fdf28a46…` and `d510fcdb…`), so pointing Supra at USDC puts a
+  // real-asset feed and a peg proxy on one aggregator: a depeg moves Pyth and not
+  // Supra. Below 2x the outlier band the aggregate over-values them by half the
+  // depeg; past it both sources are dropped and `aggregate` aborts ERiskyPrice.
+  // Accepted deliberately — both are PSM-only and thinly used. See
+  // v2-move-contracts/scripts/rollout/README.md.
+  '0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK', // USDC_USD
+  '0x44f838219cf67b058f3b37907b655f226153c18e33dfcd0da559a844fea9b1c1::usdsui::USDSUI', // USDC_USD
 ];
 
 export const SUPRA_CONFIG: Record<Network, SupraConfig | undefined> = {
