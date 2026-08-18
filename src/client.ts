@@ -26,7 +26,7 @@ import {
   VaultInfo,
   VaultObjectInfo,
 } from '@/types/index.js';
-import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET } from '@/consts/index.js';
+import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET, getLstRule, getSupraConfig } from '@/consts/index.js';
 import { queryAllConfig } from '@/utils/bucketConfig.js';
 import { convertOnchainConfig, enrichSharedObjectRefs } from '@/utils/configAdapter.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
@@ -1025,17 +1025,104 @@ export class BucketClient {
   }
 
   /**
+   * @description Contribute Supra's push price to a collector, where Supra covers
+   * the coin type. No-op otherwise, so callers never have to branch.
+   *
+   * Two invariants make the no-op the right default rather than a silent gap:
+   * `supra_rule::feed<T>` **aborts** for a coin type with no pair id configured,
+   * and a rule that is fed but carries no aggregator weight is dropped by
+   * `remove_outliers` without touching the result. So calling it is safe exactly
+   * when `SUPRA_CONFIG` says the pair id is live, whether or not weight has been
+   * granted yet — which is what lets this ship before the weight transaction.
+   *
+   * Supra is a *push* oracle: `OracleHolder` is written by Supra's own
+   * transactions and passed here read-only, with nothing to update or verify
+   * first. That is why there is no Hermes-style fetch as there is for Pyth.
+   */
+  private feedSupraPrice(
+    tx: Transaction,
+    { coinType, collector }: { coinType: string; collector: TransactionArgument },
+  ): void {
+    const supra = getSupraConfig(this.network);
+    if (!supra || !supra.coinTypes.has(normalizeStructTag(coinType))) return;
+    tx.moveCall({
+      target: `${supra.packageId}::supra_rule::feed`,
+      typeArguments: [coinType],
+      arguments: [
+        collector,
+        tx.sharedObjectRef(supra.configObj),
+        tx.object.clock(),
+        tx.sharedObjectRef(supra.oracleHolder),
+      ],
+    });
+  }
+
+  /**
+   * @description Contribute a liquid staking token's derived price to a
+   * collector, where the coin type is an LST. No-op otherwise.
+   *
+   * These coin types are unusual in carrying *two* rules: Pyth feeds the same
+   * collector, and this adds `LST/USD = SUI/USD × (SUI per LST)` read live from
+   * the staking protocol's own state. That is why this sits alongside
+   * `pyth_rule::feed` rather than in `getDerivativePrice`, which models a coin
+   * type priced by one derivative rule and nothing else.
+   *
+   * `priceResults` must already contain the aggregated SUI price — callers get
+   * that by building every non-LST collector first. Throws rather than emitting a
+   * malformed PTB if it does not.
+   */
+  private feedLstPrice(
+    tx: Transaction,
+    {
+      coinType,
+      collector,
+      priceResults,
+    }: { coinType: string; collector: TransactionArgument; priceResults: Map<string, TransactionResult> },
+  ): void {
+    const rule = getLstRule(this.network, coinType);
+    if (!rule) return;
+    const underlying = priceResults.get(normalizeStructTag(rule.underlyingCoinType));
+    if (!underlying) {
+      throw new Error(
+        `${coinType} needs the aggregated ${rule.underlyingCoinType} price earlier in the same transaction`,
+      );
+    }
+    tx.moveCall({
+      target: `${rule.packageId}::${rule.module}::feed`,
+      arguments: [collector, underlying, ...rule.stateObjects.map((ref) => tx.sharedObjectRef(ref))],
+    });
+  }
+
+  /**
    * @description Get a basic (not derivative) price result
    * @param collateral coin type, e.g "0x2::sui::SUI"
    * @return [PriceResult]
+   *
+   * An LST coin type may be requested on its own: the SUI price its rule needs is
+   * pulled into the PTB here, not by the caller.
    */
   async aggregateBasicPrices(tx: Transaction, { coinTypes }: { coinTypes: string[] }): Promise<TransactionResult[]> {
     const config = await this.getConfig();
     if (!coinTypes.length) {
       return [];
     }
-    const pythPriceIds: string[] = [];
+    // An LST rule multiplies the *aggregated* SUI price, so `aggregate<SUI>` has to
+    // be an earlier command in this PTB. Pull the underlying in when the caller did
+    // not ask for it, appended past their list so it is built and fed but never
+    // returned — `PriceResult` has `drop`, so the extra result costs one command.
+    const buildCoinTypes = [...coinTypes];
+    const included = new Set(coinTypes.map((coinType) => normalizeStructTag(coinType)));
     for (const coinType of coinTypes) {
+      const underlyingCoinType = getLstRule(this.network, coinType)?.underlyingCoinType;
+      if (!underlyingCoinType) continue;
+      const key = normalizeStructTag(underlyingCoinType);
+      if (included.has(key)) continue;
+      included.add(key);
+      buildCoinTypes.push(underlyingCoinType);
+    }
+
+    const pythPriceIds: string[] = [];
+    for (const coinType of buildCoinTypes) {
       const aggregator = await this.getAggregatorObjectInfo({ coinType });
 
       if (!('Pyth' in aggregator) || !aggregator.Pyth) {
@@ -1056,9 +1143,15 @@ export class BucketClient {
       this.pythCache,
     );
 
-    const results: TransactionResult[] = [];
-    for (let index = 0; index < coinTypes.length; index++) {
-      const coinType = coinTypes[index];
+    // Build every non-LST collector first, then the LST ones, and return in the
+    // caller's original order. The sort is stable, so both groups keep it.
+    const order = buildCoinTypes
+      .map((coinType, index) => ({ coinType, index }))
+      .sort((a, b) => Number(!!getLstRule(this.network, a.coinType)) - Number(!!getLstRule(this.network, b.coinType)));
+
+    const results: TransactionResult[] = new Array(buildCoinTypes.length);
+    const byCoinType = new Map<string, TransactionResult>();
+    for (const { coinType, index } of order) {
       const collector = await this.newPriceCollector(tx, { coinType });
       const aggInfo = await this.getAggregatorObjectInfo({ coinType });
       const agg = 'Pyth' in aggInfo ? aggInfo.Pyth : aggInfo.DerivativeInfo;
@@ -1075,14 +1168,18 @@ export class BucketClient {
           tx.object(priceInfoObjIds[index]!),
         ],
       });
+      this.feedSupraPrice(tx, { coinType, collector });
+      this.feedLstPrice(tx, { coinType, collector, priceResults: byCoinType });
       const priceResult = tx.moveCall({
         target: `${config.ORACLE_PACKAGE_ID}::aggregator::aggregate`,
         typeArguments: [coinType],
         arguments: [tx.sharedObjectRef(agg.priceAggregator), collector],
       });
-      results.push(priceResult);
+      results[index] = priceResult;
+      byCoinType.set(normalizeStructTag(coinType), priceResult);
     }
-    return results;
+    // Anything past the caller's list is a pulled-in LST underlying, not theirs.
+    return results.slice(0, coinTypes.length);
   }
 
   /**

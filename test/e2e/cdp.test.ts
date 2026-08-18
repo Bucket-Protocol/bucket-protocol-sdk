@@ -33,8 +33,11 @@ describe('E2E CDP', () => {
   it(
     'buildManagePositionTransaction: fixed deposit/borrow, event shape',
     async () => {
-      const depositAmount = 1 * 10 ** 9; // 1 SUI
       const borrowAmount = 0.8 * 10 ** 6; // 0.8 USDB
+      // Sized against the live SUI price, like every other test in this file. A
+      // hardcoded 1 SUI stopped covering 0.8 USDB at the vault's 110% minimum
+      // once SUI fell below ~$0.88, which is a market move, not a regression.
+      const depositAmount = await depositAmountForBorrowUsd(0.8);
       const tx = txWithSender();
       const [, usdbCoin] = await bucketClient.buildManagePositionTransaction(tx, {
         coinType: SUI_TYPE_ARG,
