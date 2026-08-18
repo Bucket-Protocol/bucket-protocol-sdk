@@ -2,7 +2,12 @@ import { Transaction } from '@mysten/sui/transactions';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchFail, mockFetchOk } from '../../__mocks__/fetch.js';
-import { buildPythPriceUpdateCalls, fetchPriceFeedsUpdateDataFromHermes, PythCache } from '../../../src/utils/pyth.js';
+import {
+  buildPythPriceUpdateCalls,
+  fetchPriceFeedsUpdateDataFromHermes,
+  PythCache,
+  resolvePythPriceInfoObjectIds,
+} from '../../../src/utils/pyth.js';
 import { PYTH_CONFIG, SUI_PYTH_PRICE_ID } from '../../fixtures/pyth-config.js';
 
 const HERMES_ENDPOINT = 'https://hermes.pyth.network';
@@ -266,6 +271,76 @@ describe('unit/utils/pyth', () => {
       ];
       const ids = await buildPythPriceUpdateCalls(tx, client, PYTH_CONFIG, [acc], feedIds, undefined);
       expect(ids).toHaveLength(5);
+    });
+
+    /**
+     * A throw after the first `tx.moveCall` would leave the caller holding a PTB
+     * with a `parse_and_verify` result and an undestroyed hot potato — unbuildable,
+     * and impossible to recover from by catching. Every failure has to land before
+     * the mutations start, which is also what makes the caller's Hermes fallback
+     * safe to wrap in a try/catch.
+     */
+    it('leaves the transaction untouched when it throws', async () => {
+      const tx = new Transaction();
+      const client = asClient(
+        createMockSuiClient({ getDynamicField: { dynamicField: { value: { bcs: new Uint8Array(4) } } } }),
+      );
+      const acc = createMinimalAccumulator();
+
+      await expect(
+        buildPythPriceUpdateCalls(tx, client, PYTH_CONFIG, [acc], [SUI_PYTH_PRICE_ID], undefined),
+      ).rejects.toThrow('not found; create it first');
+
+      expect(tx.getData().commands).toHaveLength(0);
+    });
+  });
+
+  describe('resolvePythPriceInfoObjectIds', () => {
+    it('resolves ids without touching Hermes or the transaction', async () => {
+      const client = asClient(createMockSuiClient());
+
+      const ids = await resolvePythPriceInfoObjectIds(client, PYTH_CONFIG.pythStateId, [SUI_PYTH_PRICE_ID], undefined);
+
+      expect(ids).toEqual(['0x' + 'ab'.repeat(32)]);
+      // The wormhole state and base update fee are update-path concerns; the
+      // fallback must not depend on reading them.
+      expect(client.getObject).not.toHaveBeenCalledWith(
+        expect.objectContaining({ objectId: PYTH_CONFIG.wormholeStateId }),
+      );
+    });
+
+    it('returns an empty array for no feeds, without any RPC', async () => {
+      const client = asClient(createMockSuiClient());
+
+      await expect(resolvePythPriceInfoObjectIds(client, PYTH_CONFIG.pythStateId, [], undefined)).resolves.toEqual([]);
+      expect(client.listDynamicFields).not.toHaveBeenCalled();
+    });
+
+    it('throws when a feed has no price object, since the rule still has to be fed', async () => {
+      const client = asClient(
+        createMockSuiClient({ getDynamicField: { dynamicField: { value: { bcs: new Uint8Array(4) } } } }),
+      );
+
+      await expect(
+        resolvePythPriceInfoObjectIds(client, PYTH_CONFIG.pythStateId, [SUI_PYTH_PRICE_ID], undefined),
+      ).rejects.toThrow('not found; create it first');
+    });
+
+    it('reuses a shared PythCache with buildPythPriceUpdateCalls', async () => {
+      const cache = new PythCache();
+      const client = asClient(createMockSuiClient());
+      const tx = new Transaction();
+      const acc = createMinimalAccumulator();
+
+      await buildPythPriceUpdateCalls(tx, client, PYTH_CONFIG, [acc], [SUI_PYTH_PRICE_ID], cache);
+      const callsAfterUpdate = (client.listDynamicFields as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      const ids = await resolvePythPriceInfoObjectIds(client, PYTH_CONFIG.pythStateId, [SUI_PYTH_PRICE_ID], cache);
+
+      expect(ids).toEqual(['0x' + 'ab'.repeat(32)]);
+      // A Hermes outage is exactly when extra RPC is least welcome; the price table
+      // and feed ids were already cached by the last successful update.
+      expect((client.listDynamicFields as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(callsAfterUpdate);
     });
   });
 

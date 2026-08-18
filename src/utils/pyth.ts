@@ -73,6 +73,38 @@ export async function fetchPriceFeedsUpdateDataFromHermes(endpoint: string, pric
 }
 
 /**
+ * Resolves the `PriceInfoObject` id backing each feed, reading only on-chain state.
+ *
+ * This is deliberately separate from `buildPythPriceUpdateCalls`: the lookup walks
+ * Pyth's own price table (a dynamic field on `PythState`) and never touches Hermes,
+ * so it still answers when the off-chain endpoint is down. That is what lets a
+ * caller skip the VAA update and feed the price object as it already stands —
+ * `pyth_rule::feed` reads it with `get_price_unsafe` and abstains on staleness
+ * rather than aborting.
+ *
+ * Throws when a feed has no price object: the id is required either way, since the
+ * rule has to be fed for `remove_outliers` to count it as collected.
+ */
+export async function resolvePythPriceInfoObjectIds(
+  client: SuiGrpcClient,
+  pythStateId: string,
+  feedIds: string[],
+  cache?: PythCache,
+): Promise<string[]> {
+  if (feedIds.length === 0) return [];
+
+  const table = await getPriceTableInfo(client, pythStateId, cache);
+  const ids = await runWithConcurrency(feedIds, 4, (feedId) =>
+    getPriceFeedObjectIdWithTable(client, table, feedId, cache, pythStateId),
+  );
+
+  return ids.map((id, i) => {
+    if (!id) throw new Error(`Price feed ${feedIds[i]} not found; create it first`);
+    return id;
+  });
+}
+
+/**
  * Extracts VAA bytes from an accumulator message (first 6 bytes are header; VAA follows).
  */
 function extractVaaBytesFromAccumulatorMessage(accumulatorMessage: Uint8Array): Uint8Array {
@@ -103,14 +135,14 @@ export async function buildPythPriceUpdateCalls(
     throw new Error('Only a single accumulator message is supported per transaction');
   }
 
-  const [pythState, wormholePackageId, table] = await Promise.all([
+  // Every read and every validation happens before the first `tx` mutation below.
+  // A throw after `verifyVaas` would strand a hot potato in the caller's PTB and
+  // make it unbuildable, so there is nothing left to fail on past this point.
+  const [pythState, wormholePackageId, priceInfoObjectIds] = await Promise.all([
     getPythStateInfo(client, config.pythStateId, cache),
     getWormholePackageId(client, config.wormholeStateId, cache),
-    getPriceTableInfo(client, config.pythStateId, cache),
+    resolvePythPriceInfoObjectIds(client, config.pythStateId, feedIds, cache),
   ]);
-  const priceInfoObjectIds = await runWithConcurrency(feedIds, 4, (feedId) =>
-    getPriceFeedObjectIdWithTable(client, table, feedId, cache, config.pythStateId),
-  );
 
   const { packageId: pythPackageId, baseUpdateFee } = pythState;
 
@@ -128,13 +160,15 @@ export async function buildPythPriceUpdateCalls(
 
   let hotPotato = priceUpdatesHotPotato;
   for (let i = 0; i < feedIds.length; i++) {
-    const priceInfoObjectId = priceInfoObjectIds[i];
-    if (!priceInfoObjectId) {
-      throw new Error(`Price feed ${feedIds[i]} not found; create it first`);
-    }
     [hotPotato] = tx.moveCall({
       target: `${pythPackageId}::pyth::update_single_price_feed`,
-      arguments: [tx.object(config.pythStateId), hotPotato, tx.object(priceInfoObjectId), coins[i]!, tx.object.clock()],
+      arguments: [
+        tx.object(config.pythStateId),
+        hotPotato,
+        tx.object(priceInfoObjectIds[i]!),
+        coins[i]!,
+        tx.object.clock(),
+      ],
     });
   }
 
@@ -144,7 +178,7 @@ export async function buildPythPriceUpdateCalls(
     typeArguments: [`${pythPackageId}::price_info::PriceInfo`],
   });
 
-  return priceInfoObjectIds as string[];
+  return priceInfoObjectIds;
 }
 
 async function getWormholePackageId(
