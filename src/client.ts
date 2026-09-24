@@ -33,6 +33,7 @@ import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js'
 import {
   buildPythPriceUpdateCalls,
   fetchPriceFeedsUpdateDataFromHermes,
+  OFFICIAL_HERMES_ENDPOINT,
   PythCache,
   resolvePythPriceInfoObjectIds,
 } from '@/utils/pyth.js';
@@ -93,6 +94,20 @@ export class BucketClient {
   private pythCache = new PythCache();
   private pythStaleReadFallback: boolean;
   private onPythStaleRead: (event: PythStaleReadEvent) => void | Promise<void>;
+  /**
+   * ECMAScript `#private`, not TypeScript `private`: the latter is compile-time only, so the
+   * key would be an enumerable own property that `Object.keys`, `JSON.stringify`, and any
+   * logger inspecting the client would print.
+   */
+  #pythAccessToken?: string;
+  /**
+   * Origins `pythAccessToken` may be sent to: the official Hermes, plus any HTTPS endpoint the
+   * CALLER named (`configOverrides`, `config`, `refreshConfig(overrides)`). An endpoint that only
+   * the on-chain config names is not in here — whoever can write that config must not be able
+   * to redirect the key.
+   */
+  private trustedHermesOrigins = new Set<string>([new URL(OFFICIAL_HERMES_ENDPOINT).origin]);
+  private reportedUntrustedHermesOrigins = new Set<string>();
 
   /**
    * @description Creates a BucketClient with config fetched from on-chain.
@@ -109,6 +124,11 @@ export class BucketClient {
    *   See `aggregateBasicPrices` for why this is safe. Set `false` to fail in the SDK instead.
    * @param onPythStaleRead - Optional. Called whenever that fallback engages. Defaults to a
    *   `console.error`, so the degradation is never silent.
+   * @param pythAccessToken - Optional. Pyth API key for Hermes, which answers 401 without one
+   *   since 2026-08-26. Sent as a Bearer token over HTTPS only, and only to the official Hermes
+   *   or a `PRICE_SERVICE_ENDPOINT` you supplied yourself — never to one that only the on-chain
+   *   config names. **Server-side only**: in a browser, point `PRICE_SERVICE_ENDPOINT` at your
+   *   own proxy that adds the key instead.
    */
   constructor({
     suiClient,
@@ -118,6 +138,7 @@ export class BucketClient {
     configOverrides,
     pythStaleReadFallback = true,
     onPythStaleRead,
+    pythAccessToken,
   }: {
     suiClient?: SuiGrpcClient;
     network?: Network;
@@ -126,6 +147,7 @@ export class BucketClient {
     configOverrides?: Partial<ConfigType>;
     pythStaleReadFallback?: boolean;
     onPythStaleRead?: (event: PythStaleReadEvent) => void | Promise<void>;
+    pythAccessToken?: string;
   }) {
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
 
@@ -136,6 +158,9 @@ export class BucketClient {
     this.configObjectId = configObjectId;
     this.configOverrides = configOverrides;
     this.pythStaleReadFallback = pythStaleReadFallback;
+    this.#pythAccessToken = pythAccessToken || undefined;
+    this.trustHermesEndpoint(configOverrides?.PRICE_SERVICE_ENDPOINT);
+    this.trustHermesEndpoint(configParam?.PRICE_SERVICE_ENDPOINT);
     this.onPythStaleRead =
       onPythStaleRead ??
       // `console.error` rather than `warn` because it is the only method this repo's
@@ -160,6 +185,7 @@ export class BucketClient {
    * @param configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT).
    * @param pythStaleReadFallback - Optional, defaults to `true`. See the constructor.
    * @param onPythStaleRead - Optional. See the constructor.
+   * @param pythAccessToken - Optional. See the constructor.
    */
   static async initialize({
     suiClient,
@@ -169,6 +195,7 @@ export class BucketClient {
     configOverrides,
     pythStaleReadFallback,
     onPythStaleRead,
+    pythAccessToken,
   }: {
     suiClient?: SuiGrpcClient;
     network?: Network;
@@ -177,6 +204,7 @@ export class BucketClient {
     configOverrides?: Partial<ConfigType>;
     pythStaleReadFallback?: boolean;
     onPythStaleRead?: (event: PythStaleReadEvent) => void | Promise<void>;
+    pythAccessToken?: string;
   } = {}): Promise<BucketClient> {
     const bc = new BucketClient({
       suiClient,
@@ -186,6 +214,7 @@ export class BucketClient {
       configOverrides,
       pythStaleReadFallback,
       onPythStaleRead,
+      pythAccessToken,
     });
     await bc.getConfig();
     return bc;
@@ -206,6 +235,8 @@ export class BucketClient {
    */
   async refreshConfig(overrides?: Partial<ConfigType>): Promise<void> {
     await this.configLoadingPromise;
+
+    this.trustHermesEndpoint(overrides?.PRICE_SERVICE_ENDPOINT);
 
     this.configLoadingPromise = this.fetchConfig(overrides);
 
@@ -1190,10 +1221,51 @@ export class BucketClient {
    * the fallback can never inherit a half-built PTB. Errors from
    * `buildPythPriceUpdateCalls` propagate untouched.
    */
+  /** Records a caller-supplied HTTPS endpoint as one `pythAccessToken` may be sent to. */
+  private trustHermesEndpoint(endpoint: string | undefined): void {
+    if (!endpoint) return;
+    try {
+      const url = new URL(endpoint);
+      if (url.protocol === 'https:') this.trustedHermesOrigins.add(url.origin);
+    } catch {
+      // Not a URL: the fetch will fail on it anyway, and it earns no trust.
+    }
+  }
+
+  /**
+   * The access token to send to `endpoint`, or `undefined` when the endpoint is not trusted
+   * with it. Withholding is reported once per origin — the resulting 401 would otherwise look
+   * like a missing key rather than a refused destination.
+   */
+  private hermesAccessTokenFor(endpoint: string): string | undefined {
+    if (!this.#pythAccessToken) return undefined;
+    let origin: string;
+    try {
+      origin = new URL(endpoint).origin;
+    } catch {
+      return undefined;
+    }
+    if (this.trustedHermesOrigins.has(origin)) return this.#pythAccessToken;
+    if (!this.reportedUntrustedHermesOrigins.has(origin)) {
+      this.reportedUntrustedHermesOrigins.add(origin);
+      console.error(
+        `[BucketClient] Not sending pythAccessToken to ${origin}: it is not the official Hermes ` +
+          `and was not supplied as PRICE_SERVICE_ENDPOINT by the caller.`,
+      );
+    }
+    return undefined;
+  }
+
   private async buildPythFeedInputs(tx: Transaction, config: ConfigType, pythPriceIds: string[]): Promise<string[]> {
     let updateData: Uint8Array[];
     try {
-      updateData = await fetchPriceFeedsUpdateDataFromHermes(config.PRICE_SERVICE_ENDPOINT, pythPriceIds);
+      // Read the endpoint ONCE: the trust decision and the request must be about the same
+      // value. `getConfig()` hands out this config object, so a second read of the property
+      // could return a different URL than the one that was checked.
+      const endpoint = config.PRICE_SERVICE_ENDPOINT;
+      updateData = await fetchPriceFeedsUpdateDataFromHermes(endpoint, pythPriceIds, {
+        accessToken: this.hermesAccessTokenFor(endpoint),
+      });
     } catch (cause) {
       if (!this.pythStaleReadFallback) throw cause;
       this.reportPythStaleRead({ feedIds: pythPriceIds, cause });
