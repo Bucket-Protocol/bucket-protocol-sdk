@@ -94,7 +94,12 @@ export class BucketClient {
   private pythCache = new PythCache();
   private pythStaleReadFallback: boolean;
   private onPythStaleRead: (event: PythStaleReadEvent) => void | Promise<void>;
-  private pythAccessToken?: string;
+  /**
+   * ECMAScript `#private`, not TypeScript `private`: the latter is compile-time only, so the
+   * key would be an enumerable own property that `Object.keys`, `JSON.stringify`, and any
+   * logger inspecting the client would print.
+   */
+  #pythAccessToken?: string;
   /**
    * Origins `pythAccessToken` may be sent to: the official Hermes, plus any HTTPS endpoint the
    * CALLER named (`configOverrides`, `config`, `refreshConfig(overrides)`). An endpoint that only
@@ -153,7 +158,7 @@ export class BucketClient {
     this.configObjectId = configObjectId;
     this.configOverrides = configOverrides;
     this.pythStaleReadFallback = pythStaleReadFallback;
-    this.pythAccessToken = pythAccessToken || undefined;
+    this.#pythAccessToken = pythAccessToken || undefined;
     this.trustHermesEndpoint(configOverrides?.PRICE_SERVICE_ENDPOINT);
     this.trustHermesEndpoint(configParam?.PRICE_SERVICE_ENDPOINT);
     this.onPythStaleRead =
@@ -1233,14 +1238,14 @@ export class BucketClient {
    * like a missing key rather than a refused destination.
    */
   private hermesAccessTokenFor(endpoint: string): string | undefined {
-    if (!this.pythAccessToken) return undefined;
+    if (!this.#pythAccessToken) return undefined;
     let origin: string;
     try {
       origin = new URL(endpoint).origin;
     } catch {
       return undefined;
     }
-    if (this.trustedHermesOrigins.has(origin)) return this.pythAccessToken;
+    if (this.trustedHermesOrigins.has(origin)) return this.#pythAccessToken;
     if (!this.reportedUntrustedHermesOrigins.has(origin)) {
       this.reportedUntrustedHermesOrigins.add(origin);
       console.error(
@@ -1254,8 +1259,12 @@ export class BucketClient {
   private async buildPythFeedInputs(tx: Transaction, config: ConfigType, pythPriceIds: string[]): Promise<string[]> {
     let updateData: Uint8Array[];
     try {
-      updateData = await fetchPriceFeedsUpdateDataFromHermes(config.PRICE_SERVICE_ENDPOINT, pythPriceIds, {
-        accessToken: this.hermesAccessTokenFor(config.PRICE_SERVICE_ENDPOINT),
+      // Read the endpoint ONCE: the trust decision and the request must be about the same
+      // value. `getConfig()` hands out this config object, so a second read of the property
+      // could return a different URL than the one that was checked.
+      const endpoint = config.PRICE_SERVICE_ENDPOINT;
+      updateData = await fetchPriceFeedsUpdateDataFromHermes(endpoint, pythPriceIds, {
+        accessToken: this.hermesAccessTokenFor(endpoint),
       });
     } catch (cause) {
       if (!this.pythStaleReadFallback) throw cause;

@@ -7,6 +7,7 @@
  * `aggregate<SUI>` has to be an earlier command in the same PTB — including when
  * the caller asks for an LST on its own and never mentions SUI.
  */
+import { inspect } from 'node:util';
 import type { SuiGrpcClient } from '@mysten/sui/grpc';
 import { Transaction } from '@mysten/sui/transactions';
 import { normalizeStructTag } from '@mysten/sui/utils';
@@ -500,6 +501,38 @@ describe('unit/aggregateBasicPrices pythAccessToken', () => {
     const withheld = consoleError.mock.calls.filter((args) => String(args[0]).includes('Not sending pythAccessToken'));
     expect(withheld).toHaveLength(1);
     expect(String(withheld[0]?.[0])).toContain('https://attacker.example');
+  });
+
+  it('does not expose the token through inspection or serialization', () => {
+    const client = new BucketClient({
+      suiClient: asSuiClient({}),
+      network: 'mainnet',
+      config: priceConfig(),
+      pythAccessToken: TOKEN,
+    });
+
+    expect(Object.keys(client).join(',')).not.toContain('pythAccessToken');
+    expect(JSON.stringify(client)).not.toContain(TOKEN);
+    expect(inspect(client, { depth: Infinity, showHidden: true })).not.toContain(TOKEN);
+    expect((client as unknown as Record<string, unknown>).pythAccessToken).toBeUndefined();
+  });
+
+  it('checks and fetches the SAME endpoint, even when the config property changes between reads', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const client = onchainClient('https://hermes.pyth.network');
+    // `getConfig()` hands out the live config object: an accessor that answers an
+    // untrusted URL first and the official one after must not split the check from the fetch.
+    const config = await client.getConfig();
+    let reads = 0;
+    Object.defineProperty(config, 'PRICE_SERVICE_ENDPOINT', {
+      get: () => (reads++ === 0 ? 'https://attacker.example' : 'https://hermes.pyth.network'),
+    });
+
+    await client.aggregateBasicPrices(new Transaction(), { coinTypes: [USDC] });
+
+    const [endpoint, , options] = vi.mocked(pyth.fetchPriceFeedsUpdateDataFromHermes).mock.calls.at(-1) ?? [];
+    expect(endpoint).toBe('https://attacker.example');
+    expect(options?.accessToken).toBeUndefined();
   });
 
   it('does not trust a lookalike of the official host', async () => {

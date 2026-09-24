@@ -15,6 +15,11 @@ const suiClient = new SuiGrpcClient({ network, baseUrl: rpcUrl });
 
 export let bucketClient: BucketClient;
 
+// Hermes answers 401 without a Pyth API key. CI injects it from the PYTH_API_KEY secret; a fork
+// PR (which GitHub gives no secrets) or a local run without it falls back to Pyth's on-chain
+// price objects, which cannot price every feed.
+export const pythAccessToken = process.env.PYTH_API_KEY || undefined;
+
 // Slower retry/cooldown to reduce RPC rate limit hits when not using custom RPC
 const MAX_RETRIES = 4;
 const RETRY_DELAY_MS = 3000;
@@ -31,7 +36,7 @@ export async function ensureBucketClient(): Promise<BucketClient> {
   if (!bucketClient) {
     for (let i = 0; i < MAX_RETRIES; i++) {
       try {
-        bucketClient = await BucketClient.initialize({ suiClient, network });
+        bucketClient = await BucketClient.initialize({ suiClient, network, pythAccessToken });
         await new Promise((r) => setTimeout(r, COOLDOWN_AFTER_CREATE_MS));
         return bucketClient;
       } catch (e) {
