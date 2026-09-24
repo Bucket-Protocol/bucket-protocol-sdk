@@ -88,6 +88,38 @@ describe('unit/utils/pyth', () => {
       expect(result).toEqual([]);
     });
 
+    it('sends no Authorization header and follows redirects as before without an access token', async () => {
+      const fetchMock = mockFetchOk({ binary: { data: ['00'] } });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await fetchPriceFeedsUpdateDataFromHermes(HERMES_ENDPOINT, [SUI_PYTH_PRICE_ID]);
+
+      const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+      expect(init.headers).toBeUndefined();
+      expect(init.redirect).toBeUndefined();
+    });
+
+    it('sends the access token as a Bearer header and refuses redirects', async () => {
+      const fetchMock = mockFetchOk({ binary: { data: ['00'] } });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await fetchPriceFeedsUpdateDataFromHermes(HERMES_ENDPOINT, [SUI_PYTH_PRICE_ID], { accessToken: 'k' });
+
+      const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+      expect(init.headers).toEqual({ Authorization: 'Bearer k' });
+      expect(init.redirect).toBe('error');
+    });
+
+    it('refuses to send an access token over plain HTTP, before any request', async () => {
+      const fetchMock = mockFetchOk({ binary: { data: ['00'] } });
+      vi.stubGlobal('fetch', fetchMock);
+
+      await expect(
+        fetchPriceFeedsUpdateDataFromHermes('http://hermes.pyth.network', [SUI_PYTH_PRICE_ID], { accessToken: 'k' }),
+      ).rejects.toThrow('Refusing to send a Pyth access token over http:');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
     it('throws when Hermes returns non-ok response', async () => {
       vi.stubGlobal('fetch', mockFetchFail(500, 'Internal Server Error'));
       await expect(fetchPriceFeedsUpdateDataFromHermes(HERMES_ENDPOINT, [SUI_PYTH_PRICE_ID])).rejects.toThrow(

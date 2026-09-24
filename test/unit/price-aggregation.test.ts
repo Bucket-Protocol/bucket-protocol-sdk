@@ -14,6 +14,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BucketClient } from '../../src/client.js';
 import type { AggregatorObjectInfo, ConfigType, SharedObjectRef } from '../../src/types/index.js';
+import * as bucketConfig from '../../src/utils/bucketConfig.js';
+import * as configAdapter from '../../src/utils/configAdapter.js';
 import * as pyth from '../../src/utils/pyth.js';
 
 const SUI = normalizeStructTag('0x2::sui::SUI');
@@ -423,6 +425,111 @@ describe('unit/aggregateBasicPrices Hermes fallback', () => {
     ).rejects.toThrow('not found; create it first');
 
     expect(pyth.resolvePythPriceInfoObjectIds).not.toHaveBeenCalled();
+  });
+});
+
+describe('unit/aggregateBasicPrices pythAccessToken', () => {
+  const TOKEN = 'pyth-test-key';
+
+  /** The access token the client handed to the Hermes fetch on its most recent call. */
+  const tokenSent = () => vi.mocked(pyth.fetchPriceFeedsUpdateDataFromHermes).mock.calls.at(-1)?.[2]?.accessToken;
+
+  /**
+   * A client whose config comes from the (mocked) chain, with `onchainEndpoint` as the
+   * on-chain PRICE_SERVICE_ENDPOINT. The spies must be in place before construction,
+   * because the constructor starts loading config.
+   */
+  function onchainClient(onchainEndpoint: string, opts: { configOverrides?: Partial<ConfigType> } = {}) {
+    vi.spyOn(bucketConfig, 'queryAllConfig').mockResolvedValue(
+      {} as Awaited<ReturnType<typeof bucketConfig.queryAllConfig>>,
+    );
+    vi.spyOn(configAdapter, 'convertOnchainConfig').mockImplementation((_onchain, overrides = {}) => ({
+      ...priceConfig(),
+      PRICE_SERVICE_ENDPOINT: overrides.PRICE_SERVICE_ENDPOINT ?? onchainEndpoint,
+    }));
+    vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation(async (config) => config);
+    return new BucketClient({
+      suiClient: asSuiClient({}),
+      network: 'mainnet',
+      pythAccessToken: TOKEN,
+      ...opts,
+    });
+  }
+
+  it('sends no token when none is configured', async () => {
+    await makeClient().aggregateBasicPrices(new Transaction(), { coinTypes: [USDC] });
+
+    expect(tokenSent()).toBeUndefined();
+  });
+
+  it('sends the token to the official Hermes named by the on-chain config', async () => {
+    await onchainClient('https://hermes.pyth.network').aggregateBasicPrices(new Transaction(), {
+      coinTypes: [USDC],
+    });
+
+    expect(tokenSent()).toBe(TOKEN);
+  });
+
+  it('sends the token to an endpoint the caller supplied in config', async () => {
+    await new BucketClient({
+      suiClient: asSuiClient({}),
+      network: 'mainnet',
+      config: priceConfig(),
+      pythAccessToken: TOKEN,
+    }).aggregateBasicPrices(new Transaction(), { coinTypes: [USDC] });
+
+    expect(tokenSent()).toBe(TOKEN);
+  });
+
+  it('sends the token to an HTTPS endpoint the caller supplied in configOverrides', async () => {
+    await onchainClient('https://attacker.example', {
+      configOverrides: { PRICE_SERVICE_ENDPOINT: 'https://hermes-proxy.internal' },
+    }).aggregateBasicPrices(new Transaction(), { coinTypes: [USDC] });
+
+    expect(tokenSent()).toBe(TOKEN);
+  });
+
+  it('withholds the token from an endpoint only the on-chain config names, and says so once', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const client = onchainClient('https://attacker.example');
+
+    await client.aggregateBasicPrices(new Transaction(), { coinTypes: [USDC] });
+    await client.aggregateBasicPrices(new Transaction(), { coinTypes: [USDC] });
+
+    expect(tokenSent()).toBeUndefined();
+    const withheld = consoleError.mock.calls.filter((args) => String(args[0]).includes('Not sending pythAccessToken'));
+    expect(withheld).toHaveLength(1);
+    expect(String(withheld[0]?.[0])).toContain('https://attacker.example');
+  });
+
+  it('does not trust a lookalike of the official host', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await onchainClient('https://hermes.pyth.network.attacker.example').aggregateBasicPrices(new Transaction(), {
+      coinTypes: [USDC],
+    });
+
+    expect(tokenSent()).toBeUndefined();
+  });
+
+  it('does not trust a caller-supplied plain-HTTP endpoint', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await onchainClient('https://hermes.pyth.network', {
+      configOverrides: { PRICE_SERVICE_ENDPOINT: 'http://hermes-proxy.internal' },
+    }).aggregateBasicPrices(new Transaction(), { coinTypes: [USDC] });
+
+    expect(tokenSent()).toBeUndefined();
+  });
+
+  it('trusts an endpoint the caller later supplies through refreshConfig', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const client = onchainClient('https://attacker.example');
+
+    await client.refreshConfig({ PRICE_SERVICE_ENDPOINT: 'https://hermes-proxy.internal' });
+    await client.aggregateBasicPrices(new Transaction(), { coinTypes: [USDC] });
+
+    expect(tokenSent()).toBe(TOKEN);
   });
 });
 
