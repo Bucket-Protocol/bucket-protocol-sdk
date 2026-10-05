@@ -1,0 +1,24 @@
+name: harness-lint
+
+# Checks the agent-harness layout (AGENTS.md only, no CLAUDE.md, root size, Codex
+# config, knowledge hub). The script is vendored from Bucket-Protocol/waterx-commons
+# harness/lint/check-harness.sh; keep its version line intact.
+#
+# Blocking. /docs is git-ignored in this repository, so the hub lives at knowledge-hub/ and
+# --hub points the lint there.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check-harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: check-harness
+        run: bash scripts/agent-hooks/check-harness.sh --hub knowledge-hub
