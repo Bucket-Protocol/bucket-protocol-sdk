@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# waterx-commons/harness/lint/check-harness.sh v1.4.0
+# waterx-commons/harness/lint/check-harness.sh v1.4.3
 #
 # Checks a repository against the WaterX agent-harness standard
 # (Bucket-Protocol/waterx-commons, harness/STANDARD.md). Repos vendor this file as
@@ -22,7 +22,7 @@
 # JSON and .codex/rules are read with awk, so the result is the same with or without jq.
 set -u
 
-VERSION="1.4.0"
+VERSION="1.4.3"
 # Released versions of harness/hooks/lib/shell-segments.sh and their sha256, for check 10.
 # Every release of the segmenter adds a line here (CI fails when the current one is missing).
 KNOWN_SEGMENTERS="
@@ -30,6 +30,7 @@ KNOWN_SEGMENTERS="
 1.2.0 cfddb05f94e0dc0ab68dfff983312dff48f6e7af478ae5f45473b12c02d287d4
 1.2.1 a9a54b5202aeaccaef3fb814dbfd984315169b6ef881c1d0d5721627146eb96b
 1.2.2 3a932c2fa209a6d6b80dd1b5e2a7ea17f110eff1e6551f22eae6b0978817ab1c
+1.2.3 c749ab122c1de37c92b328b51b4f7fe4fca3fc99c9d027b042aa59dfa653783e
 "
 ROOT=""
 HUB=""
@@ -290,6 +291,16 @@ if [ -d .claude/skills ] || ls -d plugins/*/skills >/dev/null 2>&1; then
     if [ -z "$(printf '%s' "$desc" | tr -d '[:space:]')" ]; then fail "$sk: frontmatter has no description"; continue; fi
     n=$(printf '%s' "$desc" | char_count)
     [ "$n" -gt "$DESCRIPTION_LIMIT_CHARS" ] && fail "$sk: description is $n chars (limit $DESCRIPTION_LIMIT_CHARS)"
+    # A plain (unquoted, not block) scalar may not contain ": " or " #": strict YAML parsers reject
+    # the frontmatter and Claude Code then loads the skill with empty metadata (waterx-commons
+    # harness-transform, caught on waterx-predict-agent#27).
+    first=$(printf '%s\n' "$fm" | awk '/^description:/ { sub(/^description:[[:space:]]*/, ""); print; exit }')
+    case "$first" in
+      '>'*|'|'*|'"'*|"'"*) ;;
+      *) if printf '%s\n' "$desc" | grep -Eq ': | #'; then
+           fail "$sk: description is a plain YAML scalar containing ': ' or ' #', which strict parsers reject; write it as a folded block (description: >) or quote it"
+         fi ;;
+    esac
   done
 fi
 end_check
@@ -466,10 +477,30 @@ hook_commands() { # <json file>: one hook command per line ("<command> <args...>
 
 begin_check 6 "Claude hooks and ask-permissions have Codex twins (same scripts; the same set of prompted command prefixes)" \
   "A Claude Code hook never runs under Codex. Codex reads .codex/hooks.json with the same schema, so the same scripts should be wired there; the Bash prefixes in permissions.ask and the prefix_rule(..., decision=\"prompt\") patterns in .codex/rules must be the same set, or a command needs a human in one tool and runs silently in the other."
-hook_scripts() { # <json file>: basenames of the scripts hook commands run
-  # The script is the first word that is a path (`bash scripts/x.sh` -> x.sh), else the first word.
-  hook_commands "$1" | cut -f2- | sed 's/\\"//g; s/"//g' |
-    awk '{ w = $1; for (i = 1; i <= NF; i++) if ($i ~ /\//) { w = $i; break }; n = split(w, p, "/"); if (p[n] != "") print p[n] }' | sort -u
+hook_scripts() { # <json file>: repo-relative paths of the scripts hook commands run
+  # The identity is the script's path from the repository root, not its basename: the two tools
+  # spell the root differently ("$CLAUDE_PROJECT_DIR" vs "$(git rev-parse --show-toplevel)", check 9),
+  # so both spellings collapse to ROOT/ and are then dropped, and scripts/agent-hooks/claude/gate.sh is
+  # a different hook from scripts/agent-hooks/codex/gate.sh (v1.4.3). The script is the first word
+  # that is not an interpreter (`bash`, `/bin/bash`, `/usr/bin/env`, `node`, ...), an env assignment or
+  # an option, so `/bin/bash scripts/x.sh` names scripts/x.sh, not bash; a command with no such word
+  # (`pnpm lint`) is identified by its first word.
+  hook_commands "$1" | cut -f2- | sed 's/\\"//g; s/"//g; s/'"'"'//g' |
+    sed 's/\$(git rev-parse --show-toplevel)/ROOT/g; s/\${CLAUDE_PROJECT_DIR}/ROOT/g; s/\$CLAUDE_PROJECT_DIR/ROOT/g' |
+    awk 'BEGIN { split("sh bash zsh dash ksh env node python python3 perl ruby", il, " "); for (k in il) interp[il[k]] = 1 }
+      {
+        w = ""
+        for (i = 1; i <= NF; i++) {
+          n = split($i, p, "/"); base = p[n]
+          if (base in interp) continue
+          if ($i ~ /^[A-Za-z_][A-Za-z0-9_]*=/) continue
+          if ($i ~ /^-/) continue
+          w = $i; break
+        }
+        if (w == "") w = $1
+        sub(/^ROOT\/+/, "", w); sub(/^\.\//, "", w)
+        if (w != "") print w
+      }' | sort -u
 }
 for jf in .claude/settings.json .codex/hooks.json; do
   if [ -f "$jf" ] && ! json_leaves "$jf" >/dev/null 2>&1; then fail "$jf: not valid JSON"; fi
