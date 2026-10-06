@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "waterx-commons": {
+      "source": { "source": "github", "repo": "Bucket-Protocol/waterx-commons" }
+    }
+  },
+  "enabledPlugins": {
+    "waterx-harness@waterx-commons": true
+  }
+}
