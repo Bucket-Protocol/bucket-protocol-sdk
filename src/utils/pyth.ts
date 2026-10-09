@@ -47,14 +47,45 @@ export class PythCache {
   priceFeedObjectIdCache = new Map<string, string | undefined>();
 }
 
-/** Fetches latest price update data from Hermes (public REST; no token). Returns buffers for Pyth Move update. */
-export async function fetchPriceFeedsUpdateDataFromHermes(endpoint: string, priceIds: string[]): Promise<Uint8Array[]> {
+/** Pyth's official Hermes endpoint — the default, and the one origin a Pyth access token is always trusted to. */
+export const OFFICIAL_HERMES_ENDPOINT = 'https://hermes.pyth.network';
+
+export type HermesFetchOptions = {
+  /**
+   * Pyth API key, sent as `Authorization: Bearer <token>`. Hermes has required one since
+   * 2026-08-26 and answers 401 without it. Server-side only: anything handed to a browser
+   * bundle is public.
+   */
+  accessToken?: string;
+};
+
+/**
+ * Fetches latest price update data from Hermes. Returns buffers for Pyth Move update.
+ *
+ * With an `accessToken`, the request must be HTTPS and refuses redirects, so the token can
+ * never travel in cleartext or be forwarded to a host the caller did not choose. Deciding
+ * WHICH endpoints may receive the token is the caller's job — see `BucketClient`.
+ */
+export async function fetchPriceFeedsUpdateDataFromHermes(
+  endpoint: string,
+  priceIds: string[],
+  { accessToken }: HermesFetchOptions = {},
+): Promise<Uint8Array[]> {
   if (priceIds.length === 0) return [];
 
   const url = new URL('/v2/updates/price/latest', endpoint);
   priceIds.forEach((id) => url.searchParams.append('ids[]', id));
 
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15_000) });
+  const init: RequestInit = { signal: AbortSignal.timeout(15_000) };
+  if (accessToken) {
+    if (url.protocol !== 'https:') {
+      throw new Error(`Refusing to send a Pyth access token over ${url.protocol} to ${url.origin}`);
+    }
+    init.headers = { Authorization: `Bearer ${accessToken}` };
+    init.redirect = 'error';
+  }
+
+  const res = await fetch(url.toString(), init);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Hermes price fetch failed: ${res.status} ${text}`);

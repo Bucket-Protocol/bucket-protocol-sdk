@@ -796,6 +796,36 @@ const accountRequest = await client.newAccountRequest(tx, {
 
 The SDK integrates with Pyth Network for price feeds without requiring the Pyth SDK. Price update data is fetched from Hermes (public REST API) and Move calls are built using `SuiGrpcClient`. Price updates are applied automatically when you call methods that use `aggregatePrices()` (e.g. `getOraclePrices`, `buildManagePositionTransaction` with borrow/withdraw, `buildPSMSwapInTransaction`, `buildPSMSwapOutTransaction`).
 
+### Hermes access token
+
+Hermes has required a Pyth API key since 2026-08-26 and answers `401` without one. Pass it as `pythAccessToken` (**server-side only**):
+
+```typescript
+const client = new BucketClient({
+  network: 'mainnet',
+  pythAccessToken: process.env.PYTH_API_KEY,
+});
+```
+
+The token is sent as `Authorization: Bearer <token>`, over HTTPS only, with redirects refused, and **only** to:
+
+- the official Hermes, `https://hermes.pyth.network`, or
+- an HTTPS `PRICE_SERVICE_ENDPOINT` you supplied yourself (`configOverrides`, `config`, or `refreshConfig(overrides)`).
+
+An endpoint that only the on-chain config names never receives it; the SDK logs once and fetches without the token instead.
+
+**In a browser, do not pass `pythAccessToken`** — anything in a client bundle is public. Point the SDK at your own server-side proxy that adds the key:
+
+```typescript
+const client = new BucketClient({
+  network: 'mainnet',
+  // Your proxy must serve GET /v2/updates/price/latest (the SDK replaces the endpoint's path).
+  configOverrides: { PRICE_SERVICE_ENDPOINT: window.location.origin },
+});
+```
+
+Without a working Hermes the SDK falls back to Pyth's on-chain price objects as they stand (`pythStaleReadFallback`, default `true`), which prices only feeds that other transactions keep fresh.
+
 ## Best Practices
 
 1. **Set Appropriate Slippage Protection**: Lending operations may be affected by price volatility
@@ -830,6 +860,7 @@ const client = await BucketClient.initialize({
   configObjectId,  // Optional: override entry config object ID
   config,          // Optional: pre-built config (skips chain fetch)
   configOverrides, // Optional: e.g. { PRICE_SERVICE_ENDPOINT: 'https://...' }
+  pythAccessToken, // Optional: Pyth API key for Hermes (server-side only)
 });
 ```
 
@@ -844,6 +875,7 @@ const client = new BucketClient({
   configObjectId?: string;
   config?: ConfigType;      // Optional: pre-built config
   configOverrides?: Partial<ConfigType>;
+  pythAccessToken?: string; // Pyth API key for Hermes (server-side only)
 });
 // Use await client.getConfig() before calling config-dependent methods
 ```

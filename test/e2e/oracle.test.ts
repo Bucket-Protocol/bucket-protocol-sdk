@@ -9,6 +9,7 @@ import {
   bucketClient,
   MAINNET_TIMEOUT_MS,
   network,
+  pythAccessToken,
   setupE2E,
   suiClient,
   txWithSender,
@@ -35,6 +36,20 @@ describe('E2E Oracle', () => {
         expect(typeof price).toBe('number');
         expect(price).toBeGreaterThan(0);
       }
+    },
+    MAINNET_TIMEOUT_MS,
+  );
+
+  it.runIf(pythAccessToken)(
+    'with pythAccessToken, prices from fresh Hermes updates instead of the stale-read fallback',
+    async () => {
+      const onPythStaleRead = vi.fn();
+      const client = await BucketClient.initialize({ suiClient, network, pythAccessToken, onPythStaleRead });
+
+      const prices = await client.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
+
+      expect(onPythStaleRead).not.toHaveBeenCalled();
+      expect(prices[SUI_TYPE_ARG]).toBeGreaterThan(0);
     },
     MAINNET_TIMEOUT_MS,
   );

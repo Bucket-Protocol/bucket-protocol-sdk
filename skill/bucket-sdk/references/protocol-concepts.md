@@ -258,6 +258,12 @@ Bucket uses **Pyth Network** as its oracle. The SDK handles price feeds automati
 2. Builds on-chain Wormhole verification + Pyth update calls
 3. Passes the verified price to CDP/PSM operations
 
+Hermes needs a Pyth API key (401 without one). Server-side, pass `pythAccessToken` to
+`BucketClient`; it is only sent over HTTPS to the official Hermes or a
+`PRICE_SERVICE_ENDPOINT` the caller supplied. In a browser, never pass the key — set
+`configOverrides.PRICE_SERVICE_ENDPOINT` to a server-side proxy that adds it. See the
+README's "Hermes access token" section.
+
 ### Basic vs Derivative Prices
 
 - **Basic**: Direct Pyth feed (SUI, BTC, ETH, USDC, etc.)
