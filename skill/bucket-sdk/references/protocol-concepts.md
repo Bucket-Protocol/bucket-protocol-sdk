@@ -254,9 +254,11 @@ const accounts = await client.getUserAccounts({ address: walletAddress });
 
 Bucket uses **Pyth Network** as its oracle. The SDK handles price feeds automatically:
 
-1. Fetches latest price data (VAA) from Pyth's Hermes REST API
-2. Builds on-chain Wormhole verification + Pyth update calls
-3. Passes the verified price to CDP/PSM operations
+1. Looks up each coin type's Pyth price object on chain (no Hermes call, no price update in the transaction)
+2. Feeds it, and any other source the coin type has, to the on-chain price aggregator
+3. Passes the aggregated price to CDP/PSM operations
+
+A Pyth reading older than the on-chain tolerance is ignored. If the remaining sources do not clear the aggregator's weight threshold, the transaction aborts `ERiskyPrice`.
 
 ### Basic vs Derivative Prices
 

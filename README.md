@@ -794,7 +794,7 @@ const accountRequest = await client.newAccountRequest(tx, {
 
 ## Integration with Pyth Oracle
 
-The SDK integrates with Pyth Network for price feeds without requiring the Pyth SDK. Price update data is fetched from Hermes (public REST API) and Move calls are built using `SuiGrpcClient`. Price updates are applied automatically when you call methods that use `aggregatePrices()` (e.g. `getOraclePrices`, `buildManagePositionTransaction` with borrow/withdraw, `buildPSMSwapInTransaction`, `buildPSMSwapOutTransaction`).
+The SDK integrates with Pyth Network for price feeds without requiring the Pyth SDK. Methods that use `aggregatePrices()` (e.g. `getOraclePrices`, `buildManagePositionTransaction` with borrow/withdraw, `buildPSMSwapInTransaction`, `buildPSMSwapOutTransaction`) read each coin type's Pyth price object as it stands on chain; the SDK does not call Hermes or push a Pyth price update. A reading older than the on-chain tolerance is ignored, and the transaction aborts `ERiskyPrice` when the remaining price sources do not clear the aggregator's weight threshold.
 
 ## Best Practices
 
@@ -829,7 +829,7 @@ const client = await BucketClient.initialize({
   network,         // Optional: 'mainnet' | 'testnet' (default: 'mainnet')
   configObjectId,  // Optional: override entry config object ID
   config,          // Optional: pre-built config (skips chain fetch)
-  configOverrides, // Optional: e.g. { PRICE_SERVICE_ENDPOINT: 'https://...' }
+  configOverrides, // Optional: e.g. { PYTH_STATE_ID: '0x...' }
 });
 ```
 

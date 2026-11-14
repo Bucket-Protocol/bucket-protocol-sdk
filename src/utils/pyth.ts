@@ -1,11 +1,10 @@
 /**
- * Pyth price feed integration: fetch update data from Hermes, build Move calls for Sui (SuiGrpcClient).
+ * Pyth price feed integration: resolve the on-chain `PriceInfoObject` for each feed (SuiGrpcClient).
  */
 
 import { fromHex, toHex } from '@mysten/bcs';
 import { bcs } from '@mysten/sui/bcs';
 import type { SuiGrpcClient } from '@mysten/sui/grpc';
-import type { Transaction, TransactionArgument } from '@mysten/sui/transactions';
 
 async function runWithConcurrency<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
@@ -16,74 +15,24 @@ async function runWithConcurrency<T, R>(items: T[], concurrency: number, fn: (it
   return results;
 }
 
-function getPackageIdFromObjectJson(json: Record<string, unknown>, objectId: string): string {
-  const upgradeCap =
-    (json.upgrade_cap as Record<string, unknown> | undefined) ??
-    ((json.fields as Record<string, unknown> | undefined)?.upgrade_cap as Record<string, unknown> | undefined);
-  const fromFields = (upgradeCap?.fields as Record<string, unknown> | undefined)?.package;
-  const pkg =
-    typeof upgradeCap?.package === 'string'
-      ? upgradeCap.package
-      : typeof fromFields === 'string'
-        ? fromFields
-        : undefined;
-  if (!pkg) throw new Error(`Cannot get package id for object ${objectId}`);
-  return pkg;
-}
-
-export type PythConfig = {
-  pythStateId: string;
-  wormholeStateId: string;
-};
-
 type PriceTableInfo = { id: string; fieldType: string };
-type PythStateInfo = { packageId: string; baseUpdateFee: bigint };
 
 /** Per-instance cache for Pyth on-chain reads (use one per BucketClient). */
 export class PythCache {
-  pythStateInfo?: PythStateInfo;
-  wormholePackageId?: string;
   priceTableInfo?: PriceTableInfo;
   priceFeedObjectIdCache = new Map<string, string | undefined>();
-}
-
-/** Fetches latest price update data from Hermes (public REST; no token). Returns buffers for Pyth Move update. */
-export async function fetchPriceFeedsUpdateDataFromHermes(endpoint: string, priceIds: string[]): Promise<Uint8Array[]> {
-  if (priceIds.length === 0) return [];
-
-  const url = new URL('/v2/updates/price/latest', endpoint);
-  priceIds.forEach((id) => url.searchParams.append('ids[]', id));
-
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15_000) });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Hermes price fetch failed: ${res.status} ${text}`);
-  }
-
-  const json = (await res.json()) as {
-    binary?: { encoding?: string; data?: string[] };
-  };
-
-  const data = json.binary?.data;
-  if (!Array.isArray(data) || data.length === 0) {
-    throw new Error('Hermes returned no binary price data');
-  }
-
-  return data.map((hexStr: string) => fromHex(hexStr));
 }
 
 /**
  * Resolves the `PriceInfoObject` id backing each feed, reading only on-chain state.
  *
- * This is deliberately separate from `buildPythPriceUpdateCalls`: the lookup walks
- * Pyth's own price table (a dynamic field on `PythState`) and never touches Hermes,
- * so it still answers when the off-chain endpoint is down. That is what lets a
- * caller skip the VAA update and feed the price object as it already stands —
- * `pyth_rule::feed` reads it with `get_price_unsafe` and abstains on staleness
- * rather than aborting.
+ * The lookup walks Pyth's own price table (a dynamic field on `PythState`) and
+ * never touches an off-chain endpoint. The caller feeds the price object as it
+ * already stands — `pyth_rule::feed` reads it with `get_price_unsafe` and abstains
+ * on staleness rather than aborting.
  *
- * Throws when a feed has no price object: the id is required either way, since the
- * rule has to be fed for `remove_outliers` to count it as collected.
+ * Throws when a feed has no price object: the id is required, since the rule has
+ * to be fed for `remove_outliers` to count it as collected.
  */
 export async function resolvePythPriceInfoObjectIds(
   client: SuiGrpcClient,
@@ -102,129 +51,6 @@ export async function resolvePythPriceInfoObjectIds(
     if (!id) throw new Error(`Price feed ${feedIds[i]} not found; create it first`);
     return id;
   });
-}
-
-/**
- * Extracts VAA bytes from an accumulator message (first 6 bytes are header; VAA follows).
- */
-function extractVaaBytesFromAccumulatorMessage(accumulatorMessage: Uint8Array): Uint8Array {
-  const view = new DataView(accumulatorMessage.buffer, accumulatorMessage.byteOffset, accumulatorMessage.byteLength);
-  const trailingPayloadSize = view.getUint8(6);
-  const vaaSizeOffset = 7 + trailingPayloadSize + 1;
-  const vaaSize = view.getUint16(vaaSizeOffset, false);
-  const vaaOffset = vaaSizeOffset + 2;
-  return accumulatorMessage.subarray(vaaOffset, vaaOffset + vaaSize);
-}
-
-/**
- * Appends Pyth price update Move calls to `tx` and returns price info object IDs (one per feed).
- * Uses SuiGrpcClient for on-chain reads. Pass a PythCache for per-BucketClient caching.
- */
-export async function buildPythPriceUpdateCalls(
-  tx: Transaction,
-  client: SuiGrpcClient,
-  config: PythConfig,
-  updates: Uint8Array[],
-  feedIds: string[],
-  cache?: PythCache,
-): Promise<string[]> {
-  if (updates.length === 0) {
-    throw new Error('No price update data provided; Hermes may have returned empty results');
-  }
-  if (updates.length > 1) {
-    throw new Error('Only a single accumulator message is supported per transaction');
-  }
-
-  // Every read and every validation happens before the first `tx` mutation below.
-  // A throw after `verifyVaas` would strand a hot potato in the caller's PTB and
-  // make it unbuildable, so there is nothing left to fail on past this point.
-  const [pythState, wormholePackageId, priceInfoObjectIds] = await Promise.all([
-    getPythStateInfo(client, config.pythStateId, cache),
-    getWormholePackageId(client, config.wormholeStateId, cache),
-    resolvePythPriceInfoObjectIds(client, config.pythStateId, feedIds, cache),
-  ]);
-
-  const { packageId: pythPackageId, baseUpdateFee } = pythState;
-
-  const vaa = extractVaaBytesFromAccumulatorMessage(updates[0]!);
-  const verifiedVaas = verifyVaas(tx, wormholePackageId, config.wormholeStateId, [vaa]);
-
-  const accBytesArg = tx.pure.vector('u8', updates[0]!) as TransactionArgument;
-  const [priceUpdatesHotPotato] = tx.moveCall({
-    target: `${pythPackageId}::pyth::create_authenticated_price_infos_using_accumulator`,
-    arguments: [tx.object(config.pythStateId), accBytesArg, verifiedVaas[0]!, tx.object.clock()],
-  });
-
-  const feeAmounts = feedIds.map(() => tx.pure.u64(baseUpdateFee));
-  const coins = tx.splitCoins(tx.gas, feeAmounts);
-
-  let hotPotato = priceUpdatesHotPotato;
-  for (let i = 0; i < feedIds.length; i++) {
-    [hotPotato] = tx.moveCall({
-      target: `${pythPackageId}::pyth::update_single_price_feed`,
-      arguments: [
-        tx.object(config.pythStateId),
-        hotPotato,
-        tx.object(priceInfoObjectIds[i]!),
-        coins[i]!,
-        tx.object.clock(),
-      ],
-    });
-  }
-
-  tx.moveCall({
-    target: `${pythPackageId}::hot_potato_vector::destroy`,
-    arguments: [hotPotato],
-    typeArguments: [`${pythPackageId}::price_info::PriceInfo`],
-  });
-
-  return priceInfoObjectIds;
-}
-
-async function getWormholePackageId(
-  client: SuiGrpcClient,
-  wormholeStateId: string,
-  cache?: PythCache,
-): Promise<string> {
-  if (cache?.wormholePackageId) return cache.wormholePackageId;
-  const result = await client.getObject({ objectId: wormholeStateId, include: { json: true } });
-  const json = result.object?.json as Record<string, unknown> | null | undefined;
-  if (!json) throw new Error(`Cannot get package id for object ${wormholeStateId}`);
-  const pkg = getPackageIdFromObjectJson(json, wormholeStateId);
-  if (cache) cache.wormholePackageId = pkg;
-  return pkg;
-}
-
-async function getPythStateInfo(client: SuiGrpcClient, pythStateId: string, cache?: PythCache): Promise<PythStateInfo> {
-  if (cache?.pythStateInfo) return cache.pythStateInfo;
-  const result = await client.getObject({ objectId: pythStateId, include: { json: true } });
-  const json = result.object?.json as Record<string, unknown> | null | undefined;
-  if (!json) throw new Error('Unable to fetch pyth state');
-  const packageId = getPackageIdFromObjectJson(json, pythStateId);
-  const fields = json.fields as Record<string, unknown> | undefined;
-  const fee = (fields?.base_update_fee ?? json.base_update_fee) as string | undefined;
-  if (fee === undefined) throw new Error('Unable to fetch pyth state base_update_fee');
-  const info: PythStateInfo = { packageId, baseUpdateFee: BigInt(fee) };
-  if (cache) cache.pythStateInfo = info;
-  return info;
-}
-
-function verifyVaas(
-  tx: Transaction,
-  wormholePackageId: string,
-  wormholeStateId: string,
-  vaas: Uint8Array[],
-): TransactionArgument[] {
-  const verified: TransactionArgument[] = [];
-  for (const vaa of vaas) {
-    const vaaArg = tx.pure.vector('u8', vaa);
-    const [verifiedVaa] = tx.moveCall({
-      target: `${wormholePackageId}::vaa::parse_and_verify`,
-      arguments: [tx.object(wormholeStateId), vaaArg, tx.object.clock()],
-    });
-    verified.push(verifiedVaa as TransactionArgument);
-  }
-  return verified;
 }
 
 async function getPriceTableInfo(

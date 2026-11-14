@@ -1,7 +1,7 @@
 /**
  * Unit tests for the PTB shape `aggregateBasicPrices` builds.
  *
- * Pyth's Hermes fetch and price-update calls are mocked, so these assert command
+ * Pyth's price-object lookup is mocked, so these assert command
  * order and coverage without touching the network. The invariant under test is the
  * LST one: `<lst>_rule::feed` takes the aggregated `PriceResult<SUI>`, so
  * `aggregate<SUI>` has to be an earlier command in the same PTB — including when
@@ -43,7 +43,6 @@ const asSuiClient = (m: unknown) => m as unknown as SuiGrpcClient;
 function priceConfig(): ConfigType {
   const emptyRef = sharedRef(0);
   return {
-    PRICE_SERVICE_ENDPOINT: 'https://hermes.test',
     PYTH_STATE_ID: address(0x11),
     WORMHOLE_STATE_ID: address(0x12),
     PYTH_RULE_PACKAGE_ID: address(0x13),
@@ -126,7 +125,7 @@ function aggregateIndex(tx: Transaction, coinType: string): number {
 /**
  * Object id of the `PriceInfoObject` handed to `pyth_rule::feed<coinType>`.
  *
- * The mocked `buildPythPriceUpdateCalls` returns each feed id as its own object
+ * The mocked `resolvePythPriceInfoObjectIds` returns each feed id as its own object
  * id, so this traces a coin type back to the Pyth feed it was actually priced
  * from — the alignment between the feed-id list and the collector loop.
  */
@@ -155,12 +154,9 @@ function makeClient() {
 }
 
 beforeEach(() => {
-  vi.spyOn(pyth, 'fetchPriceFeedsUpdateDataFromHermes').mockResolvedValue([new Uint8Array([1])]);
   // Return each feed id as its own price info object id, so a coin type can be
   // traced back to the feed it was priced from.
-  vi.spyOn(pyth, 'buildPythPriceUpdateCalls').mockImplementation(async (_tx, _client, _config, _updates, feedIds) => [
-    ...feedIds,
-  ]);
+  vi.spyOn(pyth, 'resolvePythPriceInfoObjectIds').mockImplementation(async (_client, _state, feedIds) => [...feedIds]);
 });
 
 afterEach(() => {
@@ -254,175 +250,59 @@ describe('unit/aggregateBasicPrices', () => {
 });
 
 /**
- * When Hermes is unreachable the PTB is still built, against Pyth's price objects
- * as they already stand. The freshness decision moves on-chain rather than
- * disappearing: `pyth_rule::feed` abstains on a stale reading, and `aggregate`
- * aborts `ERiskyPrice` if nothing left clears the weight threshold.
+ * The SDK pushes no Pyth update: the PTB reads Pyth's price objects as they stand.
+ * The freshness decision is on-chain: `pyth_rule::feed` abstains on a stale
+ * reading, and `aggregate` aborts `ERiskyPrice` if nothing left clears the weight
+ * threshold.
  */
-describe('unit/aggregateBasicPrices Hermes fallback', () => {
-  const hermesDown = () =>
-    vi
-      .spyOn(pyth, 'fetchPriceFeedsUpdateDataFromHermes')
-      .mockRejectedValue(new Error('Hermes price fetch failed: 503 upstream'));
-
-  /** Resolve ids the same way the mocked update path does, so the two are comparable. */
-  const mockResolve = () =>
-    vi
-      .spyOn(pyth, 'resolvePythPriceInfoObjectIds')
-      .mockImplementation(async (_client, _state, feedIds) => [...feedIds]);
-
-  it('still feeds pyth_rule, because omitting it aborts EMissingPriceSource', async () => {
-    hermesDown();
-    mockResolve();
+describe('unit/aggregateBasicPrices Pyth read', () => {
+  it('feeds pyth_rule, because omitting it aborts EMissingPriceSource', async () => {
     const tx = new Transaction();
 
-    const results = await new BucketClient({
-      suiClient: asSuiClient({}),
-      network: 'mainnet',
-      config: priceConfig(),
-      onPythStaleRead: () => {},
-    }).aggregateBasicPrices(tx, { coinTypes: [USDC] });
+    const results = await makeClient().aggregateBasicPrices(tx, { coinTypes: [USDC] });
 
     expect(results).toHaveLength(1);
     const calls = moveCalls(tx);
     // Abstaining counts as collected; omitting the call does not.
     expect(calls.filter((call) => call.target === 'pyth_rule::feed')).toHaveLength(1);
     expect(aggregateIndex(tx, USDC)).toBeGreaterThanOrEqual(0);
-    // ...against the same price object the update path would have refreshed.
     expect(pythFeedObjectId(tx, USDC)).toBe(address(0x53));
   });
 
-  it('skips the update builder entirely, so no VAA verify and no update fee', async () => {
-    hermesDown();
-    mockResolve();
+  it('adds no VAA verify, no price update and no update fee', async () => {
     const tx = new Transaction();
 
-    await new BucketClient({
-      suiClient: asSuiClient({}),
-      network: 'mainnet',
-      config: priceConfig(),
-      onPythStaleRead: () => {},
-    }).aggregateBasicPrices(tx, { coinTypes: [USDC] });
+    await makeClient().aggregateBasicPrices(tx, { coinTypes: [HASUI] });
 
-    // The update builder is what emits `parse_and_verify`, the accumulator call and
-    // the per-feed fee split; not calling it is what drops all three. Asserting on
-    // the PTB alone would prove nothing here, since it is mocked to add no commands.
-    expect(pyth.buildPythPriceUpdateCalls).not.toHaveBeenCalled();
-    expect(pyth.resolvePythPriceInfoObjectIds).toHaveBeenCalledOnce();
+    const targets = moveCalls(tx).map((call) => call.target);
+    expect(targets).not.toContain('vaa::parse_and_verify');
+    expect(targets).not.toContain('pyth::update_single_price_feed');
+    expect(tx.getData().commands.some((command) => command.$kind === 'SplitCoins')).toBe(false);
   });
 
-  it('reports the degradation instead of failing silently', async () => {
-    hermesDown();
-    mockResolve();
-    const onPythStaleRead = vi.fn();
-    const tx = new Transaction();
-
-    await new BucketClient({
-      suiClient: asSuiClient({}),
-      network: 'mainnet',
-      config: priceConfig(),
-      onPythStaleRead,
-    }).aggregateBasicPrices(tx, { coinTypes: [HASUI] });
-
-    expect(onPythStaleRead).toHaveBeenCalledTimes(1);
-    const event = onPythStaleRead.mock.calls[0]?.[0];
-    // Both the requested feed and the SUI its rule pulls in are read stale.
-    expect(event.feedIds).toEqual([address(0x51), address(0x50)]);
-    expect(event.cause).toBeInstanceOf(Error);
-    expect(String(event.cause)).toContain('503');
-  });
-
-  /**
-   * The hook reports a degraded read; it must not be able to cause one. A throw
-   * escaping it would turn a survivable Hermes outage into a hard failure — the
-   * opposite of what the fallback is for.
-   */
-  it('survives a handler that throws synchronously', async () => {
-    hermesDown();
-    mockResolve();
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const tx = new Transaction();
-
-    const results = await new BucketClient({
-      suiClient: asSuiClient({}),
-      network: 'mainnet',
-      config: priceConfig(),
-      onPythStaleRead: () => {
-        throw new Error('metrics endpoint exploded');
-      },
-    }).aggregateBasicPrices(tx, { coinTypes: [USDC] });
-
-    expect(results).toHaveLength(1);
-    expect(moveCalls(tx).filter((call) => call.target === 'pyth_rule::feed')).toHaveLength(1);
-    expect(consoleError).toHaveBeenCalled();
-  });
-
-  it('survives a handler that rejects, without an unhandled rejection', async () => {
-    hermesDown();
-    mockResolve();
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const unhandled = vi.fn();
-    process.on('unhandledRejection', unhandled);
+  it('does not call any off-chain endpoint', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
     const tx = new Transaction();
 
     try {
-      // TypeScript admits an async handler at a `void` return position, so the
-      // discarded promise is a live hazard rather than a hypothetical one.
-      const results = await new BucketClient({
-        suiClient: asSuiClient({}),
-        network: 'mainnet',
-        config: priceConfig(),
-        onPythStaleRead: async () => {
-          throw new Error('telemetry POST failed');
-        },
-      }).aggregateBasicPrices(tx, { coinTypes: [USDC] });
-
-      expect(results).toHaveLength(1);
-      // Let any stray rejection reach the process handler before asserting.
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      expect(unhandled).not.toHaveBeenCalled();
-      expect(consoleError).toHaveBeenCalled();
+      await makeClient().aggregateBasicPrices(tx, { coinTypes: [HASUI, USDC] });
+      expect(fetchSpy).not.toHaveBeenCalled();
     } finally {
-      process.off('unhandledRejection', unhandled);
+      vi.unstubAllGlobals();
     }
   });
 
-  it('honours pythStaleReadFallback: false by rejecting instead', async () => {
-    hermesDown();
-    mockResolve();
-    const tx = new Transaction();
-
-    await expect(
-      new BucketClient({
-        suiClient: asSuiClient({}),
-        network: 'mainnet',
-        config: priceConfig(),
-        pythStaleReadFallback: false,
-      }).aggregateBasicPrices(tx, { coinTypes: [USDC] }),
-    ).rejects.toThrow('Hermes price fetch failed');
-
-    expect(pyth.resolvePythPriceInfoObjectIds).not.toHaveBeenCalled();
-  });
-
-  it('does not swallow errors from the update path itself', async () => {
-    // Hermes answered; a failure past that point means a malformed PTB, not an
-    // outage, and must not be downgraded to a stale read.
-    vi.spyOn(pyth, 'buildPythPriceUpdateCalls').mockRejectedValue(
+  it('propagates a missing price object instead of building a malformed PTB', async () => {
+    vi.spyOn(pyth, 'resolvePythPriceInfoObjectIds').mockRejectedValue(
       new Error('Price feed 0x… not found; create it first'),
     );
-    mockResolve();
     const tx = new Transaction();
 
-    await expect(
-      new BucketClient({
-        suiClient: asSuiClient({}),
-        network: 'mainnet',
-        config: priceConfig(),
-        onPythStaleRead: () => {},
-      }).aggregateBasicPrices(tx, { coinTypes: [USDC] }),
-    ).rejects.toThrow('not found; create it first');
-
-    expect(pyth.resolvePythPriceInfoObjectIds).not.toHaveBeenCalled();
+    await expect(makeClient().aggregateBasicPrices(tx, { coinTypes: [USDC] })).rejects.toThrow(
+      'not found; create it first',
+    );
+    expect(tx.getData().commands).toHaveLength(0);
   });
 });
 

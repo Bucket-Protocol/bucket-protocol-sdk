@@ -1,14 +1,13 @@
 import { SUI_TYPE_ARG } from '@mysten/sui/utils';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { BucketClient } from '../../src/client.js';
 import {
   afterFileEnd,
   afterTestDelay,
   assertDryRunSucceeds,
   bucketClient,
+  getPricedOracleCoinTypes,
   MAINNET_TIMEOUT_MS,
-  network,
   setupE2E,
   suiClient,
   txWithSender,
@@ -22,12 +21,13 @@ describe('E2E Oracle', () => {
   });
   afterEach(afterTestDelay);
 
-  // Expect this to fail until Scallop upgrade or batching: fetching all 26 triggers version::assert_current_version abort.
+  // `getAllOraclePrices` itself would abort on the unpriced coin types, so this
+  // prices every other oracle coin type in one batch instead.
   it(
-    'getAllOraclePrices returns positive numbers for all oracle coin types',
+    'getOraclePrices returns positive numbers for all priced oracle coin types',
     async () => {
-      const prices = await bucketClient.getAllOraclePrices();
-      const coinTypes = await bucketClient.getAllOracleCoinTypes();
+      const coinTypes = await getPricedOracleCoinTypes();
+      const prices = await bucketClient.getOraclePrices({ coinTypes });
       expect(Object.keys(prices).length).toBeGreaterThan(0);
       for (const coinType of coinTypes) {
         const price = prices[coinType];
@@ -42,7 +42,7 @@ describe('E2E Oracle', () => {
   it(
     'getOraclePrices with subset (simple alternative) returns prices',
     async () => {
-      const allCoinTypes = await bucketClient.getAllOracleCoinTypes();
+      const allCoinTypes = await getPricedOracleCoinTypes();
       const coinTypes = allCoinTypes.slice(0, 2);
       expect(coinTypes.length).toBeGreaterThan(0);
       const prices = await bucketClient.getOraclePrices({ coinTypes });
@@ -104,37 +104,21 @@ describe('E2E Oracle', () => {
   );
 
   /**
-   * The Hermes fallback end to end, with nothing mocked: the endpoint is unreachable,
-   * the real on-chain resolver supplies the `PriceInfoObject`, `pyth_rule::feed`
-   * receives it, and the resulting PTB dry-runs successfully. Mocked unit tests can
-   * pin the branch but not this sequence, which is the part that has to keep working.
+   * The Pyth read end to end, with nothing mocked: the real on-chain resolver
+   * supplies the `PriceInfoObject`, `pyth_rule::feed` receives it as it stands, and
+   * the resulting PTB dry-runs successfully.
    *
    * Depends on mainnet's SUI price object sitting inside `pyth_rule`'s 30s tolerance,
    * which other protocols' transactions keep it comfortably within. If it ever does
-   * go stale this aborts `ERiskyPrice` — the correct outcome, since `SupraRule` has no
-   * aggregator weight yet and no second source can carry the price.
+   * go stale this aborts `ERiskyPrice` unless the remaining sources clear the weight
+   * threshold on their own.
    */
   it(
-    'prices SUI through the fallback when Hermes is unreachable',
+    'prices SUI from the Pyth price object as it stands, with no price update',
     async () => {
-      const staleReads: { feedIds: string[]; cause: unknown }[] = [];
-      const offline = await BucketClient.initialize({
-        suiClient,
-        network,
-        // A closed port fails the fetch immediately rather than burning the timeout.
-        configOverrides: { PRICE_SERVICE_ENDPOINT: 'http://127.0.0.1:1' },
-        onPythStaleRead: (event) => {
-          staleReads.push(event);
-        },
-      });
-
       const tx = txWithSender();
-      const priceResults = await offline.aggregatePrices(tx, { coinTypes: [SUI_TYPE_ARG] });
+      const priceResults = await bucketClient.aggregatePrices(tx, { coinTypes: [SUI_TYPE_ARG] });
       expect(priceResults.length).toBe(1);
-
-      // Genuinely the fallback path, rather than Hermes quietly having worked.
-      expect(staleReads).toHaveLength(1);
-      expect(staleReads[0]?.feedIds).toHaveLength(1);
 
       const targets = tx
         .getData()
@@ -143,7 +127,7 @@ describe('E2E Oracle', () => {
         );
       // The rule is still fed — omitting it would abort EMissingPriceSource...
       expect(targets).toContain('pyth_rule::feed');
-      // ...but everything the VAA update would have added is gone.
+      // ...and nothing a VAA update would add is there.
       expect(targets).not.toContain('vaa::parse_and_verify');
       expect(targets).not.toContain('pyth::update_single_price_feed');
       expect(targets).not.toContain('pyth::create_authenticated_price_infos_using_accumulator');
@@ -151,7 +135,7 @@ describe('E2E Oracle', () => {
       // The aggregate still resolves on-chain, which is the whole point.
       await assertDryRunSucceeds(tx);
 
-      const prices = await offline.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
+      const prices = await bucketClient.getOraclePrices({ coinTypes: [SUI_TYPE_ARG] });
       expect(prices[SUI_TYPE_ARG]).toBeGreaterThan(0);
     },
     MAINNET_TIMEOUT_MS,

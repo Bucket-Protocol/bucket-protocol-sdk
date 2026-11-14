@@ -30,12 +30,7 @@ import { DOUBLE_OFFSET, DUMMY_ADDRESS, FLOAT_OFFSET, getLstRule, getSupraConfig 
 import { queryAllConfig } from '@/utils/bucketConfig.js';
 import { convertOnchainConfig, enrichSharedObjectRefs } from '@/utils/configAdapter.js';
 import { coinWithBalance, destroyZeroCoin, getZeroCoin } from '@/utils/index.js';
-import {
-  buildPythPriceUpdateCalls,
-  fetchPriceFeedsUpdateDataFromHermes,
-  PythCache,
-  resolvePythPriceInfoObjectIds,
-} from '@/utils/pyth.js';
+import { PythCache, resolvePythPriceInfoObjectIds } from '@/utils/pyth.js';
 
 import { VaultRewarder } from '@/_generated/bucket_v2_borrow_incentive/borrow_incentive.js';
 import { PositionData, Vault } from '@/_generated/bucket_v2_cdp/vault.js';
@@ -62,14 +57,6 @@ const NETWORK_RPC_URLS: Record<string, string> = {
   testnet: 'https://fullnode.testnet.sui.io:443',
 };
 
-/** Reported when a Hermes failure downgrades a PTB to reading Pyth's price objects as they stand. */
-export type PythStaleReadEvent = {
-  /** Pyth feed ids that will be fed without a fresh update. */
-  feedIds: string[];
-  /** Whatever the Hermes fetch rejected with. */
-  cause: unknown;
-};
-
 function isValidPythPriceId(id: string): boolean {
   if (typeof id !== 'string') return false;
   const trimmed = id.trim();
@@ -91,8 +78,6 @@ export class BucketClient {
   private suiClient: SuiGrpcClient;
   private network: Network;
   private pythCache = new PythCache();
-  private pythStaleReadFallback: boolean;
-  private onPythStaleRead: (event: PythStaleReadEvent) => void | Promise<void>;
 
   /**
    * @description Creates a BucketClient with config fetched from on-chain.
@@ -102,13 +87,8 @@ export class BucketClient {
    * @param config - Optional. Pre-built config for testing; skips chain fetch when provided.
    *   When config is provided, configOverrides are not applied to the initial config; they are
    *   stored for use on refreshConfig() only.
-   * @param configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT). Applied when
+   * @param configOverrides - Optional overrides (e.g. PYTH_STATE_ID). Applied when
    *   fetching from chain; when config is provided, used only after refreshConfig().
-   * @param pythStaleReadFallback - Optional, defaults to `true`. When Hermes is unreachable,
-   *   build the PTB against Pyth's price objects as they already stand instead of rejecting.
-   *   See `aggregateBasicPrices` for why this is safe. Set `false` to fail in the SDK instead.
-   * @param onPythStaleRead - Optional. Called whenever that fallback engages. Defaults to a
-   *   `console.error`, so the degradation is never silent.
    */
   constructor({
     suiClient,
@@ -116,16 +96,12 @@ export class BucketClient {
     configObjectId,
     config: configParam,
     configOverrides,
-    pythStaleReadFallback = true,
-    onPythStaleRead,
   }: {
     suiClient?: SuiGrpcClient;
     network?: Network;
     configObjectId?: string;
     config?: ConfigType;
     configOverrides?: Partial<ConfigType>;
-    pythStaleReadFallback?: boolean;
-    onPythStaleRead?: (event: PythStaleReadEvent) => void | Promise<void>;
   }) {
     const rpcUrl = NETWORK_RPC_URLS[network] ?? NETWORK_RPC_URLS['mainnet']!;
 
@@ -135,18 +111,6 @@ export class BucketClient {
     this.configParam = configParam;
     this.configObjectId = configObjectId;
     this.configOverrides = configOverrides;
-    this.pythStaleReadFallback = pythStaleReadFallback;
-    this.onPythStaleRead =
-      onPythStaleRead ??
-      // `console.error` rather than `warn` because it is the only method this repo's
-      // lint config sanctions — and a silently degraded oracle read earns the volume.
-      (({ feedIds, cause }) =>
-        console.error(
-          `[BucketClient] Pyth price update skipped for ${feedIds.length} feed(s); ` +
-            `feeding on-chain price objects as they stand. Stale readings abstain on-chain, ` +
-            `and aggregate aborts ERiskyPrice if no source clears the weight threshold. Cause:`,
-          cause,
-        ));
 
     this.configLoadingPromise = this.loadConfig();
   }
@@ -157,9 +121,7 @@ export class BucketClient {
    *
    * @param configObjectId - Optional. Override the default entry config object ID.
    * @param config - Optional. Pre-built config for testing; skips chain fetch when provided.
-   * @param configOverrides - Optional overrides (e.g. PRICE_SERVICE_ENDPOINT).
-   * @param pythStaleReadFallback - Optional, defaults to `true`. See the constructor.
-   * @param onPythStaleRead - Optional. See the constructor.
+   * @param configOverrides - Optional overrides (e.g. PYTH_STATE_ID).
    */
   static async initialize({
     suiClient,
@@ -167,16 +129,12 @@ export class BucketClient {
     configObjectId,
     config,
     configOverrides,
-    pythStaleReadFallback,
-    onPythStaleRead,
   }: {
     suiClient?: SuiGrpcClient;
     network?: Network;
     configObjectId?: string;
     config?: ConfigType;
     configOverrides?: Partial<ConfigType>;
-    pythStaleReadFallback?: boolean;
-    onPythStaleRead?: (event: PythStaleReadEvent) => void | Promise<void>;
   } = {}): Promise<BucketClient> {
     const bc = new BucketClient({
       suiClient,
@@ -184,8 +142,6 @@ export class BucketClient {
       configObjectId,
       config,
       configOverrides,
-      pythStaleReadFallback,
-      onPythStaleRead,
     });
     await bc.getConfig();
     return bc;
@@ -1087,7 +1043,7 @@ export class BucketClient {
    *
    * Supra is a *push* oracle: `OracleHolder` is written by Supra's own
    * transactions and passed here read-only, with nothing to update or verify
-   * first. That is why there is no Hermes-style fetch as there is for Pyth.
+   * first.
    */
   private feedSupraPrice(
     tx: Transaction,
@@ -1144,70 +1100,23 @@ export class BucketClient {
   }
 
   /**
-   * @description Announce a stale read without letting the announcement break the
-   * fallback it is announcing.
+   * @description Resolve the `PriceInfoObject` backing each feed, to be read as it
+   * stands on chain. The SDK does not push a Pyth price update of its own.
    *
-   * The hook exists to make a degraded oracle read visible; it must never be able to
-   * fail the PTB it is reporting on. Both ways it could are contained here. A
-   * synchronous throw would otherwise propagate straight out of
-   * `aggregateBasicPrices` and take down the exact path this fallback exists to keep
-   * working — a broken metrics call turning a survivable Hermes outage into a hard
-   * failure. And an `async` handler, which TypeScript admits at a `void` return
-   * position, would drop its rejection into an unhandled promise.
+   * The freshness decision lives on-chain. `pyth_rule::feed` reads the object with
+   * `get_price_unsafe` and hands the aggregator `option::none()` when the reading is
+   * older than that coin type's tolerance, so a stale price is never collected;
+   * `aggregate` then aborts `ERiskyPrice` unless the surviving sources clear the
+   * weight threshold. A coin type therefore prices only while its Pyth object is
+   * kept within tolerance by other transactions, or while its other sources carry
+   * enough weight on their own.
    *
-   * Deliberately not awaited: reporting is observational, and PTB construction should
-   * not wait on someone's telemetry endpoint.
+   * Feeding the rule is not optional: `remove_outliers` aborts `EMissingPriceSource`
+   * unless every rule carrying weight was collected in this PTB, and abstaining
+   * counts as collected while omitting the call does not.
    */
-  private reportPythStaleRead(event: PythStaleReadEvent): void {
-    const failed = (err: unknown) =>
-      console.error('[BucketClient] onPythStaleRead failed; the stale-read fallback is unaffected:', err);
-    try {
-      void Promise.resolve(this.onPythStaleRead(event)).catch(failed);
-    } catch (err) {
-      failed(err);
-    }
-  }
-
-  /**
-   * @description Resolve the `PriceInfoObject` backing each feed, refreshing them from
-   * Hermes when it is reachable and reading them as they stand when it is not.
-   *
-   * The fallback removes no check — it moves the freshness decision on-chain, where
-   * it already lived. `pyth_rule::feed` reads the object with `get_price_unsafe` and
-   * hands the aggregator `option::none()` when the reading is older than that coin
-   * type's tolerance, so a stale price is never collected; `aggregate` then aborts
-   * `ERiskyPrice` unless the surviving sources clear the weight threshold. The worst
-   * case is a PTB that fails on-chain rather than in the SDK. The best case — a price
-   * object some other transaction refreshed within tolerance, which is common on
-   * busy feeds — is a PTB that works straight through the outage.
-   *
-   * Feeding the rule is not optional either way: `remove_outliers` aborts
-   * `EMissingPriceSource` unless every rule carrying weight was collected in this
-   * PTB, and abstaining counts as collected while omitting the call does not. So the
-   * fallback still emits `pyth_rule::feed`; it drops only the update that precedes it.
-   *
-   * Only the Hermes fetch is guarded, and it runs before anything touches `tx` — so
-   * the fallback can never inherit a half-built PTB. Errors from
-   * `buildPythPriceUpdateCalls` propagate untouched.
-   */
-  private async buildPythFeedInputs(tx: Transaction, config: ConfigType, pythPriceIds: string[]): Promise<string[]> {
-    let updateData: Uint8Array[];
-    try {
-      updateData = await fetchPriceFeedsUpdateDataFromHermes(config.PRICE_SERVICE_ENDPOINT, pythPriceIds);
-    } catch (cause) {
-      if (!this.pythStaleReadFallback) throw cause;
-      this.reportPythStaleRead({ feedIds: pythPriceIds, cause });
-      return resolvePythPriceInfoObjectIds(this.suiClient, config.PYTH_STATE_ID, pythPriceIds, this.pythCache);
-    }
-
-    return buildPythPriceUpdateCalls(
-      tx,
-      this.suiClient,
-      { pythStateId: config.PYTH_STATE_ID, wormholeStateId: config.WORMHOLE_STATE_ID },
-      updateData,
-      pythPriceIds,
-      this.pythCache,
-    );
+  private async resolvePythFeedInputs(config: ConfigType, pythPriceIds: string[]): Promise<string[]> {
+    return resolvePythPriceInfoObjectIds(this.suiClient, config.PYTH_STATE_ID, pythPriceIds, this.pythCache);
   }
 
   /**
@@ -1247,7 +1156,7 @@ export class BucketClient {
       }
       pythPriceIds.push(aggregator.Pyth.pythPriceId);
     }
-    const priceInfoObjIds = await this.buildPythFeedInputs(tx, config, pythPriceIds);
+    const priceInfoObjIds = await this.resolvePythFeedInputs(config, pythPriceIds);
 
     // Build every non-LST collector first, then the LST ones, and return in the
     // caller's original order. The sort is stable, so both groups keep it.

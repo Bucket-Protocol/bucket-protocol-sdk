@@ -56,7 +56,7 @@ This is a TypeScript SDK for [Bucket Protocol](https://bucketprotocol.io), a CDP
   - `configAdapter.ts` — `convertOnchainConfig()` maps raw on-chain JSON to `ConfigType`
   - `transaction.ts` — helpers: `coinWithBalance` (lazy coin resolver intent), `getZeroCoin`, `destroyZeroCoin`, `getCoinsOfType`
   - `resolvers.ts` — `resolveCoinBalance` intent resolver; handles merging/splitting user coins when a transaction is built
-  - `pyth.ts` — Pyth price feed helpers; `buildPythPriceUpdateCalls`, `fetchPriceFeedsUpdateDataFromHermes`
+  - `pyth.ts` — Pyth price feed helpers; `resolvePythPriceInfoObjectIds` (on-chain `PriceInfoObject` lookup; no Hermes, no price update)
 - **`src/_generated/`** — Move struct deserializers for: `bucket_v2_borrow_incentive`, `bucket_v2_cdp`, `bucket_v2_flash`, `bucket_v2_framework`, `bucket_v2_psm`, `bucket_v2_saving`, `bucket_v2_saving_incentive`, `bucket_onchain_config`. Generated code (each file carries a do-not-edit banner); regenerate rather than edit by hand.
 
 ### Key Design Patterns
@@ -65,7 +65,7 @@ This is a TypeScript SDK for [Bucket Protocol](https://bucketprotocol.io), a CDP
 
 **`coinWithBalance` lazy resolver:** Instead of requiring callers to pass coin objects, `coinWithBalance({ type, balance })` returns a factory `(tx) => TransactionResult`. When `tx.build()` is called, `resolveCoinBalance` fetches the user's coins on-chain, merges them, and splices in a `SplitCoins` command automatically. This is the standard way to pass input coins throughout the SDK.
 
-**Price aggregation:** `aggregatePrices(tx, { coinTypes })` fetches Pyth VAAs and adds price update calls to the PTB, plus the Supra and LST feeds for coin types that have them. Derivative coin types (`DerivativeKind` in `src/types/config.ts`) take their price from an underlying asset rather than a direct feed, with the rule objects read from the on-chain price config.
+**Price aggregation:** `aggregatePrices(tx, { coinTypes })` feeds each coin type's Pyth price object as it stands on chain (the SDK pushes no Pyth update; a stale reading abstains on-chain), plus the Supra and LST feeds for coin types that have them. Derivative coin types (`DerivativeKind` in `src/types/config.ts`) take their price from an underlying asset rather than a direct feed, with the rule objects read from the on-chain price config.
 
 **Price-source lists are a safety boundary.** `supra_rule::feed` aborts `EUnsupportedCoinType` for a coin type with no pair id on chain, so the coin types in `src/consts/supra.ts` must stay a subset of what is configured on chain; adding one early reverts every PTB that prices it. An LST rule's `feed` needs the aggregated SUI price earlier in the same PTB, which `aggregatePrices` arranges for every caller. Read the header of `supra.ts` / `lst.ts` before changing either list.
 
