@@ -41,7 +41,6 @@ export type Network = 'mainnet' | 'testnet';
 export type DerivativeKind = 'sCoin' | 'gCoin' | 'TLP' | 'BFBTC';
 
 export type ConfigType = {
-  PRICE_SERVICE_ENDPOINT: string;
   PYTH_STATE_ID: string;
   WORMHOLE_STATE_ID: string;
   PYTH_RULE_PACKAGE_ID: string;

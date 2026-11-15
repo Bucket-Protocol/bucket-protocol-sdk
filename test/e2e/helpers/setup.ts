@@ -45,6 +45,23 @@ export async function ensureBucketClient(): Promise<BucketClient> {
   }
   return bucketClient;
 }
+/**
+ * Oracle coin types with no price on mainnet today: their aggregator aborts, so any
+ * PTB that prices one fails, and a batch that includes one fails as a whole.
+ */
+export const UNPRICED_COIN_TYPES = new Set([
+  '0x7016aae72cfc67f2fadf55769c0a7dd54291a583b63051a5ed71081cce836ac6::sca::SCA',
+  '0x5ca17430c1d046fae9edeaa8fd76c7b4193a00d764a0ecfa9418d733ad27bc1e::scallop_sca::SCALLOP_SCA',
+  '0x9d297676e7a4b771ab023291377b2adfaa4938fb9080b8d12430e4b108b836a9::xaum::XAUM',
+  '0x2f2226a22ebeb7a0e63ea39551829b238589d981d1c6dd454f01fcc513035593::house::StakedHouseCoin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>',
+]);
+
+/** Every oracle coin type except `UNPRICED_COIN_TYPES`. Use after ensureBucketClient() has run. */
+export async function getPricedOracleCoinTypes(): Promise<string[]> {
+  const coinTypes = await bucketClient.getAllOracleCoinTypes();
+  return coinTypes.filter((coinType) => !UNPRICED_COIN_TYPES.has(coinType));
+}
+
 /** Use after ensureBucketClient() has run. */
 export async function getUsdbCoinType(): Promise<string> {
   return bucketClient.getUsdbCoinType();

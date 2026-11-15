@@ -48,8 +48,7 @@ function needsVersionEnrichment(ref: SharedObjectRef): boolean {
  * keys here accordingly.
  *
  * @param onchain - The raw on-chain config returned by `queryAllConfig`
- * @param overrides - Optional partial overrides (e.g. PRICE_SERVICE_ENDPOINT
- *   is off-chain and must always be provided externally)
+ * @param overrides - Optional partial overrides, taking precedence over the on-chain values
  */
 export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Partial<ConfigType> = {}): ConfigType {
   const pkg = (onchain.packageConfig ?? {}) as Record<string, unknown>;
@@ -58,11 +57,6 @@ export function convertOnchainConfig(onchain: BucketOnchainConfig, overrides: Pa
 
   // --- Package IDs ---
   const config: ConfigType = {
-    // Off-chain endpoint — must be supplied via overrides or falls back to public Hermes
-    PRICE_SERVICE_ENDPOINT:
-      overrides.PRICE_SERVICE_ENDPOINT ??
-      (oracle.price_service_endpoint as string | undefined) ??
-      'https://hermes.pyth.network',
     PYTH_STATE_ID: (oracle.pyth_state_id as string | undefined) ?? '',
     WORMHOLE_STATE_ID: (oracle.wormhole_state_id as string | undefined) ?? '',
     PYTH_RULE_PACKAGE_ID: (oracle.pyth_rule_package_id as string | undefined) ?? '',

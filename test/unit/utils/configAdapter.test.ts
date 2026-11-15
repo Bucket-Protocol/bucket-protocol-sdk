@@ -13,7 +13,6 @@ describe('unit/utils/configAdapter', () => {
   describe('convertOnchainConfig', () => {
     it('returns config with defaults when onchain is minimal', () => {
       const config = convertOnchainConfig(minimalOnchain);
-      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://hermes.pyth.network');
       expect(config.PYTH_STATE_ID).toBe('');
       expect(config.ORIGINAL_USDB_PACKAGE_ID).toBe('');
       expect(config.TREASURY_OBJ).toEqual({ objectId: '', initialSharedVersion: '0', mutable: true });
@@ -23,10 +22,10 @@ describe('unit/utils/configAdapter', () => {
 
     it('applies overrides and takes precedence', () => {
       const config = convertOnchainConfig(minimalOnchain, {
-        PRICE_SERVICE_ENDPOINT: 'https://custom.hermes.test',
+        PYTH_STATE_ID: '0xpyth_override',
         ORIGINAL_USDB_PACKAGE_ID: '0xoverride',
       });
-      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://custom.hermes.test');
+      expect(config.PYTH_STATE_ID).toBe('0xpyth_override');
       expect(config.ORIGINAL_USDB_PACKAGE_ID).toBe('0xoverride');
     });
 
@@ -406,17 +405,6 @@ describe('unit/utils/configAdapter', () => {
           bfbtc_rule_config: { objectId: '0xbfbtc_rule', initialSharedVersion: '0', mutable: false },
         },
       });
-    });
-
-    it('uses oracle price_service_endpoint when not overridden', () => {
-      const onchain: BucketOnchainConfig = {
-        ...minimalOnchain,
-        oracleConfig: {
-          price_service_endpoint: 'https://oracle.hermes.test',
-        },
-      };
-      const config = convertOnchainConfig(onchain);
-      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://oracle.hermes.test');
     });
 
     it('parses all shared object ref fallbacks when obj fields missing', () => {

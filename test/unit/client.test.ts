@@ -15,7 +15,6 @@ const asSuiClient = (m: unknown) => m as unknown as SuiGrpcClient;
 function minimalConfig(overrides: Partial<ConfigType> = {}): ConfigType {
   const emptyRef = { objectId: '', initialSharedVersion: '0', mutable: false };
   return {
-    PRICE_SERVICE_ENDPOINT: 'https://hermes.pyth.network',
     PYTH_STATE_ID: '',
     WORMHOLE_STATE_ID: '',
     PYTH_RULE_PACKAGE_ID: '',
@@ -72,7 +71,7 @@ describe('unit/client', () => {
       const client = await BucketClient.initialize({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
-        configOverrides: { PRICE_SERVICE_ENDPOINT: 'https://custom.hermes.test' },
+        configOverrides: { PYTH_STATE_ID: '0xcustom_state' },
       });
 
       mockConvert.mockClear();
@@ -81,10 +80,10 @@ describe('unit/client', () => {
 
       expect(mockConvert).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ PRICE_SERVICE_ENDPOINT: 'https://custom.hermes.test' }),
+        expect.objectContaining({ PYTH_STATE_ID: '0xcustom_state' }),
       );
       const config = await client.getConfig();
-      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://custom.hermes.test');
+      expect(config.PYTH_STATE_ID).toBe('0xcustom_state');
     });
 
     it('refreshConfig({}) uses empty overrides, not configOverrides', async () => {
@@ -99,7 +98,7 @@ describe('unit/client', () => {
       const client = await BucketClient.initialize({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
-        configOverrides: { PRICE_SERVICE_ENDPOINT: 'https://from.configOverrides.test' },
+        configOverrides: { PYTH_STATE_ID: '0xfrom_configOverrides' },
       });
 
       mockConvert.mockClear();
@@ -109,7 +108,7 @@ describe('unit/client', () => {
       expect(mockConvert).toHaveBeenCalledWith(expect.anything(), {});
       expect(mockConvert).not.toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ PRICE_SERVICE_ENDPOINT: 'https://from.configOverrides.test' }),
+        expect.objectContaining({ PYTH_STATE_ID: '0xfrom_configOverrides' }),
       );
     });
 
@@ -125,19 +124,19 @@ describe('unit/client', () => {
       const client = await BucketClient.initialize({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
-        configOverrides: { PRICE_SERVICE_ENDPOINT: 'https://original.override.test' },
+        configOverrides: { PYTH_STATE_ID: '0xoriginal_override' },
       });
 
       mockConvert.mockClear();
 
-      await client.refreshConfig({ PRICE_SERVICE_ENDPOINT: 'https://explicit.override.test' });
+      await client.refreshConfig({ PYTH_STATE_ID: '0xexplicit_override' });
 
       expect(mockConvert).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ PRICE_SERVICE_ENDPOINT: 'https://explicit.override.test' }),
+        expect.objectContaining({ PYTH_STATE_ID: '0xexplicit_override' }),
       );
       const config = await client.getConfig();
-      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://explicit.override.test');
+      expect(config.PYTH_STATE_ID).toBe('0xexplicit_override');
     });
 
     it('refreshConfig() uses configObjectId from initialize', async () => {
@@ -163,7 +162,7 @@ describe('unit/client', () => {
 
   describe('constructor requires config', () => {
     it('accepts custom config for testing', async () => {
-      const custom = minimalConfig({ PRICE_SERVICE_ENDPOINT: 'https://custom.test' });
+      const custom = minimalConfig({ PYTH_STATE_ID: '0xcustom' });
       const client = new BucketClient({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
@@ -171,7 +170,7 @@ describe('unit/client', () => {
       });
       const config = await client.getConfig();
       expect(config).toBeDefined();
-      expect(config.PRICE_SERVICE_ENDPOINT).toBe('https://custom.test');
+      expect(config.PYTH_STATE_ID).toBe('0xcustom');
     });
   });
 
@@ -180,7 +179,7 @@ describe('unit/client', () => {
       const querySpy = vi.spyOn(bucketConfig, 'queryAllConfig');
       vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
 
-      const custom = minimalConfig({ PRICE_SERVICE_ENDPOINT: 'https://prebuilt.test' });
+      const custom = minimalConfig({ PYTH_STATE_ID: '0xprebuilt' });
       const client = await BucketClient.initialize({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
@@ -188,22 +187,22 @@ describe('unit/client', () => {
       });
 
       expect(querySpy).not.toHaveBeenCalled();
-      expect((await client.getConfig()).PRICE_SERVICE_ENDPOINT).toBe('https://prebuilt.test');
+      expect((await client.getConfig()).PYTH_STATE_ID).toBe('0xprebuilt');
     });
 
     it('uses provided config as-is (configOverrides ignored when config is passed)', async () => {
       vi.spyOn(configAdapter, 'enrichSharedObjectRefs').mockImplementation((c) => Promise.resolve(c));
 
-      const custom = minimalConfig({ PRICE_SERVICE_ENDPOINT: 'https://base.test' });
+      const custom = minimalConfig({ PYTH_STATE_ID: '0xbase' });
       const client = await BucketClient.initialize({
         suiClient: asSuiClient({ getObjects: vi.fn() }),
         network: 'mainnet',
         config: custom,
-        configOverrides: { PRICE_SERVICE_ENDPOINT: 'https://override.test' },
+        configOverrides: { PYTH_STATE_ID: '0xoverride' },
       });
 
       // When config is passed, configOverrides is not applied (only used with chain fetch)
-      expect((await client.getConfig()).PRICE_SERVICE_ENDPOINT).toBe('https://base.test');
+      expect((await client.getConfig()).PYTH_STATE_ID).toBe('0xbase');
     });
   });
 

@@ -16,6 +16,7 @@ import {
   afterFileEnd,
   bucketClient,
   depositAmountForBorrowUsd,
+  getPricedOracleCoinTypes,
   getUsdbCoinType,
   MAINNET_TIMEOUT_MS,
   network,
@@ -147,7 +148,8 @@ describe('E2E All query outputs (report)', () => {
         .slice(0, 3);
       const hasVaultWithRewarders = coinTypeWithRewarders.length > 0;
 
-      const coinTypes = (await bucketClient.getAllOracleCoinTypes()).slice(0, 2);
+      const pricedCoinTypes = await getPricedOracleCoinTypes();
+      const coinTypes = pricedCoinTypes.slice(0, 2);
 
       // Async config-derived
       await run('getUsdbCoinType', () => bucketClient.getUsdbCoinType());
@@ -189,7 +191,8 @@ describe('E2E All query outputs (report)', () => {
       });
       await run('getUsdbSupply', () => bucketClient.getUsdbSupply());
       await run('getOraclePrices', () => bucketClient.getOraclePrices({ coinTypes }));
-      await run('getAllOraclePrices', () => bucketClient.getAllOraclePrices());
+      // Not `getAllOraclePrices()`: it aborts on the unpriced coin types.
+      await run('getOraclePrices (all priced)', () => bucketClient.getOraclePrices({ coinTypes: pricedCoinTypes }));
       await runOrSkip(
         'getBorrowRewardFlowRate',
         () => bucketClient.getBorrowRewardFlowRate({ coinType: coinTypeWithRewarders[0]! }),
@@ -370,18 +373,17 @@ describe('E2E All query outputs (report)', () => {
         });
       });
 
-      // aggregatePrices — fetches Pyth from Hermes, adds price update calls to PTB
+      // aggregatePrices — feeds each coin type's price sources and aggregates them in the PTB
       await captureBuild('aggregatePrices', async () => {
         const tx = txWithSender();
         return bucketClient.aggregatePrices(tx, { coinTypes: [firstCoinType] });
       });
 
-      // aggregateBasicPrices — lower-level Hermes price aggregation (Pyth only, no derivatives)
-      const allOracleCoinTypes = await bucketClient.getAllOracleCoinTypes();
+      // aggregateBasicPrices — lower-level price aggregation (basic coin types only, no derivatives)
       const aggregatorInfos = await Promise.all(
-        allOracleCoinTypes.map((ct) => bucketClient.getAggregatorObjectInfo({ coinType: ct })),
+        pricedCoinTypes.map((ct) => bucketClient.getAggregatorObjectInfo({ coinType: ct })),
       );
-      const basicCoinTypes = allOracleCoinTypes.filter(
+      const basicCoinTypes = pricedCoinTypes.filter(
         (_, i) => 'Pyth' in aggregatorInfos[i]! && aggregatorInfos[i]!.Pyth,
       );
       await captureBuild('aggregateBasicPrices', async () => {
