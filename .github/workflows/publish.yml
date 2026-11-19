@@ -22,14 +22,22 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    outputs:
+      latest-version: ${{ steps.version.outputs.version }}
     steps:
       - name: Check permission
         if: ${{ !contains('["17008875", "33892812", "2819672", "203853998"]', github.actor_id) }}
         run: echo 'Permission denied' && exit 1
+      - name: Create release app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
@@ -49,6 +57,9 @@ jobs:
       - name: Bump & publish (release)
         if: ${{ inputs.releaseType != 'prerelease' }}
         run: npm version ${{ inputs.releaseType }} --no-git-tag-version && npm publish --provenance --access public
+      - name: Read published version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Commit change
         if: ${{ inputs.releaseType != 'prerelease' }}
         uses: stefanzweifel/git-auto-commit-action@v7
@@ -63,11 +74,19 @@ jobs:
         repo:
           - bucket-frontend-v5
     steps:
+      - name: Create release app token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ matrix.repo }}
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          repository: Bucket-Protocol/${{ matrix.repo }}
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository_owner }}/${{ matrix.repo }}
+          token: ${{ steps.app-token.outputs.token }}
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -81,4 +100,4 @@ jobs:
         with:
           branch: bump-bucket-protocol-sdk-v${{ needs.publish.outputs.latest-version }}
           title: 'chore: bump bucket-protocol-sdk to v${{ needs.publish.outputs.latest-version }}'
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
