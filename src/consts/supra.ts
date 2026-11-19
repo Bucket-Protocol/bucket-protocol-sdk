@@ -67,6 +67,7 @@ const MAINNET_SUPRA_COIN_TYPES = [
   // mirroring a substitution `pyth_rule` already makes on-chain. See the notes in
   // v2-move-contracts/scripts/supra_rule/config.ts.
   '0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC', // BTC_USD
+  '0xd30fb3f8914efdbeb7b8e85fae1d65dc584b44a1281f66737b92bb9f03a59d06::btc::BTC', // hBTC, BTC_USD
   '0x5de877a152233bdd59c7269e2b710376ca271671e9dd11076b1ff261b2fd113c::up_usd::UP_USD', // USDC_USD
   '0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP', // DEEP_USDT, also carries sDEEP
   // Also peg proxies, but a *new* substitution rather than an inherited one. XBTC
