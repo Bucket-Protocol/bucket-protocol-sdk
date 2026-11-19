@@ -94,10 +94,10 @@ jobs:
         with:
           node-version: 24
       - name: Bump version
-        run: pnpm add bucket-protocol-sdk@${{ needs.publish.outputs.latest-version }} --save-exact
+        run: pnpm add @bucket-protocol/sdk@${{ needs.publish.outputs.latest-version }} --save-exact
       - name: Create PR
         uses: peter-evans/create-pull-request@v7
         with:
           branch: bump-bucket-protocol-sdk-v${{ needs.publish.outputs.latest-version }}
-          title: 'chore: bump bucket-protocol-sdk to v${{ needs.publish.outputs.latest-version }}'
+          title: 'chore: bump @bucket-protocol/sdk to v${{ needs.publish.outputs.latest-version }}'
           token: ${{ steps.app-token.outputs.token }}
